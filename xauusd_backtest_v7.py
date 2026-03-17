@@ -1,37 +1,41 @@
 """
-XAUUSD - 1:2 RR Day Trade Backtest  (v7.0)
+XAUUSD - 1:2 RR Day Trade Backtest  (v8.0)
 ============================================
-v7.0 DEĞİŞİKLİĞİ — FVG MİTİGASYON KONTROLÜ
+v8.0 DEĞİŞİKLİKLERİ
 
-Önceki versiyonlarda FVG bir kez oluştuktan sonra
-sonraki mumlar o bölgeye girip kapansa bile tekrar
-sinyal üretmek için kullanılabiliyordu. Bu yanlış.
+1. LOOKAHEAD BIAS DÜZELTMESİ:
+   FVG [i-2, i-1, i] üçlüsünden oluşur; yalnızca i. mum
+   kapandıktan SONRA görünür. Önceki versiyonlarda
+   'index = T[i-1]' ile karşılaştırma yapıldığından aynı
+   mumda oluşan FVG sinyal için kullanılabiliyordu (lookahead).
+   v8: her FVG'ye 'detect_time = T[i]' eklendi;
+   tüm aktiflik kontrolleri detect_time üzerinden yapılır.
 
-ICT/SMC kuralı:
-  Bull FVG [bottom, top]:
-    - Oluştuktan sonra herhangi bir 1H mum
-      CLOSE'u FVG top'unun ALTINDA kalırsa
-      (yani fiyat FVG'nin içine veya altına kapanırsa)
-      → FVG MİTİGE EDİLMİŞTİR, bir daha kullanılmaz.
+2. SWING HIGH/LOW STOP LOSS:
+   Önceki versiyonlarda SL = son 10 mumun min/max'ı.
+   v8: SL = son onaylanmış swing low (bull) / swing high (bear).
+   (strength=2: her iki yanda 2 komşudan düşük/yüksek olmalı)
 
-  Bear FVG [bottom, top]:
-    - Oluştuktan sonra herhangi bir 1H mum
-      CLOSE'u FVG bottom'unun ÜSTÜNDE kalırsa
-      → FVG MİTİGE EDİLMİŞTİR, bir daha kullanılmaz.
+3. EMA ONAY ADIMI (Step 3c):
+   Şemadaki üçüncü onay seçeneği eklendi:
+   Bull → fiyat kapanışı EMA100 VE EMA200 üstünde mi?
+   Bear → fiyat kapanışı EMA100 VE EMA200 altında mı?
+   Sinyal kaynağı: 'EMA_Onay'
 
-Bu versiyon:
-  - FVG listesini ZAMAN İÇİNDE günceller (her 5dk mumunda
-    o ana kadar 1H mumlarına bakarak hangi FVG'lerin
-    hâlâ taze/aktif olduğunu hesaplar).
-  - Sadece MİTİGE EDİLMEMİŞ (taze) FVG'ler kullanılır.
-  - 5dk FVG onayı için de aynı kural uygulanır.
+4. RİSK %0.5 (önce %1):
+   RISK = 0.005  ($10,000 başlangıç → işlem başı $50 risk)
 
-Strateji akışı (değişmedi):
-  ADIM 0: EMA100 > EMA200 (trend kapısı) → yoksa işlem alma
-  ADIM 1: Taze 1H FVG bölgesinde fiyat var mı? → yoksa işlem alma
-  ADIM 2: Son 1 saatte (12 mum) MSC var mı? → yoksa işlem alma
-  ADIM 3: RSI diverjans VEYA taze 5dk FVG → ikisi de yoksa işlem alma
-  Çıkış : 1:2 Risk/Reward
+Strateji akışı:
+  ADIM 0: EMA100 > EMA200 (trend kapısı/yön)
+  ADIM 1: Taze 1H FVG'de fiyat var mı? (detect_time kontrolü)
+  ADIM 2: Son 1 saatte 5M MSC var mı?
+  ADIM 3: Onay — aşağıdakilerden biri:
+    3a: RSI diverjansı (son 10 mum)
+    3b: Taze 5dk FVG (son 60dk, detect_time kontrolü)
+    3c: Fiyat > EMA100 VE EMA200 (bull) / < EMA100 VE EMA200 (bear)
+  GİRİŞ : Sonraki mumun açılışından
+  SL    : Son swing low/high × (0.9995 / 1.0005)
+  TP    : Entry ± Risk × 2.0  (1:2 RR)
 """
 
 import pandas as pd
@@ -75,7 +79,7 @@ def download_data():
     start_1h = end_date - timedelta(days=90)
 
     print("=" * 60)
-    print("  XAUUSD  |  1:2 RR  |  Day Trade  |  Backtest  v7.0")
+    print("  XAUUSD  |  1:2 RR  |  Day Trade  |  Backtest  v8.0")
     print("=" * 60)
     print(f"\nVeri indiriliyor...")
     print(f"  1H : {start_1h.date()} -> {end_date.date()}")
@@ -117,9 +121,14 @@ def calc_rsi(series, period=14):
 def detect_fvg_raw(df, direction='bull', min_gap=0.50):
     """
     Ham FVG listesi üret (mitigasyon kontrolü YOK).
-    Her FVG: {index, top, bottom, mid, mitigated: False}
+    Her FVG: {index, detect_time, top, bottom, mid, mitigated: False}
     direction='bull': destek FVG (fiyat üstünden geri döner)
     direction='bear': direnç FVG (fiyat altından geri döner)
+
+    NOT: FVG [i-2, i-1, i] üçlüsünden oluşur.
+      index       = T[i-1]  (orta mum zamanı)
+      detect_time = T[i]    (3. mum kapandıktan SONRA FVG görünür olur)
+    Lookahead'i önlemek için her zaman detect_time kullanılmalıdır.
     """
     H = df['High'].values.astype(float)
     L = df['Low'].values.astype(float)
@@ -130,25 +139,27 @@ def detect_fvg_raw(df, direction='bull', min_gap=0.50):
             gap = L[i] - H[i-2]
             if gap >= min_gap:
                 out.append({
-                    'index'    : T[i-1],
-                    'top'      : L[i],
-                    'bottom'   : H[i-2],
-                    'mid'      : (L[i] + H[i-2]) / 2,
-                    'direction': 'bull',
-                    'mitigated': False,
-                    'created_i': i - 1,   # df içindeki index pozisyonu
+                    'index'      : T[i-1],
+                    'detect_time': T[i],    # FVG yalnızca bu mum kapandıktan sonra kullanılabilir
+                    'top'        : L[i],
+                    'bottom'     : H[i-2],
+                    'mid'        : (L[i] + H[i-2]) / 2,
+                    'direction'  : 'bull',
+                    'mitigated'  : False,
+                    'created_i'  : i - 1,
                 })
         else:
             gap = L[i-2] - H[i]
             if gap >= min_gap:
                 out.append({
-                    'index'    : T[i-1],
-                    'top'      : L[i-2],
-                    'bottom'   : H[i],
-                    'mid'      : (L[i-2] + H[i]) / 2,
-                    'direction': 'bear',
-                    'mitigated': False,
-                    'created_i': i - 1,
+                    'index'      : T[i-1],
+                    'detect_time': T[i],
+                    'top'        : L[i-2],
+                    'bottom'     : H[i],
+                    'mid'        : (L[i-2] + H[i]) / 2,
+                    'direction'  : 'bear',
+                    'mitigated'  : False,
+                    'created_i'  : i - 1,
                 })
     return out
 
@@ -213,19 +224,19 @@ def get_active_fvgs(fvg_list, mit_map, current_time, max_age_hours=48):
     Belirli bir zamanda AKTIF (mitige edilmemiş, taze) FVG'leri döndür.
 
     Aktif FVG kriterleri:
-      1. FVG oluşum zamanı < current_time  (gelecek FVG değil)
-      2. FVG oluşum zamanı > current_time - max_age_hours  (çok eski değil)
+      1. detect_time < current_time  (3. mum kapandı → FVG görünür; LOOKAHEAD YOK)
+      2. detect_time > current_time - max_age_hours  (çok eski değil)
       3. mit_map'e göre bu zamana kadar mitige edilmemiş
     """
-    t          = to_naive(current_time)
-    cutoff     = t - timedelta(hours=max_age_hours)
-    active     = []
+    t      = to_naive(current_time)
+    cutoff = t - timedelta(hours=max_age_hours)
+    active = []
 
     for fvg in fvg_list:
-        fvg_t = to_naive(fvg['index'])
-        if fvg_t >= t:
-            continue           # gelecekte oluşmuş
-        if fvg_t < cutoff:
+        det_t = to_naive(fvg['detect_time'])
+        if det_t >= t:
+            continue           # 3. mum henüz kapanmadı → görünmez (lookahead engeli)
+        if det_t < cutoff:
             continue           # çok eski
 
         # Mitigasyon kontrolü
@@ -308,16 +319,20 @@ def has_active_fvg5_recent(fvg5_list, mit5_map, current_time,
                             window_secs=3600):
     """
     Son 60 dakikada MİTİGE EDİLMEMİŞ 5dk FVG var mı?
+
+    LOOKAHEAD DÜZELTMESİ:
+      detect_time < current_time kontrolü kullanılır.
+      FVG yalnızca 3. mumu kapandıktan SONRA görünür.
     """
     t      = to_naive(current_time)
     cutoff = t - timedelta(seconds=window_secs)
 
     for fvg in reversed(fvg5_list):
-        fvg_t = to_naive(fvg['index'])
-        if fvg_t >= t:
-            continue
-        if fvg_t < cutoff:
-            break              # reversed → daha eskisi yok
+        det_t = to_naive(fvg['detect_time'])
+        if det_t >= t:
+            continue           # 3. mum henüz kapanmadı → lookahead engeli
+        if det_t < cutoff:
+            break              # reversed → daha eskisi de pencere dışı
 
         # Mitigasyon kontrolü
         mit_time = mit5_map.get(id(fvg))
@@ -327,6 +342,48 @@ def has_active_fvg5_recent(fvg5_list, mit5_map, current_time,
         return True   # taze 5dk FVG bulundu
 
     return False
+
+
+def find_last_swing_low(L, idx, lookback=30, strength=2):
+    """
+    idx'ten önce onaylanmış en son swing low'u döndürür.
+
+    Swing low tanımı: L[j], her iki yanda 'strength' kadar komşusundan küçük.
+    Sağ taraf onayı için j + strength <= idx şartı (lookahead yok).
+    Bulunamazsa fallback: son lookback mumun minimum'u.
+    """
+    end   = idx - strength          # sağ tarafın tam onaylandığı son pozisyon
+    start = max(strength, idx - lookback)
+    for j in range(end, start - 1, -1):
+        if j - strength < 0:
+            continue
+        left_ok  = all(L[j] < L[j - k] for k in range(1, strength + 1))
+        right_ok = all(L[j] < L[j + k] for k in range(1, strength + 1))
+        if left_ok and right_ok:
+            return float(L[j])
+    # Fallback
+    return float(np.min(L[max(0, idx - lookback):idx + 1]))
+
+
+def find_last_swing_high(H, idx, lookback=30, strength=2):
+    """
+    idx'ten önce onaylanmış en son swing high'ı döndürür.
+
+    Swing high tanımı: H[j], her iki yanda 'strength' kadar komşusundan büyük.
+    Sağ taraf onayı için j + strength <= idx şartı (lookahead yok).
+    Bulunamazsa fallback: son lookback mumun maksimum'u.
+    """
+    end   = idx - strength
+    start = max(strength, idx - lookback)
+    for j in range(end, start - 1, -1):
+        if j - strength < 0:
+            continue
+        left_ok  = all(H[j] > H[j - k] for k in range(1, strength + 1))
+        right_ok = all(H[j] > H[j + k] for k in range(1, strength + 1))
+        if left_ok and right_ok:
+            return float(H[j])
+    # Fallback
+    return float(np.max(H[max(0, idx - lookback):idx + 1]))
 
 
 def rsi_divergence(prices, rsi_vals):
@@ -526,28 +583,38 @@ def run_backtest(df_1h, df_5m, backtest_start,
                 signal_source = 'RSI_Divergence'
 
             # 3b: Son 60dk'da MİTİGE EDİLMEMİŞ 5dk FVG
-            # [v7 KRİTİK DEĞİŞİKLİK]
+            # [v7 KRİTİK DEĞİŞİKLİK] + [v8: detect_time lookahead fix]
             if signal_source is None:
                 fvg5_raw = fvg5_bull_raw if direction == 'bull' else fvg5_bear_raw
                 mit5     = mit5_bull     if direction == 'bull' else mit5_bear
                 if has_active_fvg5_recent(fvg5_raw, mit5, t, window_secs=3600):
                     signal_source = 'FVG_5m'
 
+            # 3c: Fiyat hem EMA100 hem EMA200 üstünde mi? (bull)
+            #      Fiyat hem EMA100 hem EMA200 altında mı?  (bear)
+            # [v8: şema Step 4c]
+            if signal_source is None:
+                if direction == 'bull' and cur_close > e1 and cur_close > e2:
+                    signal_source = 'EMA_Onay'
+                elif direction == 'bear' and cur_close < e1 and cur_close < e2:
+                    signal_source = 'EMA_Onay'
+
             if signal_source is None:
                 continue
 
             # ── ADIM 4: GİRİŞ / SL / TP ───────────────
-            entry  = O[idx + 1]
-            sl_win = max(0, idx - 10)
+            entry = O[idx + 1]
 
             if direction == 'bull':
-                sl_  = float(np.min(L[sl_win:idx+1])) * 0.9995
+                # Son onaylanmış swing low (son 30 mum, strength=2)
+                sl_  = find_last_swing_low(L, idx, lookback=30, strength=2) * 0.9995
                 risk = abs(entry - sl_)
                 if risk < 0.50 or risk > 150:
                     dbg['risk_filtre'] += 1; continue
                 tp_ = entry + risk * 2.0
             else:
-                sl_  = float(np.max(H[sl_win:idx+1])) * 1.0005
+                # Son onaylanmış swing high (son 30 mum, strength=2)
+                sl_  = find_last_swing_high(H, idx, lookback=30, strength=2) * 1.0005
                 risk = abs(sl_ - entry)
                 if risk < 0.50 or risk > 150:
                     dbg['risk_filtre'] += 1; continue
@@ -666,7 +733,7 @@ def analyze_performance(trades_df, initial_capital=10_000):
 
     SEP = "=" * 60
     print(f"\n{SEP}")
-    print("  XAUUSD | 1:2 RR | Day Trade | 1 Aylık Backtest v7.0")
+    print("  XAUUSD | 1:2 RR | Day Trade | 1 Aylık Backtest v8.0")
     print(f"  Dönem  : {done['entry_time'].min().date()}  ->  "
           f"{done['entry_time'].max().date()}")
     print(SEP)
@@ -674,7 +741,7 @@ def analyze_performance(trades_df, initial_capital=10_000):
     print(f"    Toplam İşlem          : {total}")
     print(f"    Kazanç                : {wins:3d}  (%{wr:.1f})")
     print(f"    Kayıp                 : {losses:3d}  (%{100-wr:.1f})")
-    print(f"\n  KARLILIK  ($10,000 başlangıç | %1 risk/işlem)")
+    print(f"\n  KARLILIK  ($10,000 başlangıç | %0.5 risk/işlem)")
     print(f"    Net PnL               : ${net:>+9,.2f}")
     print(f"    Toplam Getiri         : %{ret:>+7.2f}")
     print(f"    Son Sermaye           : ${initial_capital+net:>9,.2f}")
@@ -738,7 +805,7 @@ def plot_results(done, initial_capital=10_000,
         dr  = (f"{done['entry_time'].min().date()} -> "
                f"{done['entry_time'].max().date()}")
         fig.suptitle(
-            f'XAUUSD  |  1:2 RR  |  Day Trade  |  Backtest v7.0  |  {dr}',
+            f'XAUUSD  |  1:2 RR  |  Day Trade  |  Backtest v8.0  |  {dr}',
             color=GD, fontsize=13, fontweight='bold', y=0.97)
         gs = gridspec.GridSpec(3, 3, figure=fig, hspace=0.48, wspace=0.32)
 
@@ -864,7 +931,7 @@ def save_csv(df, filename='xauusd_islem_logu.csv'):
 
 if __name__ == '__main__':
     CAPITAL = 10_000
-    RISK    = 0.01
+    RISK    = 0.005   # %0.5 risk/işlem
 
     df_1h, df_5m, bt_start = download_data()
     if df_5m.empty or df_1h.empty:
