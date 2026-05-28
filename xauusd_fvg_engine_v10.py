@@ -220,8 +220,8 @@ class DataEngine:
     def download(verbose: bool = True):
         end      = datetime.now()
         start_1h = end - timedelta(days=90)
-        start_5m = end - timedelta(days=90)   # 57→90: bias haftalarını kapsayacak ısınma
-        bt_start = end - timedelta(days=60)   # 30→60: 8 haftalık backtest penceresi
+        start_5m = end - timedelta(days=59)   # Yahoo 5M limiti: max 60 gün
+        bt_start = end - timedelta(days=55)   # 4 gün ısınma, W15'ten itibaren kapsar
 
         if verbose:
             print("═" * 65)
