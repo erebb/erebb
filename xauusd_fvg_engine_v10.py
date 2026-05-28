@@ -737,7 +737,8 @@ class MarketBrain:
                 continue
 
             # ── Güven Skoru (0-100) ───────────────────────────────────
-            session_q  = 1.0 if 8 <= hour <= 12 else 0.7
+            # Yüksek kalite saatler: London ana (8-12) + NY açılış (13-15)
+            session_q  = 1.0 if (8 <= hour <= 12) or (13 <= hour <= 15) else 0.7
             confidence = min(100.0,
                              30 * (touching_fvg.quality_score / 100.0) +
                              30 * best_msc.momentum_score +
