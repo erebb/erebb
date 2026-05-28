@@ -29,6 +29,7 @@ v10 YENİLİKLERİ:
      + adaptive strength (2-5) + skor bazlı en iyi swing seçimi
 """
 
+import os
 import json
 import pandas as pd
 import numpy as np
@@ -214,31 +215,50 @@ class WeeklyBiasProvider:
 class DataEngine:
     """Veri indirme, doğrulama ve hazırlama."""
 
-    TICKER = "GC=F"
+    TICKER  = "GC=F"
+    FILE_5M = "xauusd_5m.csv"
+    FILE_1H = "xauusd_1h.csv"
+    WARMUP_DAYS = 4   # backtest başlangıcı = 5M verinin ilk tarihi + WARMUP
+
+    @staticmethod
+    def _load_csv(filepath):
+        df = pd.read_csv(filepath, index_col=0, parse_dates=True)
+        df = flatten_columns(df)
+        df = normalize_index(df)
+        df.dropna(subset=['Close'], inplace=True)
+        return df
 
     @staticmethod
     def download(verbose: bool = True):
-        end      = datetime.now()
-        start_1h = end - timedelta(days=90)
-        start_5m = end - timedelta(days=59)   # Yahoo 5M limiti: max 60 gün
-        bt_start = end - timedelta(days=55)   # 4 gün ısınma, W15'ten itibaren kapsar
-
         if verbose:
             print("═" * 65)
-            print("  XAUUSD  │  FVG Strategy Engine  │  v9.0  │  Day Trade")
+            print("  XAUUSD  │  FVG Strategy Engine  │  v10.0 │  Day Trade")
             print("═" * 65)
-            print(f"\n  Veri indiriliyor... ({DataEngine.TICKER})")
 
-        def dl(interval, start):
-            df = yf.download(DataEngine.TICKER, start=start, end=end,
-                             interval=interval, progress=False, auto_adjust=True)
-            df = flatten_columns(df)
-            df = normalize_index(df)
-            df.dropna(subset=['Close'], inplace=True)
-            return df
+        use_csv = os.path.exists(DataEngine.FILE_5M) and os.path.exists(DataEngine.FILE_1H)
 
-        df_1h = dl("1h", start_1h)
-        df_5m = dl("5m", start_5m)
+        if use_csv:
+            if verbose:
+                print(f"\n  Yerel CSV bulundu → dosyadan yükleniyor")
+            df_1h = DataEngine._load_csv(DataEngine.FILE_1H)
+            df_5m = DataEngine._load_csv(DataEngine.FILE_5M)
+        else:
+            end      = datetime.now()
+            start_1h = end - timedelta(days=90)
+            start_5m = end - timedelta(days=59)   # Yahoo 5M limiti: max 60 gün
+            if verbose:
+                print(f"\n  CSV yok → yfinance indiriliyor... ({DataEngine.TICKER})")
+
+            def dl(interval, start):
+                df = yf.download(DataEngine.TICKER, start=start, end=end,
+                                 interval=interval, progress=False, auto_adjust=True)
+                df = flatten_columns(df)
+                df = normalize_index(df)
+                df.dropna(subset=['Close'], inplace=True)
+                return df
+
+            df_1h = dl("1h", start_1h)
+            df_5m = dl("5m", start_5m)
 
         for df, name in [(df_1h, "1H"), (df_5m, "5M")]:
             if df.empty:
@@ -247,12 +267,19 @@ class DataEngine:
                 if col not in df.columns:
                     raise ValueError(f"{name}: '{col}' sütunu eksik!")
 
+        # Backtest başlangıcı: 5M verinin başından WARMUP_DAYS sonrası
+        data_start = df_5m.index.min()
+        data_end   = df_5m.index.max()
+        bt_start   = to_naive(data_start) + timedelta(days=DataEngine.WARMUP_DAYS)
+
         if verbose:
             wm = len(df_5m[df_5m.index < bt_start])
             bt = len(df_5m[df_5m.index >= bt_start])
-            print(f"  1H : {len(df_1h)} mum  ({start_1h.date()} → {end.date()})")
+            src = "CSV" if use_csv else "yfinance"
+            print(f"  Kaynak: {src}")
+            print(f"  1H : {len(df_1h)} mum  ({to_naive(df_1h.index.min()).date()} → {to_naive(df_1h.index.max()).date()})")
             print(f"  5M : {len(df_5m)} mum  (ısınma:{wm}  backtest:{bt})")
-            print(f"  Backtest dönemi: {bt_start.date()} → {end.date()}\n")
+            print(f"  Backtest dönemi: {bt_start.date()} → {to_naive(data_end).date()}\n")
 
         return df_1h, df_5m, bt_start
 
@@ -579,6 +606,8 @@ class MarketBrain:
     def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None):
         self.bias = bias_provider
         self.last_skip_reason: Optional[str] = None
+        # Adım-bazlı teşhis: sinyalin hangi adımda öldüğünü sayar
+        self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
 
     def in_session(self, hour: int) -> bool:
         return any(s <= hour < e for s, e in self.SESSIONS)
@@ -661,6 +690,7 @@ class MarketBrain:
         t = to_naive(cur_time)
         best_signal: Optional[TradeSignal] = None
         best_conf = 0.0
+        stage = 0   # 0=1H FVG dokunuş yok, 1=dokundu MSC yok, 2=MSC var onay yok
 
         for direction in ('bull', 'bear'):
             # Bias varsa sadece bias yönünde işlem
@@ -676,6 +706,7 @@ class MarketBrain:
             touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
             if touching_fvg is None:
                 continue
+            stage = max(stage, 1)
 
             # ── ADIM 2: Son 60 dk'da beklenti yönünde 5M MSC var mı? ─
             ws      = max(0, idx - self.MSC_WINDOW)
@@ -701,6 +732,7 @@ class MarketBrain:
 
             if best_msc is None:
                 continue
+            stage = max(stage, 2)
 
             # ── ADIM 3: Onay ─────────────────────────────────────────
             conf_type    = None
@@ -758,6 +790,15 @@ class MarketBrain:
                     fvg5_quality      = fvg5_q,
                     ema_distance_pct  = ema_dist,
                 )
+
+        # Teşhis: bias+seans geçti ama sinyal çıkmadıysa hangi adımda öldü?
+        if best_signal is None:
+            if stage == 0:
+                self.stats['step1_fail'] += 1
+            elif stage == 1:
+                self.stats['step2_fail'] += 1
+            else:
+                self.stats['step3_fail'] += 1
 
         return best_signal
 
@@ -976,10 +1017,14 @@ class BacktestEngine:
             active.equity_after  = round(equity, 2)
             trades.append(active)
 
+        st = self.brain.stats
         print(f"  FİLTRE ÖZETİ:")
         print(f"    Bias filtresi      : {dbg['no_bias']:>6}")
         print(f"    Seans dışı         : {dbg['session']:>6}")
         print(f"    Sinyal yok         : {dbg['no_signal']:>6}")
+        print(f"      ├─ Adım1: 1H FVG dokunuş yok : {st['step1_fail']:>6}")
+        print(f"      ├─ Adım2: dokundu, MSC yok   : {st['step2_fail']:>6}")
+        print(f"      └─ Adım3: MSC var, onay yok  : {st['step3_fail']:>6}")
         print(f"    Risk filtresi      : {dbg['risk_fail']:>6}")
         print(f"    Üretilen sinyaller : {dbg['generated']:>6}")
         print(f"\n  TOPLAM İŞLEM: {len(trades)}")
