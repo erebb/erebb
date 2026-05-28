@@ -289,11 +289,7 @@ class DataEngine:
 # ═══════════════════════════════════════════════════════════════════════════
 
 class IndicatorEngine:
-    """Vektörize teknik göstergeler."""
-
-    @staticmethod
-    def ema(series: pd.Series, period: int) -> pd.Series:
-        return series.ewm(span=period, adjust=False).mean()
+    """RSI ve ATR — değişmeyen temel göstergeler."""
 
     @staticmethod
     def rsi(series: pd.Series, period: int = 14) -> pd.Series:
@@ -310,63 +306,87 @@ class IndicatorEngine:
         tr = pd.concat([h - l, (h - pc).abs(), (l - pc).abs()], axis=1).max(axis=1)
         return tr.ewm(span=period, adjust=False).mean()
 
+
+class EMAEngine:
+    """Çok-periyotlu EMA hesabı ve df'e ekleme."""
+
     @staticmethod
-    def msc_signals(df: pd.DataFrame, lookback: int = 10) -> pd.DataFrame:
-        """BOS / CHoCH tespiti — momentum ve body ratio ile zenginleştirilmiş."""
+    def compute(series: pd.Series, period: int) -> pd.Series:
+        return series.ewm(span=period, adjust=False).mean()
+
+    @staticmethod
+    def add(df: pd.DataFrame, *periods: int, col: str = 'Close') -> pd.DataFrame:
+        """Her periyot için df'e ema{period} kolonu ekler, df kopyası döner."""
         df = df.copy()
-        for col in ('msc_bull', 'msc_bear'):
-            df[col] = False
-        for col in ('msc_bull_mom', 'msc_bear_mom'):
-            df[col] = 0.0
-
-        H = df['High'].values.astype(float)
-        L = df['Low'].values.astype(float)
-        C = df['Close'].values.astype(float)
-        O = df['Open'].values.astype(float)
-
-        for i in range(lookback, len(df)):
-            wh  = float(np.max(H[i - lookback:i]))
-            wl  = float(np.min(L[i - lookback:i]))
-            rng = H[i] - L[i]
-
-            if C[i] > wh and C[i - 1] <= wh:
-                mom = min(1.0, (C[i] - wh) / (rng + 1e-10))
-                df.iloc[i, df.columns.get_loc('msc_bull')]     = True
-                df.iloc[i, df.columns.get_loc('msc_bull_mom')] = float(mom)
-
-            if C[i] < wl and C[i - 1] >= wl:
-                mom = min(1.0, (wl - C[i]) / (rng + 1e-10))
-                df.iloc[i, df.columns.get_loc('msc_bear')]     = True
-                df.iloc[i, df.columns.get_loc('msc_bear_mom')] = float(mom)
-
+        for p in periods:
+            df[f'ema{p}'] = df[col].ewm(span=p, adjust=False).mean()
         return df
 
-    @staticmethod
-    def swing_low(L: np.ndarray, idx: int, lookback: int = 30, strength: int = 2) -> float:
-        end   = idx - strength
-        start = max(strength, idx - lookback)
-        for j in range(end, start - 1, -1):
-            if j - strength < 0:
-                continue
-            if (all(L[j] < L[j - k] for k in range(1, strength + 1)) and
-                    all(L[j] < L[j + k] for k in range(1, strength + 1))):
-                return float(L[j])
-        return float(np.min(L[max(0, idx - lookback):idx + 1]))
+
+class SwingEngine:
+    """
+    Lookahead-safe fraktal pivot tespiti.
+
+    Bir pivot j'de ancak her iki tarafta `strength` bar görüldükten
+    sonra onaylanır; yani j+strength'inci bardan itibaren görünür hale
+    gelir. Bu, backtest sırasında ileriye dönük veri sızmasını engeller.
+
+    `compute()` → her bar için o ana kadar görünür en son onaylı
+    swing-high / swing-low fiyatlarını döndürür.
+
+    `best_swing_low/high()` → RiskManager için geriye dönük en anlamlı
+    pivot bulma (SL yerleştirme).
+    """
 
     @staticmethod
-    def swing_high(H: np.ndarray, idx: int, lookback: int = 30, strength: int = 2) -> float:
-        end   = idx - strength
-        start = max(strength, idx - lookback)
-        for j in range(end, start - 1, -1):
-            if j - strength < 0:
-                continue
-            if (all(H[j] > H[j - k] for k in range(1, strength + 1)) and
-                    all(H[j] > H[j + k] for k in range(1, strength + 1))):
-                return float(H[j])
-        return float(np.max(H[max(0, idx - lookback):idx + 1]))
+    def compute(
+        H: np.ndarray, L: np.ndarray, atr: np.ndarray,
+        strength: int = 2,
+        min_atr_mult: float = 0.3,
+    ) -> Tuple[np.ndarray, np.ndarray]:
+        """
+        Returns
+        -------
+        last_sh : ndarray — her bar için o ana kadar onaylı en son swing-high fiyatı
+        last_sl : ndarray — her bar için o ana kadar onaylı en son swing-low  fiyatı
+        """
+        n = len(H)
+        last_sh = np.full(n, np.nan)
+        last_sl = np.full(n, np.nan)
+        cur_sh  = np.nan
+        cur_sl  = np.nan
+
+        for i in range(n):
+            j = i - strength         # pivot adayı — sağı artık tam görünür
+            if j >= strength:
+                atr_j = max(float(atr[j]), 1e-6)
+
+                # Swing high kontrolü
+                is_sh = (all(H[j] > H[j - k] for k in range(1, strength + 1)) and
+                         all(H[j] > H[j + k] for k in range(1, strength + 1)))
+                if is_sh:
+                    ld = float(H[j]) - float(np.max(H[j - strength:j]))
+                    rd = float(H[j]) - float(np.max(H[j + 1:j + strength + 1]))
+                    if (ld + rd) / 2 >= min_atr_mult * atr_j:
+                        cur_sh = float(H[j])
+
+                # Swing low kontrolü
+                is_sl = (all(L[j] < L[j - k] for k in range(1, strength + 1)) and
+                         all(L[j] < L[j + k] for k in range(1, strength + 1)))
+                if is_sl:
+                    ld = float(np.min(L[j - strength:j])) - float(L[j])
+                    rd = float(np.min(L[j + 1:j + strength + 1])) - float(L[j])
+                    if (ld + rd) / 2 >= min_atr_mult * atr_j:
+                        cur_sl = float(L[j])
+
+            # Fallback: görünür pivot yoksa son 20 barın ekstrem değeri
+            last_sh[i] = cur_sh if not np.isnan(cur_sh) else float(np.max(H[max(0, i - 20):i + 1]))
+            last_sl[i] = cur_sl if not np.isnan(cur_sl) else float(np.min(L[max(0, i - 20):i + 1]))
+
+        return last_sh, last_sl
 
     @staticmethod
-    def significant_swing_low(
+    def best_swing_low(
         L: np.ndarray, H: np.ndarray, atr: np.ndarray,
         idx: int,
         lookback: int = 50,
@@ -374,7 +394,7 @@ class IndicatorEngine:
         max_strength: int = 5,
         min_atr_mult: float = 0.3,
     ) -> Tuple[float, float]:
-        """ATR-adaptive swing low. Returns (price, score). Higher score = more significant."""
+        """Geriye dönük en anlamlı swing-low (SL yerleştirme). (price, score)"""
         window_end   = idx - min_strength
         window_start = max(max_strength, idx - lookback)
         candidates: List[Tuple[float, float]] = []
@@ -385,21 +405,20 @@ class IndicatorEngine:
                 if not (all(L[j] < L[j - k] for k in range(1, s + 1)) and
                         all(L[j] < L[j + k] for k in range(1, s + 1))):
                     continue
-                atr_val = float(atr[j]) if float(atr[j]) > 0 else 1.0
-                left_depth  = float(np.min(L[j - s:j]))    - float(L[j])
-                right_depth = float(np.min(L[j + 1:j + s + 1])) - float(L[j])
-                swing_depth = (left_depth + right_depth) / 2.0
-                if swing_depth < min_atr_mult * atr_val:
+                atr_val = max(float(atr[j]), 1e-6)
+                ld = float(np.min(L[j - s:j]))        - float(L[j])
+                rd = float(np.min(L[j + 1:j + s + 1])) - float(L[j])
+                depth = (ld + rd) / 2.0
+                if depth < min_atr_mult * atr_val:
                     continue
-                score = s + swing_depth / atr_val
-                candidates.append((float(L[j]), score))
+                candidates.append((float(L[j]), s + depth / atr_val))
                 break
         if candidates:
             return max(candidates, key=lambda x: x[1])
         return float(np.min(L[max(0, idx - lookback):idx + 1])), 0.0
 
     @staticmethod
-    def significant_swing_high(
+    def best_swing_high(
         H: np.ndarray, L: np.ndarray, atr: np.ndarray,
         idx: int,
         lookback: int = 50,
@@ -407,7 +426,7 @@ class IndicatorEngine:
         max_strength: int = 5,
         min_atr_mult: float = 0.3,
     ) -> Tuple[float, float]:
-        """ATR-adaptive swing high. Returns (price, score). Higher score = more significant."""
+        """Geriye dönük en anlamlı swing-high (SL yerleştirme). (price, score)"""
         window_end   = idx - min_strength
         window_start = max(max_strength, idx - lookback)
         candidates: List[Tuple[float, float]] = []
@@ -418,18 +437,72 @@ class IndicatorEngine:
                 if not (all(H[j] > H[j - k] for k in range(1, s + 1)) and
                         all(H[j] > H[j + k] for k in range(1, s + 1))):
                     continue
-                atr_val = float(atr[j]) if float(atr[j]) > 0 else 1.0
-                left_depth  = float(H[j]) - float(np.max(H[j - s:j]))
-                right_depth = float(H[j]) - float(np.max(H[j + 1:j + s + 1]))
-                swing_depth = (left_depth + right_depth) / 2.0
-                if swing_depth < min_atr_mult * atr_val:
+                atr_val = max(float(atr[j]), 1e-6)
+                ld = float(H[j]) - float(np.max(H[j - s:j]))
+                rd = float(H[j]) - float(np.max(H[j + 1:j + s + 1]))
+                depth = (ld + rd) / 2.0
+                if depth < min_atr_mult * atr_val:
                     continue
-                score = s + swing_depth / atr_val
-                candidates.append((float(H[j]), score))
+                candidates.append((float(H[j]), s + depth / atr_val))
                 break
         if candidates:
             return max(candidates, key=lambda x: x[1])
         return float(np.max(H[max(0, idx - lookback):idx + 1])), 0.0
+
+
+class MSBEngine:
+    """
+    Market Structure Break (BOS / CHoCH) tespiti.
+
+    SwingEngine'in onaylı pivot dizilerini kullanır:
+      Bull BOS  → close, bir önceki barın son onaylı swing-high'ını yukarı kırar
+      Bear BOS  → close, bir önceki barın son onaylı swing-low'unu  aşağı kırar
+
+    Çıktı kolonları (BacktestEngine sözleşmesi değişmez):
+      msc_bull, msc_bear, msc_bull_mom, msc_bear_mom
+    """
+
+    @staticmethod
+    def compute(
+        df: pd.DataFrame,
+        atr_series: pd.Series,
+        strength: int = 2,
+        min_atr_mult: float = 0.3,
+    ) -> pd.DataFrame:
+        df   = df.copy()
+        H    = df['High'].values.astype(float)
+        L    = df['Low'].values.astype(float)
+        C    = df['Close'].values.astype(float)
+        atr  = atr_series.values.astype(float)
+        n    = len(df)
+
+        last_sh, last_sl = SwingEngine.compute(H, L, atr, strength, min_atr_mult)
+
+        msc_bull     = np.zeros(n, dtype=bool)
+        msc_bear     = np.zeros(n, dtype=bool)
+        msc_bull_mom = np.zeros(n, dtype=float)
+        msc_bear_mom = np.zeros(n, dtype=float)
+
+        for i in range(1, n):
+            atr_i = max(float(atr[i]), 1e-6)
+            sh    = last_sh[i - 1]   # bir önceki barda görünür son swing-high
+            sl    = last_sl[i - 1]   # bir önceki barda görünür son swing-low
+
+            # Bull BOS: close önceki swing-high'ı ilk kez yukarı kırdı
+            if C[i] > sh and C[i - 1] <= sh:
+                msc_bull[i]     = True
+                msc_bull_mom[i] = min(1.0, (C[i] - sh) / atr_i)
+
+            # Bear BOS: close önceki swing-low'u ilk kez aşağı kırdı
+            if C[i] < sl and C[i - 1] >= sl:
+                msc_bear[i]     = True
+                msc_bear_mom[i] = min(1.0, (sl - C[i]) / atr_i)
+
+        df['msc_bull']     = msc_bull
+        df['msc_bear']     = msc_bear
+        df['msc_bull_mom'] = msc_bull_mom
+        df['msc_bear_mom'] = msc_bear_mom
+        return df
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -522,9 +595,12 @@ class FVGEngine:
             mit_map[fvg.fvg_id] = None
             for j in range(start_i, n):
                 c = C[j]
-                if fvg.direction == 'bull' and c <= fvg.top:
+                # Mitigasyon = fiyat GAP'in KARŞI kenarından (distal) kapanırsa.
+                # Bull FVG: top=proksimal(giriş), bottom=distal(geçersizleşme)
+                # Bear FVG: bottom=proksimal(giriş), top=distal(geçersizleşme)
+                if fvg.direction == 'bull' and c <= fvg.bottom:
                     mit_map[fvg.fvg_id] = to_naive(T[j]); break
-                elif fvg.direction == 'bear' and c >= fvg.bottom:
+                elif fvg.direction == 'bear' and c >= fvg.top:
                     mit_map[fvg.fvg_id] = to_naive(T[j]); break
 
         return mit_map
@@ -827,13 +903,13 @@ class RiskManager:
                 equity: float) -> Optional[Dict]:
 
         if direction == 'bull':
-            swing, _ = IndicatorEngine.significant_swing_low(
+            swing, _ = SwingEngine.best_swing_low(
                 L, H, ATR, idx, lookback=50, min_strength=2, max_strength=5, min_atr_mult=0.3)
             sl   = swing * (1.0 - self.sl_buffer)
             risk = abs(entry - sl)
             tp   = entry + risk * self.rr
         else:
-            swing, _ = IndicatorEngine.significant_swing_high(
+            swing, _ = SwingEngine.best_swing_high(
                 H, L, ATR, idx, lookback=50, min_strength=2, max_strength=5, min_atr_mult=0.3)
             sl   = swing * (1.0 + self.sl_buffer)
             risk = abs(sl - entry)
@@ -880,11 +956,10 @@ class BacktestEngine:
 
         # 5M göstergeler
         df5 = df_5m.copy()
-        df5['ema100'] = IndicatorEngine.ema(df5['Close'], 100)
-        df5['ema200'] = IndicatorEngine.ema(df5['Close'], 200)
-        df5['rsi']    = IndicatorEngine.rsi(df5['Close'], 14)
-        df5['atr']    = IndicatorEngine.atr(df5, 14)
-        df5           = IndicatorEngine.msc_signals(df5, lookback=10)
+        df5 = EMAEngine.add(df5, 100, 200)
+        df5['rsi'] = IndicatorEngine.rsi(df5['Close'], 14)
+        df5['atr'] = IndicatorEngine.atr(df5, 14)
+        df5        = MSBEngine.compute(df5, df5['atr'])
 
         df1 = df_1h.copy()
         df1['atr'] = IndicatorEngine.atr(df1, 14)
