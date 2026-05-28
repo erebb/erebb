@@ -1,0 +1,2 @@
+trade_id,entry_time,exit_time,direction,confirmation,confidence,fvg1_quality,fvg1_gap_size,fvg1_gap_atr,msc_momentum,entry_price,sl,tp,risk_pts,risk_pct,risk_dollar,exit_price,result,pnl_dollar,equity_after,rr
+1,2026-04-29 09:15:00,2026-04-29 13:35:00,bear,EMA_CONFIRM,41.8000,51.9600,4.8000,0.2817,0.3064,4593.0000,4619.1100,4540.7800,26.1100,0.5684,50.0000,4540.7800,WIN,100.0000,10100.0000,2.0000
