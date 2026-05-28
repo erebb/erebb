@@ -363,7 +363,7 @@ class IndicatorEngine:
                 right_depth = float(np.min(L[j + 1:j + s + 1])) - float(L[j])
                 swing_depth = (left_depth + right_depth) / 2.0
                 if swing_depth < min_atr_mult * atr_val:
-                    break
+                    continue
                 score = s + swing_depth / atr_val
                 candidates.append((float(L[j]), score))
                 break
@@ -396,7 +396,7 @@ class IndicatorEngine:
                 right_depth = float(H[j]) - float(np.max(H[j + 1:j + s + 1]))
                 swing_depth = (left_depth + right_depth) / 2.0
                 if swing_depth < min_atr_mult * atr_val:
-                    break
+                    continue
                 score = s + swing_depth / atr_val
                 candidates.append((float(H[j]), score))
                 break
@@ -421,6 +421,11 @@ class FVGEngine:
         self.min_gap       = min_gap
         self.max_age_hours = max_age_hours
         self.buf_ratio     = buf_ratio
+        # Bar kapanış offseti: yfinance index'i bar AÇILIŞ zamanıdır.
+        # FVG yalnızca 3. mumun KAPANIŞINDAN sonra görünür olmalı.
+        _tf_map = {'1h': pd.Timedelta(hours=1), '5m': pd.Timedelta(minutes=5),
+                   '15m': pd.Timedelta(minutes=15), '1d': pd.Timedelta(days=1)}
+        self._detect_offset = _tf_map.get(timeframe, pd.Timedelta(minutes=5))
 
     def detect(self, df: pd.DataFrame, direction: str,
                atr_series: pd.Series = None) -> List[FVG]:
@@ -459,7 +464,7 @@ class FVGEngine:
                 timeframe     = self.timeframe,
                 direction     = direction,
                 index         = T[i - 1],
-                detect_time   = T[i],
+                detect_time   = T[i] + self._detect_offset,
                 top           = top,
                 bottom        = bottom,
                 mid           = mid,
@@ -480,9 +485,9 @@ class FVGEngine:
         mit_map: Dict[int, Optional[Any]] = {}
 
         for fvg in fvg_list:
-            fvg_time = to_naive(fvg.index)
+            fvg_time = to_naive(fvg.detect_time)
             start_i  = next((j for j in range(n)
-                             if to_naive(T[j]) > fvg_time), None)
+                             if to_naive(T[j]) >= fvg_time), None)
             if start_i is None:
                 mit_map[fvg.fvg_id] = None
                 continue
@@ -569,7 +574,7 @@ class MarketBrain:
     RSI_WINDOW  = 10    # mum sayısı (5M → ~50 dk)
     MSC_WINDOW  = 12    # mum sayısı (5M → ~60 dk)
     FVG5_WIN    = 3600  # saniye (60 dk)
-    SESSIONS    = [(7, 12), (13, 17)]
+    SESSIONS    = [(7, 13), (13, 17)]   # London 07-13 (overlap dahil), NY 13-17 UTC
 
     def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None):
         self.bias = bias_provider
