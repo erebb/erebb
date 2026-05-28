@@ -1,8 +1,9 @@
 {
-  "_açıklama": "Week 1 baslangici pazartesi 5 ocak 2026 ISO hafta numarası formatı: YYYY-W## (örn: 2025-W21). Değer: bull | bear | none",
+  "_açıklama": "ISO hafta numarası formatı: YYYY-W## (Python ISO 8601). W1 2026 = 29 Aralık 2025'te başlar. Değer: bull | bear | none",
   "_kullanım": "Her Pazar/Pazartesi sabahı bu dosyayı açın, mevcut haftayı girin ve kaydedin.",
-  "2026-W14": "bear",
+  "_hafta_referansi": "6-12 Nis=W15, 13-19 Nis=W16, 20-26 Nis=W17, 27Nis-3May=W18, 4-10May=W19, 11-17May=W20, 18-24May=W21, 25-31May=W22",
   "2026-W15": "bear",
   "2026-W16": "bear",
-  "2026-W17": "bull"
+  "2026-W17": "bear",
+  "2026-W18": "bull"
 }
