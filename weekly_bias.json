@@ -1,0 +1,7 @@
+{
+  "_açıklama": "ISO hafta numarası formatı: YYYY-W## (örn: 2025-W21). Değer: bull | bear | none",
+  "_kullanım": "Her Pazar/Pazartesi sabahı bu dosyayı açın, mevcut haftayı girin ve kaydedin.",
+  "2026-W22": "bull",
+  "2026-W23": "bear",
+  "2026-W24": "bull"
+}
