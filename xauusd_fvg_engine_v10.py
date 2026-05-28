@@ -595,13 +595,15 @@ class FVGEngine:
             mit_map[fvg.fvg_id] = None
             for j in range(start_i, n):
                 c = C[j]
-                # Mitigasyon = fiyat GAP'in KARŞI kenarından (distal) kapanırsa.
-                # Bull FVG: top=proksimal(giriş), bottom=distal(geçersizleşme)
-                # Bear FVG: bottom=proksimal(giriş), top=distal(geçersizleşme)
-                if fvg.direction == 'bull' and c <= fvg.bottom:
-                    mit_map[fvg.fvg_id] = to_naive(T[j]); break
-                elif fvg.direction == 'bear' and c >= fvg.top:
-                    mit_map[fvg.fvg_id] = to_naive(T[j]); break
+                # KULLANIM KURALI: bir mum FVG'nin İÇİNE (proksimal kenardan)
+                # kapanırsa FVG tüketilir → artık işlem alınmaz.
+                #   Bull: proksimal=top  → close <= top   (gap'e girdi/aştı)
+                #   Bear: proksimal=bottom → close >= bottom
+                # Tüketim zamanı = mumun KAPANIŞ anı (lookahead engeli).
+                consumed = (c <= fvg.top) if fvg.direction == 'bull' else (c >= fvg.bottom)
+                if consumed:
+                    mit_map[fvg.fvg_id] = to_naive(T[j]) + self._detect_offset
+                    break
 
         return mit_map
 
@@ -684,6 +686,8 @@ class MarketBrain:
         self.last_skip_reason: Optional[str] = None
         # Adım-bazlı teşhis: sinyalin hangi adımda öldüğünü sayar
         self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
+        # KULLANIM KURALI: her 1H FVG yalnızca bir kez işlem açabilir
+        self.used_fvg_ids: set = set()
 
     def in_session(self, hour: int) -> bool:
         return any(s <= hour < e for s, e in self.SESSIONS)
@@ -779,6 +783,8 @@ class MarketBrain:
 
             # ── ADIM 1: Fiyat aktif 1H FVG'de mi? ───────────────────
             active_1h    = fvg1_eng.get_active(fvg1_raw, mit1, t)
+            # Kullanım kuralı: zaten işlem açılmış FVG'leri ele
+            active_1h    = [f for f in active_1h if f.fvg_id not in self.used_fvg_ids]
             touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
             if touching_fvg is None:
                 continue
@@ -1083,6 +1089,8 @@ class BacktestEngine:
                 rr          = self.risk.rr,
             )
             in_trade = True
+            # Kullanım kuralı: bu 1H FVG'yi tüket — bir daha işlem açmasın
+            self.brain.used_fvg_ids.add(signal.trigger_fvg.fvg_id)
 
         # Dönem sonu açık işlem
         if in_trade and active is not None:
