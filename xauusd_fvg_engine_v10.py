@@ -75,6 +75,19 @@ class FVG:
 
 
 @dataclass
+class BreakerBlock:
+    """1H MSB olayından türeyen breaker block (order block kırılımı)."""
+    block_id      : int
+    direction     : str   # 'bull' → kırılan swing-high, geri çekilmede LONG; 'bear' → kırılan swing-low, geri çekilmede SHORT
+    break_time    : Any   # MSB mumunun zamanı (index open time)
+    detect_time   : Any   # görünür olduğu an = MSB mumu kapandıktan sonra
+    high          : float # MSB mumunun yüksek değeri
+    low           : float # MSB mumunun düşük değeri
+    swing_level   : float # kırılan swing seviyesi
+    quality_score : float # 0–100
+
+
+@dataclass
 class MSCSignal:
     """Market Structure Change (BOS / CHoCH) kaydı."""
     time           : Any
@@ -91,10 +104,11 @@ class TradeSignal:
     """Tam onaylı trade sinyali."""
     entry_time        : Any
     direction         : str
-    trigger_fvg       : FVG
+    trigger_fvg       : Optional[FVG]           # 1H FVG tetikleyici (ya da None)
     msc_signal        : MSCSignal
     confirmation_type : str       # 'RSI_DIV' | 'FVG_5M' | 'EMA_CONFIRM'
     confidence        : float     # 0–100
+    trigger_bb        : Optional['BreakerBlock'] = None  # Breaker Block tetikleyici
     rsi_div_type      : Optional[str] = None
     fvg5_quality      : float = 0.0
     ema_distance_pct  : float = 0.0
@@ -289,14 +303,7 @@ class DataEngine:
 # ═══════════════════════════════════════════════════════════════════════════
 
 class IndicatorEngine:
-    """RSI ve ATR — değişmeyen temel göstergeler."""
-
-    @staticmethod
-    def rsi(series: pd.Series, period: int = 14) -> pd.Series:
-        d  = series.diff()
-        ag = d.clip(lower=0).ewm(com=period - 1, min_periods=period).mean()
-        al = (-d.clip(upper=0)).ewm(com=period - 1, min_periods=period).mean()
-        return 100 - 100 / (1 + ag / (al + 1e-10))
+    """ATR — değişmeyen temel gösterge. (RSI için bkz. RSIEngine)"""
 
     @staticmethod
     def atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
@@ -305,6 +312,79 @@ class IndicatorEngine:
         pc = df['Close'].shift(1)
         tr = pd.concat([h - l, (h - pc).abs(), (l - pc).abs()], axis=1).max(axis=1)
         return tr.ewm(span=period, adjust=False).mean()
+
+
+class RSIEngine:
+    """
+    Profesyonel RSI motoru: Wilder yumuşatması + pivot-tabanlı
+    regular diverjans tespiti.
+
+    Diverjans, gerçek fraktal pivotlar üzerinden hesaplanır (kaba
+    yarı-pencere karşılaştırması değil):
+      Regular BULL : fiyat daha düşük dip (LL) yaparken RSI daha yüksek dip (HL)
+      Regular BEAR : fiyat daha yüksek tepe (HH) yaparken RSI daha düşük tepe (LH)
+    """
+
+    @staticmethod
+    def wilder(series: pd.Series, period: int = 14) -> pd.Series:
+        """Wilder RSI (EWM com=period-1 ile birebir Wilder yumuşatması)."""
+        d  = series.diff()
+        ag = d.clip(lower=0).ewm(com=period - 1, min_periods=period).mean()
+        al = (-d.clip(upper=0)).ewm(com=period - 1, min_periods=period).mean()
+        return 100 - 100 / (1 + ag / (al + 1e-10))
+
+    @staticmethod
+    def _pivots_low(a: np.ndarray, strength: int = 2) -> List[int]:
+        """Fraktal dip indeksleri (lookahead-safe değil — kapalı pencere içinde çağrılır)."""
+        idxs = []
+        for j in range(strength, len(a) - strength):
+            if (all(a[j] < a[j - k] for k in range(1, strength + 1)) and
+                    all(a[j] <= a[j + k] for k in range(1, strength + 1))):
+                idxs.append(j)
+        return idxs
+
+    @staticmethod
+    def _pivots_high(a: np.ndarray, strength: int = 2) -> List[int]:
+        idxs = []
+        for j in range(strength, len(a) - strength):
+            if (all(a[j] > a[j - k] for k in range(1, strength + 1)) and
+                    all(a[j] >= a[j + k] for k in range(1, strength + 1))):
+                idxs.append(j)
+        return idxs
+
+    @staticmethod
+    def divergence(prices: np.ndarray, rsi_vals: np.ndarray,
+                   strength: int = 2) -> Tuple[Optional[str], float]:
+        """
+        Son iki onaylı pivot üzerinden regular diverjans. (tip, güç 0-1).
+        Pencere zaten geçmiş veridir; çağıran taraf lookahead'i yönetir.
+        """
+        p = np.asarray(prices, dtype=float)
+        r = np.asarray(rsi_vals, dtype=float)
+        if len(p) < 2 * strength + 3 or np.any(np.isnan(r)):
+            return None, 0.0
+
+        # BULL: fiyat dipleri
+        lows = RSIEngine._pivots_low(p, strength)
+        if len(lows) >= 2:
+            i1, i2 = lows[-2], lows[-1]
+            if p[i2] < p[i1] and r[i2] > r[i1]:
+                price_drop = (p[i1] - p[i2]) / (abs(p[i1]) + 1e-10)
+                rsi_lift   = (r[i2] - r[i1]) / 100.0
+                strg = min(1.0, (price_drop * 30 + rsi_lift) )
+                return 'bull', float(max(0.05, strg))
+
+        # BEAR: fiyat tepeleri
+        highs = RSIEngine._pivots_high(p, strength)
+        if len(highs) >= 2:
+            i1, i2 = highs[-2], highs[-1]
+            if p[i2] > p[i1] and r[i2] < r[i1]:
+                price_rise = (p[i2] - p[i1]) / (abs(p[i1]) + 1e-10)
+                rsi_drop   = (r[i1] - r[i2]) / 100.0
+                strg = min(1.0, (price_rise * 30 + rsi_drop))
+                return 'bear', float(max(0.05, strg))
+
+        return None, 0.0
 
 
 class EMAEngine:
@@ -506,6 +586,156 @@ class MSBEngine:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# BÖLÜM 3b: BREAKER BLOCK ENGİNİ
+# ═══════════════════════════════════════════════════════════════════════════
+
+_bb_id_counter = 0
+
+def _next_bb_id() -> int:
+    global _bb_id_counter
+    _bb_id_counter += 1
+    return _bb_id_counter
+
+
+class BreakerEngine:
+    """
+    1H MSB (Market Structure Break) olaylarından breaker block tespiti.
+
+    Kural:
+      • Bull breaker: 1H close, önceki onaylı swing-high'ı YUKARI kırarsa
+        → o mumun H/L aralığı = bullish breaker block
+        → fiyat aşağı çekilip bloğa girerse: LONG entry (kırılım yönünde devam)
+      • Bear breaker: 1H close, önceki onaylı swing-low'u AŞAĞI kırarsa
+        → o mumun H/L aralığı = bearish breaker block
+        → fiyat yukarı çekilip bloğa girerse: SHORT entry
+
+    Tespit: MUM KAPANIS bazlı (wick değil).
+    Tüketim: bloğun karşı kenarından (mum kapanışıyla) geçilirse geçersiz.
+    """
+
+    def __init__(self, max_age_hours: float = 72, buf_ratio: float = 0.05):
+        self.max_age_hours = max_age_hours
+        self.buf_ratio     = buf_ratio
+        self._detect_offset = timedelta(hours=1)
+
+    def detect(self, df: pd.DataFrame, direction: str,
+               atr_series: pd.Series, strength: int = 2) -> List[BreakerBlock]:
+        """
+        df: 1H DataFrame. direction: 'bull' | 'bear'.
+        SwingEngine kullanarak close-bazlı MSB tespiti yapar.
+        """
+        H   = df['High'].values.astype(float)
+        L   = df['Low'].values.astype(float)
+        C   = df['Close'].values.astype(float)
+        O   = df['Open'].values.astype(float)
+        T   = df.index
+        atr = atr_series.values.astype(float)
+        n   = len(df)
+
+        last_sh, last_sl = SwingEngine.compute(H, L, atr, strength=strength)
+
+        blocks: List[BreakerBlock] = []
+        for i in range(1, n):
+            atr_i = max(float(atr[i]), 1e-6)
+            if direction == 'bull':
+                sh = last_sh[i - 1]
+                if np.isnan(sh):
+                    continue
+                # Bull BOS: close kırıyor, bir önceki bar kırmamış
+                if C[i] > sh and C[i - 1] <= sh:
+                    body   = abs(C[i] - O[i]) / (H[i] - L[i] + 1e-10)
+                    brk    = (C[i] - sh) / atr_i
+                    qual   = min(100.0, 40 * min(1.0, brk) + 40 * body + 20 * min(1.0, (H[i]-L[i])/atr_i))
+                    blocks.append(BreakerBlock(
+                        block_id      = _next_bb_id(),
+                        direction     = 'bull',
+                        break_time    = T[i],
+                        detect_time   = T[i] + self._detect_offset,
+                        high          = float(H[i]),
+                        low           = float(L[i]),
+                        swing_level   = float(sh),
+                        quality_score = qual,
+                    ))
+            else:
+                sl = last_sl[i - 1]
+                if np.isnan(sl):
+                    continue
+                # Bear BOS: close kırıyor, bir önceki bar kırmamış
+                if C[i] < sl and C[i - 1] >= sl:
+                    body   = abs(C[i] - O[i]) / (H[i] - L[i] + 1e-10)
+                    brk    = (sl - C[i]) / atr_i
+                    qual   = min(100.0, 40 * min(1.0, brk) + 40 * body + 20 * min(1.0, (H[i]-L[i])/atr_i))
+                    blocks.append(BreakerBlock(
+                        block_id      = _next_bb_id(),
+                        direction     = 'bear',
+                        break_time    = T[i],
+                        detect_time   = T[i] + self._detect_offset,
+                        high          = float(H[i]),
+                        low           = float(L[i]),
+                        swing_level   = float(sl),
+                        quality_score = qual,
+                    ))
+        return blocks
+
+    def build_mitigation_map(self, df: pd.DataFrame,
+                              bb_list: List[BreakerBlock]) -> Dict[int, Optional[Any]]:
+        """
+        Bloğun geçersiz olduğu anı ön-hesapla.
+          Bull breaker: close < bb.low  → blok tutmadı, geçersiz
+          Bear breaker: close > bb.high → blok tutmadı, geçersiz
+        """
+        C = df['Close'].values.astype(float)
+        T = df.index
+        n = len(df)
+        mit_map: Dict[int, Optional[Any]] = {}
+        for bb in bb_list:
+            det     = to_naive(bb.detect_time)
+            start_i = next((j for j in range(n) if to_naive(T[j]) >= det), None)
+            mit_map[bb.block_id] = None
+            if start_i is None:
+                continue
+            for j in range(start_i, n):
+                c = C[j]
+                # Close-bazlı geçersizleştirme
+                invalid = (c < bb.low) if bb.direction == 'bull' else (c > bb.high)
+                if invalid:
+                    mit_map[bb.block_id] = to_naive(T[j]) + self._detect_offset
+                    break
+        return mit_map
+
+    def get_active(self, bb_list: List[BreakerBlock],
+                   mit_map: Dict[int, Optional[Any]],
+                   current_time: Any) -> List[BreakerBlock]:
+        t      = to_naive(current_time)
+        cutoff = t - timedelta(hours=self.max_age_hours)
+        active = []
+        for bb in bb_list:
+            det = to_naive(bb.detect_time)
+            if det >= t:
+                continue
+            if det < cutoff:
+                continue
+            mit = mit_map.get(bb.block_id)
+            if mit is not None and mit <= t:
+                continue
+            active.append(bb)
+        return active
+
+    def price_touching(self, price: float,
+                       active: List[BreakerBlock]) -> Optional[BreakerBlock]:
+        """Fiyat aktif bir breaker block içinde mi? En kalitelisini döndür."""
+        best: Optional[BreakerBlock] = None
+        best_q = -1.0
+        for bb in reversed(active):
+            span = bb.high - bb.low
+            buf  = span * self.buf_ratio
+            if (bb.low - buf) <= price <= (bb.high + buf):
+                if bb.quality_score > best_q:
+                    best, best_q = bb, bb.quality_score
+        return best
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 4: FVG ENGİNİ
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -642,10 +872,19 @@ class FVGEngine:
     def has_recent_active(self, fvg_list: List[FVG],
                           mit_map: Dict[int, Optional[Any]],
                           current_time: Any,
-                          window_secs: int = 3600) -> Tuple[bool, float]:
-        """Son N saniyede mitigasyon yaşamamış FVG var mı? (bool, kalite)"""
+                          window_secs: int = 3600,
+                          since_time: Optional[Any] = None) -> Tuple[bool, float]:
+        """
+        Şemaya göre: MSC SIRASINDA/SONRASINDA oluşmuş, henüz tüketilmemiş
+        bir 5M FVG var mı? (bool, kalite)
+
+        since_time verilirse o andan (MSC zamanı) bu yana oluşan FVG'ler
+        sayılır; verilmezse son `window_secs` saniyeye bakılır.
+        fvg_list zaten yön-bazlı (bull/bear) geldiği için yön uyumu sağlanır.
+        """
         t      = to_naive(current_time)
-        cutoff = t - timedelta(seconds=window_secs)
+        cutoff = (to_naive(since_time) if since_time is not None
+                  else t - timedelta(seconds=window_secs))
         best_q = 0.0
         found  = False
         for fvg in reversed(fvg_list):
@@ -676,9 +915,9 @@ class MarketBrain:
     Yalnızca London open (07-12 UTC) ve NY open (13-17 UTC) seansları.
     """
 
-    RSI_WINDOW  = 10    # mum sayısı (5M → ~50 dk)
+    RSI_WINDOW  = 30    # mum sayısı (5M → ~150 dk) — iki pivot sığsın
     MSC_WINDOW  = 12    # mum sayısı (5M → ~60 dk)
-    FVG5_WIN    = 3600  # saniye (60 dk)
+    FVG5_WIN    = 3600  # saniye (60 dk) — since_time yoksa fallback
     SESSIONS    = [(7, 13), (13, 17)]   # London 07-13 (overlap dahil), NY 13-17 UTC
 
     def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None):
@@ -686,39 +925,18 @@ class MarketBrain:
         self.last_skip_reason: Optional[str] = None
         # Adım-bazlı teşhis: sinyalin hangi adımda öldüğünü sayar
         self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
-        # KULLANIM KURALI: her 1H FVG yalnızca bir kez işlem açabilir
+        # KULLANIM KURALI: her 1H FVG / BreakerBlock yalnızca bir kez işlem açabilir
         self.used_fvg_ids: set = set()
+        self.used_bb_ids: set  = set()
 
     def in_session(self, hour: int) -> bool:
         return any(s <= hour < e for s, e in self.SESSIONS)
 
-    # ── RSI Diverjansı ──────────────────────────────────────────────────
+    # ── RSI Diverjansı (RSIEngine'e delege) ──────────────────────────────
     def rsi_divergence(self, prices: np.ndarray,
                        rsi_vals: np.ndarray) -> Tuple[Optional[str], float]:
-        """
-        Regular bull: fiyat düşük dip → RSI yüksek dip → yukarı dönüş
-        Regular bear: fiyat yüksek tepe → RSI düşük tepe → aşağı dönüş
-        Döndürür: (tip, güç 0-1)
-        """
-        if len(prices) < 4 or np.any(np.isnan(rsi_vals)):
-            return None, 0.0
-        p    = prices.astype(float)
-        r    = rsi_vals.astype(float)
-        half = max(2, len(p) // 2)
-        il   = int(np.argmin(p[:half]))
-        ih   = int(np.argmax(p[:half]))
-
-        if p[-1] < p[il] and r[-1] > r[il]:
-            strength = min(1.0, ((p[il] - p[-1]) / (abs(p[il]) + 1e-10) +
-                                 (r[-1] - r[il]) / (abs(r[il]) + 1e-10)) * 2.5)
-            return 'bull', float(strength)
-
-        if p[-1] > p[ih] and r[-1] < r[ih]:
-            strength = min(1.0, ((p[-1] - p[ih]) / (abs(p[ih]) + 1e-10) +
-                                 (r[ih] - r[-1]) / (abs(r[ih]) + 1e-10)) * 2.5)
-            return 'bear', float(strength)
-
-        return None, 0.0
+        """Pivot-tabanlı regular diverjans — bkz. RSIEngine.divergence."""
+        return RSIEngine.divergence(prices, rsi_vals, strength=2)
 
     # ── EMA Onayı ───────────────────────────────────────────────────────
     def ema_confirm(self, close: float, e100: float, e200: float,
@@ -748,7 +966,12 @@ class MarketBrain:
                  fvg5_bull: List[FVG], mit5_bull: Dict,
                  fvg5_bear: List[FVG], mit5_bear: Dict,
                  fvg1_eng: 'FVGEngine',
-                 fvg5_eng: 'FVGEngine') -> Optional[TradeSignal]:
+                 fvg5_eng: 'FVGEngine',
+                 bb1_bull: List[BreakerBlock] = None,
+                 mit_bb1_bull: Dict = None,
+                 bb1_bear: List[BreakerBlock] = None,
+                 mit_bb1_bear: Dict = None,
+                 bb1_eng: 'BreakerEngine' = None) -> Optional[TradeSignal]:
 
         cur_time  = TM[idx]
         cur_close = float(C[idx])
@@ -781,14 +1004,26 @@ class MarketBrain:
             fvg5_raw = fvg5_bull if direction == 'bull' else fvg5_bear
             mit5     = mit5_bull if direction == 'bull' else mit5_bear
 
-            # ── ADIM 1: Fiyat aktif 1H FVG'de mi? ───────────────────
+            # ── ADIM 1: Fiyat aktif 1H FVG VEYA Breaker Block'ta mı? ─
             active_1h    = fvg1_eng.get_active(fvg1_raw, mit1, t)
-            # Kullanım kuralı: zaten işlem açılmış FVG'leri ele
             active_1h    = [f for f in active_1h if f.fvg_id not in self.used_fvg_ids]
             touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
-            if touching_fvg is None:
+
+            touching_bb: Optional[BreakerBlock] = None
+            if touching_fvg is None and bb1_eng is not None:
+                bb_raw = bb1_bull if direction == 'bull' else bb1_bear
+                mit_bb = mit_bb1_bull if direction == 'bull' else mit_bb1_bear
+                if bb_raw is not None and mit_bb is not None:
+                    active_bb  = bb1_eng.get_active(bb_raw, mit_bb, t)
+                    active_bb  = [b for b in active_bb if b.block_id not in self.used_bb_ids]
+                    touching_bb = bb1_eng.price_touching(cur_close, active_bb)
+
+            if touching_fvg is None and touching_bb is None:
                 continue
             stage = max(stage, 1)
+            # Tetikleyici kalite skoru (güven hesabı için)
+            zone_quality = (touching_fvg.quality_score if touching_fvg is not None
+                            else touching_bb.quality_score)
 
             # ── ADIM 2: Son 60 dk'da beklenti yönünde 5M MSC var mı? ─
             ws      = max(0, idx - self.MSC_WINDOW)
@@ -816,45 +1051,41 @@ class MarketBrain:
                 continue
             stage = max(stage, 2)
 
-            # ── ADIM 3: Onay ─────────────────────────────────────────
+            # ── ADIM 3: Onay — ŞEMA SIRASI: RSI → 5M FVG → EMA ──────
+            # Cascade: ilk "Evet" işlemi açar (biri yeterli).
             conf_type    = None
             conf_val     = 0.0
             rsi_div_type = None
             fvg5_q       = 0.0
             ema_dist     = 0.0
 
-            # 3a: RSI Diverjansı
+            # 3a: RSI'da beklenti yönünde uyumsuzluk (pivot-tabanlı, 5dk)
             sl_ = max(0, idx - self.RSI_WINDOW)
             div_type, div_str = self.rsi_divergence(C[sl_:idx+1], RSI[sl_:idx+1])
-            if direction == 'bull' and div_type == 'bull':
-                conf_type, conf_val, rsi_div_type = 'RSI_DIV', div_str, div_type
-            elif direction == 'bear' and div_type == 'bear':
+            if div_type == direction:
                 conf_type, conf_val, rsi_div_type = 'RSI_DIV', div_str, div_type
 
-            # 3b: Son 60 dk'da aktif 5M FVG
+            # 3b: MSC SIRASINDA/SONRASINDA oluşan 5M FVG (5dk)
             if conf_type is None:
                 has5, q5 = fvg5_eng.has_recent_active(
-                    fvg5_raw, mit5, t, window_secs=self.FVG5_WIN)
+                    fvg5_raw, mit5, t, since_time=best_msc.time)
                 if has5:
                     conf_type, conf_val, fvg5_q = 'FVG_5M', q5 / 100.0, q5
 
-            # 3c: EMA100 + EMA200 onayı
+            # 3c: Fiyat kapanışı hem EMA100 hem EMA200 üstünde/altında (5dk)
             if conf_type is None:
                 ema_ok, ema_d = self.ema_confirm(
                     cur_close, float(E100[idx]), float(E200[idx]), direction)
                 if ema_ok:
-                    conf_type    = 'EMA_CONFIRM'
-                    conf_val     = min(1.0, ema_d / 0.5)
-                    ema_dist     = ema_d
+                    conf_type, conf_val, ema_dist = 'EMA_CONFIRM', min(1.0, ema_d / 0.5), ema_d
 
             if conf_type is None:
                 continue
 
             # ── Güven Skoru (0-100) ───────────────────────────────────
-            # Yüksek kalite saatler: London ana (8-12) + NY açılış (13-15)
             session_q  = 1.0 if (8 <= hour <= 12) or (13 <= hour <= 15) else 0.7
             confidence = min(100.0,
-                             30 * (touching_fvg.quality_score / 100.0) +
+                             30 * (zone_quality / 100.0) +
                              30 * best_msc.momentum_score +
                              30 * conf_val +
                              10 * session_q)
@@ -865,6 +1096,7 @@ class MarketBrain:
                     entry_time        = cur_time,
                     direction         = direction,
                     trigger_fvg       = touching_fvg,
+                    trigger_bb        = touching_bb,
                     msc_signal        = best_msc,
                     confirmation_type = conf_type,
                     confidence        = confidence,
@@ -963,7 +1195,7 @@ class BacktestEngine:
         # 5M göstergeler
         df5 = df_5m.copy()
         df5 = EMAEngine.add(df5, 100, 200)
-        df5['rsi'] = IndicatorEngine.rsi(df5['Close'], 14)
+        df5['rsi'] = RSIEngine.wilder(df5['Close'], 14)
         df5['atr'] = IndicatorEngine.atr(df5, 14)
         df5        = MSBEngine.compute(df5, df5['atr'])
 
@@ -987,6 +1219,15 @@ class BacktestEngine:
         mit5_bull = fvg5_eng.build_mitigation_map(df5, fvg5_bull)
         mit5_bear = fvg5_eng.build_mitigation_map(df5, fvg5_bear)
         print(f"Bull:{len(fvg5_bull)}  Bear:{len(fvg5_bear)}")
+
+        # 1H Breaker Block motoru
+        bb1_eng  = BreakerEngine(max_age_hours=72, buf_ratio=0.05)
+        print("  1H BreakerBlock...", end=' ')
+        bb1_bull     = bb1_eng.detect(df1, 'bull', df1['atr'])
+        bb1_bear     = bb1_eng.detect(df1, 'bear', df1['atr'])
+        mit_bb1_bull = bb1_eng.build_mitigation_map(df1, bb1_bull)
+        mit_bb1_bear = bb1_eng.build_mitigation_map(df1, bb1_bear)
+        print(f"Bull:{len(bb1_bull)}  Bear:{len(bb1_bear)}")
 
         # Array'ler
         C    = df5['Close'].values.astype(float)
@@ -1054,6 +1295,9 @@ class BacktestEngine:
                 fvg5_bull=fvg5_bull, mit5_bull=mit5_bull,
                 fvg5_bear=fvg5_bear, mit5_bear=mit5_bear,
                 fvg1_eng=fvg1_eng, fvg5_eng=fvg5_eng,
+                bb1_bull=bb1_bull, mit_bb1_bull=mit_bb1_bull,
+                bb1_bear=bb1_bear, mit_bb1_bear=mit_bb1_bear,
+                bb1_eng=bb1_eng,
             )
 
             if signal is None:
@@ -1089,8 +1333,11 @@ class BacktestEngine:
                 rr          = self.risk.rr,
             )
             in_trade = True
-            # Kullanım kuralı: bu 1H FVG'yi tüket — bir daha işlem açmasın
-            self.brain.used_fvg_ids.add(signal.trigger_fvg.fvg_id)
+            # Kullanım kuralı: tetikleyici bölgeyi tüket (FVG veya BreakerBlock)
+            if signal.trigger_fvg is not None:
+                self.brain.used_fvg_ids.add(signal.trigger_fvg.fvg_id)
+            if signal.trigger_bb is not None:
+                self.brain.used_bb_ids.add(signal.trigger_bb.block_id)
 
         # Dönem sonu açık işlem
         if in_trade and active is not None:
@@ -1105,7 +1352,7 @@ class BacktestEngine:
         print(f"    Bias filtresi      : {dbg['no_bias']:>6}")
         print(f"    Seans dışı         : {dbg['session']:>6}")
         print(f"    Sinyal yok         : {dbg['no_signal']:>6}")
-        print(f"      ├─ Adım1: 1H FVG dokunuş yok : {st['step1_fail']:>6}")
+        print(f"      ├─ Adım1: 1H FVG/BB dokunuş yok: {st['step1_fail']:>6}")
         print(f"      ├─ Adım2: dokundu, MSC yok   : {st['step2_fail']:>6}")
         print(f"      └─ Adım3: MSC var, onay yok  : {st['step3_fail']:>6}")
         print(f"    Risk filtresi      : {dbg['risk_fail']:>6}")
@@ -1242,6 +1489,20 @@ class PerformanceAnalytics:
         for src, d in conf_d.items():
             wr = d['w'] / d['n'] * 100 if d['n'] else 0
             print(f"  {src:<16} : {d['n']:3d} işlem | %{wr:.0f} WR | ${d['pnl']:>+8.2f}")
+
+        # Tetikleyici bölge: 1H FVG mi Breaker Block mu?
+        zone_d: Dict[str, Dict] = {}
+        for t in self.done:
+            ztype = ('BreakerBlock' if t.signal.trigger_bb is not None
+                     and t.signal.trigger_fvg is None else 'FVG_1H')
+            zone_d.setdefault(ztype, {'n': 0, 'w': 0, 'pnl': 0.0})
+            zone_d[ztype]['n']   += 1
+            zone_d[ztype]['w']   += 1 if t.result == 'WIN' else 0
+            zone_d[ztype]['pnl'] += t.pnl_dollar
+        print(f"\n  ── TETİKLEYİCİ BÖLGE ────────────────────────────────────────")
+        for ztype, d in zone_d.items():
+            wr = d['w'] / d['n'] * 100 if d['n'] else 0
+            print(f"  {ztype:<16} : {d['n']:3d} işlem | %{wr:.0f} WR | ${d['pnl']:>+8.2f}")
 
         # Yön analizi
         dir_d: Dict[str, Dict] = {}
