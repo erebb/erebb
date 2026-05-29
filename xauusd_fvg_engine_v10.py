@@ -116,6 +116,24 @@ class MSBEvent:
 
 
 @dataclass
+class HarmonicSignal:
+    """
+    Harmonik desen (pinescript portu) — herhangi bir zaman diliminde.
+    PRZ (Potential Reversal Zone) bir fiyat aralığıdır; taze 1H FVG ile
+    çakışırsa bias'sız işlem tetikler. Lookahead: detect_time = C-pivot
+    onay barının kapanışı (pivot bar + strength + TF offset).
+    """
+    direction   : str    # 'bull' | 'bear'
+    pattern     : str    # 'Gartley' | 'Bat' | ... | 'Cypher'
+    timeframe   : str    # '5m' | '15m' | '1h' | '4h'
+    prz_low     : float
+    prz_high    : float
+    detect_time : Any
+    expiry_time : Any
+    conf        : float = 0.0
+
+
+@dataclass
 class TradeSignal:
     """Tam onaylı trade sinyali."""
     entry_time        : Any
@@ -129,6 +147,7 @@ class TradeSignal:
     risk_fraction     : float = 0.005
     msc_signal        : Optional[MSCSignal] = None
     trigger_bb        : Optional['BreakerBlock'] = None
+    harmonic          : Optional['HarmonicSignal'] = None
     rsi_div_type      : Optional[str] = None
     fvg5_quality      : float = 0.0
     ema_distance_pct  : float = 0.0
@@ -174,6 +193,15 @@ def flatten_columns(df):
     if isinstance(df.columns, pd.MultiIndex):
         df.columns = [col[0] for col in df.columns]
     return df
+
+
+def resample_ohlcv(df: 'pd.DataFrame', rule: str) -> 'pd.DataFrame':
+    """OHLC(V) yeniden örnekleme — harmonik için üst zaman dilimleri (15M, 4H)."""
+    agg = {'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'}
+    if 'Volume' in df.columns:
+        agg['Volume'] = 'sum'
+    out = df.resample(rule, label='left', closed='left').agg(agg).dropna()
+    return out
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -703,21 +731,40 @@ class MSB5MEngine:
                     detect_time=T[i], stop_price=float(stop),
                     swing_level=float(L[k]), quality=min(1.0, (L[k] - C[i]) / atr_i)))
 
-            # ── (c) THREE_VOL — 3 ardışık büyük-hacimli yön-uyumlu mum ────
-            if is_large(i) and is_large(i - 1) and is_large(i - 2):
-                if C[i] > O[i] and C[i - 1] > O[i - 1] and C[i - 2] > O[i - 2]:
-                    # Bull: stop = 2. mumun (i-1) Low'u, wick dahil
+            # ── (c) THREE_VOL — Three White Soldiers / Three Black Crows ──
+            # pinescript "Mercüment Çözer" mum-deseni mantığı (hacim YOK).
+            # Mumlar: c3=i-2 (en eski), c2=i-1, c1=i (en yeni). Onay i kapanışında.
+            b3, b2, b1 = body[i - 2], body[i - 1], body[i]
+            r3 = H[i - 2] - L[i - 2]; r2 = H[i - 1] - L[i - 1]; r1 = H[i] - L[i]
+            k_br_min = (r3 > 0 and r2 > 0 and r1 > 0 and
+                        b3 / r3 >= 0.45 and b2 / r2 >= 0.45 and b1 / r1 >= 0.45)
+            bmax = max(b3, b2, b1); bmin = min(b3, b2, b1)
+            k_ratio  = bmin > 0 and bmax / bmin <= 2.0
+            k_minbod = (b3 >= atr_i * 0.15 and b2 >= atr_i * 0.15 and b1 >= atr_i * 0.15)
+            base_ok  = k_br_min and k_ratio and k_minbod
+            if base_ok:
+                opens_ok = (self._open_ok(O[i - 1], O[i - 2], C[i - 2], b3) and
+                            self._open_ok(O[i],     O[i - 1], C[i - 1], b2))
+                # 3WS (bull): üçü boğa, yükselen kapanış, küçük üst fitiller
+                if (opens_ok and C[i-2] > O[i-2] and C[i-1] > O[i-1] and C[i] > O[i] and
+                        C[i-1] > C[i-2] and C[i] > C[i-1] and
+                        (H[i-2] - max(O[i-2], C[i-2])) <= b3 * 0.40 and
+                        (H[i-1] - max(O[i-1], C[i-1])) <= b2 * 0.40 and
+                        (H[i]   - max(O[i],   C[i]))   <= b1 * 0.40):
                     events.append(MSBEvent(
                         msb_type='three_vol', direction='bull', confirm_idx=i,
                         detect_time=T[i], stop_price=float(L[i - 1]),
-                        swing_level=float(L[i - 1]),
-                        quality=min(1.0, body[i] / atr_i)))
-                elif C[i] < O[i] and C[i - 1] < O[i - 1] and C[i - 2] < O[i - 2]:
+                        swing_level=float(L[i - 1]), quality=min(1.0, body[i] / atr_i)))
+                # 3BC (bear): üçü ayı, düşen kapanış, küçük alt fitiller
+                elif (opens_ok and C[i-2] < O[i-2] and C[i-1] < O[i-1] and C[i] < O[i] and
+                        C[i-1] < C[i-2] and C[i] < C[i-1] and
+                        (min(O[i-2], C[i-2]) - L[i-2]) <= b3 * 0.40 and
+                        (min(O[i-1], C[i-1]) - L[i-1]) <= b2 * 0.40 and
+                        (min(O[i],   C[i])   - L[i])   <= b1 * 0.40):
                     events.append(MSBEvent(
                         msb_type='three_vol', direction='bear', confirm_idx=i,
                         detect_time=T[i], stop_price=float(H[i - 1]),
-                        swing_level=float(H[i - 1]),
-                        quality=min(1.0, body[i] / atr_i)))
+                        swing_level=float(H[i - 1]), quality=min(1.0, body[i] / atr_i)))
 
         events.sort(key=lambda e: e.confirm_idx)
         return events
@@ -733,6 +780,203 @@ class MSB5MEngine:
             if (not want_down) and (C[k] > O[k]):
                 return k
         return None
+
+    @staticmethod
+    def _open_ok(o_cur: float, o_prev: float, c_prev: float,
+                 b_prev: float, ptol: float = 0.20) -> bool:
+        """3WS/3BC: mum, önceki mumun gövdesi içinde/yakınında mı açılmış?"""
+        lo = min(o_prev, c_prev) - b_prev * ptol
+        hi = max(o_prev, c_prev) + b_prev * ptol
+        return lo <= o_cur <= hi
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BÖLÜM 3c: HARMONİK DESEN ENGİNİ (pinescript "Mercüment Çözer" portu)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class HarmonicEngine:
+    """
+    ZigZag fraktal pivot → son 4 nokta XABC → Fibonacci oran kontrolü →
+    8 desen (Gartley/Bat/AltBat/Butterfly/Crab/DeepCrab/Shark/Cypher) → PRZ.
+
+    pinescript ile birebir: tüm desenler `struct_ok` (alternatif retracement)
+    kapısı altında; bu nedenle Shark/Cypher kaynaktaki gibi pratikte nadir/hiç
+    tetiklenmez (yapı tipiyle çelişir) — sadakat için yine de dahil edildi.
+
+    Lookahead: pivot bar p, `swing` bar sonra (p+swing) onaylanır; desen
+    C-pivotunun onay barının KAPANIŞINDA görünür olur (detect_time).
+    """
+
+    AGE_MAP = {'5m':  pd.Timedelta(hours=24), '15m': pd.Timedelta(days=2),
+               '1h':  pd.Timedelta(days=5),  '4h':  pd.Timedelta(days=14)}
+    TF_OFFSET = {'5m': pd.Timedelta(minutes=5),  '15m': pd.Timedelta(minutes=15),
+                 '1h': pd.Timedelta(hours=1),    '4h':  pd.Timedelta(hours=4)}
+
+    def __init__(self, swing: int = 5, min_conf: float = 40.0,
+                 max_prz_pct: float = 4.0):
+        self.swing       = swing
+        self.min_conf    = min_conf
+        self.max_prz_pct = max_prz_pct
+
+    # ── Fibonacci yardımcıları (pinescript f_* portu) ────────────────────
+    @staticmethod
+    def _conf(v1, lo1, hi1, v2, lo2, hi2) -> float:
+        m1 = (lo1 + hi1) / 2.0; m2 = (lo2 + hi2) / 2.0
+        d1 = abs(v1 - m1) / max(m1, 1e-10)
+        d2 = abs(v2 - m2) / max(m2, 1e-10)
+        return max(0.0, min(100.0, 100.0 - (d1 * 40.0 + d2 * 40.0)))
+
+    @staticmethod
+    def _nearest_cd(ab_bc, c382, c500, c618, c786, c886) -> float:
+        keys = [(0.382, c382), (0.500, c500), (0.618, c618),
+                (0.786, c786), (0.886, c886)]
+        return min(keys, key=lambda kv: abs(ab_bc - kv[0]))[1]
+
+    def _prz(self, d1, d2, x_p, bullish, retrace):
+        lo = min(d1, d2); hi = max(d1, d2)
+        if retrace:
+            if bullish:
+                lo = max(lo, x_p); hi = max(hi, x_p)
+            else:
+                lo = min(lo, x_p); hi = min(hi, x_p)
+        ctr = abs((lo + hi) / 2.0)
+        gap = (hi - lo) / ctr * 100 if ctr > 1e-10 else 99.0
+        return lo, hi, (gap <= self.max_prz_pct)
+
+    def _check(self, x_p, a_p, b_p, c_p, bullish):
+        """Bir XABC için ilk eşleşen deseni döndür: (pattern, conf, lo, hi) | None."""
+        xa = abs(x_p - a_p); ab = abs(a_p - b_p); bc = abs(b_p - c_p)
+        if bullish:
+            struct_ok = b_p > x_p and b_p < a_p and c_p > b_p and c_p < a_p
+        else:
+            struct_ok = b_p < x_p and b_p > a_p and c_p < b_p and c_p > a_p
+        if not (xa > 1e-10 and ab > 1e-10 and struct_ok):
+            return None
+
+        xa_ab  = ab / xa
+        ab_bc  = bc / max(ab, 1e-10)
+        xb_ext = abs(x_p - b_p) / xa
+        xc_prj = abs(x_p - c_p) / xa
+        f_in   = lambda v, lo, hi: lo <= v <= hi
+
+        def proj_ad(ad_lo, ad_hi):
+            mid = (ad_lo + ad_hi) / 2.0
+            return (a_p - xa * mid) if bullish else (a_p + xa * mid)
+
+        def proj_cd(cd_r):
+            return (c_p - bc * cd_r) if bullish else (c_p + bc * cd_r)
+
+        # (pattern, xa_ab[lo,hi], ad[lo,hi], cd5, retrace)
+        STD = [
+            ('Gartley',   0.550, 0.680, 0.750, 0.820, (1.618, 1.414, 1.272, 1.272, 1.272), True),
+            ('Bat',       0.320, 0.560, 0.850, 0.920, (2.618, 2.000, 1.618, 1.618, 1.618), True),
+            ('AltBat',    0.080, 0.420, 1.080, 1.180, (3.618, 2.618, 2.240, 2.000, 2.000), False),
+            ('Butterfly', 0.720, 0.850, 1.200, 1.680, (2.618, 2.000, 2.240, 2.618, 2.618), False),
+            ('Crab',      0.350, 0.650, 1.550, 1.700, (3.618, 2.618, 2.618, 2.618, 2.618), False),
+            ('DeepCrab',  0.850, 0.930, 1.550, 1.700, (3.618, 2.618, 2.618, 2.618, 2.618), False),
+        ]
+        for name, xlo, xhi, adlo, adhi, cd5, retr in STD:
+            if f_in(xa_ab, xlo, xhi) and f_in(ab_bc, 0.382, 0.886):
+                cv = self._conf(xa_ab, xlo, xhi, ab_bc, 0.382, 0.886)
+                if cv >= self.min_conf:
+                    d1 = proj_ad(adlo, adhi)
+                    d2 = proj_cd(self._nearest_cd(ab_bc, *cd5))
+                    lo, hi, ok = self._prz(d1, d2, x_p, bullish, retr)
+                    if ok:
+                        return (name, cv, lo, hi)
+
+        # SHARK
+        shark_b = (b_p > a_p) if bullish else (b_p < a_p)
+        if shark_b and f_in(xb_ext, 1.080, 1.680) and f_in(ab_bc, 1.500, 2.350):
+            cv = self._conf(xb_ext, 1.080, 1.680, ab_bc, 1.500, 2.350)
+            if cv >= self.min_conf:
+                xc_len = abs(x_p - c_p)
+                d1 = (c_p - xc_len * 0.886) if bullish else (c_p + xc_len * 0.886)
+                d2 = proj_cd(self._nearest_cd(ab_bc, 2.240, 2.000, 1.618, 1.618, 1.618))
+                lo, hi, ok = self._prz(d1, d2, x_p, bullish, False)
+                if ok:
+                    return ('Shark', cv, lo, hi)
+
+        # CYPHER
+        c_ex = (c_p > a_p) if bullish else (c_p < a_p)
+        if c_ex and f_in(xa_ab, 0.350, 0.650) and f_in(xc_prj, 1.200, 1.500):
+            cv = self._conf(xa_ab, 0.350, 0.650, xc_prj, 1.200, 1.500)
+            if cv >= self.min_conf:
+                xc_len = abs(x_p - c_p)
+                d1 = (c_p - xc_len * 0.786) if bullish else (c_p + xc_len * 0.786)
+                d2 = proj_cd(self._nearest_cd(ab_bc, 1.272, 1.000, 0.786, 0.786, 0.786))
+                lo, hi, ok = self._prz(d1, d2, x_p, bullish, True)
+                if ok:
+                    return ('Cypher', cv, lo, hi)
+        return None
+
+    def detect(self, df: pd.DataFrame, timeframe: str) -> List[HarmonicSignal]:
+        H = df['High'].values.astype(float)
+        L = df['Low'].values.astype(float)
+        T = df.index
+        n = len(df)
+        s = self.swing
+        offset = self.TF_OFFSET.get(timeframe, pd.Timedelta(minutes=5))
+        age    = self.AGE_MAP.get(timeframe, pd.Timedelta(days=2))
+
+        # ZigZag onaylı pivotlar: paralel diziler (price, type ±1, confirm_bar)
+        zp: List[float] = []; zt: List[int] = []; zc: List[int] = []
+        seen = set()
+        signals: List[HarmonicSignal] = []
+
+        def scan(conf_bar: int):
+            if len(zp) < 4:
+                return
+            x_p, a_p, b_p, c_p = zp[-4], zp[-3], zp[-2], zp[-1]
+            tx, ta, tb, tc     = zt[-4], zt[-3], zt[-2], zt[-1]
+            if tx == -1 and ta == 1 and tb == -1 and tc == 1:
+                bullish = True
+            elif tx == 1 and ta == -1 and tb == 1 and tc == -1:
+                bullish = False
+            else:
+                return
+            res = self._check(x_p, a_p, b_p, c_p, bullish)
+            if res is None:
+                return
+            name, cv, lo, hi = res
+            cb = min(conf_bar, n - 1)
+            dt = to_naive(T[cb]) + offset
+            key = (timeframe, name, 'bull' if bullish else 'bear',
+                   round(lo, 2), round(hi, 2))
+            if key in seen:
+                return
+            seen.add(key)
+            signals.append(HarmonicSignal(
+                direction='bull' if bullish else 'bear',
+                pattern=name, timeframe=timeframe,
+                prz_low=float(lo), prz_high=float(hi),
+                detect_time=dt, expiry_time=dt + age, conf=float(cv)))
+
+        for i in range(2 * s, n):
+            p = i - s   # pivot adayı; sağı i'de tam görünür
+            is_sh = all(H[p] > H[p - k] and H[p] > H[p + k] for k in range(1, s + 1))
+            is_sl = all(L[p] < L[p - k] and L[p] < L[p + k] for k in range(1, s + 1))
+            if is_sh:
+                if zt and zt[-1] == 1:
+                    if H[p] > zp[-1]:
+                        zp[-1] = H[p]; zc[-1] = i
+                        scan(i)
+                else:
+                    zp.append(H[p]); zt.append(1); zc.append(i)
+                    scan(i)
+            if is_sl:
+                if zt and zt[-1] == -1:
+                    if L[p] < zp[-1]:
+                        zp[-1] = L[p]; zc[-1] = i
+                        scan(i)
+                else:
+                    zp.append(L[p]); zt.append(-1); zc.append(i)
+                    scan(i)
+            # bellek: pivot listesini sınırlı tut
+            if len(zp) > 50:
+                del zp[0]; del zt[0]; del zc[0]
+
+        return signals
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -1073,7 +1317,7 @@ class MarketBrain:
     """
 
     RSI_WINDOW         = 30   # mum sayısı (5M → ~150 dk) — iki pivot sığsın
-    TOUCH_MAX_AGE_BARS = 48   # dokunuştan sonra MSB için bekleme penceresi (~4 saat)
+    TOUCH_MAX_AGE_BARS = 20   # dokunuştan sonra MSB için bekleme penceresi (20×5dk)
 
     def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None):
         self.bias = bias_provider
@@ -1117,63 +1361,76 @@ class MarketBrain:
                  fvg1_bear: List[FVG], mit1_bear: Dict,
                  fvg1_eng: 'FVGEngine',
                  msb_events_bull: List[MSBEvent],
-                 msb_events_bear: List[MSBEvent]) -> Optional[TradeSignal]:
+                 msb_events_bear: List[MSBEvent],
+                 harm_bull: Optional[List['HarmonicSignal']] = None,
+                 harm_bear: Optional[List['HarmonicSignal']] = None,
+                 przfvg_bull: Optional[List[FVG]] = None,
+                 przfvg_bear: Optional[List[FVG]] = None,
+                 mit_prz: Optional[Dict] = None,
+                 prz_eng: Optional['FVGEngine'] = None,
+                 prz_harm: Optional[Dict] = None
+                 ) -> Optional[TradeSignal]:
 
         # last_skip_reason her çağrıda sıfırlanır (stale değer bug fix)
         self.last_skip_reason = None
+        harm_bull   = harm_bull or []
+        harm_bear   = harm_bear or []
+        przfvg_bull = przfvg_bull or []
+        przfvg_bear = przfvg_bear or []
+        mit_prz     = mit_prz or {}
+        prz_harm    = prz_harm or {}
 
         cur_time  = TM[idx]
         cur_close = float(C[idx])
 
-        # ── HAFTALIK BİAS FİLTRESİ ──────────────────────────────────────
-        if self.bias is not None:
-            weekly_dir = self.bias.get(cur_time)
-            if weekly_dir is None:
-                self.last_skip_reason = 'no_bias'
-                return None
-        else:
-            weekly_dir = None   # bias dosyası yok → her iki yön serbest
+        # ── HAFTALIK BİAS ──────────────────────────────────────────────
+        # Bias EMA/RSI konfluensini (ve PRZ-POI senaryosunu) kapılar.
+        # Harmonik-örtüşme konfluensi (gerçek 1H FVG üzerinde) bias'tan BAĞIMSIZ.
+        weekly_dir = self.bias.get(cur_time) if self.bias is not None else None
 
         t = to_naive(cur_time)
         best_signal: Optional[TradeSignal] = None
-        best_key    = (-1, -1.0)   # (confluence_count, fvg_quality)
+        best_key    = (-1, -1, -1.0)
         stage = 0   # 0=dokunuş yok, 1=dokundu konfluens yok, 2=konfluens var MSB yok
 
         for direction in ('bull', 'bear'):
-            # Bias varsa sadece bias yönünde işlem
-            if weekly_dir is not None and direction != weekly_dir:
-                continue
             fvg1_raw   = fvg1_bull if direction == 'bull' else fvg1_bear
             mit1       = mit1_bull if direction == 'bull' else mit1_bear
+            przfvg_raw = przfvg_bull if direction == 'bull' else przfvg_bear
             msb_events = msb_events_bull if direction == 'bull' else msb_events_bear
+            harms      = harm_bull if direction == 'bull' else harm_bear
             pend       = self.pending[direction]
 
-            # ── ADIM 1: WICK ile 1H FVG dokunuşu (stateful registry) ─────
-            active_1h = fvg1_eng.get_active(fvg1_raw, mit1, t)
-            active_1h = [f for f in active_1h if f.fvg_id not in self.used_fvg_ids]
+            # ── ADIM 1: WICK dokunuşu — İKİ POI kaynağı ───────────────────
+            #   kind='fvg' → gerçek 1H FVG; kind='prz' → harmonik PRZ bölgesi.
+            sources = [('fvg', fvg1_raw, mit1, fvg1_eng)]
+            if prz_eng is not None and przfvg_raw:
+                sources.append(('prz', przfvg_raw, mit_prz, prz_eng))
 
             pend_ids = {p['fvg_id'] for p in pend}
-            for fvg in active_1h:
-                span = fvg.top - fvg.bottom
-                buf  = span * fvg1_eng.buf_ratio
-                # WICK dokunuş: mum aralığı FVG bölgesiyle örtüşüyor mu?
-                if L[idx] <= (fvg.top + buf) and H[idx] >= (fvg.bottom - buf):
-                    if fvg.fvg_id not in pend_ids:
-                        pend.append({'fvg_id': fvg.fvg_id, 'fvg': fvg,
-                                     'touch_idx': idx, 'touch_time': t})
-                        pend_ids.add(fvg.fvg_id)
+            for kind, raw, mitm, eng in sources:
+                active = eng.get_active(raw, mitm, t)
+                active = [f for f in active if f.fvg_id not in self.used_fvg_ids]
+                for fvg in active:
+                    span = fvg.top - fvg.bottom
+                    buf  = span * fvg1_eng.buf_ratio
+                    if L[idx] <= (fvg.top + buf) and H[idx] >= (fvg.bottom - buf):
+                        if fvg.fvg_id not in pend_ids:
+                            pend.append({'fvg_id': fvg.fvg_id, 'fvg': fvg, 'kind': kind,
+                                         'touch_idx': idx, 'touch_time': t})
+                            pend_ids.add(fvg.fvg_id)
 
-            # PRUNE: tüketilmiş / yaşlanmış / kullanılmış pending'leri at
-            mit_at = lambda fid: mit1.get(fid)
+            # PRUNE: tüketilmiş / yaşlanmış / iptal pending'leri at
+            mit_by_kind = {'fvg': mit1, 'prz': mit_prz}
             kept = []
             for p in pend:
-                m = mit_at(p['fvg_id'])
+                m = mit_by_kind.get(p['kind'], {}).get(p['fvg_id'])
                 if p['fvg_id'] in self.used_fvg_ids:
                     continue                                   # işlem açıldı
                 if m is not None and to_naive(m) <= t:
-                    continue                                   # 1H close-inside iptal
+                    continue                                   # iptal / süre doldu
                 if idx - p['touch_idx'] > self.TOUCH_MAX_AGE_BARS:
-                    continue                                   # çok bekledi
+                    continue                                   # çok bekledi (20 mum)
                 kept.append(p)
             pend[:] = kept
             self.pending[direction] = pend
@@ -1181,27 +1438,51 @@ class MarketBrain:
             if not pend:
                 continue
             stage = max(stage, 1)
-            earliest_touch = min(p['touch_idx'] for p in pend)
 
-            # ── ADIM 2: Konfluens — EMA ve/veya RSI ───────────────────────
+            # ── ADIM 2: Konfluens ─────────────────────────────────────────
+            bias_allows = (self.bias is None) or (weekly_dir == direction)
+
             ema_ok, ema_d = self.ema_confirm(
                 cur_close, float(E100[idx]), float(E200[idx]), direction)
             sl_ = max(0, idx - self.RSI_WINDOW)
             div_type, div_str = self.rsi_divergence(C[sl_:idx + 1], RSI[sl_:idx + 1])
             rsi_ok = (div_type == direction)
+            bias_main = bias_allows and (ema_ok or rsi_ok)
 
-            confluence_count = int(ema_ok) + int(rsi_ok)
-            if confluence_count == 0:
-                continue                                       # beklemeye devam
+            act_harm = [s for s in harms
+                        if to_naive(s.detect_time) <= t <= to_naive(s.expiry_time)]
+
+            def harm_for(fvg):
+                best = None
+                for s in act_harm:
+                    if s.prz_low <= fvg.top and s.prz_high >= fvg.bottom:
+                        if best is None or s.conf > best.conf:
+                            best = s
+                return best
+
+            # Her pending POI için uygunluk:
+            #   gerçek FVG  → bias_main (EMA/RSI) VEYA harmonik-örtüşme (bias'sız, senaryo-1)
+            #   PRZ POI     → yalnız bias_main (EMA/RSI + bias, senaryo-2)
+            cands = []
+            for p in pend:
+                hm = harm_for(p['fvg']) if p['kind'] == 'fvg' else None
+                if bias_main or (hm is not None):
+                    cands.append((p, hm))
+            if not cands:
+                continue                                       # konfluens yok → bekle
             stage = max(stage, 2)
 
+            trigger, matched_harm = max(
+                cands, key=lambda ph: ph[0]['fvg'].quality_score)
+
             # ── ADIM 3: MSB tetikleyici (dokunuştan sonra, kapanmış) ─────
-            #   confirm_idx <= idx (lookahead) ve >= earliest_touch (dokunuş sonrası)
+            #   Harmonik/PRZ olsa da MSB ŞART; stop MSB'den (aynı mantık).
+            tch = trigger['touch_idx']
             event: Optional[MSBEvent] = None
             for e in reversed(msb_events):
                 if e.confirm_idx > idx:
                     continue
-                if e.confirm_idx < earliest_touch:
+                if e.confirm_idx < tch:
                     break
                 event = e
                 break
@@ -1209,16 +1490,26 @@ class MarketBrain:
                 continue                                       # MSB beklenmeye devam
 
             # ── Sinyal oluştur ───────────────────────────────────────────
-            trigger = max(pend, key=lambda p: p['fvg'].quality_score)
+            confluence_count = (int(ema_ok) + int(rsi_ok)) if bias_allows else 0
             risk_fraction = 0.01 if confluence_count == 2 else 0.005
-            conf_label = ('EMA+RSI' if confluence_count == 2
-                          else ('EMA' if ema_ok else 'RSI'))
+
+            src = []
+            if bias_allows and ema_ok: src.append('EMA')
+            if bias_allows and rsi_ok: src.append('RSI')
+            if matched_harm is not None: src.append('HARMONIC')      # senaryo-1
+            if trigger['kind'] == 'prz': src.append('PRZ')           # senaryo-2
+            conf_label = '+'.join(src) if src else 'HARMONIC'
+
+            harmonic_ref = matched_harm
+            if harmonic_ref is None and trigger['kind'] == 'prz':
+                harmonic_ref = prz_harm.get(trigger['fvg_id'])
+
             confidence = min(100.0,
                              40 * (trigger['fvg'].quality_score / 100.0) +
                              30 * float(event.quality) +
-                             30 * (confluence_count / 2.0))
+                             30 * (max(confluence_count, 1) / 2.0))
 
-            key = (confluence_count, trigger['fvg'].quality_score)
+            key = (1 if bias_main else 0, confluence_count, trigger['fvg'].quality_score)
             if key > best_key:
                 best_key = key
                 best_signal = TradeSignal(
@@ -1228,11 +1519,12 @@ class MarketBrain:
                     confirmation_type = conf_label,
                     confidence        = confidence,
                     msb_type          = event.msb_type,
-                    confluence_count  = confluence_count,
+                    confluence_count  = max(confluence_count, 1),
                     stop_price        = event.stop_price,
                     risk_fraction     = risk_fraction,
-                    rsi_div_type      = div_type if rsi_ok else None,
-                    ema_distance_pct  = ema_d if ema_ok else 0.0,
+                    harmonic          = harmonic_ref,
+                    rsi_div_type      = div_type if (bias_allows and rsi_ok) else None,
+                    ema_distance_pct  = ema_d if (bias_allows and ema_ok) else 0.0,
                 )
 
         # Teşhis: hangi adımda öldü?
@@ -1243,7 +1535,9 @@ class MarketBrain:
                 self.stats['step2_fail'] += 1
             else:
                 self.stats['step3_fail'] += 1
-            if weekly_dir is not None or self.bias is None:
+            if self.bias is not None and weekly_dir is None:
+                self.last_skip_reason = 'no_bias'
+            else:
                 self.last_skip_reason = 'no_signal'
 
         return best_signal
@@ -1350,6 +1644,40 @@ class BacktestEngine:
               f"mitigation:{_typ(msb_events,'mitigation')} "
               f"three_vol:{_typ(msb_events,'three_vol')})")
 
+        # Harmonik motor — 5M + 15M + 1H + 4H (resample 15M/4H)
+        print("  Harmonik...", end=' ')
+        harm_eng = HarmonicEngine(swing=5, min_conf=40.0, max_prz_pct=4.0)
+        harmonics: List[HarmonicSignal] = []
+        try:
+            harmonics += harm_eng.detect(df5, '5m')
+            harmonics += harm_eng.detect(resample_ohlcv(df5, '15min'), '15m')
+            harmonics += harm_eng.detect(df1, '1h')
+            harmonics += harm_eng.detect(resample_ohlcv(df1, '4h'), '4h')
+        except Exception as e:
+            print(f"(harmonik hata: {e})", end=' ')
+        harm_bull = [s for s in harmonics if s.direction == 'bull']
+        harm_bear = [s for s in harmonics if s.direction == 'bear']
+        _htf = lambda tf: sum(1 for s in harmonics if s.timeframe == tf)
+        print(f"Bull:{len(harm_bull)}  Bear:{len(harm_bear)}  "
+              f"(5m:{_htf('5m')} 15m:{_htf('15m')} 1h:{_htf('1h')} 4h:{_htf('4h')})")
+
+        # Harmonik PRZ'leri POI olarak da kullan (senaryo-2: 1H FVG gibi,
+        # MSB+EMA+RSI+bias ile). Her PRZ → pseudo-FVG; süre dolumu = expiry.
+        prz_eng    = FVGEngine('prz', max_age_hours=24 * 30, buf_ratio=0.02)
+        przfvg_bull: List[FVG] = []; przfvg_bear: List[FVG] = []
+        mit_prz: Dict[int, Any] = {}
+        prz_harm: Dict[int, HarmonicSignal] = {}
+        for hsig in harmonics:
+            top = hsig.prz_high; bottom = hsig.prz_low
+            pf = FVG(fvg_id=_next_fvg_id(), timeframe='prz', direction=hsig.direction,
+                     index=hsig.detect_time, detect_time=hsig.detect_time,
+                     top=top, bottom=bottom, mid=(top + bottom) / 2,
+                     gap_size=top - bottom, gap_atr_ratio=0.0, momentum=0.0,
+                     quality_score=hsig.conf, created_i=0)
+            mit_prz[pf.fvg_id]  = to_naive(hsig.expiry_time)   # süre dolumu
+            prz_harm[pf.fvg_id] = hsig
+            (przfvg_bull if hsig.direction == 'bull' else przfvg_bear).append(pf)
+
         # Array'ler
         C    = df5['Close'].values.astype(float)
         O    = df5['Open'].values.astype(float)
@@ -1366,7 +1694,7 @@ class BacktestEngine:
 
         print(f"\n  Sinyaller taranıyor... ({len(bt_idx)} mum | {bs.date()} sonrası)\n")
 
-        dbg = dict(no_bias=0, no_signal=0, risk_fail=0, generated=0)
+        dbg = dict(no_bias=0, no_signal=0, risk_fail=0, generated=0, harmonic=0)
 
         trades: List[Trade]       = []
         trade_id                  = 0
@@ -1414,6 +1742,9 @@ class BacktestEngine:
                 fvg1_eng=fvg1_eng,
                 msb_events_bull=msb_events_bull,
                 msb_events_bear=msb_events_bear,
+                harm_bull=harm_bull, harm_bear=harm_bear,
+                przfvg_bull=przfvg_bull, przfvg_bear=przfvg_bear,
+                mit_prz=mit_prz, prz_eng=prz_eng, prz_harm=prz_harm,
             )
 
             if signal is None:
@@ -1435,6 +1766,8 @@ class BacktestEngine:
             # İşlem oluştur
             trade_id += 1
             dbg['generated'] += 1
+            if signal.harmonic is not None:
+                dbg['harmonic'] += 1
             active = Trade(
                 trade_id      = trade_id,
                 signal        = signal,
@@ -1473,6 +1806,7 @@ class BacktestEngine:
         print(f"      └─ Adım3: konfluens var, MSB yok : {st['step3_fail']:>6}")
         print(f"    Risk filtresi      : {dbg['risk_fail']:>6}")
         print(f"    Üretilen sinyaller : {dbg['generated']:>6}")
+        print(f"      └─ Harmonik içeren (PRZ/örtüşme): {dbg['harmonic']:>6}")
         print(f"\n  TOPLAM İŞLEM: {len(trades)}")
         return trades
 
@@ -1876,6 +2210,8 @@ class ReportGenerator:
                 'confirmation'    : s.confirmation_type,
                 'confluence_count': s.confluence_count,
                 'msb_type'        : s.msb_type,
+                'harmonic_pattern': s.harmonic.pattern   if s.harmonic else '',
+                'harmonic_tf'     : s.harmonic.timeframe if s.harmonic else '',
                 'confidence'      : round(s.confidence, 2),
                 'fvg1_quality'    : round(s.trigger_fvg.quality_score, 2),
                 'fvg1_gap_size'   : round(s.trigger_fvg.gap_size, 2),
