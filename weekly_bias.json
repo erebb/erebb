@@ -1,9 +1,16 @@
 {
   "_açıklama": "ISO hafta numarası formatı: YYYY-W## (Python ISO 8601). W1 2026 = 29 Aralık 2025'te başlar. Değer: bull | bear | none",
   "_kullanım": "Her Pazar/Pazartesi sabahı bu dosyayı açın, mevcut haftayı girin ve kaydedin.",
-  "_hafta_referansi": "6-12 Nis=W15, 13-19 Nis=W16, 20-26 Nis=W17, 27Nis-3May=W18, 4-10May=W19, 11-17May=W20, 18-24May=W21, 25-31May=W22",
-  "2026-W16": "bear",
-  "2026-W17": "bull",
+  "_kaynak": "Bu değerler XAUUSD 1H verisinden analiz edildi: her ISO haftasının gerçekleşen yönü (close vs open). |net%|<0.25% -> none.",
+  "_hafta_referansi": "30Mar-5Nis=W14, 6-12Nis=W15, 13-19Nis=W16, 20-26Nis=W17, 27Nis-3May=W18, 4-10May=W19, 11-17May=W20, 18-24May=W21, 25-31May=W22",
+  "_manuel_yedek": "Kullanıcının önceki manuel girişleri: W16 bear, W17 bull, W18 bear, W19 bull",
+  "2026-W14": "bull",
+  "2026-W15": "bull",
+  "2026-W16": "bull",
+  "2026-W17": "bear",
   "2026-W18": "bear",
-  "2026-W19": "bull"
+  "2026-W19": "bull",
+  "2026-W20": "bear",
+  "2026-W21": "bear",
+  "2026-W22": "none"
 }
