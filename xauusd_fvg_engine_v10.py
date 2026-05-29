@@ -1815,74 +1815,66 @@ class BacktestEngine:
 
         dbg = dict(no_bias=0, no_signal=0, risk_fail=0, generated=0, harmonic=0)
 
-        trades: List[Trade]       = []
-        trade_id                  = 0
-        in_trade                  = False
-        active: Optional[Trade]   = None
-        equity                    = float(self.capital)
+        trades: List[Trade] = []
+        trade_id             = 0
+        active_fvg: Optional[Trade] = None   # FVG/ana slot (PRZ olmayan)
+        active_prz: Optional[Trade] = None   # Harmonik PRZ slot
+        equity               = float(self.capital)
+
+        # ── Tek işlem çıkış mantığı (iki slot için ortak) ────────────────
+        def _process_exit(t: Trade) -> Tuple[bool, float]:
+            """(çıktı_mı, equity_delta). t alanları güncellenir (in-place)."""
+            d      = t.signal.direction
+            R      = t.risk
+            entry  = t.entry_price
+            hit_tp = (H[idx] >= t.tp) if d == 'bull' else (L[idx] <= t.tp)
+            hit_sl = (L[idx] <= t.sl) if d == 'bull' else (H[idx] >= t.sl)
+            if hit_sl and hit_tp:
+                hit_tp = False
+            if hit_tp or hit_sl:
+                ep   = t.tp if hit_tp else t.sl
+                mult = ((ep - entry) if d == 'bull' else (entry - ep)) / (R + 1e-10)
+                dlr  = mult * t.risk_dollar
+                t.exit_price = ep; t.exit_time = TM[idx]
+                t.result     = ('WIN' if mult > 0.01 else
+                                ('BE' if abs(mult) <= 0.01 else 'LOSS'))
+                t.pnl_dollar = round(dlr, 2)
+                return True, dlr
+            if self.breakeven_at_R is not None and t.sl != entry:
+                be_lvl  = (entry + self.breakeven_at_R * R if d == 'bull'
+                           else entry - self.breakeven_at_R * R)
+                reached = (H[idx] >= be_lvl) if d == 'bull' else (L[idx] <= be_lvl)
+                if reached:
+                    t.sl = round(entry, 2)
+                    be_hit = (L[idx] <= t.sl) if d == 'bull' else (H[idx] >= t.sl)
+                    if be_hit:
+                        t.exit_price = t.sl; t.exit_time = TM[idx]
+                        t.result = 'BE'; t.pnl_dollar = 0.0
+                        return True, 0.0
+            return False, 0.0
 
         for idx in bt_idx:
             if idx + 1 >= len(df5):
                 break
 
-            # Açık işlem: TP / SL kontrolü
-            if in_trade and active is not None:
-                d  = active.signal.direction
-                R  = active.risk                     # 1R (puan)
-                entry = active.entry_price
-                hit_tp = (H[idx] >= active.tp) if d == 'bull' else (L[idx] <= active.tp)
-                hit_sl = (L[idx] <= active.sl) if d == 'bull' else (H[idx] >= active.sl)
-                if hit_sl and hit_tp:
-                    hit_tp = False  # aynı mumda her ikisi → SL önce
-
-                if hit_tp or hit_sl:
-                    exit_price = active.tp if hit_tp else active.sl
-                    # PnL R-katsayısı: TP→+rr, orijinal SL→-1, breakeven SL→0
-                    mult = ((exit_price - entry) if d == 'bull'
-                            else (entry - exit_price)) / (R + 1e-10)
-                    dollar = mult * active.risk_dollar
-                    equity += dollar
-                    active.exit_price    = exit_price
-                    active.exit_time     = TM[idx]
-                    active.result        = ('WIN' if mult > 0.01 else
-                                            ('BE' if abs(mult) <= 0.01 else 'LOSS'))
-                    active.pnl_dollar    = round(dollar, 2)
-                    active.equity_after  = round(equity, 2)
-                    trades.append(active)
-                    in_trade = False
-                    active   = None
-                # Breakeven: bu barda çıkış olmadıysa ve 1R kâra ulaşıldıysa
-                # SL'i entry'ye taşı.
-                elif self.breakeven_at_R is not None and active.sl != entry:
-                    be_lvl = (entry + self.breakeven_at_R * R if d == 'bull'
-                              else entry - self.breakeven_at_R * R)
-                    reached = (H[idx] >= be_lvl) if d == 'bull' else (L[idx] <= be_lvl)
-                    if reached:
-                        active.sl = round(entry, 2)
-                        # KONSERVATİF intra-bar: aynı mumda BE seviyesine
-                        # ulaşıp giriş seviyesine geri çekiliş varsa, iyimser
-                        # "TP'ye taşındı" varsayımı yerine BE ile kapat (PnL~0).
-                        # Tek tick yolunu bilemeyiz; drawdown sızıntısını önler.
-                        be_hit_now = ((L[idx] <= active.sl) if d == 'bull'
-                                      else (H[idx] >= active.sl))
-                        if be_hit_now:
-                            exit_price = active.sl          # = entry → BE
-                            mult = ((exit_price - entry) if d == 'bull'
-                                    else (entry - exit_price)) / (R + 1e-10)
-                            dollar = mult * active.risk_dollar
-                            equity += dollar
-                            active.exit_price   = exit_price
-                            active.exit_time    = TM[idx]
-                            active.result       = 'BE'
-                            active.pnl_dollar   = round(dollar, 2)
-                            active.equity_after = round(equity, 2)
-                            trades.append(active)
-                            in_trade = False
-                            active   = None
-                # Exit sonrası aynı barda yeni giriş değerlendirilebilir;
-                # hâlâ açık işlem varsa bu barı atla.
-                if in_trade:
+            # ── Açık işlemleri kapat (FVG ve PRZ slotları bağımsız) ──────
+            for slot_key in ('fvg', 'prz'):
+                t = active_fvg if slot_key == 'fvg' else active_prz
+                if t is None:
                     continue
+                exited, delta = _process_exit(t)
+                if exited:
+                    equity         += delta
+                    t.equity_after  = round(equity, 2)
+                    trades.append(t)
+                    if slot_key == 'fvg':
+                        active_fvg = None
+                    else:
+                        active_prz = None
+
+            # İki slot da doluysa sinyal arama
+            if active_fvg is not None and active_prz is not None:
+                continue
 
             # Sinyal değerlendirme
             signal = self.brain.evaluate(
@@ -1907,7 +1899,14 @@ class BacktestEngine:
                     dbg['no_signal'] += 1
                 continue
 
-            # Risk hesapla (stop MSB'den, risk konfluens'ten)
+            # Sinyali ilgili slota yönlendir; dolu slot için atla
+            is_prz = 'PRZ' in signal.confirmation_type
+            if is_prz and active_prz is not None:
+                continue   # PRZ slot dolu; FVG slot serbest ama PRZ sinyali geldi
+            if not is_prz and active_fvg is not None:
+                continue   # FVG slot dolu; PRZ slot serbest ama FVG sinyali geldi
+
+            # Risk hesapla
             entry = float(O[idx + 1])
             r = self.risk.compute(signal.direction, entry,
                                   signal.stop_price, equity, signal.risk_fraction)
@@ -1915,12 +1914,11 @@ class BacktestEngine:
                 dbg['risk_fail'] += 1
                 continue
 
-            # İşlem oluştur
             trade_id += 1
             dbg['generated'] += 1
             if signal.harmonic is not None:
                 dbg['harmonic'] += 1
-            active = Trade(
+            new_trade = Trade(
                 trade_id      = trade_id,
                 signal        = signal,
                 entry_price   = round(entry, 2),
@@ -1932,8 +1930,12 @@ class BacktestEngine:
                 rr            = self.risk.rr,
                 risk_fraction = r['risk_fraction'],
             )
-            in_trade = True
-            # Kullanım kuralı: tetikleyici 1H FVG'yi tüket + pending'den çıkar
+            if is_prz:
+                active_prz = new_trade
+            else:
+                active_fvg = new_trade
+
+            # Kullanım kuralı: tetikleyici FVG'yi tüket + pending'den çıkar
             if signal.trigger_fvg is not None:
                 fid = signal.trigger_fvg.fvg_id
                 self.brain.used_fvg_ids.add(fid)
@@ -1941,13 +1943,14 @@ class BacktestEngine:
                     self.brain.pending[d] = [
                         p for p in self.brain.pending[d] if p['fvg_id'] != fid]
 
-        # Dönem sonu açık işlem
-        if in_trade and active is not None:
-            active.exit_price    = float(C[-1])
-            active.exit_time     = TM[-1]
-            active.result        = 'OPEN'
-            active.equity_after  = round(equity, 2)
-            trades.append(active)
+        # Dönem sonu açık işlemler
+        for t in (active_fvg, active_prz):
+            if t is not None:
+                t.exit_price   = float(C[-1])
+                t.exit_time    = TM[-1]
+                t.result       = 'OPEN'
+                t.equity_after = round(equity, 2)
+                trades.append(t)
 
         st = self.brain.stats
         print(f"  FİLTRE ÖZETİ:")
