@@ -24,4 +24,23 @@ Ancak MarketBrain içindeki evaluate fonksiyonu bu sırayı takip etmiyor. Fiyat
 touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
 
 Sorun: Piyasada fiyat 1H FVG'ye bir iğne (wick) atar ve hızla oradan seker. Sen 5 dakikalık grafikte bir Kırılım (MSC) beklerken, kırılımı yapan mum büyük ihtimalle 1H FVG'nin dışında kapanacaktır. Mum FVG dışında kapandığı için touching_fvg = None döner ve sistem aslında harika çalışan bir işlemi sırf o an FVG içinde değil diye es geçer.
+Konum: MarketBrain.evaluate() + BacktestEngine.run() içindeki dbg sayımları.
+Sorun:
+
+last_skip_reason sadece no_bias durumunda set ediliyor.
+evaluate() her çağrıldığında sıfırlanmıyor.
+Session dışı veya "sinyal yok" (adım 1-2-3) durumlarda reason overwrite edilmiyor.
+Backtest'te reason = brain.last_skip_reason okunup sonra None yapılıyor ama bir sonraki bar'da stale değer kalabiliyor.
+
+Sonuç:
+
+Haftalık bias olmayan bir bar'dan sonra, bias olan ama seans dışı bir bar "no_bias" olarak sayılıyor.
+Teşhis özeti (FİLTRE ÖZETİ) yanlış rakamlar veriyor (özellikle bias + seans karışık dönemlerde).
+
+Örnek senaryo:
+Bar 100: no_bias → reason='no_bias'
+Bar 101: bias var ama seans dışı → evaluate() reason'ı değiştirmiyor → backtest "no_bias" sayıyor (yanlış).
+2. MSC "Temas Sonrası" Koşulu Tam Olarak Uygulanmıyor (MarketBrain)
+3BacktestEngine.run()Exit işlendikten sonra continue → aynı barda yeni sinyal kontrolü yapılmıyorNadir (aynı barda exit + yeni entry), ama teorik olarak aynı bar'da yön değişimi kaçırılabilir. continue'yu kaldırıp if in_trade: continue şeklinde guard koymak更好4RiskManager.compute()idx (sinyal barı) kullanılıyor, entry ise O[idx+1]5M'de fark küçük ama idealde swing'i entry bar'ına göre almak更好5SwingEngine.best_swing_low/highHiç aday yoksa son lookback içindeki min/max fallbackErken bar'larda veya flat piyasada çok geniş SL riski doğurabilir (max_risk filtresi zaten engelliyor büyük oranda)6FVGEngine.price_touchingbuf_ratio=0.05 (gap'in %5'i)Oldukça geniş buffer. Daha sıkı (0.02-0.03) daha az false touch verebilir7ReportGenerator.generateBaşlıkta hala v9.0 yazıyorKüçük, düzelt: v10.08DataEngineCSV yoksa sadece son ~60 gün 5M veriUzun backtest için kullanıcıdan uzun CSV bekliyor. Uyarı eklenebilir9PerformanceAnalyticspf = inf durumunda print'te sorun yok ama görselde garip durabilirif len(loss_p) == 0: pf = float('inf') zaten var, kabul edilebilir
+SEANS FILTRESINI TAMAMEN KALDIR. 
 https://www.youtube.com/watch?v=Zwthp-JQT0k referans video 
