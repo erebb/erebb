@@ -24,3 +24,4 @@ Ancak MarketBrain içindeki evaluate fonksiyonu bu sırayı takip etmiyor. Fiyat
 touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
 
 Sorun: Piyasada fiyat 1H FVG'ye bir iğne (wick) atar ve hızla oradan seker. Sen 5 dakikalık grafikte bir Kırılım (MSC) beklerken, kırılımı yapan mum büyük ihtimalle 1H FVG'nin dışında kapanacaktır. Mum FVG dışında kapandığı için touching_fvg = None döner ve sistem aslında harika çalışan bir işlemi sırf o an FVG içinde değil diye es geçer.
+https://www.youtube.com/watch?v=Zwthp-JQT0k referans video 
