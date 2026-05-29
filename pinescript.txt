@@ -1,0 +1,608 @@
+//@version=5
+indicator("Mercüment Çözer ", shorttitle="Mercüment Çözer S", overlay=true, max_bars_back=1000, max_lines_count=500, max_labels_count=500, max_boxes_count=100)
+
+var string GRP_SWING = "Swing ZigZag"
+i_swing   = input.int(5,    "Fractal Pencere",  minval=2, maxval=20,  group=GRP_SWING)
+i_conf    = input.float(40, "Min Guven Skoru",  minval=0, maxval=100, group=GRP_SWING)
+i_ddist   = input.float(6,  "Maks D Mesafe",    minval=1, maxval=30,  group=GRP_SWING)
+i_show_zz = input.bool(true,"ZigZag Goster",                         group=GRP_SWING)
+i_scan_n  = input.int(5,    "XABC Seti Sayisi", minval=1, maxval=8,   group=GRP_SWING)
+i_prz_ext = input.int(20,   "PRZ Kutu Uzunlugu",minval=5,             group=GRP_SWING)
+
+var string GRP_HARM = "Harmonik"
+i_gartley = input.bool(true,  "Gartley",   inline="h1", group=GRP_HARM)
+i_bat     = input.bool(true,  "Bat",       inline="h1", group=GRP_HARM)
+i_altbat  = input.bool(true,  "AltBat",    inline="h1", group=GRP_HARM)
+i_bfly    = input.bool(true,  "Butterfly", inline="h2", group=GRP_HARM)
+i_crab    = input.bool(true,  "Crab",      inline="h2", group=GRP_HARM)
+i_dcrab   = input.bool(false, "DeepCrab",  inline="h2", group=GRP_HARM)
+i_shark   = input.bool(true,  "Shark",     inline="h3", group=GRP_HARM)
+i_cypher  = input.bool(true,  "Cypher",    inline="h3", group=GRP_HARM)
+
+var string GRP_CS = "Candlestick"
+i_tws     = input.bool(true,  "3WS / 3BC",  group=GRP_CS)
+i_hs      = input.bool(true,  "Horseshoe",  group=GRP_CS)
+i_btr_min = input.float(0.45, "Body/Range", group=GRP_CS)
+
+var string GRP_PO3 = "Power of 3"
+i_po3     = input.bool(true,  "PO3 Aktif",   group=GRP_PO3)
+i_sweep   = input.float(0.15, "Sweep Esigi", group=GRP_PO3) / 100
+i_acc_rng = input.float(1.5,  "Birikim Band",group=GRP_PO3)
+
+var string GRP_VOL = "Hacim"
+i_vol     = input.bool(true,  "Hacim Aktif", group=GRP_VOL)
+i_vwap    = input.bool(true,  "VWAP Goster", group=GRP_VOL)
+i_vol_lb  = input.int(10,     "Lookback",    group=GRP_VOL)
+i_abs_vol = input.float(1.0,  "Absorb Z",    group=GRP_VOL)
+i_clx_mul = input.float(2.0,  "Klimaks x",   group=GRP_VOL)
+
+var string GRP_TR = "Trend"
+i_ema_s    = input.int(50,    "EMA Kisa",   group=GRP_TR)
+i_ema_l    = input.int(200,   "EMA Uzun",   group=GRP_TR)
+i_show_ema = input.bool(true, "EMA Goster", group=GRP_TR)
+
+C_BULL     = color.new(color.lime,   0)
+C_BEAR     = color.new(color.red,    0)
+C_PRZ_B_BG = color.new(color.lime,  85)
+C_PRZ_R_BG = color.new(color.red,   85)
+C_ZZ       = color.new(color.silver, 50)
+
+atr14    = ta.atr(14)
+ema_s    = ta.ema(close, i_ema_s)
+ema_l    = ta.ema(close, i_ema_l)
+up_trend = ema_s > ema_l
+
+// ─── ZigZag ───────────────────────────────────────────────────────────────────
+f_is_sh(len) =>
+    bool ok = true
+    for j = 1 to len
+        if high[len] <= high[len - j] or high[len] <= high[len + j]
+            ok := false
+            break
+    ok
+
+f_is_sl(len) =>
+    bool ok = true
+    for j = 1 to len
+        if low[len] >= low[len - j] or low[len] >= low[len + j]
+            ok := false
+            break
+    ok
+
+is_sh   = f_is_sh(i_swing)
+is_sl   = f_is_sl(i_swing)
+pvt_bar = bar_index - i_swing
+
+var float[] zp = array.new_float()
+var int[]   zb = array.new_int()
+var int[]   zt = array.new_int()
+
+zz_n()      => array.size(zp)
+zz_last_t() => zz_n() > 0 ? array.get(zt, zz_n() - 1) : 0
+zz_last_p() => zz_n() > 0 ? array.get(zp, zz_n() - 1) : float(na)
+
+zz_push(p, b, t) =>
+    array.push(zp, p)
+    array.push(zb, b)
+    array.push(zt, t)
+    if array.size(zp) > 50
+        array.shift(zp)
+        array.shift(zb)
+        array.shift(zt)
+
+zz_replace(p, b) =>
+    n = zz_n()
+    if n > 0
+        array.set(zp, n - 1, p)
+        array.set(zb, n - 1, b)
+
+if is_sh
+    lt = zz_last_t()
+    lp = zz_last_p()
+    if lt == 1
+        if high[i_swing] > lp
+            zz_replace(high[i_swing], pvt_bar)
+    else
+        zz_push(high[i_swing], pvt_bar, 1)
+
+if is_sl
+    lt = zz_last_t()
+    lp = zz_last_p()
+    if lt == -1
+        if low[i_swing] < lp
+            zz_replace(low[i_swing], pvt_bar)
+    else
+        zz_push(low[i_swing], pvt_bar, -1)
+
+var line[] zlines = array.new_line()
+if i_show_zz and barstate.islast
+    for ln in zlines
+        line.delete(ln)
+    array.clear(zlines)
+    nn = zz_n()
+    if nn >= 2
+        for i = 1 to nn - 1
+            ln = line.new(array.get(zb, i-1), array.get(zp, i-1), array.get(zb, i), array.get(zp, i), color=C_ZZ, width=1)
+            array.push(zlines, ln)
+
+// ─── BC→CD lookup (_BC_TO_CD tablosundan en yakın cd_r) ───────────────────────
+// keys: 0.382, 0.500, 0.618, 0.786, 0.886
+// Her pattern için cd değerleri basari.py _BC_TO_CD tablosundan
+f_nearest_cd(ab_bc, cd382, cd500, cd618, cd786, cd886) =>
+    float best_cd = cd618
+    float best_d  = 999.0
+    d382 = math.abs(ab_bc - 0.382)
+    d500 = math.abs(ab_bc - 0.500)
+    d618 = math.abs(ab_bc - 0.618)
+    d786 = math.abs(ab_bc - 0.786)
+    d886 = math.abs(ab_bc - 0.886)
+    if d382 < best_d
+        best_d  := d382
+        best_cd := cd382
+    if d500 < best_d
+        best_d  := d500
+        best_cd := cd500
+    if d618 < best_d
+        best_d  := d618
+        best_cd := cd618
+    if d786 < best_d
+        best_d  := d786
+        best_cd := cd786
+    if d886 < best_d
+        best_cd := cd886
+    best_cd
+
+f_in(v, lo, hi) => v >= lo and v <= hi
+
+f_conf(xa_ab, xa_lo, xa_hi, ab_bc, ab_lo, ab_hi) =>
+    xa_dev = math.abs(xa_ab - (xa_lo + xa_hi) / 2.0) / math.max((xa_lo + xa_hi) / 2.0, 1e-10)
+    ab_dev = math.abs(ab_bc - (ab_lo + ab_hi) / 2.0) / math.max((ab_lo + ab_hi) / 2.0, 1e-10)
+    math.max(0.0, math.min(100.0, 100.0 - (xa_dev * 40.0 + ab_dev * 40.0)))
+
+// ─── PRZ builder: d1=XA*AD proj, d2=BC→CD lookup, dar kutu ───────────────────
+f_prz(d1, d2, x_p, bullish, retrace) =>
+    // X-clamp: retracement patternlerde D, X'i geçemez
+    float lo = math.min(d1, d2)
+    float hi = math.max(d1, d2)
+    if retrace
+        if bullish
+            lo := math.max(lo, x_p)
+            hi := math.max(hi, x_p)
+        else
+            lo := math.min(lo, x_p)
+            hi := math.min(hi, x_p)
+    // Çok geniş PRZ reddet (>%4)
+    ctr = math.abs((lo + hi) / 2.0)
+    gap_pct = ctr > 1e-10 ? (hi - lo) / ctr * 100 : 99.0
+    valid = gap_pct <= 4.0
+    [lo, hi, valid]
+
+f_ddist(cur_p, a_p, xa, ad_lo, ad_hi, d1, bullish) =>
+    dlo = bullish ? a_p - xa * ad_hi : a_p + xa * ad_lo
+    dhi = bullish ? a_p - xa * ad_lo : a_p + xa * ad_hi
+    cur_p >= math.min(dlo, dhi) and cur_p <= math.max(dlo, dhi) ? 0.0 : math.abs(cur_p - d1) / math.max(math.abs(d1), 1e-10) * 100
+
+f_check(x_p, a_p, b_p, c_p, bullish, cur_p) =>
+    xa   = math.abs(x_p - a_p)
+    ab   = math.abs(a_p - b_p)
+    bc   = math.abs(b_p - c_p)
+    bool   found = false
+    string pname = ""
+    float  pconf = 0.0
+    float  plo   = na
+    float  phi   = na
+
+    // Yapı kontrolü: alternating high/low
+    struct_ok = false
+    if bullish
+        struct_ok := b_p > x_p and b_p < a_p and c_p > b_p and c_p < a_p
+    else
+        struct_ok := b_p < x_p and b_p > a_p and c_p < b_p and c_p > a_p
+
+    if xa > 1e-10 and ab > 1e-10 and struct_ok
+        xa_ab  = ab / xa
+        ab_bc  = bc / math.max(ab, 1e-10)
+        xb_ext = math.abs(x_p - b_p) / xa
+        xc_prj = math.abs(x_p - c_p) / xa
+
+        // d1 = XA * xa_ad_mid (primary projection)
+        // d2 = BC * cd_r      (BC→CD lookup)
+
+        // GARTLEY — _BC_TO_CD: {0.382:1.618, 0.500:1.414, 0.618:1.272, 0.786:1.272, 0.886:1.272}
+        if i_gartley and not found
+            if f_in(xa_ab, 0.550, 0.680) and f_in(ab_bc, 0.382, 0.886)
+                cv = f_conf(xa_ab, 0.550, 0.680, ab_bc, 0.382, 0.886)
+                if cv >= i_conf
+                    xa_ad_mid = (0.750 + 0.820) / 2.0
+                    d1  = bullish ? a_p - xa * xa_ad_mid : a_p + xa * xa_ad_mid
+                    cd_r = f_nearest_cd(ab_bc, 1.618, 1.414, 1.272, 1.272, 1.272)
+                    d2  = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    dd  = f_ddist(cur_p, a_p, xa, 0.750, 0.820, d1, bullish)
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, true)
+                        if ok
+                            found := true
+                            pname := "Gartley"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+        // BAT — _BC_TO_CD: {0.382:2.618, 0.500:2.000, 0.618:1.618, 0.786:1.618, 0.886:1.618}
+        if i_bat and not found
+            if f_in(xa_ab, 0.320, 0.560) and f_in(ab_bc, 0.382, 0.886)
+                cv = f_conf(xa_ab, 0.320, 0.560, ab_bc, 0.382, 0.886)
+                if cv >= i_conf
+                    xa_ad_mid = (0.850 + 0.920) / 2.0
+                    d1  = bullish ? a_p - xa * xa_ad_mid : a_p + xa * xa_ad_mid
+                    cd_r = f_nearest_cd(ab_bc, 2.618, 2.000, 1.618, 1.618, 1.618)
+                    d2  = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    dd  = f_ddist(cur_p, a_p, xa, 0.850, 0.920, d1, bullish)
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, true)
+                        if ok
+                            found := true
+                            pname := "Bat"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+        // ALTBAT — _BC_TO_CD: {0.382:3.618, 0.500:2.618, 0.618:2.240, 0.786:2.000, 0.886:2.000}
+        if i_altbat and not found
+            if f_in(xa_ab, 0.080, 0.420) and f_in(ab_bc, 0.382, 0.886)
+                cv = f_conf(xa_ab, 0.080, 0.420, ab_bc, 0.382, 0.886)
+                if cv >= i_conf
+                    xa_ad_mid = (1.080 + 1.180) / 2.0
+                    d1  = bullish ? a_p - xa * xa_ad_mid : a_p + xa * xa_ad_mid
+                    cd_r = f_nearest_cd(ab_bc, 3.618, 2.618, 2.240, 2.000, 2.000)
+                    d2  = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    dd  = f_ddist(cur_p, a_p, xa, 1.080, 1.180, d1, bullish)
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, false)
+                        if ok
+                            found := true
+                            pname := "AltBat"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+        // BUTTERFLY — _BC_TO_CD: {0.382:2.618, 0.500:2.000, 0.618:2.240, 0.786:2.618, 0.886:2.618}
+        if i_bfly and not found
+            if f_in(xa_ab, 0.720, 0.850) and f_in(ab_bc, 0.382, 0.886)
+                cv = f_conf(xa_ab, 0.720, 0.850, ab_bc, 0.382, 0.886)
+                if cv >= i_conf
+                    xa_ad_mid = (1.200 + 1.680) / 2.0
+                    d1  = bullish ? a_p - xa * xa_ad_mid : a_p + xa * xa_ad_mid
+                    cd_r = f_nearest_cd(ab_bc, 2.618, 2.000, 2.240, 2.618, 2.618)
+                    d2  = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    dd  = f_ddist(cur_p, a_p, xa, 1.200, 1.680, d1, bullish)
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, false)
+                        if ok
+                            found := true
+                            pname := "Butterfly"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+        // CRAB — _BC_TO_CD: {0.382:3.618, 0.500:2.618, 0.618:2.618, 0.786:2.618, 0.886:2.618}
+        if i_crab and not found
+            if f_in(xa_ab, 0.350, 0.650) and f_in(ab_bc, 0.382, 0.886)
+                cv = f_conf(xa_ab, 0.350, 0.650, ab_bc, 0.382, 0.886)
+                if cv >= i_conf
+                    xa_ad_mid = (1.550 + 1.700) / 2.0
+                    d1  = bullish ? a_p - xa * xa_ad_mid : a_p + xa * xa_ad_mid
+                    cd_r = f_nearest_cd(ab_bc, 3.618, 2.618, 2.618, 2.618, 2.618)
+                    d2  = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    dd  = f_ddist(cur_p, a_p, xa, 1.550, 1.700, d1, bullish)
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, false)
+                        if ok
+                            found := true
+                            pname := "Crab"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+        // DEEPCRAB — _BC_TO_CD: {0.382:3.618, 0.500:2.618, 0.618:2.618, 0.786:2.618, 0.886:2.618}
+        if i_dcrab and not found
+            if f_in(xa_ab, 0.850, 0.930) and f_in(ab_bc, 0.382, 0.886)
+                cv = f_conf(xa_ab, 0.850, 0.930, ab_bc, 0.382, 0.886)
+                if cv >= i_conf
+                    xa_ad_mid = (1.550 + 1.700) / 2.0
+                    d1  = bullish ? a_p - xa * xa_ad_mid : a_p + xa * xa_ad_mid
+                    cd_r = f_nearest_cd(ab_bc, 3.618, 2.618, 2.618, 2.618, 2.618)
+                    d2  = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    dd  = f_ddist(cur_p, a_p, xa, 1.550, 1.700, d1, bullish)
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, false)
+                        if ok
+                            found := true
+                            pname := "DeepCrab"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+        // SHARK — _BC_TO_CD: {0.382:2.240, 0.500:2.000, 0.618:1.618, 0.786:1.618, 0.886:1.618}
+        if i_shark and not found
+            shark_b_ok = bullish ? b_p > a_p : b_p < a_p
+            if shark_b_ok and f_in(xb_ext, 1.080, 1.680) and f_in(ab_bc, 1.500, 2.350)
+                xb_id  = (1.080 + 1.680) / 2.0
+                ab_id  = (1.500 + 2.350) / 2.0
+                xb_dev = math.abs(xb_ext - xb_id) / math.max(xb_id, 1e-10)
+                ab_dev = math.abs(ab_bc  - ab_id) / math.max(ab_id, 1e-10)
+                cv = math.max(0.0, math.min(100.0, 100.0 - (xb_dev * 40.0 + ab_dev * 40.0)))
+                if cv >= i_conf
+                    xc_len = math.abs(x_p - c_p)
+                    d1 = bullish ? c_p - xc_len * 0.886 : c_p + xc_len * 0.886
+                    cd_r = f_nearest_cd(ab_bc, 2.240, 2.000, 1.618, 1.618, 1.618)
+                    d2 = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    dd = math.abs(cur_p - d1) / math.max(math.abs(d1), 1e-10) * 100
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, false)
+                        if ok
+                            found := true
+                            pname := "Shark"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+        // CYPHER — _BC_TO_CD: {0.382:1.272, 0.500:1.000, 0.618:0.786, 0.786:0.786, 0.886:0.786}
+        if i_cypher and not found
+            c_ex = bullish ? c_p > a_p : c_p < a_p
+            if c_ex and f_in(xa_ab, 0.350, 0.650) and f_in(xc_prj, 1.200, 1.500)
+                xc_id  = (1.200 + 1.500) / 2.0
+                xa_id  = (0.350 + 0.650) / 2.0
+                xc_dev = math.abs(xc_prj - xc_id) / math.max(xc_id, 1e-10)
+                xa_dev = math.abs(xa_ab  - xa_id) / math.max(xa_id, 1e-10)
+                cv = math.max(0.0, math.min(100.0, 100.0 - (xa_dev * 40.0 + xc_dev * 40.0)))
+                if cv >= i_conf
+                    xc_len = math.abs(x_p - c_p)
+                    d1 = bullish ? c_p - xc_len * 0.786 : c_p + xc_len * 0.786
+                    cd_r = f_nearest_cd(ab_bc, 1.272, 1.000, 0.786, 0.786, 0.786)
+                    d2 = bullish ? c_p - bc * cd_r : c_p + bc * cd_r
+                    in_cy = cur_p >= math.min(d1, d2) and cur_p <= math.max(d1, d2)
+                    dd = in_cy ? 0.0 : math.abs(cur_p - d1) / math.max(math.abs(d1), 1e-10) * 100
+                    if dd <= i_ddist
+                        [cl, ch, ok] = f_prz(d1, d2, x_p, bullish, true)
+                        if ok
+                            found := true
+                            pname := "Cypher"
+                            pconf := cv
+                            plo   := cl
+                            phi   := ch
+
+    [found, pname, pconf, plo, phi]
+
+// ─── Çizim ────────────────────────────────────────────────────────────────────
+var label[] h_labels = array.new_label()
+var box[]   h_boxes  = array.new_box()
+var line[]  h_lines  = array.new_line()
+
+if barstate.islast
+    for lbl in h_labels
+        label.delete(lbl)
+    for bx in h_boxes
+        box.delete(bx)
+    for ln in h_lines
+        line.delete(ln)
+    array.clear(h_labels)
+    array.clear(h_boxes)
+    array.clear(h_lines)
+
+    nn = zz_n()
+    if nn >= 4
+        scan_limit = math.min(i_scan_n, nn - 3)
+        for s_off = 0 to scan_limit - 1
+            idx = nn - 4 - s_off
+            if idx >= 0
+                xp  = array.get(zp, idx)
+                xb_ = array.get(zb, idx)
+                ap  = array.get(zp, idx + 1)
+                ab_ = array.get(zb, idx + 1)
+                bp  = array.get(zp, idx + 2)
+                bb_ = array.get(zb, idx + 2)
+                cp  = array.get(zp, idx + 3)
+                cb_ = array.get(zb, idx + 3)
+                xt  = array.get(zt, idx)
+                at  = array.get(zt, idx + 1)
+                bt  = array.get(zt, idx + 2)
+                ct  = array.get(zt, idx + 3)
+
+                bull_struct = xt == -1 and at == 1 and bt == -1 and ct == 1
+                bear_struct = xt == 1  and at == -1 and bt == 1  and ct == -1
+
+                if bull_struct
+                    [fnd, pname, pconf, plo, phi] = f_check(xp, ap, bp, cp, true, close)
+                    if fnd
+                        lc    = C_BULL
+                        pc_bg = C_PRZ_B_BG
+                        cs    = str.tostring(math.round(pconf, 1))
+                        array.push(h_labels, label.new(cb_, cp, pname + "\nBULL %" + cs, style=label.style_label_up, color=color.new(lc, 10), textcolor=color.white, size=size.small))
+                        array.push(h_labels, label.new(xb_, xp, "X", style=label.style_label_up,  color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_labels, label.new(ab_, ap, "A", style=label.style_label_down, color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_labels, label.new(bb_, bp, "B", style=label.style_label_up,   color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_labels, label.new(cb_, cp, "C", style=label.style_label_down, color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_lines, line.new(xb_, xp, ab_, ap, color=lc, width=2))
+                        array.push(h_lines, line.new(ab_, ap, bb_, bp, color=lc, width=2))
+                        array.push(h_lines, line.new(bb_, bp, cb_, cp, color=lc, width=2))
+                        if not na(plo) and not na(phi)
+                            array.push(h_boxes,  box.new(cb_, phi, cb_ + i_prz_ext, plo, bgcolor=pc_bg, border_color=lc, border_width=1))
+                            array.push(h_labels, label.new(cb_ + i_prz_ext, (plo + phi) / 2, "PRZ\n" + str.tostring(phi, "#.####") + "\n|\n" + str.tostring(plo, "#.####"), style=label.style_label_left, color=pc_bg, textcolor=lc, size=size.tiny))
+
+                if bear_struct
+                    [fnd, pname, pconf, plo, phi] = f_check(xp, ap, bp, cp, false, close)
+                    if fnd
+                        lc    = C_BEAR
+                        pc_bg = C_PRZ_R_BG
+                        cs    = str.tostring(math.round(pconf, 1))
+                        array.push(h_labels, label.new(cb_, cp, pname + "\nBEAR %" + cs, style=label.style_label_down, color=color.new(lc, 10), textcolor=color.white, size=size.small))
+                        array.push(h_labels, label.new(xb_, xp, "X", style=label.style_label_down, color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_labels, label.new(ab_, ap, "A", style=label.style_label_up,   color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_labels, label.new(bb_, bp, "B", style=label.style_label_down, color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_labels, label.new(cb_, cp, "C", style=label.style_label_up,   color=color.new(lc, 70), textcolor=lc, size=size.tiny))
+                        array.push(h_lines, line.new(xb_, xp, ab_, ap, color=lc, width=2))
+                        array.push(h_lines, line.new(ab_, ap, bb_, bp, color=lc, width=2))
+                        array.push(h_lines, line.new(bb_, bp, cb_, cp, color=lc, width=2))
+                        if not na(plo) and not na(phi)
+                            array.push(h_boxes,  box.new(cb_, phi, cb_ + i_prz_ext, plo, bgcolor=pc_bg, border_color=lc, border_width=1))
+                            array.push(h_labels, label.new(cb_ + i_prz_ext, (plo + phi) / 2, "PRZ\n" + str.tostring(phi, "#.####") + "\n|\n" + str.tostring(plo, "#.####"), style=label.style_label_left, color=pc_bg, textcolor=lc, size=size.tiny))
+
+// ─── Candlestick ──────────────────────────────────────────────────────────────
+cs_o3 = open[2]
+cs_h3 = high[2]
+cs_l3 = low[2]
+cs_c3 = close[2]
+cs_o2 = open[1]
+cs_h2 = high[1]
+cs_l2 = low[1]
+cs_c2 = close[1]
+cs_o1 = open
+cs_h1 = high
+cs_l1 = low
+cs_c1 = close
+cs_b3 = math.abs(cs_c3 - cs_o3)
+cs_r3 = cs_h3 - cs_l3
+cs_b2 = math.abs(cs_c2 - cs_o2)
+cs_r2 = cs_h2 - cs_l2
+cs_b1 = math.abs(cs_c1 - cs_o1)
+cs_r1 = cs_h1 - cs_l1
+ptol  = 0.20
+
+k_br3    = cs_r3 > 0 ? cs_b3 / cs_r3 : 0.0
+k_br2    = cs_r2 > 0 ? cs_b2 / cs_r2 : 0.0
+k_br1    = cs_r1 > 0 ? cs_b1 / cs_r1 : 0.0
+k_br_min = k_br3 >= i_btr_min and k_br2 >= i_btr_min and k_br1 >= i_btr_min
+bmax     = math.max(cs_b3, math.max(cs_b2, cs_b1))
+bmin     = math.min(cs_b3, math.min(cs_b2, cs_b1))
+k_ratio  = bmin > 0 and bmax / bmin <= 2.0
+k_minbod = cs_b3 >= atr14 * 0.15 and cs_b2 >= atr14 * 0.15 and cs_b1 >= atr14 * 0.15
+
+k_open_ok(o_cur, o_prev, c_prev, b_prev) =>
+    lo_ok = o_cur >= math.min(o_prev, c_prev) - b_prev * ptol
+    hi_ok = o_cur <= math.max(o_prev, c_prev) + b_prev * ptol
+    lo_ok and hi_ok
+
+tws_c1 = cs_c3 > cs_o3 and cs_c2 > cs_o2 and cs_c1 > cs_o1
+tws_c2 = k_br_min and cs_c2 > cs_c3 and cs_c1 > cs_c2
+tws_c3 = k_open_ok(cs_o2, cs_o3, cs_c3, cs_b3)
+tws_c4 = k_open_ok(cs_o1, cs_o2, cs_c2, cs_b2)
+tws_c5 = (cs_h3 - math.max(cs_o3, cs_c3)) <= cs_b3 * 0.40
+tws_c6 = (cs_h2 - math.max(cs_o2, cs_c2)) <= cs_b2 * 0.40
+tws_c7 = (cs_h1 - math.max(cs_o1, cs_c1)) <= cs_b1 * 0.40
+tws    = i_tws and tws_c1 and tws_c2 and tws_c3 and tws_c4 and tws_c5 and tws_c6 and tws_c7 and k_ratio and k_minbod
+
+tbc_c1 = cs_c3 < cs_o3 and cs_c2 < cs_o2 and cs_c1 < cs_o1
+tbc_c2 = k_br_min and cs_c2 < cs_c3 and cs_c1 < cs_c2
+tbc_c3 = k_open_ok(cs_o2, cs_o3, cs_c3, cs_b3)
+tbc_c4 = k_open_ok(cs_o1, cs_o2, cs_c2, cs_b2)
+tbc_c5 = (math.min(cs_o3, cs_c3) - cs_l3) <= cs_b3 * 0.40
+tbc_c6 = (math.min(cs_o2, cs_c2) - cs_l2) <= cs_b2 * 0.40
+tbc_c7 = (math.min(cs_o1, cs_c1) - cs_l1) <= cs_b1 * 0.40
+tbc    = i_tws and tbc_c1 and tbc_c2 and tbc_c3 and tbc_c4 and tbc_c5 and tbc_c6 and tbc_c7 and k_ratio and k_minbod
+
+plotshape(tws, "Three White Soldiers", shape.triangleup,   location.belowbar, color.new(color.lime, 0), size=size.small, text="3WS")
+plotshape(tbc, "Three Black Crows",    shape.triangledown, location.abovebar, color.new(color.red,  0), size=size.small, text="3BC")
+alertcondition(tws, "Three White Soldiers", "THREE WHITE SOLDIERS!")
+alertcondition(tbc, "Three Black Crows",    "THREE BLACK CROWS!")
+
+// ─── Horseshoe ────────────────────────────────────────────────────────────────
+m5o = open[4]
+m5h = high[4]
+m5l = low[4]
+m5c = close[4]
+m4o = open[3]
+m4h = high[3]
+m4l = low[3]
+m4c = close[3]
+m3o = open[2]
+m3h = high[2]
+m3l = low[2]
+m3c = close[2]
+m2o = open[1]
+m2h = high[1]
+m2l = low[1]
+m2c = close[1]
+m5b = math.abs(m5c - m5o)
+m3b = math.abs(m3c - m3o)
+m1b = math.abs(close - open)
+
+hs_b1 = m5c > m5o and m4c < m4o and m5b > 0 and m3b <= m5b * 0.50
+hs_b2 = m3l <= m4l and m3l <= m2l and m2c < m2o and close > open
+hs_b3 = m1b >= m5b * 0.60 and close >= m5c * 0.96
+hs_b4 = math.abs(m4c - m2c) / math.max(math.abs(m5c - m3c), 1e-10) < 0.70 and m5b >= atr14 * 0.20
+hs_bull = i_hs and hs_b1 and hs_b2 and hs_b3 and hs_b4
+
+hs_r1 = m5c < m5o and m4c > m4o and m5b > 0 and m3b <= m5b * 0.50
+hs_r2 = m3h >= m4h and m3h >= m2h and m2c > m2o and close < open
+hs_r3 = m1b >= m5b * 0.60 and close <= m5c * 1.04
+hs_r4 = math.abs(m4c - m2c) / math.max(math.abs(m5c - m3c), 1e-10) < 0.70 and m5b >= atr14 * 0.20
+hs_bear = i_hs and hs_r1 and hs_r2 and hs_r3 and hs_r4
+
+plotshape(hs_bull, "Horseshoe Bullish", shape.circle, location.belowbar, color.new(color.aqua,   0), size=size.small, text="HS+")
+plotshape(hs_bear, "Horseshoe Bearish", shape.circle, location.abovebar, color.new(color.orange, 0), size=size.small, text="HS-")
+alertcondition(hs_bull, "Horseshoe Bullish", "HORSESHOE BULLISH!")
+alertcondition(hs_bear, "Horseshoe Bearish", "HORSESHOE BEARISH!")
+
+// ─── Power of 3 ───────────────────────────────────────────────────────────────
+var float po3_open = na
+if ta.change(time("D")) != 0
+    po3_open := open
+
+po3_ok   = not na(po3_open) and po3_open > 0.0
+acc_hi   = ta.highest(high, 10)
+acc_lo   = ta.lowest(low,   10)
+acc_rng  = po3_ok ? (acc_hi - acc_lo) / po3_open * 100 : 99.0
+jds_lo   = ta.lowest(low,  5)
+jds_hi   = ta.highest(high, 5)
+sw_thr   = po3_ok ? po3_open * i_sweep : 0.0
+vol_avg  = ta.sma(volume, 10)
+vol_ok_p = volume >= vol_avg * 0.80
+
+po3_bull = i_po3 and po3_ok and acc_rng < i_acc_rng and jds_lo < po3_open - sw_thr and close > po3_open + sw_thr and vol_ok_p
+po3_bear = i_po3 and po3_ok and acc_rng < i_acc_rng and jds_hi > po3_open + sw_thr and close < po3_open - sw_thr and vol_ok_p
+
+plotshape(po3_bull, "PO3 Bullish", shape.arrowup,   location.belowbar, color.new(color.teal,   0), size=size.normal, text="PO3+")
+plotshape(po3_bear, "PO3 Bearish", shape.arrowdown, location.abovebar, color.new(color.purple, 0), size=size.normal, text="PO3-")
+
+var line po3_line = na
+if ta.change(time("D")) != 0 and not na(po3_open)
+    line.delete(po3_line)
+    po3_line := line.new(bar_index, po3_open, bar_index + 50, po3_open, color=color.new(color.yellow, 50), style=line.style_dashed, width=1)
+
+alertcondition(po3_bull, "PO3 Bullish", "BULLISH PO3!")
+alertcondition(po3_bear, "PO3 Bearish", "BEARISH PO3!")
+
+// ─── Hacim ────────────────────────────────────────────────────────────────────
+vol_mean  = ta.sma(volume, i_vol_lb)
+vol_std   = ta.stdev(volume, i_vol_lb)
+vol_z     = vol_std > 0 ? (volume - vol_mean) / vol_std : 0.0
+rng_pct   = close > 0 ? (high - low) / close : 0.0
+rng_mean  = ta.sma(rng_pct, i_vol_lb)
+rng_std   = ta.stdev(rng_pct, i_vol_lb)
+rng_z     = rng_std > 0 ? (rng_pct - rng_mean) / rng_std : 0.0
+absorb    = i_vol and vol_z > i_abs_vol and rng_z < -0.5
+climax    = i_vol and volume > vol_mean * i_clx_mul
+vol_ema5  = ta.ema(volume, 5)
+vol_ema10 = ta.ema(volume, 10)
+exhaust   = i_vol and vol_ema5 < vol_ema10 * 0.75 and volume < vol_mean * 0.6
+
+alertcondition(absorb,  "Absorpsiyon", "Absorpsiyon!")
+alertcondition(climax,  "Klimaks",     "Hacim Klimaksi!")
+alertcondition(exhaust, "Tukenme",     "Hacim Tukenmesi!")
+
+// ─── EMA / VWAP ───────────────────────────────────────────────────────────────
+vwap_val = ta.vwap
+plot(i_vwap     ? vwap_val : na, "VWAP",     color=color.new(color.orange, 30), linewidth=1)
+plot(i_show_ema ? ema_s    : na, "EMA Kisa", color=color.new(color.blue,   40), linewidth=1)
+plot(i_show_ema ? ema_l    : na, "EMA Uzun", color=color.new(color.red,    30), linewidth=2)
+alertcondition(ta.crossover( ema_s, ema_l), "Golden Cross", "EMA Golden Cross!")
+alertcondition(ta.crossunder(ema_s, ema_l), "Death Cross",  "EMA Death Cross!")
+
+// ─── Info label ───────────────────────────────────────────────────────────────
+if barstate.islast
+    tr_str = up_trend ? "YUKARI" : "ASAGI"
+    vw_str = close > vwap_val ? "VWAP Ustu" : "VWAP Alti"
+    info   = label.new(bar_index, ta.highest(high, 20), "UHS v9.4\n" + tr_str + " | " + vw_str, style=label.style_label_left, color=up_trend ? color.new(color.lime, 20) : color.new(color.red, 20), textcolor=color.white, size=size.small)
+    array.push(h_labels, info)
+
+alertcondition(tws or tbc or hs_bull or hs_bear or po3_bull or po3_bear, "Tum Sinyaller", "UHS v9.4 sinyal!")
