@@ -2100,6 +2100,26 @@ class PerformanceAnalytics:
             wr = d['w'] / d['n'] * 100 if d['n'] else 0
             print(f"  {src:<16} : {d['n']:3d} işlem | %{wr:.0f} WR | ${d['pnl']:>+8.2f}")
 
+        # Konfluens BİLEŞENLERİ — her biri ayrı (kombine etiket '+' ile bölünür).
+        # Bir işlem birden çok bileşene sayılır: 'EMA+PRZ' hem EMA hem PRZ'ye.
+        comp_d: Dict[str, Dict] = {}
+        for t in self.done:
+            comps = [c for c in t.signal.confirmation_type.split('+') if c]
+            for c in comps:
+                comp_d.setdefault(c, {'n': 0, 'w': 0, 'l': 0, 'be': 0, 'pnl': 0.0})
+                comp_d[c]['n']   += 1
+                comp_d[c]['w']   += 1 if t.result == 'WIN'  else 0
+                comp_d[c]['l']   += 1 if t.result == 'LOSS' else 0
+                comp_d[c]['be']  += 1 if t.result == 'BE'   else 0
+                comp_d[c]['pnl'] += t.pnl_dollar
+        print(f"\n  ── KONFLUENS BİLEŞENLERİ (her biri ayrı) ───────────────────")
+        for c in sorted(comp_d, key=lambda k: comp_d[k]['pnl'], reverse=True):
+            d  = comp_d[c]
+            wr = d['w'] / (d['w'] + d['l']) * 100 if (d['w'] + d['l']) else 0
+            print(f"  {c:<8} : {d['n']:3d} işlem | "
+                  f"{d['w']}W/{d['l']}L/{d['be']}BE | "
+                  f"%{wr:.0f} WR | ${d['pnl']:>+8.2f}")
+
         # MSB türü dağılımı (breaker / mitigation / three_vol)
         msb_d: Dict[str, Dict] = {}
         for t in self.done:
