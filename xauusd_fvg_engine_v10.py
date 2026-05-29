@@ -744,12 +744,47 @@ class MSB5MEngine:
 
         last_sh, last_sl = SwingEngine.compute(H, L, atr, self.strength, self.min_atr_mult)
 
+        # Gerçek Mitigation Block için onaylı fraktal pivot dizisi (lookahead-safe)
+        piv = self._confirmed_pivots(H, L, atr, n)
+        pv  = 0                       # piv içine ilerleyen işaretçi
+        seq: List[tuple] = []         # bilinen onaylı pivotlar (idx, price, kind)
+        mblocks: List[dict] = []      # aktif mitigation blokları
+        MIT_MAX_AGE = 80              # blok dönüş beklerken yaşam süresi (bar)
+
         events: List[MSBEvent] = []
 
         for i in range(2, n):
             atr_i = max(float(atr[i]), 1e-6)
             sh    = last_sh[i - 1]
             sl    = last_sl[i - 1]
+
+            # ── Yeni onaylanan pivotları diziye ekle + failure-swing kurulumu ─
+            while pv < len(piv) and piv[pv][0] <= i:
+                _, p_idx, p_price, p_kind = piv[pv]
+                seq.append((p_idx, p_price, p_kind))
+                if len(seq) > 8:
+                    del seq[0]
+                # Bullish mitigation: ... L1, H1, L2  ve L2 > L1 (HIGHER LOW)
+                if p_kind == 'L' and len(seq) >= 3:
+                    l1, h1, l2 = seq[-3], seq[-2], seq[-1]
+                    if (l1[2] == 'L' and h1[2] == 'H' and l2[2] == 'L'
+                            and l2[1] > l1[1]):
+                        p2 = l2[0]
+                        mblocks.append(dict(
+                            dir='bull', rev=float(h1[1]),
+                            b_hi=float(H[p2]), b_lo=float(L[p2]),
+                            state='armed', formed=i, active=-1))
+                # Bearish mitigation: ... H1, L1, H2  ve H2 < H1 (LOWER HIGH)
+                elif p_kind == 'H' and len(seq) >= 3:
+                    h1, l1, h2 = seq[-3], seq[-2], seq[-1]
+                    if (h1[2] == 'H' and l1[2] == 'L' and h2[2] == 'H'
+                            and h2[1] < h1[1]):
+                        p2 = h2[0]
+                        mblocks.append(dict(
+                            dir='bear', rev=float(l1[1]),
+                            b_hi=float(H[p2]), b_lo=float(L[p2]),
+                            state='armed', formed=i, active=-1))
+                pv += 1
 
             # ── (a) BREAKER — close ile BOS ───────────────────────────────
             if not np.isnan(sh) and C[i] > sh and C[i - 1] <= sh:
@@ -769,27 +804,55 @@ class MSB5MEngine:
                     detect_time=T[i], stop_price=float(stop),
                     swing_level=float(sl), quality=min(1.0, (sl - C[i]) / atr_i)))
 
-            # ── (b) MITIGATION — order-block geri testi, close onaylı ─────
-            # Bull: i'den geriye en yakın düşüş-kapanışlı OB mumu k; fiyat
-            #       H[k]'ye wick ile geri girip C[i] > H[k] kapatırsa.
-            k = self._last_ob(C, O, i, want_down=True)
-            if k is not None and L[i] <= H[k] and C[i] > H[k] and C[i - 1] <= H[k]:
-                stop, _ = SwingEngine.best_swing_low(L, H, atr, i,
-                                                     lookback=50, min_strength=2,
-                                                     max_strength=5, min_atr_mult=0.3)
-                events.append(MSBEvent(
-                    msb_type='mitigation', direction='bull', confirm_idx=i,
-                    detect_time=T[i], stop_price=float(stop),
-                    swing_level=float(H[k]), quality=min(1.0, (C[i] - H[k]) / atr_i)))
-            k = self._last_ob(C, O, i, want_down=False)
-            if k is not None and H[i] >= L[k] and C[i] < L[k] and C[i - 1] >= L[k]:
-                stop, _ = SwingEngine.best_swing_high(H, L, atr, i,
-                                                      lookback=50, min_strength=2,
-                                                      max_strength=5, min_atr_mult=0.3)
-                events.append(MSBEvent(
-                    msb_type='mitigation', direction='bear', confirm_idx=i,
-                    detect_time=T[i], stop_price=float(stop),
-                    swing_level=float(L[k]), quality=min(1.0, (L[k] - C[i]) / atr_i)))
+            # ── (b) MITIGATION BLOCK — failure-swing + yapı tersine + dönüş ─
+            # Gerçek mitigation block: failure-to-swing (yüksek-dip/düşük-tepe)
+            # ile yapı tersine kırılır; fiyat blok bölgesine GERİ döner ki
+            # terste kalan akıllı para başabaşta kurtulsun → o dönüşte işlem.
+            #   armed   → yapı henüz tersine kırılmadı (rev seviyesi beklenir)
+            #   active  → tersine kırıldı; bloğa geri dönüş (reclaim) beklenir
+            kept: List[dict] = []
+            for b in mblocks:
+                if i - b['formed'] > MIT_MAX_AGE:
+                    continue                                    # süresi doldu
+                if b['dir'] == 'bull':
+                    if C[i] < b['b_lo']:
+                        continue                                # failure-low kırıldı → iptal
+                    if b['state'] == 'armed':
+                        if C[i] > b['rev'] and C[i - 1] <= b['rev']:
+                            b['state'] = 'active'; b['active'] = i  # yapı tersine (BOS yukarı)
+                        kept.append(b)
+                    elif i > b['active'] and L[i] <= b['b_hi'] and C[i] > b['b_hi']:
+                        stop, _ = SwingEngine.best_swing_low(
+                            L, H, atr, i, lookback=50, min_strength=2,
+                            max_strength=5, min_atr_mult=0.3)
+                        stop = min(float(stop), b['b_lo'])        # failure-low altı
+                        events.append(MSBEvent(
+                            msb_type='mitigation', direction='bull', confirm_idx=i,
+                            detect_time=T[i], stop_price=float(stop),
+                            swing_level=float(b['b_hi']),
+                            quality=min(1.0, (C[i] - b['b_hi']) / atr_i)))
+                    else:
+                        kept.append(b)                          # dönüş bekleniyor
+                else:  # bear
+                    if C[i] > b['b_hi']:
+                        continue                                # failure-high kırıldı → iptal
+                    if b['state'] == 'armed':
+                        if C[i] < b['rev'] and C[i - 1] >= b['rev']:
+                            b['state'] = 'active'; b['active'] = i  # yapı tersine (BOS aşağı)
+                        kept.append(b)
+                    elif i > b['active'] and H[i] >= b['b_lo'] and C[i] < b['b_lo']:
+                        stop, _ = SwingEngine.best_swing_high(
+                            H, L, atr, i, lookback=50, min_strength=2,
+                            max_strength=5, min_atr_mult=0.3)
+                        stop = max(float(stop), b['b_hi'])        # failure-high üstü
+                        events.append(MSBEvent(
+                            msb_type='mitigation', direction='bear', confirm_idx=i,
+                            detect_time=T[i], stop_price=float(stop),
+                            swing_level=float(b['b_lo']),
+                            quality=min(1.0, (b['b_lo'] - C[i]) / atr_i)))
+                    else:
+                        kept.append(b)
+            mblocks = kept
 
             # ── (c) THREE_VOL — Three White Soldiers / Three Black Crows ──
             # pinescript "Mercüment Çözer" mum-deseni mantığı (hacim YOK).
@@ -829,17 +892,33 @@ class MSB5MEngine:
         events.sort(key=lambda e: e.confirm_idx)
         return events
 
-    @staticmethod
-    def _last_ob(C: np.ndarray, O: np.ndarray, i: int,
-                 want_down: bool, lookback: int = 12) -> Optional[int]:
-        """i'den hemen önceki son zıt-renk order-block mumunun indeksi."""
-        for k in range(i - 1, max(0, i - lookback) - 1, -1):
-            is_down = C[k] < O[k]
-            if want_down and is_down:
-                return k
-            if (not want_down) and (C[k] > O[k]):
-                return k
-        return None
+    def _confirmed_pivots(self, H: np.ndarray, L: np.ndarray,
+                          atr: np.ndarray, n: int) -> List[tuple]:
+        """
+        Lookahead-safe onaylı fraktal pivotlar (SwingEngine ile aynı kural).
+        Pivot j, j+strength barında onaylanır. Dönüş: [(cbar, idx, price, kind)]
+        cbar artan sırada; kind 'H'|'L'. Mitigation failure-swing için kullanılır.
+        """
+        s = self.strength; mam = self.min_atr_mult
+        piv: List[tuple] = []
+        for i in range(n):
+            j = i - s
+            if j < s:
+                continue
+            atr_j = max(float(atr[j]), 1e-6)
+            if (all(H[j] > H[j - k] for k in range(1, s + 1)) and
+                    all(H[j] > H[j + k] for k in range(1, s + 1))):
+                ld = float(H[j]) - float(np.max(H[j - s:j]))
+                rd = float(H[j]) - float(np.max(H[j + 1:j + s + 1]))
+                if (ld + rd) / 2 >= mam * atr_j:
+                    piv.append((i, j, float(H[j]), 'H'))
+            if (all(L[j] < L[j - k] for k in range(1, s + 1)) and
+                    all(L[j] < L[j + k] for k in range(1, s + 1))):
+                ld = float(np.min(L[j - s:j])) - float(L[j])
+                rd = float(np.min(L[j + 1:j + s + 1])) - float(L[j])
+                if (ld + rd) / 2 >= mam * atr_j:
+                    piv.append((i, j, float(L[j]), 'L'))
+        return piv
 
     @staticmethod
     def _open_ok(o_cur: float, o_prev: float, c_prev: float,
