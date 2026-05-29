@@ -733,6 +733,10 @@ class MSB5MEngine:
       three_vol          → 2. mumun Low(long)/High(short), wick dahil
     """
 
+    # Breaker MSS şimdilik KAPALI (MSS kuralları araştırılıyor; mevcut temiz
+    # swing-kırılımı %21 WR ile zararlı ve mitigation'ı eziyordu).
+    ENABLE_BREAKER = False
+
     def __init__(self, strength: int = 2, vol_mult: float = 1.5,
                  vol_window: int = 20, body_mult: float = 1.3,
                  min_atr_mult: float = 0.3):
@@ -823,7 +827,7 @@ class MSB5MEngine:
             pen    = 0.10 * atr_i                       # min penetrasyon eşiği
             highs = [p for p in seq if p[2] == 'H']
             lows  = [p for p in seq if p[2] == 'L']
-            if disp_i and len(highs) >= 2:
+            if self.ENABLE_BREAKER and disp_i and len(highs) >= 2:
                 sh2 = highs[-1][1]; sh1 = highs[-2][1]      # sh2 = en yeni tepe
                 if (sh2 < sh1 and C[i] > sh2 + pen and C[i - 1] <= sh2):
                     stop, _ = SwingEngine.best_swing_low(
@@ -835,7 +839,7 @@ class MSB5MEngine:
                             detect_time=T[i], stop_price=float(stop),
                             swing_level=float(sh2),
                             quality=min(1.0, (C[i] - sh2) / atr_i)))
-            if disp_i and len(lows) >= 2:
+            if self.ENABLE_BREAKER and disp_i and len(lows) >= 2:
                 sl2 = lows[-1][1]; sl1 = lows[-2][1]        # sl2 = en yeni dip
                 if (sl2 > sl1 and C[i] < sl2 - pen and C[i - 1] >= sl2):
                     stop, _ = SwingEngine.best_swing_high(
@@ -2023,7 +2027,10 @@ def detect_horseshoe_1h(
 ) -> List[FVG]:
     """
     Horseshoe (at nalı) deseni — 4 mum penceresi (lookahead-safe).
-    Bull: 4. mum (bar i), önceki 3 mumun min-low'unun ALTINA wick atar + bullish kapanır.
+    ŞEKİL: 1. ve 4. mum (dış), 2. ve 3. mumdan (iç) GÖVDE olarak BÜYÜK olmalı
+           → at-nalı/kâse görünümü (büyük-küçük-küçük-büyük).
+    Bull: 4. mum BREAKOUT mumu — önceki 3 mumun min-low'unun ALTINA wick atar
+          (likidite süpürür) + bullish kapanır (dönüş).
     Bear: 4. mum önceki 3 mumun max-high'ının ÜSTÜNE wick atar + bearish kapanır.
     POI zone = 4. mumun gövdesi [min(O,C), max(O,C)].
     detect_time = T[i] + 1h (4. mum kapandıktan sonra — lookahead engeli).
@@ -2035,6 +2042,14 @@ def detect_horseshoe_1h(
     for i in range(3, n):
         h4, l4 = float(H[i]), float(L[i])
         o4, c4 = float(O[i]), float(C[i])
+
+        # ── ŞEKİL: dış mumlar (1=i-3, 4=i) iç mumlardan (2=i-2, 3=i-1) büyük ─
+        b1 = abs(float(C[i - 3]) - float(O[i - 3]))
+        b2 = abs(float(C[i - 2]) - float(O[i - 2]))
+        b3 = abs(float(C[i - 1]) - float(O[i - 1]))
+        b4 = abs(c4 - o4)
+        if not (b1 > b2 and b1 > b3 and b4 > b2 and b4 > b3):
+            continue                              # at-nalı şekli değil
 
         if direction == 'bull':
             prior_min = min(float(L[i - 3]), float(L[i - 2]), float(L[i - 1]))
