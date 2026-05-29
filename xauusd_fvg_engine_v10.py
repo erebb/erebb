@@ -100,15 +100,35 @@ class MSCSignal:
 
 
 @dataclass
+class MSBEvent:
+    """
+    5M Market Structure Break olayı — şemanın 3. adımındaki tetikleyici.
+    Üç tür: 'breaker', 'mitigation', 'three_vol'.
+    Lookahead engeli: olay confirm_idx mumunun KAPANIŞINDA onaylanır.
+    """
+    msb_type    : str    # 'breaker' | 'mitigation' | 'three_vol'
+    direction   : str    # 'bull' | 'bear'
+    confirm_idx : int    # onay mumunun indeksi (kapanış)
+    detect_time : Any    # TM[confirm_idx]
+    stop_price  : float  # tür-bazlı stop (swing veya 2. mum wick)
+    swing_level : float = 0.0
+    quality     : float = 0.0
+
+
+@dataclass
 class TradeSignal:
     """Tam onaylı trade sinyali."""
     entry_time        : Any
     direction         : str
     trigger_fvg       : Optional[FVG]           # 1H FVG tetikleyici (ya da None)
-    msc_signal        : MSCSignal
-    confirmation_type : str       # 'RSI_DIV' | 'FVG_5M' | 'EMA_CONFIRM'
+    confirmation_type : str       # 'EMA' | 'RSI' | 'EMA+RSI'
     confidence        : float     # 0–100
-    trigger_bb        : Optional['BreakerBlock'] = None  # Breaker Block tetikleyici
+    msb_type          : str = ''  # 'breaker' | 'mitigation' | 'three_vol'
+    confluence_count  : int = 1   # 1 → 0.5R, 2 → 1R
+    stop_price        : float = 0.0
+    risk_fraction     : float = 0.005
+    msc_signal        : Optional[MSCSignal] = None
+    trigger_bb        : Optional['BreakerBlock'] = None
     rsi_div_type      : Optional[str] = None
     fvg5_quality      : float = 0.0
     ema_distance_pct  : float = 0.0
@@ -125,7 +145,8 @@ class Trade:
     risk        : float
     risk_pct    : float
     risk_dollar : float
-    rr          : float = 2.0
+    rr            : float = 2.0
+    risk_fraction : float = 0.005
     exit_price  : Optional[float] = None
     exit_time   : Optional[Any]   = None
     result      : str   = 'OPEN'
@@ -585,6 +606,135 @@ class MSBEngine:
         return df
 
 
+class MSB5MEngine:
+    """
+    5M MSB (Market Structure Break) tespiti — şemanın 3. adım tetikleyicisi.
+
+    Üç tür olay üretir (hepsi mum KAPANIŞ onaylı, lookahead-güvenli):
+      • breaker    : close önceki onaylı swing seviyesini kırar (BOS).
+      • mitigation : kırılımdan önceki son zıt-renk order-block mumuna fiyat
+                     wick ile geri girer ve yön lehine kapatır.
+      • three_vol  : 3 ardışık büyük-hacimli yön-uyumlu mum (momentum patlaması).
+
+    Her olay tür-bazlı bir stop fiyatı taşır:
+      breaker/mitigation → MSB'yi yaptıran son swing low(long)/high(short)
+      three_vol          → 2. mumun Low(long)/High(short), wick dahil
+    """
+
+    def __init__(self, strength: int = 2, vol_mult: float = 1.5,
+                 vol_window: int = 20, body_mult: float = 1.3,
+                 min_atr_mult: float = 0.3):
+        self.strength     = strength
+        self.vol_mult     = vol_mult
+        self.vol_window   = vol_window
+        self.body_mult    = body_mult
+        self.min_atr_mult = min_atr_mult
+
+    def detect(self, df: pd.DataFrame, atr_series: pd.Series) -> List[MSBEvent]:
+        H   = df['High'].values.astype(float)
+        L   = df['Low'].values.astype(float)
+        C   = df['Close'].values.astype(float)
+        O   = df['Open'].values.astype(float)
+        T   = df.index
+        atr = atr_series.values.astype(float)
+        n   = len(df)
+
+        # Hacim — gerçek Volume varsa kullan; yoksa gövde-boyutu yedeği
+        if 'Volume' in df.columns:
+            V = df['Volume'].values.astype(float)
+        else:
+            V = np.zeros(n)
+        vol_ma  = pd.Series(V).rolling(self.vol_window, min_periods=1).mean().values
+        body    = np.abs(C - O)
+        body_ma = pd.Series(body).rolling(self.vol_window, min_periods=1).mean().values
+
+        def is_large(j: int) -> bool:
+            # Hacim geçerliyse 1.5× ortalama; değilse gövde 1.3× ortalama
+            if V[j] > 0 and vol_ma[j] > 0:
+                return V[j] > self.vol_mult * vol_ma[j]
+            return body[j] > self.body_mult * (body_ma[j] + 1e-10)
+
+        last_sh, last_sl = SwingEngine.compute(H, L, atr, self.strength, self.min_atr_mult)
+
+        events: List[MSBEvent] = []
+
+        for i in range(2, n):
+            atr_i = max(float(atr[i]), 1e-6)
+            sh    = last_sh[i - 1]
+            sl    = last_sl[i - 1]
+
+            # ── (a) BREAKER — close ile BOS ───────────────────────────────
+            if not np.isnan(sh) and C[i] > sh and C[i - 1] <= sh:
+                stop, _ = SwingEngine.best_swing_low(L, H, atr, i,
+                                                     lookback=50, min_strength=2,
+                                                     max_strength=5, min_atr_mult=0.3)
+                events.append(MSBEvent(
+                    msb_type='breaker', direction='bull', confirm_idx=i,
+                    detect_time=T[i], stop_price=float(stop),
+                    swing_level=float(sh), quality=min(1.0, (C[i] - sh) / atr_i)))
+            if not np.isnan(sl) and C[i] < sl and C[i - 1] >= sl:
+                stop, _ = SwingEngine.best_swing_high(H, L, atr, i,
+                                                      lookback=50, min_strength=2,
+                                                      max_strength=5, min_atr_mult=0.3)
+                events.append(MSBEvent(
+                    msb_type='breaker', direction='bear', confirm_idx=i,
+                    detect_time=T[i], stop_price=float(stop),
+                    swing_level=float(sl), quality=min(1.0, (sl - C[i]) / atr_i)))
+
+            # ── (b) MITIGATION — order-block geri testi, close onaylı ─────
+            # Bull: i'den geriye en yakın düşüş-kapanışlı OB mumu k; fiyat
+            #       H[k]'ye wick ile geri girip C[i] > H[k] kapatırsa.
+            k = self._last_ob(C, O, i, want_down=True)
+            if k is not None and L[i] <= H[k] and C[i] > H[k] and C[i - 1] <= H[k]:
+                stop, _ = SwingEngine.best_swing_low(L, H, atr, i,
+                                                     lookback=50, min_strength=2,
+                                                     max_strength=5, min_atr_mult=0.3)
+                events.append(MSBEvent(
+                    msb_type='mitigation', direction='bull', confirm_idx=i,
+                    detect_time=T[i], stop_price=float(stop),
+                    swing_level=float(H[k]), quality=min(1.0, (C[i] - H[k]) / atr_i)))
+            k = self._last_ob(C, O, i, want_down=False)
+            if k is not None and H[i] >= L[k] and C[i] < L[k] and C[i - 1] >= L[k]:
+                stop, _ = SwingEngine.best_swing_high(H, L, atr, i,
+                                                      lookback=50, min_strength=2,
+                                                      max_strength=5, min_atr_mult=0.3)
+                events.append(MSBEvent(
+                    msb_type='mitigation', direction='bear', confirm_idx=i,
+                    detect_time=T[i], stop_price=float(stop),
+                    swing_level=float(L[k]), quality=min(1.0, (L[k] - C[i]) / atr_i)))
+
+            # ── (c) THREE_VOL — 3 ardışık büyük-hacimli yön-uyumlu mum ────
+            if is_large(i) and is_large(i - 1) and is_large(i - 2):
+                if C[i] > O[i] and C[i - 1] > O[i - 1] and C[i - 2] > O[i - 2]:
+                    # Bull: stop = 2. mumun (i-1) Low'u, wick dahil
+                    events.append(MSBEvent(
+                        msb_type='three_vol', direction='bull', confirm_idx=i,
+                        detect_time=T[i], stop_price=float(L[i - 1]),
+                        swing_level=float(L[i - 1]),
+                        quality=min(1.0, body[i] / atr_i)))
+                elif C[i] < O[i] and C[i - 1] < O[i - 1] and C[i - 2] < O[i - 2]:
+                    events.append(MSBEvent(
+                        msb_type='three_vol', direction='bear', confirm_idx=i,
+                        detect_time=T[i], stop_price=float(H[i - 1]),
+                        swing_level=float(H[i - 1]),
+                        quality=min(1.0, body[i] / atr_i)))
+
+        events.sort(key=lambda e: e.confirm_idx)
+        return events
+
+    @staticmethod
+    def _last_ob(C: np.ndarray, O: np.ndarray, i: int,
+                 want_down: bool, lookback: int = 12) -> Optional[int]:
+        """i'den hemen önceki son zıt-renk order-block mumunun indeksi."""
+        for k in range(i - 1, max(0, i - lookback) - 1, -1):
+            is_down = C[k] < O[k]
+            if want_down and is_down:
+                return k
+            if (not want_down) and (C[k] > O[k]):
+                return k
+        return None
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 3b: BREAKER BLOCK ENGİNİ
 # ═══════════════════════════════════════════════════════════════════════════
@@ -909,28 +1059,32 @@ class MarketBrain:
     """
     Şemayı birebir uygulayan sinyal değerlendirme katmanı.
 
-    Adım 1 → Adım 2 → Adım 3 (RSI | FVG5 | EMA)
+    Adım 1: Fiyat 1H FVG'ye WICK ile dokundu mu? (stateful — dokunan FVG
+            tetikleyene kadar 'pending' kayıtta tutulur, fiyat çıksa bile)
+    Adım 2: Konfluens — EMA (fiyat EMA100&200 üstü/altı) ve/veya RSI uyumsuzluğu.
+            En az biri gerekli. İkisi birden varsa risk 1R, biri varsa 0.5R.
+    Adım 3: MSB tetikleyici (5M) — breaker | mitigation | three_vol.
+            Tek başına MSB → işlem YOK.
+
+    Stop: breaker/mitigation → MSB swing low/high; three_vol → 2. mum wick.
+    Sabit 1:2 RR. Seans filtresi YOK.
 
     Haftalık bias: WeeklyBiasProvider üzerinden. Bias yoksa o hafta işlem yapılmaz.
-    Yalnızca London open (07-12 UTC) ve NY open (13-17 UTC) seansları.
     """
 
-    RSI_WINDOW  = 30    # mum sayısı (5M → ~150 dk) — iki pivot sığsın
-    MSC_WINDOW  = 12    # mum sayısı (5M → ~60 dk)
-    FVG5_WIN    = 3600  # saniye (60 dk) — since_time yoksa fallback
-    SESSIONS    = [(7, 13), (13, 17)]   # London 07-13 (overlap dahil), NY 13-17 UTC
+    RSI_WINDOW         = 30   # mum sayısı (5M → ~150 dk) — iki pivot sığsın
+    TOUCH_MAX_AGE_BARS = 48   # dokunuştan sonra MSB için bekleme penceresi (~4 saat)
 
     def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None):
         self.bias = bias_provider
         self.last_skip_reason: Optional[str] = None
         # Adım-bazlı teşhis: sinyalin hangi adımda öldüğünü sayar
         self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
-        # KULLANIM KURALI: her 1H FVG / BreakerBlock yalnızca bir kez işlem açabilir
+        # KULLANIM KURALI: her 1H FVG yalnızca bir kez işlem açabilir
         self.used_fvg_ids: set = set()
-        self.used_bb_ids: set  = set()
-
-    def in_session(self, hour: int) -> bool:
-        return any(s <= hour < e for s, e in self.SESSIONS)
+        # STATEFUL: dokunmuş ama henüz MSB ile tetiklenmemiş 1H FVG'ler (yön bazlı)
+        #   {fvg_id, fvg, touch_idx, touch_time}
+        self.pending: Dict[str, List[dict]] = {'bull': [], 'bear': []}
 
     # ── RSI Diverjansı (RSIEngine'e delege) ──────────────────────────────
     def rsi_divergence(self, prices: np.ndarray,
@@ -958,24 +1112,18 @@ class MarketBrain:
                  H: np.ndarray, L: np.ndarray,
                  E100: np.ndarray, E200: np.ndarray,
                  RSI: np.ndarray,
-                 MSC_B: np.ndarray, MSC_R: np.ndarray,
-                 MSC_B_M: np.ndarray, MSC_R_M: np.ndarray,
                  TM: pd.Index,
                  fvg1_bull: List[FVG], mit1_bull: Dict,
                  fvg1_bear: List[FVG], mit1_bear: Dict,
-                 fvg5_bull: List[FVG], mit5_bull: Dict,
-                 fvg5_bear: List[FVG], mit5_bear: Dict,
                  fvg1_eng: 'FVGEngine',
-                 fvg5_eng: 'FVGEngine',
-                 bb1_bull: List[BreakerBlock] = None,
-                 mit_bb1_bull: Dict = None,
-                 bb1_bear: List[BreakerBlock] = None,
-                 mit_bb1_bear: Dict = None,
-                 bb1_eng: 'BreakerEngine' = None) -> Optional[TradeSignal]:
+                 msb_events_bull: List[MSBEvent],
+                 msb_events_bear: List[MSBEvent]) -> Optional[TradeSignal]:
+
+        # last_skip_reason her çağrıda sıfırlanır (stale değer bug fix)
+        self.last_skip_reason = None
 
         cur_time  = TM[idx]
         cur_close = float(C[idx])
-        hour      = to_naive(cur_time).hour
 
         # ── HAFTALIK BİAS FİLTRESİ ──────────────────────────────────────
         if self.bias is not None:
@@ -986,126 +1134,108 @@ class MarketBrain:
         else:
             weekly_dir = None   # bias dosyası yok → her iki yön serbest
 
-        # Seans filtresi
-        if not self.in_session(hour):
-            return None
-
         t = to_naive(cur_time)
         best_signal: Optional[TradeSignal] = None
-        best_conf = 0.0
-        stage = 0   # 0=1H FVG dokunuş yok, 1=dokundu MSC yok, 2=MSC var onay yok
+        best_key    = (-1, -1.0)   # (confluence_count, fvg_quality)
+        stage = 0   # 0=dokunuş yok, 1=dokundu konfluens yok, 2=konfluens var MSB yok
 
         for direction in ('bull', 'bear'):
             # Bias varsa sadece bias yönünde işlem
             if weekly_dir is not None and direction != weekly_dir:
                 continue
-            fvg1_raw = fvg1_bull if direction == 'bull' else fvg1_bear
-            mit1     = mit1_bull if direction == 'bull' else mit1_bear
-            fvg5_raw = fvg5_bull if direction == 'bull' else fvg5_bear
-            mit5     = mit5_bull if direction == 'bull' else mit5_bear
+            fvg1_raw   = fvg1_bull if direction == 'bull' else fvg1_bear
+            mit1       = mit1_bull if direction == 'bull' else mit1_bear
+            msb_events = msb_events_bull if direction == 'bull' else msb_events_bear
+            pend       = self.pending[direction]
 
-            # ── ADIM 1: Fiyat aktif 1H FVG VEYA Breaker Block'ta mı? ─
-            active_1h    = fvg1_eng.get_active(fvg1_raw, mit1, t)
-            active_1h    = [f for f in active_1h if f.fvg_id not in self.used_fvg_ids]
-            touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
+            # ── ADIM 1: WICK ile 1H FVG dokunuşu (stateful registry) ─────
+            active_1h = fvg1_eng.get_active(fvg1_raw, mit1, t)
+            active_1h = [f for f in active_1h if f.fvg_id not in self.used_fvg_ids]
 
-            touching_bb: Optional[BreakerBlock] = None
-            if touching_fvg is None and bb1_eng is not None:
-                bb_raw = bb1_bull if direction == 'bull' else bb1_bear
-                mit_bb = mit_bb1_bull if direction == 'bull' else mit_bb1_bear
-                if bb_raw is not None and mit_bb is not None:
-                    active_bb  = bb1_eng.get_active(bb_raw, mit_bb, t)
-                    active_bb  = [b for b in active_bb if b.block_id not in self.used_bb_ids]
-                    touching_bb = bb1_eng.price_touching(cur_close, active_bb)
+            pend_ids = {p['fvg_id'] for p in pend}
+            for fvg in active_1h:
+                span = fvg.top - fvg.bottom
+                buf  = span * fvg1_eng.buf_ratio
+                # WICK dokunuş: mum aralığı FVG bölgesiyle örtüşüyor mu?
+                if L[idx] <= (fvg.top + buf) and H[idx] >= (fvg.bottom - buf):
+                    if fvg.fvg_id not in pend_ids:
+                        pend.append({'fvg_id': fvg.fvg_id, 'fvg': fvg,
+                                     'touch_idx': idx, 'touch_time': t})
+                        pend_ids.add(fvg.fvg_id)
 
-            if touching_fvg is None and touching_bb is None:
+            # PRUNE: tüketilmiş / yaşlanmış / kullanılmış pending'leri at
+            mit_at = lambda fid: mit1.get(fid)
+            kept = []
+            for p in pend:
+                m = mit_at(p['fvg_id'])
+                if p['fvg_id'] in self.used_fvg_ids:
+                    continue                                   # işlem açıldı
+                if m is not None and to_naive(m) <= t:
+                    continue                                   # 1H close-inside iptal
+                if idx - p['touch_idx'] > self.TOUCH_MAX_AGE_BARS:
+                    continue                                   # çok bekledi
+                kept.append(p)
+            pend[:] = kept
+            self.pending[direction] = pend
+
+            if not pend:
                 continue
             stage = max(stage, 1)
-            # Tetikleyici kalite skoru (güven hesabı için)
-            zone_quality = (touching_fvg.quality_score if touching_fvg is not None
-                            else touching_bb.quality_score)
+            earliest_touch = min(p['touch_idx'] for p in pend)
 
-            # ── ADIM 2: Son 60 dk'da beklenti yönünde 5M MSC var mı? ─
-            ws      = max(0, idx - self.MSC_WINDOW)
-            msc_arr = MSC_B if direction == 'bull' else MSC_R
-            msc_mom = MSC_B_M if direction == 'bull' else MSC_R_M
+            # ── ADIM 2: Konfluens — EMA ve/veya RSI ───────────────────────
+            ema_ok, ema_d = self.ema_confirm(
+                cur_close, float(E100[idx]), float(E200[idx]), direction)
+            sl_ = max(0, idx - self.RSI_WINDOW)
+            div_type, div_str = self.rsi_divergence(C[sl_:idx + 1], RSI[sl_:idx + 1])
+            rsi_ok = (div_type == direction)
 
-            best_msc: Optional[MSCSignal] = None
-            best_msc_mom = 0.0
-            for j in range(ws, idx + 1):
-                if msc_arr[j] and float(msc_mom[j]) > best_msc_mom:
-                    best_msc_mom = float(msc_mom[j])
-                    rng  = float(H[j] - L[j])
-                    body = abs(float(C[j]) - float(O[j]))
-                    best_msc = MSCSignal(
-                        time           = TM[j],
-                        direction      = direction,
-                        idx            = j,
-                        swing_level    = 0.0,
-                        close_at_break = float(C[j]),
-                        momentum_score = best_msc_mom,
-                        body_ratio     = body / (rng + 1e-10),
-                    )
-
-            if best_msc is None:
-                continue
+            confluence_count = int(ema_ok) + int(rsi_ok)
+            if confluence_count == 0:
+                continue                                       # beklemeye devam
             stage = max(stage, 2)
 
-            # ── ADIM 3: Onay — ŞEMA SIRASI: RSI → 5M FVG → EMA ──────
-            # Cascade: ilk "Evet" işlemi açar (biri yeterli).
-            conf_type    = None
-            conf_val     = 0.0
-            rsi_div_type = None
-            fvg5_q       = 0.0
-            ema_dist     = 0.0
+            # ── ADIM 3: MSB tetikleyici (dokunuştan sonra, kapanmış) ─────
+            #   confirm_idx <= idx (lookahead) ve >= earliest_touch (dokunuş sonrası)
+            event: Optional[MSBEvent] = None
+            for e in reversed(msb_events):
+                if e.confirm_idx > idx:
+                    continue
+                if e.confirm_idx < earliest_touch:
+                    break
+                event = e
+                break
+            if event is None:
+                continue                                       # MSB beklenmeye devam
 
-            # 3a: RSI'da beklenti yönünde uyumsuzluk (pivot-tabanlı, 5dk)
-            sl_ = max(0, idx - self.RSI_WINDOW)
-            div_type, div_str = self.rsi_divergence(C[sl_:idx+1], RSI[sl_:idx+1])
-            if div_type == direction:
-                conf_type, conf_val, rsi_div_type = 'RSI_DIV', div_str, div_type
-
-            # 3b: MSC SIRASINDA/SONRASINDA oluşan 5M FVG (5dk)
-            if conf_type is None:
-                has5, q5 = fvg5_eng.has_recent_active(
-                    fvg5_raw, mit5, t, since_time=best_msc.time)
-                if has5:
-                    conf_type, conf_val, fvg5_q = 'FVG_5M', q5 / 100.0, q5
-
-            # 3c: Fiyat kapanışı hem EMA100 hem EMA200 üstünde/altında (5dk)
-            if conf_type is None:
-                ema_ok, ema_d = self.ema_confirm(
-                    cur_close, float(E100[idx]), float(E200[idx]), direction)
-                if ema_ok:
-                    conf_type, conf_val, ema_dist = 'EMA_CONFIRM', min(1.0, ema_d / 0.5), ema_d
-
-            if conf_type is None:
-                continue
-
-            # ── Güven Skoru (0-100) ───────────────────────────────────
-            session_q  = 1.0 if (8 <= hour <= 12) or (13 <= hour <= 15) else 0.7
+            # ── Sinyal oluştur ───────────────────────────────────────────
+            trigger = max(pend, key=lambda p: p['fvg'].quality_score)
+            risk_fraction = 0.01 if confluence_count == 2 else 0.005
+            conf_label = ('EMA+RSI' if confluence_count == 2
+                          else ('EMA' if ema_ok else 'RSI'))
             confidence = min(100.0,
-                             30 * (zone_quality / 100.0) +
-                             30 * best_msc.momentum_score +
-                             30 * conf_val +
-                             10 * session_q)
+                             40 * (trigger['fvg'].quality_score / 100.0) +
+                             30 * float(event.quality) +
+                             30 * (confluence_count / 2.0))
 
-            if confidence > best_conf:
-                best_conf   = confidence
+            key = (confluence_count, trigger['fvg'].quality_score)
+            if key > best_key:
+                best_key = key
                 best_signal = TradeSignal(
                     entry_time        = cur_time,
                     direction         = direction,
-                    trigger_fvg       = touching_fvg,
-                    trigger_bb        = touching_bb,
-                    msc_signal        = best_msc,
-                    confirmation_type = conf_type,
+                    trigger_fvg       = trigger['fvg'],
+                    confirmation_type = conf_label,
                     confidence        = confidence,
-                    rsi_div_type      = rsi_div_type,
-                    fvg5_quality      = fvg5_q,
-                    ema_distance_pct  = ema_dist,
+                    msb_type          = event.msb_type,
+                    confluence_count  = confluence_count,
+                    stop_price        = event.stop_price,
+                    risk_fraction     = risk_fraction,
+                    rsi_div_type      = div_type if rsi_ok else None,
+                    ema_distance_pct  = ema_d if ema_ok else 0.0,
                 )
 
-        # Teşhis: bias+seans geçti ama sinyal çıkmadıysa hangi adımda öldü?
+        # Teşhis: hangi adımda öldü?
         if best_signal is None:
             if stage == 0:
                 self.stats['step1_fail'] += 1
@@ -1113,6 +1243,8 @@ class MarketBrain:
                 self.stats['step2_fail'] += 1
             else:
                 self.stats['step3_fail'] += 1
+            if weekly_dir is not None or self.bias is None:
+                self.last_skip_reason = 'no_signal'
 
         return best_signal
 
@@ -1123,33 +1255,27 @@ class MarketBrain:
 
 class RiskManager:
     """
-    Swing tabanlı SL, 1:2 RR TP ve sabit kesirli pozisyon büyüklüğü.
+    MSB-tabanlı SL (stop fiyatı dışarıdan gelir), 1:2 RR TP ve
+    konfluens-bazlı kesirli pozisyon büyüklüğü (0.5R / 1R).
     """
 
-    def __init__(self, risk_per_trade: float = 0.005, rr: float = 2.0,
-                 sl_buffer: float = 0.0005):
-        self.risk_per_trade = risk_per_trade
+    def __init__(self, rr: float = 2.0, sl_buffer: float = 0.0005):
         self.rr             = rr
         self.sl_buffer      = sl_buffer
         self.min_risk       = 0.50
         self.max_risk       = 150.0
         self.max_risk_pct   = 2.0
 
-    def compute(self, idx: int, direction: str,
-                entry: float, H: np.ndarray, L: np.ndarray,
-                ATR: np.ndarray,
-                equity: float) -> Optional[Dict]:
+    def compute(self, direction: str, entry: float,
+                stop_price: float, equity: float,
+                risk_fraction: float) -> Optional[Dict]:
 
         if direction == 'bull':
-            swing, _ = SwingEngine.best_swing_low(
-                L, H, ATR, idx, lookback=50, min_strength=2, max_strength=5, min_atr_mult=0.3)
-            sl   = swing * (1.0 - self.sl_buffer)
+            sl   = stop_price * (1.0 - self.sl_buffer)
             risk = abs(entry - sl)
             tp   = entry + risk * self.rr
         else:
-            swing, _ = SwingEngine.best_swing_high(
-                H, L, ATR, idx, lookback=50, min_strength=2, max_strength=5, min_atr_mult=0.3)
-            sl   = swing * (1.0 + self.sl_buffer)
+            sl   = stop_price * (1.0 + self.sl_buffer)
             risk = abs(sl - entry)
             tp   = entry - risk * self.rr
 
@@ -1157,17 +1283,18 @@ class RiskManager:
             return None
         if risk / entry * 100 > self.max_risk_pct:
             return None
-        if direction == 'bull' and tp <= entry:
+        if direction == 'bull' and (tp <= entry or sl >= entry):
             return None
-        if direction == 'bear' and tp >= entry:
+        if direction == 'bear' and (tp >= entry or sl <= entry):
             return None
 
         return {
-            'sl'         : round(sl,   2),
-            'tp'         : round(tp,   2),
-            'risk'       : round(risk, 2),
-            'risk_pct'   : round(risk / entry * 100, 4),
-            'risk_dollar': round(equity * self.risk_per_trade, 2),
+            'sl'           : round(sl,   2),
+            'tp'           : round(tp,   2),
+            'risk'         : round(risk, 2),
+            'risk_pct'     : round(risk / entry * 100, 4),
+            'risk_dollar'  : round(equity * risk_fraction, 2),
+            'risk_fraction': risk_fraction,
         }
 
 
@@ -1197,14 +1324,12 @@ class BacktestEngine:
         df5 = EMAEngine.add(df5, 100, 200)
         df5['rsi'] = RSIEngine.wilder(df5['Close'], 14)
         df5['atr'] = IndicatorEngine.atr(df5, 14)
-        df5        = MSBEngine.compute(df5, df5['atr'])
 
         df1 = df_1h.copy()
         df1['atr'] = IndicatorEngine.atr(df1, 14)
 
-        # FVG motorları
-        fvg1_eng = FVGEngine('1h', min_gap=2.0,  max_age_hours=48, buf_ratio=0.05)
-        fvg5_eng = FVGEngine('5m', min_gap=0.50, max_age_hours=4,  buf_ratio=0.05)
+        # 1H FVG motoru (yüksek-zaman dilimi POI) — wick dokunuş için dar buffer
+        fvg1_eng = FVGEngine('1h', min_gap=2.0, max_age_hours=48, buf_ratio=0.02)
 
         print("  1H FVG...", end=' ')
         fvg1_bull = fvg1_eng.detect(df1, 'bull', df1['atr'])
@@ -1213,21 +1338,17 @@ class BacktestEngine:
         mit1_bear = fvg1_eng.build_mitigation_map(df1, fvg1_bear)
         print(f"Bull:{len(fvg1_bull)}  Bear:{len(fvg1_bear)}")
 
-        print("  5M FVG...", end=' ')
-        fvg5_bull = fvg5_eng.detect(df5, 'bull', df5['atr'])
-        fvg5_bear = fvg5_eng.detect(df5, 'bear', df5['atr'])
-        mit5_bull = fvg5_eng.build_mitigation_map(df5, fvg5_bull)
-        mit5_bear = fvg5_eng.build_mitigation_map(df5, fvg5_bear)
-        print(f"Bull:{len(fvg5_bull)}  Bear:{len(fvg5_bear)}")
-
-        # 1H Breaker Block motoru
-        bb1_eng  = BreakerEngine(max_age_hours=72, buf_ratio=0.05)
-        print("  1H BreakerBlock...", end=' ')
-        bb1_bull     = bb1_eng.detect(df1, 'bull', df1['atr'])
-        bb1_bear     = bb1_eng.detect(df1, 'bear', df1['atr'])
-        mit_bb1_bull = bb1_eng.build_mitigation_map(df1, bb1_bull)
-        mit_bb1_bear = bb1_eng.build_mitigation_map(df1, bb1_bear)
-        print(f"Bull:{len(bb1_bull)}  Bear:{len(bb1_bear)}")
+        # 5M MSB motoru (breaker | mitigation | three_vol)
+        print("  5M MSB...", end=' ')
+        msb_eng    = MSB5MEngine(vol_mult=1.5, vol_window=20)
+        msb_events = msb_eng.detect(df5, df5['atr'])
+        msb_events_bull = [e for e in msb_events if e.direction == 'bull']
+        msb_events_bear = [e for e in msb_events if e.direction == 'bear']
+        _typ = lambda lst, t: sum(1 for e in lst if e.msb_type == t)
+        print(f"Bull:{len(msb_events_bull)}  Bear:{len(msb_events_bear)}  "
+              f"(breaker:{_typ(msb_events,'breaker')} "
+              f"mitigation:{_typ(msb_events,'mitigation')} "
+              f"three_vol:{_typ(msb_events,'three_vol')})")
 
         # Array'ler
         C    = df5['Close'].values.astype(float)
@@ -1238,10 +1359,6 @@ class BacktestEngine:
         E100 = df5['ema100'].values.astype(float)
         E200 = df5['ema200'].values.astype(float)
         RSI  = df5['rsi'].values.astype(float)
-        MB   = df5['msc_bull'].values
-        MR   = df5['msc_bear'].values
-        MB_M = df5['msc_bull_mom'].values.astype(float)
-        MR_M = df5['msc_bear_mom'].values.astype(float)
         TM   = df5.index
 
         bs      = to_naive(backtest_start)
@@ -1249,7 +1366,7 @@ class BacktestEngine:
 
         print(f"\n  Sinyaller taranıyor... ({len(bt_idx)} mum | {bs.date()} sonrası)\n")
 
-        dbg = dict(session=0, no_bias=0, no_signal=0, risk_fail=0, generated=0)
+        dbg = dict(no_bias=0, no_signal=0, risk_fail=0, generated=0)
 
         trades: List[Trade]       = []
         trade_id                  = 0
@@ -1281,39 +1398,36 @@ class BacktestEngine:
                     trades.append(active)
                     in_trade = False
                     active   = None
-                continue
+                # Exit sonrası aynı barda yeni giriş değerlendirilebilir;
+                # hâlâ açık işlem varsa bu barı atla.
+                if in_trade:
+                    continue
 
             # Sinyal değerlendirme
             signal = self.brain.evaluate(
                 idx=idx,
                 C=C, O=O, H=H, L=L,
                 E100=E100, E200=E200, RSI=RSI,
-                MSC_B=MB, MSC_R=MR, MSC_B_M=MB_M, MSC_R_M=MR_M,
                 TM=TM,
                 fvg1_bull=fvg1_bull, mit1_bull=mit1_bull,
                 fvg1_bear=fvg1_bear, mit1_bear=mit1_bear,
-                fvg5_bull=fvg5_bull, mit5_bull=mit5_bull,
-                fvg5_bear=fvg5_bear, mit5_bear=mit5_bear,
-                fvg1_eng=fvg1_eng, fvg5_eng=fvg5_eng,
-                bb1_bull=bb1_bull, mit_bb1_bull=mit_bb1_bull,
-                bb1_bear=bb1_bear, mit_bb1_bear=mit_bb1_bear,
-                bb1_eng=bb1_eng,
+                fvg1_eng=fvg1_eng,
+                msb_events_bull=msb_events_bull,
+                msb_events_bear=msb_events_bear,
             )
 
             if signal is None:
                 reason = self.brain.last_skip_reason
-                self.brain.last_skip_reason = None
                 if reason == 'no_bias':
                     dbg['no_bias'] += 1
-                elif not self.brain.in_session(to_naive(TM[idx]).hour):
-                    dbg['session'] += 1
                 else:
                     dbg['no_signal'] += 1
                 continue
 
-            # Risk hesapla
+            # Risk hesapla (stop MSB'den, risk konfluens'ten)
             entry = float(O[idx + 1])
-            r = self.risk.compute(idx, signal.direction, entry, H, L, ATR, equity)
+            r = self.risk.compute(signal.direction, entry,
+                                  signal.stop_price, equity, signal.risk_fraction)
             if r is None:
                 dbg['risk_fail'] += 1
                 continue
@@ -1322,22 +1436,25 @@ class BacktestEngine:
             trade_id += 1
             dbg['generated'] += 1
             active = Trade(
-                trade_id    = trade_id,
-                signal      = signal,
-                entry_price = round(entry, 2),
-                sl          = r['sl'],
-                tp          = r['tp'],
-                risk        = r['risk'],
-                risk_pct    = r['risk_pct'],
-                risk_dollar = r['risk_dollar'],
-                rr          = self.risk.rr,
+                trade_id      = trade_id,
+                signal        = signal,
+                entry_price   = round(entry, 2),
+                sl            = r['sl'],
+                tp            = r['tp'],
+                risk          = r['risk'],
+                risk_pct      = r['risk_pct'],
+                risk_dollar   = r['risk_dollar'],
+                rr            = self.risk.rr,
+                risk_fraction = r['risk_fraction'],
             )
             in_trade = True
-            # Kullanım kuralı: tetikleyici bölgeyi tüket (FVG veya BreakerBlock)
+            # Kullanım kuralı: tetikleyici 1H FVG'yi tüket + pending'den çıkar
             if signal.trigger_fvg is not None:
-                self.brain.used_fvg_ids.add(signal.trigger_fvg.fvg_id)
-            if signal.trigger_bb is not None:
-                self.brain.used_bb_ids.add(signal.trigger_bb.block_id)
+                fid = signal.trigger_fvg.fvg_id
+                self.brain.used_fvg_ids.add(fid)
+                for d in ('bull', 'bear'):
+                    self.brain.pending[d] = [
+                        p for p in self.brain.pending[d] if p['fvg_id'] != fid]
 
         # Dönem sonu açık işlem
         if in_trade and active is not None:
@@ -1350,11 +1467,10 @@ class BacktestEngine:
         st = self.brain.stats
         print(f"  FİLTRE ÖZETİ:")
         print(f"    Bias filtresi      : {dbg['no_bias']:>6}")
-        print(f"    Seans dışı         : {dbg['session']:>6}")
         print(f"    Sinyal yok         : {dbg['no_signal']:>6}")
-        print(f"      ├─ Adım1: 1H FVG/BB dokunuş yok: {st['step1_fail']:>6}")
-        print(f"      ├─ Adım2: dokundu, MSC yok   : {st['step2_fail']:>6}")
-        print(f"      └─ Adım3: MSC var, onay yok  : {st['step3_fail']:>6}")
+        print(f"      ├─ Adım1: 1H FVG wick dokunuş yok: {st['step1_fail']:>6}")
+        print(f"      ├─ Adım2: dokundu, konfluens yok : {st['step2_fail']:>6}")
+        print(f"      └─ Adım3: konfluens var, MSB yok : {st['step3_fail']:>6}")
         print(f"    Risk filtresi      : {dbg['risk_fail']:>6}")
         print(f"    Üretilen sinyaller : {dbg['generated']:>6}")
         print(f"\n  TOPLAM İŞLEM: {len(trades)}")
@@ -1447,7 +1563,7 @@ class PerformanceAnalytics:
         SEP = "═" * 65
         entry_times = [to_naive(t.signal.entry_time) for t in self.done]
         print(f"\n{SEP}")
-        print("  XAUUSD  │  FVG Strategy Engine  │  v9.0  │  Performans")
+        print("  XAUUSD  │  FVG Strategy Engine  │  v10.0 │  Performans")
         if entry_times:
             print(f"  Dönem : {min(entry_times).date()}  →  {max(entry_times).date()}")
         print(SEP)
@@ -1490,19 +1606,33 @@ class PerformanceAnalytics:
             wr = d['w'] / d['n'] * 100 if d['n'] else 0
             print(f"  {src:<16} : {d['n']:3d} işlem | %{wr:.0f} WR | ${d['pnl']:>+8.2f}")
 
-        # Tetikleyici bölge: 1H FVG mi Breaker Block mu?
-        zone_d: Dict[str, Dict] = {}
+        # MSB türü dağılımı (breaker / mitigation / three_vol)
+        msb_d: Dict[str, Dict] = {}
         for t in self.done:
-            ztype = ('BreakerBlock' if t.signal.trigger_bb is not None
-                     and t.signal.trigger_fvg is None else 'FVG_1H')
-            zone_d.setdefault(ztype, {'n': 0, 'w': 0, 'pnl': 0.0})
-            zone_d[ztype]['n']   += 1
-            zone_d[ztype]['w']   += 1 if t.result == 'WIN' else 0
-            zone_d[ztype]['pnl'] += t.pnl_dollar
-        print(f"\n  ── TETİKLEYİCİ BÖLGE ────────────────────────────────────────")
-        for ztype, d in zone_d.items():
+            mt = t.signal.msb_type or '?'
+            msb_d.setdefault(mt, {'n': 0, 'w': 0, 'pnl': 0.0})
+            msb_d[mt]['n']   += 1
+            msb_d[mt]['w']   += 1 if t.result == 'WIN' else 0
+            msb_d[mt]['pnl'] += t.pnl_dollar
+        print(f"\n  ── MSB TÜRÜ ─────────────────────────────────────────────────")
+        for mt, d in msb_d.items():
             wr = d['w'] / d['n'] * 100 if d['n'] else 0
-            print(f"  {ztype:<16} : {d['n']:3d} işlem | %{wr:.0f} WR | ${d['pnl']:>+8.2f}")
+            print(f"  {mt:<16} : {d['n']:3d} işlem | %{wr:.0f} WR | ${d['pnl']:>+8.2f}")
+
+        # Konfluens dağılımı (1 → 0.5R, 2 → 1R)
+        cc_d: Dict[int, Dict] = {}
+        for t in self.done:
+            cc = t.signal.confluence_count
+            cc_d.setdefault(cc, {'n': 0, 'w': 0, 'pnl': 0.0})
+            cc_d[cc]['n']   += 1
+            cc_d[cc]['w']   += 1 if t.result == 'WIN' else 0
+            cc_d[cc]['pnl'] += t.pnl_dollar
+        print(f"\n  ── KONFLUENS (risk) ─────────────────────────────────────────")
+        for cc in sorted(cc_d):
+            d   = cc_d[cc]
+            lbl = "EMA+RSI (1R)" if cc == 2 else "Tek onay (0.5R)"
+            wr  = d['w'] / d['n'] * 100 if d['n'] else 0
+            print(f"  {lbl:<16} : {d['n']:3d} işlem | %{wr:.0f} WR | ${d['pnl']:>+8.2f}")
 
         # Yön analizi
         dir_d: Dict[str, Dict] = {}
@@ -1587,7 +1717,7 @@ class ReportGenerator:
             dr  = (f"{to_naive(done[0].signal.entry_time).date()} → "
                    f"{to_naive(done[-1].signal.entry_time).date()}")
             fig.suptitle(
-                f'XAUUSD  │  FVG Engine v9.0  │  {dr}  '
+                f'XAUUSD  │  FVG Engine v10.0 │  {dr}  '
                 f'│  WR:{metrics["win_rate"]*100:.1f}%  '
                 f'PF:{metrics["profit_factor"]:.2f}  '
                 f'Sharpe:{metrics["sharpe"]:.2f}  '
@@ -1744,11 +1874,14 @@ class ReportGenerator:
                 'exit_time'       : to_naive(t.exit_time) if t.exit_time else None,
                 'direction'       : s.direction,
                 'confirmation'    : s.confirmation_type,
+                'confluence_count': s.confluence_count,
+                'msb_type'        : s.msb_type,
                 'confidence'      : round(s.confidence, 2),
                 'fvg1_quality'    : round(s.trigger_fvg.quality_score, 2),
                 'fvg1_gap_size'   : round(s.trigger_fvg.gap_size, 2),
                 'fvg1_gap_atr'    : round(s.trigger_fvg.gap_atr_ratio, 4),
-                'msc_momentum'    : round(s.msc_signal.momentum_score, 4),
+                'stop_price'      : round(s.stop_price, 2),
+                'risk_fraction'   : s.risk_fraction,
                 'entry_price'     : t.entry_price,
                 'sl'              : t.sl,
                 'tp'              : t.tp,
@@ -1771,15 +1904,17 @@ class ReportGenerator:
 
 def main():
     INITIAL_CAPITAL = 10_000
-    RISK_PER_TRADE  = 0.005   # %0.5
 
     # Veri
     df_1h, df_5m, bt_start = DataEngine.download(verbose=True)
 
-    # Bileşenler
-    bias_provider = WeeklyBiasProvider('weekly_bias.json')
+    # Bileşenler — BIAS=0 ortam değişkeni ile bias'sız test (weekly_bias.json'a dokunmadan)
+    use_bias = os.environ.get('BIAS', '1') != '0'
+    bias_provider = WeeklyBiasProvider('weekly_bias.json') if use_bias else None
+    if not use_bias:
+        print("  [BIAS=0] Haftalık bias DEVRE DIŞI — her iki yön serbest.\n")
     brain    = MarketBrain(bias_provider=bias_provider)
-    risk_mgr = RiskManager(risk_per_trade=RISK_PER_TRADE, rr=2.0, sl_buffer=0.0005)
+    risk_mgr = RiskManager(rr=2.0, sl_buffer=0.0005)
     engine   = BacktestEngine(brain, risk_mgr, initial_capital=INITIAL_CAPITAL)
 
     # Backtest
