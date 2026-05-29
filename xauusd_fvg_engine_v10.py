@@ -788,31 +788,65 @@ class MSB5MEngine:
                 seq.append((p_idx, p_price, p_kind))
                 if len(seq) > 8:
                     del seq[0]
-                # Bullish A-B-C: ... L1(A), H1(B), L2(C). Süpürme ayrımı:
-                #   C < A → breaker (önceki low likiditesi süpürüldü)
-                #   C > A → mitigation (failure swing, süpürme yok)
+                # Mitigation block (failure-to-swing): süpürme YOK, sadece
+                # higher-low (bull) / lower-high (bear) ile yapı tersine döner.
+                # (Breaker artık ayrı: temiz MSS = swing kapanış kırılımı, aşağıda.)
                 if p_kind == 'L' and len(seq) >= 3:
                     l1, h1, l2 = seq[-3], seq[-2], seq[-1]
-                    if l1[2] == 'L' and h1[2] == 'H' and l2[2] == 'L':
-                        kind = 'breaker' if l2[1] < l1[1] else 'mitigation'
+                    if (l1[2] == 'L' and h1[2] == 'H' and l2[2] == 'L'
+                            and l2[1] > l1[1]):                  # higher-low → failure swing
                         p2 = l2[0]
                         mblocks.append(dict(
-                            dir='bull', kind=kind, rev=float(h1[1]),
+                            dir='bull', kind='mitigation', rev=float(h1[1]),
                             b_hi=float(H[p2]), b_lo=float(L[p2]),
                             state='armed', formed=i, active=-1))
-                # Bearish A-B-C: ... H1(A), L1(B), H2(C). Süpürme ayrımı:
-                #   C > A → breaker (önceki high likiditesi süpürüldü)
-                #   C < A → mitigation (failure swing, süpürme yok)
                 elif p_kind == 'H' and len(seq) >= 3:
                     h1, l1, h2 = seq[-3], seq[-2], seq[-1]
-                    if h1[2] == 'H' and l1[2] == 'L' and h2[2] == 'H':
-                        kind = 'breaker' if h2[1] > h1[1] else 'mitigation'
+                    if (h1[2] == 'H' and l1[2] == 'L' and h2[2] == 'H'
+                            and h2[1] < h1[1]):                  # lower-high → failure swing
                         p2 = h2[0]
                         mblocks.append(dict(
-                            dir='bear', kind=kind, rev=float(l1[1]),
+                            dir='bear', kind='mitigation', rev=float(l1[1]),
                             b_hi=float(H[p2]), b_lo=float(L[p2]),
                             state='armed', formed=i, active=-1))
                 pv += 1
+
+            # ── BREAKER (CHoCH — yapı karakteri değişimi) ──────────────────
+            # Görseldeki ICT breaker: DÜŞÜŞ yapısında (alçalan tepeler) son
+            # LOWER-HIGH gövde-kapanışıyla kırılır → karakter değişimi (bull).
+            # Tersi: YÜKSELİŞ yapısında son HIGHER-LOW kırılır → bear CHoCH.
+            # Her BOS değil; yalnız trend-karşıtı İLK kırılım (gürültü filtresi).
+            # Kırılım mumu enerjik (displacement) olmalı + swing'i anlamlı geçmeli.
+            body_i = abs(C[i] - O[i]); rng_i = H[i] - L[i]
+            br_i   = body_i / rng_i if rng_i > 0 else 0.0
+            disp_i = (body_i > 1.2 * atr_i) or (br_i >= 0.6)
+            pen    = 0.10 * atr_i                       # min penetrasyon eşiği
+            highs = [p for p in seq if p[2] == 'H']
+            lows  = [p for p in seq if p[2] == 'L']
+            if disp_i and len(highs) >= 2:
+                sh2 = highs[-1][1]; sh1 = highs[-2][1]      # sh2 = en yeni tepe
+                if (sh2 < sh1 and C[i] > sh2 + pen and C[i - 1] <= sh2):
+                    stop, _ = SwingEngine.best_swing_low(
+                        L, H, atr, i, lookback=50, min_strength=2,
+                        max_strength=5, min_atr_mult=0.3)
+                    if not np.isnan(stop) and float(stop) < C[i]:
+                        events.append(MSBEvent(
+                            msb_type='breaker', direction='bull', confirm_idx=i,
+                            detect_time=T[i], stop_price=float(stop),
+                            swing_level=float(sh2),
+                            quality=min(1.0, (C[i] - sh2) / atr_i)))
+            if disp_i and len(lows) >= 2:
+                sl2 = lows[-1][1]; sl1 = lows[-2][1]        # sl2 = en yeni dip
+                if (sl2 > sl1 and C[i] < sl2 - pen and C[i - 1] >= sl2):
+                    stop, _ = SwingEngine.best_swing_high(
+                        H, L, atr, i, lookback=50, min_strength=2,
+                        max_strength=5, min_atr_mult=0.3)
+                    if not np.isnan(stop) and float(stop) > C[i]:
+                        events.append(MSBEvent(
+                            msb_type='breaker', direction='bear', confirm_idx=i,
+                            detect_time=T[i], stop_price=float(stop),
+                            swing_level=float(sl2),
+                            quality=min(1.0, (sl2 - C[i]) / atr_i)))
 
             # ── (a) BREAKER / MITIGATION BLOCK — birleşik A-B-C tespiti ────
             # Naive BOS kaldırıldı. Breaker ve mitigation aynı A-B-C yapısının
@@ -1023,11 +1057,10 @@ class HarmonicEngine:
             return (c_p - bc * cd_r) if bullish else (c_p + bc * cd_r)
 
         # (pattern, xa_ab[lo,hi], ad[lo,hi], cd5, retrace)
+        # AltBat & Butterfly kaldırıldı (backtest: %0 WR, net zarar kaynağı).
         STD = [
             ('Gartley',   0.550, 0.680, 0.750, 0.820, (1.618, 1.414, 1.272, 1.272, 1.272), True),
             ('Bat',       0.320, 0.560, 0.850, 0.920, (2.618, 2.000, 1.618, 1.618, 1.618), True),
-            ('AltBat',    0.080, 0.420, 1.080, 1.180, (3.618, 2.618, 2.240, 2.000, 2.000), False),
-            ('Butterfly', 0.720, 0.850, 1.200, 1.680, (2.618, 2.000, 2.240, 2.618, 2.618), False),
             ('Crab',      0.350, 0.650, 1.550, 1.700, (3.618, 2.618, 2.618, 2.618, 2.618), False),
             ('DeepCrab',  0.850, 0.930, 1.550, 1.700, (3.618, 2.618, 2.618, 2.618, 2.618), False),
         ]
@@ -1635,8 +1668,10 @@ class MarketBrain:
             div_type, div_str = self.rsi_divergence(
                 C[sl_:idx + 1], RSI[sl_:idx + 1], atr_win)
             rsi_ok = (div_type == direction)
-            # EMA100 ve EMA233 ikisi de kesin şart (price > her iki EMA bull için,
-            # her ikisinin altında bear için). RSI ek konfluens; risk boyutunu etkiler.
+            # EMA100 ve EMA200 ikisi de KESİN ŞART — TÜM işlem türleri için
+            # (FVG/PRZ/OB/BB/HS hepsi bu tek kapıdan geçer): bull → fiyat her
+            # iki EMA üstünde, bear → her ikisinin altında. RSI yalnız ek
+            # konfluens (risk boyutunu 0.5R↔1R etkiler), giriş şartı değil.
             bias_main = bias_allows and ema_ok
 
             if not bias_main:
@@ -1795,40 +1830,109 @@ def _pivots_1h(
     return piv
 
 
+def _last_confirmed_swings(
+    H: np.ndarray, L: np.ndarray, atr: np.ndarray, n: int, strength: int,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Her bar c için o ana kadar ONAYLI (lookahead-safe) son swing high/low
+    fiyatı ve bar indeksi. piv = _pivots_1h (cbar=onay barı, j=gerçek pivot)."""
+    piv = _pivots_1h(H, L, atr, n, strength)
+    sh_price = np.full(n, np.nan); sh_bar = np.full(n, -1, dtype=int)
+    sl_price = np.full(n, np.nan); sl_bar = np.full(n, -1, dtype=int)
+    cur_shp = np.nan; cur_shb = -1; cur_slp = np.nan; cur_slb = -1
+    pi = 0
+    for c in range(n):
+        while pi < len(piv) and piv[pi][0] <= c:   # cbar <= c → onaylandı
+            _, jb, pr, kd = piv[pi]
+            if kd == 'H':
+                cur_shp = pr; cur_shb = jb
+            else:
+                cur_slp = pr; cur_slb = jb
+            pi += 1
+        sh_price[c] = cur_shp; sh_bar[c] = cur_shb
+        sl_price[c] = cur_slp; sl_bar[c] = cur_slb
+    return sh_price, sh_bar, sl_price, sl_bar
+
+
 def detect_order_blocks_1h(
     H: np.ndarray, L: np.ndarray, O: np.ndarray, C: np.ndarray,
     T: Any, atr: np.ndarray, direction: str,
-    strength: int = 3, lookback: int = 10,
+    strength: int = 3, k_atr: float = 1.2, body_ratio_min: float = 0.60,
+    max_ob_to_bos: int = 6, require_fvg: bool = True,
 ) -> List[FVG]:
     """
-    1H Order Block tespiti (lookahead-safe).
-    Bull OB: onaylı swing HIGH öncesindeki son bearish 1H mumu.
-    Bear OB: onaylı swing LOW  öncesindeki son bullish 1H mumu.
-    Zone = [L[ob], H[ob]].
-    detect_time = onay barı kapanışı (T[cbar] + 1h) — lookahead engeli.
+    Gerçek ICT/SMC Order Block tespiti (lookahead-safe).
+
+    Geçerli OB için ZORUNLU şartlar (her renk-değişimi OB DEĞİL):
+      1. BOS/MSS: impuls, önceki onaylı swing high/low'u GÖVDE-KAPANIŞIYLA kırar.
+      2. Displacement: impuls bacağında en az bir mum body > k_atr*ATR
+         VEYA body/range >= body_ratio_min (enerjik hareket).
+      3. FVG: impuls bacağı 3-mum Fair Value Gap bırakır (require_fvg=True → şart).
+      4. Yakınlık (immediacy): OB ile BOS arası <= max_ob_to_bos mum.
+      5. OB mumu = impuls başlangıcından önceki son ters-renk mum
+         (bull → son bearish; bear → son bullish), kümede en uç low/high'lı.
+    Zone = [L[ob], H[ob]] (tam mum aralığı).
+    detect_time = BOS mumu kapanışı (T[bos] + 1h) — lookahead engeli.
+    Kalite: displacement gücü + FVG + premium/discount + likidite süpürme.
     """
     n = len(H)
-    piv = _pivots_1h(H, L, atr, n, strength)
     detect_offset = pd.Timedelta(hours=1)
+    sh_price, sh_bar, sl_price, sl_bar = _last_confirmed_swings(
+        H, L, atr, n, strength)
     fvgs: List[FVG] = []
     seen_ob: set = set()
 
-    for (cbar, j, price, kind) in piv:
-        if direction == 'bull' and kind == 'H':
-            ob_bar = None
-            for k in range(j - 1, max(j - lookback - 1, -1), -1):
-                if O[k] > C[k]:
-                    ob_bar = k; break
-        elif direction == 'bear' and kind == 'L':
-            ob_bar = None
-            for k in range(j - 1, max(j - lookback - 1, -1), -1):
-                if C[k] > O[k]:
-                    ob_bar = k; break
+    for c in range(1, n):
+        # ── 1. BOS: gövde-kapanışı son onaylı swing'i kırar (taze kırılım) ─
+        if direction == 'bull':
+            lvl = sh_price[c]; lvl_bar = sh_bar[c]
+            if np.isnan(lvl) or lvl_bar < 0:
+                continue
+            if not (C[c] > lvl and C[c - 1] <= lvl):
+                continue
         else:
-            continue
+            lvl = sl_price[c]; lvl_bar = sl_bar[c]
+            if np.isnan(lvl) or lvl_bar < 0:
+                continue
+            if not (C[c] < lvl and C[c - 1] >= lvl):
+                continue
 
+        # ── 5. OB mumu: impuls öncesi son ters-renk mum (yakınlık penceresi) ─
+        lo_k = max(c - max_ob_to_bos, 1)
+        ob_bar = None
+        for k in range(c - 1, lo_k - 1, -1):
+            is_bear = O[k] > C[k]
+            is_bull = C[k] > O[k]
+            if direction == 'bull' and is_bear:
+                ob_bar = k; break
+            if direction == 'bear' and is_bull:
+                ob_bar = k; break
         if ob_bar is None or ob_bar in seen_ob:
             continue
+
+        # ── 2. Displacement: impuls bacağında (ob_bar+1..c) enerjik mum ────
+        disp = False; disp_str = 0.0
+        for m in range(ob_bar + 1, c + 1):
+            body = abs(C[m] - O[m]); rng = H[m] - L[m]
+            atr_m = max(float(atr[m]), 1e-6)
+            br = body / rng if rng > 0 else 0.0
+            if body > k_atr * atr_m or br >= body_ratio_min:
+                disp = True
+                disp_str = max(disp_str, min(1.0, body / atr_m / 2.0))
+        if not disp:
+            continue
+
+        # ── 3. FVG: impuls bacağında 3-mum boşluğu ────────────────────────
+        has_fvg = False
+        for m in range(ob_bar + 1, c):
+            if m - 1 < 0 or m + 1 >= n:
+                continue
+            if direction == 'bull' and L[m + 1] > H[m - 1]:
+                has_fvg = True; break
+            if direction == 'bear' and H[m + 1] < L[m - 1]:
+                has_fvg = True; break
+        if require_fvg and not has_fvg:
+            continue
+
         seen_ob.add(ob_bar)
 
         h_, l_ = float(H[ob_bar]), float(L[ob_bar])
@@ -1837,13 +1941,32 @@ def detect_order_blocks_1h(
         if span < 0.5:
             continue
         atr_j = max(float(atr[ob_bar]), 1e-6)
+
+        # ── 7. Premium/discount: dealing range (swing low↔high) içindeki yer ─
+        pd_bonus = 0.0
+        if direction == 'bull' and sl_bar[c] >= 0 and not np.isnan(sl_price[c]):
+            rng_lo = sl_price[c]; rng_hi = lvl
+            if rng_hi > rng_lo:
+                pos = ((h_ + l_) / 2 - rng_lo) / (rng_hi - rng_lo)
+                pd_bonus = 1.0 if pos <= 0.5 else 0.0      # discount'ta → bonus
+        elif direction == 'bear' and sh_bar[c] >= 0 and not np.isnan(sh_price[c]):
+            rng_hi = sh_price[c]; rng_lo = lvl
+            if rng_hi > rng_lo:
+                pos = ((h_ + l_) / 2 - rng_lo) / (rng_hi - rng_lo)
+                pd_bonus = 1.0 if pos >= 0.5 else 0.0      # premium'da → bonus
+
+        # ── 8. Kalite skoru ────────────────────────────────────────────────
         quality = min(100.0,
-                      40.0 + 40.0 * min(1.0, span / atr_j) +
-                      20.0 * abs(c_ - o_) / (span + 1e-10))
+                      30.0 * disp_str +
+                      25.0 * (1.0 if has_fvg else 0.0) +
+                      15.0 * pd_bonus +
+                      20.0 * min(1.0, span / atr_j) +
+                      10.0 * abs(c_ - o_) / (span + 1e-10))
+
         fvgs.append(FVG(
             fvg_id=_next_fvg_id(), timeframe='1h_ob', direction=direction,
             index=T[ob_bar],
-            detect_time=T[cbar] + detect_offset,
+            detect_time=T[c] + detect_offset,
             top=h_, bottom=l_, mid=(h_ + l_) / 2,
             gap_size=span, gap_atr_ratio=span / atr_j,
             momentum=abs(c_ - o_) / (span + 1e-10),
