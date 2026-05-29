@@ -1629,6 +1629,10 @@ class MarketBrain:
             if event is None:
                 continue                                       # MSB beklenmeye devam
 
+            # Breaker block daha yüksek kalite eşiği — EMA ve RSI ikisi birden şart.
+            if event.msb_type == 'breaker' and not (ema_ok and rsi_ok):
+                continue
+
             # ── Sinyal oluştur ───────────────────────────────────────────
             confluence_count = int(ema_ok) + int(rsi_ok)
             risk_fraction = 0.01 if confluence_count == 2 else 0.005
@@ -1786,22 +1790,17 @@ class BacktestEngine:
               f"mitigation:{_typ(msb_events,'mitigation')} "
               f"three_vol:{_typ(msb_events,'three_vol')})")
 
-        # Harmonik motor — 5M + 15M + 1H + 4H (resample 15M/4H)
+        # Harmonik motor — yalnız 5M (15M/1H/4H düşük WR nedeniyle kapatıldı)
         print("  Harmonik...", end=' ')
         harm_eng = HarmonicEngine(swing=5, min_conf=40.0, max_prz_pct=4.0)
         harmonics: List[HarmonicSignal] = []
         try:
             harmonics += harm_eng.detect(df5, '5m')
-            harmonics += harm_eng.detect(resample_ohlcv(df5, '15min'), '15m')
-            harmonics += harm_eng.detect(df1, '1h')
-            harmonics += harm_eng.detect(resample_ohlcv(df1, '4h'), '4h')
         except Exception as e:
             print(f"(harmonik hata: {e})", end=' ')
         harm_bull = [s for s in harmonics if s.direction == 'bull']
         harm_bear = [s for s in harmonics if s.direction == 'bear']
-        _htf = lambda tf: sum(1 for s in harmonics if s.timeframe == tf)
-        print(f"Bull:{len(harm_bull)}  Bear:{len(harm_bear)}  "
-              f"(5m:{_htf('5m')} 15m:{_htf('15m')} 1h:{_htf('1h')} 4h:{_htf('4h')})")
+        print(f"Bull:{len(harm_bull)}  Bear:{len(harm_bear)}  (5m:{len(harmonics)})")
 
         # Harmonik PRZ'leri POI olarak da kullan (senaryo-2: 1H FVG gibi,
         # MSB+EMA+RSI+bias ile). Her PRZ → pseudo-FVG; süre dolumu = expiry.
