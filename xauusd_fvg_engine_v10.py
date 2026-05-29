@@ -1527,15 +1527,33 @@ class MarketBrain:
                  mit_prz: Optional[Dict] = None,
                  prz_eng: Optional['FVGEngine'] = None,
                  prz_harm: Optional[Dict] = None,
-                 ATR: Optional[np.ndarray] = None
+                 ATR: Optional[np.ndarray] = None,
+                 # 1H Order Block / Breaker Block / Horseshoe POIs
+                 ob1_bull: Optional[List[FVG]] = None,
+                 ob1_bear: Optional[List[FVG]] = None,
+                 mit_ob_bull: Optional[Dict] = None,
+                 mit_ob_bear: Optional[Dict] = None,
+                 bb1_bull: Optional[List[FVG]] = None,
+                 bb1_bear: Optional[List[FVG]] = None,
+                 mit_bb_bull: Optional[Dict] = None,
+                 mit_bb_bear: Optional[Dict] = None,
+                 hs1_bull: Optional[List[FVG]] = None,
+                 hs1_bear: Optional[List[FVG]] = None,
+                 mit_hs_bull: Optional[Dict] = None,
+                 mit_hs_bear: Optional[Dict] = None,
+                 poi1h_eng: Optional['FVGEngine'] = None,
                  ) -> Optional[TradeSignal]:
 
         # last_skip_reason her çağrıda sıfırlanır (stale değer bug fix)
         self.last_skip_reason = None
-        przfvg_bull = przfvg_bull or []
-        przfvg_bear = przfvg_bear or []
-        mit_prz     = mit_prz or {}
-        prz_harm    = prz_harm or {}
+        przfvg_bull  = przfvg_bull or [];  przfvg_bear  = przfvg_bear or []
+        mit_prz      = mit_prz or {};      prz_harm     = prz_harm or {}
+        ob1_bull     = ob1_bull or [];     ob1_bear     = ob1_bear or []
+        mit_ob_bull  = mit_ob_bull or {};  mit_ob_bear  = mit_ob_bear or {}
+        bb1_bull     = bb1_bull or [];     bb1_bear     = bb1_bear or []
+        mit_bb_bull  = mit_bb_bull or {};  mit_bb_bear  = mit_bb_bear or {}
+        hs1_bull     = hs1_bull or [];     hs1_bear     = hs1_bear or []
+        mit_hs_bull  = mit_hs_bull or {};  mit_hs_bear  = mit_hs_bear or {}
 
         cur_time  = TM[idx]
         cur_close = float(C[idx])
@@ -1556,12 +1574,23 @@ class MarketBrain:
             przfvg_raw = przfvg_bull if direction == 'bull' else przfvg_bear
             msb_events = msb_events_bull if direction == 'bull' else msb_events_bear
             pend       = self.pending[direction]
+            ob1_raw    = ob1_bull if direction == 'bull' else ob1_bear
+            mit_ob     = mit_ob_bull if direction == 'bull' else mit_ob_bear
+            bb1_raw    = bb1_bull if direction == 'bull' else bb1_bear
+            mit_bb     = mit_bb_bull if direction == 'bull' else mit_bb_bear
+            hs1_raw    = hs1_bull if direction == 'bull' else hs1_bear
+            mit_hs     = mit_hs_bull if direction == 'bull' else mit_hs_bear
 
-            # ── ADIM 1: WICK dokunuşu — İKİ POI kaynağı ───────────────────
-            #   kind='fvg' → gerçek 1H FVG; kind='prz' → harmonik PRZ bölgesi.
+            # ── ADIM 1: WICK dokunuşu — çoklu POI kaynağı ─────────────────
+            #   'fvg'→1H FVG, 'prz'→harmonik PRZ, 'ob'→OB, 'bb'→BB, 'hs'→HS
             sources = [('fvg', fvg1_raw, mit1, fvg1_eng)]
             if prz_eng is not None and przfvg_raw:
                 sources.append(('prz', przfvg_raw, mit_prz, prz_eng))
+            if poi1h_eng is not None:
+                for _k, _r, _m in [('ob', ob1_raw, mit_ob), ('bb', bb1_raw, mit_bb),
+                                    ('hs', hs1_raw, mit_hs)]:
+                    if _r:
+                        sources.append((_k, _r, _m, poi1h_eng))
 
             pend_ids = {p['fvg_id'] for p in pend}
             for kind, raw, mitm, eng in sources:
@@ -1577,7 +1606,8 @@ class MarketBrain:
                             pend_ids.add(fvg.fvg_id)
 
             # PRUNE: tüketilmiş / yaşlanmış / iptal pending'leri at
-            mit_by_kind = {'fvg': mit1, 'prz': mit_prz}
+            mit_by_kind = {'fvg': mit1, 'prz': mit_prz,
+                           'ob': mit_ob, 'bb': mit_bb, 'hs': mit_hs}
             kept = []
             for p in pend:
                 m = mit_by_kind.get(p['kind'], {}).get(p['fvg_id'])
@@ -1629,10 +1659,6 @@ class MarketBrain:
             if event is None:
                 continue                                       # MSB beklenmeye devam
 
-            # Breaker block daha yüksek kalite eşiği — EMA ve RSI ikisi birden şart.
-            if event.msb_type == 'breaker' and not (ema_ok and rsi_ok):
-                continue
-
             # ── Sinyal oluştur ───────────────────────────────────────────
             confluence_count = int(ema_ok) + int(rsi_ok)
             risk_fraction = 0.01 if confluence_count == 2 else 0.005
@@ -1640,11 +1666,15 @@ class MarketBrain:
             src = []
             if ema_ok: src.append('EMA')
             if rsi_ok: src.append('RSI')
-            if trigger['kind'] == 'prz': src.append('PRZ')           # senaryo-2
+            tk = trigger['kind']
+            if   tk == 'prz': src.append('PRZ')
+            elif tk == 'ob':  src.append('OB')
+            elif tk == 'bb':  src.append('BB')
+            elif tk == 'hs':  src.append('HS')
             conf_label = '+'.join(src)
 
             harmonic_ref = (prz_harm.get(trigger['fvg_id'])
-                            if trigger['kind'] == 'prz' else None)
+                            if tk == 'prz' else None)
 
             confidence = min(100.0,
                              40 * (trigger['fvg'].quality_score / 100.0) +
@@ -1735,6 +1765,217 @@ class RiskManager:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# BÖLÜM 6b: 1H ORDER BLOCK / BREAKER BLOCK / HORSESHOE POI TESPİTİ
+# ═══════════════════════════════════════════════════════════════════════════
+
+def _pivots_1h(
+    H: np.ndarray, L: np.ndarray, atr: np.ndarray,
+    n: int, strength: int = 3, min_atr_mult: float = 0.3,
+) -> List[tuple]:
+    """Lookahead-safe 1H fraktal pivotlar. Dönüş: [(cbar, j, price, 'H'|'L')]
+    cbar = onay barı (j+strength), j = gerçek pivot barı. ATR filtreli."""
+    piv: List[tuple] = []
+    for i in range(n):
+        j = i - strength
+        if j < strength:
+            continue
+        atr_j = max(float(atr[j]), 1e-6)
+        if (all(H[j] > H[j - k] for k in range(1, strength + 1)) and
+                all(H[j] > H[j + k] for k in range(1, strength + 1))):
+            ld = float(H[j]) - float(np.max(H[j - strength:j]))
+            rd = float(H[j]) - float(np.max(H[j + 1:j + strength + 1]))
+            if (ld + rd) / 2 >= min_atr_mult * atr_j:
+                piv.append((i, j, float(H[j]), 'H'))
+        if (all(L[j] < L[j - k] for k in range(1, strength + 1)) and
+                all(L[j] < L[j + k] for k in range(1, strength + 1))):
+            ld = float(np.min(L[j - strength:j])) - float(L[j])
+            rd = float(np.min(L[j + 1:j + strength + 1])) - float(L[j])
+            if (ld + rd) / 2 >= min_atr_mult * atr_j:
+                piv.append((i, j, float(L[j]), 'L'))
+    return piv
+
+
+def detect_order_blocks_1h(
+    H: np.ndarray, L: np.ndarray, O: np.ndarray, C: np.ndarray,
+    T: Any, atr: np.ndarray, direction: str,
+    strength: int = 3, lookback: int = 10,
+) -> List[FVG]:
+    """
+    1H Order Block tespiti (lookahead-safe).
+    Bull OB: onaylı swing HIGH öncesindeki son bearish 1H mumu.
+    Bear OB: onaylı swing LOW  öncesindeki son bullish 1H mumu.
+    Zone = [L[ob], H[ob]].
+    detect_time = onay barı kapanışı (T[cbar] + 1h) — lookahead engeli.
+    """
+    n = len(H)
+    piv = _pivots_1h(H, L, atr, n, strength)
+    detect_offset = pd.Timedelta(hours=1)
+    fvgs: List[FVG] = []
+    seen_ob: set = set()
+
+    for (cbar, j, price, kind) in piv:
+        if direction == 'bull' and kind == 'H':
+            ob_bar = None
+            for k in range(j - 1, max(j - lookback - 1, -1), -1):
+                if O[k] > C[k]:
+                    ob_bar = k; break
+        elif direction == 'bear' and kind == 'L':
+            ob_bar = None
+            for k in range(j - 1, max(j - lookback - 1, -1), -1):
+                if C[k] > O[k]:
+                    ob_bar = k; break
+        else:
+            continue
+
+        if ob_bar is None or ob_bar in seen_ob:
+            continue
+        seen_ob.add(ob_bar)
+
+        h_, l_ = float(H[ob_bar]), float(L[ob_bar])
+        o_, c_ = float(O[ob_bar]), float(C[ob_bar])
+        span = h_ - l_
+        if span < 0.5:
+            continue
+        atr_j = max(float(atr[ob_bar]), 1e-6)
+        quality = min(100.0,
+                      40.0 + 40.0 * min(1.0, span / atr_j) +
+                      20.0 * abs(c_ - o_) / (span + 1e-10))
+        fvgs.append(FVG(
+            fvg_id=_next_fvg_id(), timeframe='1h_ob', direction=direction,
+            index=T[ob_bar],
+            detect_time=T[cbar] + detect_offset,
+            top=h_, bottom=l_, mid=(h_ + l_) / 2,
+            gap_size=span, gap_atr_ratio=span / atr_j,
+            momentum=abs(c_ - o_) / (span + 1e-10),
+            quality_score=quality, created_i=ob_bar,
+        ))
+    return fvgs
+
+
+def detect_breaker_blocks_1h(
+    ob_list: List[FVG], C: np.ndarray, T: Any,
+) -> List[FVG]:
+    """
+    OB ihlali → Breaker Block (ters-polarite bölgesi).
+    Bull OB close < b_lo → BEAR breaker (direnç).
+    Bear OB close > b_hi → BULL breaker (destek).
+    detect_time = ihlal barı kapanışı (lookahead engeli).
+    Zone = orijinal OB ile aynı; yön tersine döner.
+    """
+    detect_offset = pd.Timedelta(hours=1)
+    n = len(C)
+    bb_list: List[FVG] = []
+
+    for ob in ob_list:
+        ob_detect = to_naive(ob.detect_time)
+        start_i = next((i for i in range(n) if to_naive(T[i]) >= ob_detect), None)
+        if start_i is None:
+            continue
+        for i in range(start_i, n):
+            ci = float(C[i])
+            if ob.direction == 'bull' and ci < ob.bottom:
+                new_dir = 'bear'
+                detect_t = to_naive(T[i]) + detect_offset
+            elif ob.direction == 'bear' and ci > ob.top:
+                new_dir = 'bull'
+                detect_t = to_naive(T[i]) + detect_offset
+            else:
+                continue
+            bb_list.append(FVG(
+                fvg_id=_next_fvg_id(), timeframe='1h_bb', direction=new_dir,
+                index=ob.index, detect_time=detect_t,
+                top=ob.top, bottom=ob.bottom, mid=ob.mid,
+                gap_size=ob.gap_size, gap_atr_ratio=ob.gap_atr_ratio,
+                momentum=ob.momentum,
+                quality_score=min(100.0, ob.quality_score * 1.1),
+                created_i=ob.created_i,
+            ))
+            break
+    return bb_list
+
+
+def detect_horseshoe_1h(
+    H: np.ndarray, L: np.ndarray, O: np.ndarray, C: np.ndarray,
+    T: Any, direction: str,
+) -> List[FVG]:
+    """
+    Horseshoe (at nalı) deseni — 4 mum penceresi (lookahead-safe).
+    Bull: 4. mum (bar i), önceki 3 mumun min-low'unun ALTINA wick atar + bullish kapanır.
+    Bear: 4. mum önceki 3 mumun max-high'ının ÜSTÜNE wick atar + bearish kapanır.
+    POI zone = 4. mumun gövdesi [min(O,C), max(O,C)].
+    detect_time = T[i] + 1h (4. mum kapandıktan sonra — lookahead engeli).
+    """
+    detect_offset = pd.Timedelta(hours=1)
+    n = len(H)
+    fvgs: List[FVG] = []
+
+    for i in range(3, n):
+        h4, l4 = float(H[i]), float(L[i])
+        o4, c4 = float(O[i]), float(C[i])
+
+        if direction == 'bull':
+            prior_min = min(float(L[i - 3]), float(L[i - 2]), float(L[i - 1]))
+            if l4 >= prior_min or c4 <= o4:
+                continue
+            body_lo, body_hi = o4, c4
+            sweep_d = prior_min - l4
+        else:
+            prior_max = max(float(H[i - 3]), float(H[i - 2]), float(H[i - 1]))
+            if h4 <= prior_max or c4 >= o4:
+                continue
+            body_lo, body_hi = c4, o4
+            sweep_d = h4 - prior_max
+
+        span = body_hi - body_lo
+        if span < 0.5:
+            continue
+
+        body_range = h4 - l4 if h4 > l4 else 1e-10
+        quality = min(100.0,
+                      40.0 + 40.0 * min(1.0, sweep_d / max(span, 1e-6)) +
+                      20.0 * abs(c4 - o4) / body_range)
+        fvgs.append(FVG(
+            fvg_id=_next_fvg_id(), timeframe='1h_hs', direction=direction,
+            index=T[i],
+            detect_time=T[i] + detect_offset,
+            top=body_hi, bottom=body_lo, mid=(body_hi + body_lo) / 2,
+            gap_size=span, gap_atr_ratio=0.0, momentum=0.0,
+            quality_score=quality, created_i=i,
+        ))
+    return fvgs
+
+
+def _build_poi_mit_map(
+    poi_list: List[FVG], C: np.ndarray, T: Any,
+    detect_offset: pd.Timedelta = pd.Timedelta(hours=1),
+) -> Dict[int, Optional[Any]]:
+    """
+    POI geçersizleşme zamanı haritası (lookahead-safe).
+    Bull POI: close < b_lo  → zone'un altına kapandı → tüketildi.
+    Bear POI: close > b_hi  → zone'un üstüne kapandı → tüketildi.
+    Zaman = ihlal barı kapanışı (T[i] + detect_offset).
+    """
+    n = len(C)
+    mit_map: Dict[int, Optional[Any]] = {}
+    for poi in poi_list:
+        poi_detect = to_naive(poi.detect_time)
+        start_i = next((i for i in range(n) if to_naive(T[i]) >= poi_detect), None)
+        if start_i is None:
+            mit_map[poi.fvg_id] = None
+            continue
+        mit_map[poi.fvg_id] = None
+        for i in range(start_i, n):
+            ci = float(C[i])
+            if poi.direction == 'bull' and ci < poi.bottom:
+                mit_map[poi.fvg_id] = to_naive(T[i]) + detect_offset
+                break
+            elif poi.direction == 'bear' and ci > poi.top:
+                mit_map[poi.fvg_id] = to_naive(T[i]) + detect_offset
+                break
+    return mit_map
+
+
+# ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 7: BACKTEST ENGİNİ
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -1818,6 +2059,32 @@ class BacktestEngine:
             mit_prz[pf.fvg_id]  = to_naive(hsig.expiry_time)   # süre dolumu
             prz_harm[pf.fvg_id] = hsig
             (przfvg_bull if hsig.direction == 'bull' else przfvg_bear).append(pf)
+
+        # 1H OB / Breaker Block / Horseshoe POI
+        print("  1H POI (OB/BB/HS)...", end=' ')
+        H1   = df1['High'].values.astype(float)
+        L1   = df1['Low'].values.astype(float)
+        O1   = df1['Open'].values.astype(float)
+        C1   = df1['Close'].values.astype(float)
+        T1   = df1.index
+        atr1 = df1['atr'].values.astype(float)
+
+        ob_bull = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bull')
+        ob_bear = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bear')
+        bb_bull = detect_breaker_blocks_1h(ob_bear, C1, T1)   # bear OB ihlali → bull BB
+        bb_bear = detect_breaker_blocks_1h(ob_bull, C1, T1)   # bull OB ihlali → bear BB
+        hs_bull = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bull')
+        hs_bear = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bear')
+
+        poi1h_eng  = FVGEngine('1h_ob', max_age_hours=72, buf_ratio=0.02)
+        _off1h     = pd.Timedelta(hours=1)
+        mit_ob_bull = _build_poi_mit_map(ob_bull, C1, T1, _off1h)
+        mit_ob_bear = _build_poi_mit_map(ob_bear, C1, T1, _off1h)
+        mit_bb_bull = _build_poi_mit_map(bb_bull, C1, T1, _off1h)
+        mit_bb_bear = _build_poi_mit_map(bb_bear, C1, T1, _off1h)
+        mit_hs_bull = _build_poi_mit_map(hs_bull, C1, T1, _off1h)
+        mit_hs_bear = _build_poi_mit_map(hs_bear, C1, T1, _off1h)
+        print(f"OB {len(ob_bull)}b/{len(ob_bear)}s | BB {len(bb_bull)}b/{len(bb_bear)}s | HS {len(hs_bull)}b/{len(hs_bear)}s")
 
         # Array'ler
         C    = df5['Close'].values.astype(float)
@@ -1911,6 +2178,13 @@ class BacktestEngine:
                 msb_events_bear=msb_events_bear,
                 przfvg_bull=przfvg_bull, przfvg_bear=przfvg_bear,
                 mit_prz=mit_prz, prz_eng=prz_eng, prz_harm=prz_harm,
+                ob1_bull=ob_bull, ob1_bear=ob_bear,
+                mit_ob_bull=mit_ob_bull, mit_ob_bear=mit_ob_bear,
+                bb1_bull=bb_bull, bb1_bear=bb_bear,
+                mit_bb_bull=mit_bb_bull, mit_bb_bear=mit_bb_bear,
+                hs1_bull=hs_bull, hs1_bear=hs_bear,
+                mit_hs_bull=mit_hs_bull, mit_hs_bear=mit_hs_bear,
+                poi1h_eng=poi1h_eng,
             )
 
             if signal is None:
