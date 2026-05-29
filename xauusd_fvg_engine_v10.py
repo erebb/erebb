@@ -1362,8 +1362,6 @@ class MarketBrain:
                  fvg1_eng: 'FVGEngine',
                  msb_events_bull: List[MSBEvent],
                  msb_events_bear: List[MSBEvent],
-                 harm_bull: Optional[List['HarmonicSignal']] = None,
-                 harm_bear: Optional[List['HarmonicSignal']] = None,
                  przfvg_bull: Optional[List[FVG]] = None,
                  przfvg_bear: Optional[List[FVG]] = None,
                  mit_prz: Optional[Dict] = None,
@@ -1373,8 +1371,6 @@ class MarketBrain:
 
         # last_skip_reason her çağrıda sıfırlanır (stale değer bug fix)
         self.last_skip_reason = None
-        harm_bull   = harm_bull or []
-        harm_bear   = harm_bear or []
         przfvg_bull = przfvg_bull or []
         przfvg_bear = przfvg_bear or []
         mit_prz     = mit_prz or {}
@@ -1390,7 +1386,7 @@ class MarketBrain:
 
         t = to_naive(cur_time)
         best_signal: Optional[TradeSignal] = None
-        best_key    = (-1, -1, -1.0)
+        best_key    = (-1, -1.0)
         stage = 0   # 0=dokunuş yok, 1=dokundu konfluens yok, 2=konfluens var MSB yok
 
         for direction in ('bull', 'bear'):
@@ -1398,7 +1394,6 @@ class MarketBrain:
             mit1       = mit1_bull if direction == 'bull' else mit1_bear
             przfvg_raw = przfvg_bull if direction == 'bull' else przfvg_bear
             msb_events = msb_events_bull if direction == 'bull' else msb_events_bear
-            harms      = harm_bull if direction == 'bull' else harm_bear
             pend       = self.pending[direction]
 
             # ── ADIM 1: WICK dokunuşu — İKİ POI kaynağı ───────────────────
@@ -1449,31 +1444,13 @@ class MarketBrain:
             rsi_ok = (div_type == direction)
             bias_main = bias_allows and (ema_ok or rsi_ok)
 
-            act_harm = [s for s in harms
-                        if to_naive(s.detect_time) <= t <= to_naive(s.expiry_time)]
-
-            def harm_for(fvg):
-                best = None
-                for s in act_harm:
-                    if s.prz_low <= fvg.top and s.prz_high >= fvg.bottom:
-                        if best is None or s.conf > best.conf:
-                            best = s
-                return best
-
-            # Her pending POI için uygunluk:
-            #   gerçek FVG  → bias_main (EMA/RSI) VEYA harmonik-örtüşme (bias'sız, senaryo-1)
-            #   PRZ POI     → yalnız bias_main (EMA/RSI + bias, senaryo-2)
-            cands = []
-            for p in pend:
-                hm = harm_for(p['fvg']) if p['kind'] == 'fvg' else None
-                if bias_main or (hm is not None):
-                    cands.append((p, hm))
-            if not cands:
+            # Hem gerçek 1H FVG hem harmonik PRZ POI'leri yalnız bias_main
+            # (EMA/RSI + haftalık bias) ile işlem açar. (Senaryo-1 kaldırıldı.)
+            if not bias_main:
                 continue                                       # konfluens yok → bekle
             stage = max(stage, 2)
 
-            trigger, matched_harm = max(
-                cands, key=lambda ph: ph[0]['fvg'].quality_score)
+            trigger = max(pend, key=lambda p: p['fvg'].quality_score)
 
             # ── ADIM 3: MSB tetikleyici (dokunuştan sonra, kapanmış) ─────
             #   Harmonik/PRZ olsa da MSB ŞART; stop MSB'den (aynı mantık).
@@ -1490,26 +1467,24 @@ class MarketBrain:
                 continue                                       # MSB beklenmeye devam
 
             # ── Sinyal oluştur ───────────────────────────────────────────
-            confluence_count = (int(ema_ok) + int(rsi_ok)) if bias_allows else 0
+            confluence_count = int(ema_ok) + int(rsi_ok)
             risk_fraction = 0.01 if confluence_count == 2 else 0.005
 
             src = []
-            if bias_allows and ema_ok: src.append('EMA')
-            if bias_allows and rsi_ok: src.append('RSI')
-            if matched_harm is not None: src.append('HARMONIC')      # senaryo-1
+            if ema_ok: src.append('EMA')
+            if rsi_ok: src.append('RSI')
             if trigger['kind'] == 'prz': src.append('PRZ')           # senaryo-2
-            conf_label = '+'.join(src) if src else 'HARMONIC'
+            conf_label = '+'.join(src)
 
-            harmonic_ref = matched_harm
-            if harmonic_ref is None and trigger['kind'] == 'prz':
-                harmonic_ref = prz_harm.get(trigger['fvg_id'])
+            harmonic_ref = (prz_harm.get(trigger['fvg_id'])
+                            if trigger['kind'] == 'prz' else None)
 
             confidence = min(100.0,
                              40 * (trigger['fvg'].quality_score / 100.0) +
                              30 * float(event.quality) +
-                             30 * (max(confluence_count, 1) / 2.0))
+                             30 * (confluence_count / 2.0))
 
-            key = (1 if bias_main else 0, confluence_count, trigger['fvg'].quality_score)
+            key = (confluence_count, trigger['fvg'].quality_score)
             if key > best_key:
                 best_key = key
                 best_signal = TradeSignal(
@@ -1603,10 +1578,14 @@ class BacktestEngine:
     """
 
     def __init__(self, brain: MarketBrain, risk_mgr: RiskManager,
-                 initial_capital: float = 10_000):
+                 initial_capital: float = 10_000,
+                 breakeven_at_R: Optional[float] = None):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
+        # breakeven_at_R: fiyat bu kadar R kâra ulaşınca SL entry'ye taşınır
+        # (None → kapalı). Örn 1.0 → 1R'de breakeven.
+        self.breakeven_at_R = breakeven_at_R
 
     def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
             backtest_start: datetime) -> List[Trade]:
@@ -1709,23 +1688,37 @@ class BacktestEngine:
             # Açık işlem: TP / SL kontrolü
             if in_trade and active is not None:
                 d  = active.signal.direction
+                R  = active.risk                     # 1R (puan)
+                entry = active.entry_price
                 hit_tp = (H[idx] >= active.tp) if d == 'bull' else (L[idx] <= active.tp)
                 hit_sl = (L[idx] <= active.sl) if d == 'bull' else (H[idx] >= active.sl)
                 if hit_sl and hit_tp:
                     hit_tp = False  # aynı mumda her ikisi → SL önce
 
                 if hit_tp or hit_sl:
-                    mult   = active.rr if hit_tp else -1.0
+                    exit_price = active.tp if hit_tp else active.sl
+                    # PnL R-katsayısı: TP→+rr, orijinal SL→-1, breakeven SL→0
+                    mult = ((exit_price - entry) if d == 'bull'
+                            else (entry - exit_price)) / (R + 1e-10)
                     dollar = mult * active.risk_dollar
                     equity += dollar
-                    active.exit_price    = active.tp if hit_tp else active.sl
+                    active.exit_price    = exit_price
                     active.exit_time     = TM[idx]
-                    active.result        = 'WIN' if hit_tp else 'LOSS'
+                    active.result        = ('WIN' if mult > 0.01 else
+                                            ('BE' if abs(mult) <= 0.01 else 'LOSS'))
                     active.pnl_dollar    = round(dollar, 2)
                     active.equity_after  = round(equity, 2)
                     trades.append(active)
                     in_trade = False
                     active   = None
+                # Breakeven: bu barda çıkış olmadıysa ve 1R kâra ulaşıldıysa
+                # SL'i entry'ye taşı (sonraki barlardan itibaren geçerli).
+                elif self.breakeven_at_R is not None and active.sl != entry:
+                    be_lvl = (entry + self.breakeven_at_R * R if d == 'bull'
+                              else entry - self.breakeven_at_R * R)
+                    reached = (H[idx] >= be_lvl) if d == 'bull' else (L[idx] <= be_lvl)
+                    if reached:
+                        active.sl = round(entry, 2)
                 # Exit sonrası aynı barda yeni giriş değerlendirilebilir;
                 # hâlâ açık işlem varsa bu barı atla.
                 if in_trade:
@@ -1742,7 +1735,6 @@ class BacktestEngine:
                 fvg1_eng=fvg1_eng,
                 msb_events_bull=msb_events_bull,
                 msb_events_bear=msb_events_bear,
-                harm_bull=harm_bull, harm_bear=harm_bear,
                 przfvg_bull=przfvg_bull, przfvg_bear=przfvg_bear,
                 mit_prz=mit_prz, prz_eng=prz_eng, prz_harm=prz_harm,
             )
@@ -1806,7 +1798,7 @@ class BacktestEngine:
         print(f"      └─ Adım3: konfluens var, MSB yok : {st['step3_fail']:>6}")
         print(f"    Risk filtresi      : {dbg['risk_fail']:>6}")
         print(f"    Üretilen sinyaller : {dbg['generated']:>6}")
-        print(f"      └─ Harmonik içeren (PRZ/örtüşme): {dbg['harmonic']:>6}")
+        print(f"      └─ Harmonik PRZ POI (senaryo-2)  : {dbg['harmonic']:>6}")
         print(f"\n  TOPLAM İŞLEM: {len(trades)}")
         return trades
 
@@ -1825,7 +1817,7 @@ class PerformanceAnalytics:
     def __init__(self, trades: List[Trade], initial_capital: float = 10_000):
         self.trades  = trades
         self.capital = initial_capital
-        self.done    = [t for t in trades if t.result in ('WIN', 'LOSS')]
+        self.done    = [t for t in trades if t.result in ('WIN', 'LOSS', 'BE')]
 
     def compute(self) -> Optional[Dict]:
         if not self.done:
@@ -1837,8 +1829,10 @@ class PerformanceAnalytics:
         dd   = (peak - eq) / (peak + 1e-10) * 100
 
         wins      = sum(1 for t in self.done if t.result == 'WIN')
+        losses    = sum(1 for t in self.done if t.result == 'LOSS')
+        be        = sum(1 for t in self.done if t.result == 'BE')
         total     = len(self.done)
-        wr        = wins / total
+        wr        = wins / (wins + losses) if (wins + losses) else 0.0   # BE hariç
         net_pnl   = float(pnls.sum())
         ret_pct   = net_pnl / self.capital * 100
 
@@ -1871,7 +1865,8 @@ class PerformanceAnalytics:
         return {
             'total'         : total,
             'wins'          : wins,
-            'losses'        : total - wins,
+            'losses'        : losses,
+            'breakeven'     : be,
             'win_rate'      : wr,
             'net_pnl'       : net_pnl,
             'ret_pct'       : ret_pct,
@@ -1904,8 +1899,10 @@ class PerformanceAnalytics:
 
         print(f"\n  ── GENEL ──────────────────────────────────────────────────")
         print(f"  Toplam İşlem        : {m['total']}")
-        print(f"  Kazanç              : {m['wins']:3d}  (%{m['win_rate']*100:.1f})")
+        print(f"  Kazanç              : {m['wins']:3d}  (%{m['win_rate']*100:.1f} WR, BE hariç)")
         print(f"  Kayıp               : {m['losses']:3d}  (%{(1-m['win_rate'])*100:.1f})")
+        if m.get('breakeven', 0):
+            print(f"  Breakeven           : {m['breakeven']:3d}")
 
         print(f"\n  ── KARLILIK ($10,000 başlangıç | %0.5 risk/işlem) ─────────")
         print(f"  Net PnL             : ${m['net_pnl']:>+10,.2f}")
@@ -2037,7 +2034,7 @@ class ReportGenerator:
             GR = '#1a1a3a'; OR = '#ff9800'
             BL = '#4fc3f7'
 
-            done = [t for t in trades if t.result in ('WIN', 'LOSS')]
+            done = [t for t in trades if t.result in ('WIN', 'LOSS', 'BE')]
             if not done:
                 print("  Grafik için tamamlanan işlem yok."); return
 
@@ -2251,7 +2248,9 @@ def main():
         print("  [BIAS=0] Haftalık bias DEVRE DIŞI — her iki yön serbest.\n")
     brain    = MarketBrain(bias_provider=bias_provider)
     risk_mgr = RiskManager(rr=2.0, sl_buffer=0.0005)
-    engine   = BacktestEngine(brain, risk_mgr, initial_capital=INITIAL_CAPITAL)
+    # Fix 1:2 RR (breakeven kapalı). BE testi için breakeven_at_R=1.0 verilebilir.
+    engine   = BacktestEngine(brain, risk_mgr, initial_capital=INITIAL_CAPITAL,
+                              breakeven_at_R=None)
 
     # Backtest
     trades = engine.run(df_1h, df_5m, bt_start)
