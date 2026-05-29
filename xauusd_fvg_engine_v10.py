@@ -440,38 +440,62 @@ class RSIEngine:
         return 100 - 100 / (1 + ag / (al + 1e-10))
 
     @staticmethod
-    def _pivots_low(a: np.ndarray, strength: int = 2) -> List[int]:
-        """Fraktal dip indeksleri (lookahead-safe değil — kapalı pencere içinde çağrılır)."""
+    def _pivots_low(a: np.ndarray, strength: int = 2,
+                    atr: Optional[np.ndarray] = None,
+                    min_atr_mult: float = 0.0) -> List[int]:
+        """
+        Fraktal dip indeksleri (lookahead-safe değil — kapalı pencere içinde çağrılır).
+        atr verilirse ATR-anlamlılık filtresi uygulanır (mikro-gürültü pivotları
+        elenir; SwingEngine.compute ile aynı derinlik kriteri).
+        """
         idxs = []
         for j in range(strength, len(a) - strength):
             if (all(a[j] < a[j - k] for k in range(1, strength + 1)) and
                     all(a[j] <= a[j + k] for k in range(1, strength + 1))):
+                if atr is not None and min_atr_mult > 0:
+                    atr_j = max(float(atr[j]), 1e-6)
+                    ld = float(np.min(a[j - strength:j]))        - float(a[j])
+                    rd = float(np.min(a[j + 1:j + strength + 1])) - float(a[j])
+                    if (ld + rd) / 2.0 < min_atr_mult * atr_j:
+                        continue
                 idxs.append(j)
         return idxs
 
     @staticmethod
-    def _pivots_high(a: np.ndarray, strength: int = 2) -> List[int]:
+    def _pivots_high(a: np.ndarray, strength: int = 2,
+                     atr: Optional[np.ndarray] = None,
+                     min_atr_mult: float = 0.0) -> List[int]:
         idxs = []
         for j in range(strength, len(a) - strength):
             if (all(a[j] > a[j - k] for k in range(1, strength + 1)) and
                     all(a[j] >= a[j + k] for k in range(1, strength + 1))):
+                if atr is not None and min_atr_mult > 0:
+                    atr_j = max(float(atr[j]), 1e-6)
+                    ld = float(a[j]) - float(np.max(a[j - strength:j]))
+                    rd = float(a[j]) - float(np.max(a[j + 1:j + strength + 1]))
+                    if (ld + rd) / 2.0 < min_atr_mult * atr_j:
+                        continue
                 idxs.append(j)
         return idxs
 
     @staticmethod
     def divergence(prices: np.ndarray, rsi_vals: np.ndarray,
-                   strength: int = 2) -> Tuple[Optional[str], float]:
+                   strength: int = 2, atr: Optional[np.ndarray] = None,
+                   min_atr_mult: float = 0.5) -> Tuple[Optional[str], float]:
         """
-        Son iki onaylı pivot üzerinden regular diverjans. (tip, güç 0-1).
+        Son iki ANLAMLI close pivotu üzerinden regular diverjans. (tip, güç 0-1).
+        Pivotlar ATR-anlamlılık filtresinden geçer (min_atr_mult); böylece
+        mikro-fraktal gürültü yerine gerçek swing dip/tepeleri karşılaştırılır.
         Pencere zaten geçmiş veridir; çağıran taraf lookahead'i yönetir.
         """
         p = np.asarray(prices, dtype=float)
         r = np.asarray(rsi_vals, dtype=float)
+        a = np.asarray(atr, dtype=float) if atr is not None else None
         if len(p) < 2 * strength + 3 or np.any(np.isnan(r)):
             return None, 0.0
 
-        # BULL: fiyat dipleri
-        lows = RSIEngine._pivots_low(p, strength)
+        # BULL: anlamlı fiyat dipleri (close)
+        lows = RSIEngine._pivots_low(p, strength, a, min_atr_mult)
         if len(lows) >= 2:
             i1, i2 = lows[-2], lows[-1]
             if p[i2] < p[i1] and r[i2] > r[i1]:
@@ -480,8 +504,8 @@ class RSIEngine:
                 strg = min(1.0, (price_drop * 30 + rsi_lift) )
                 return 'bull', float(max(0.05, strg))
 
-        # BEAR: fiyat tepeleri
-        highs = RSIEngine._pivots_high(p, strength)
+        # BEAR: anlamlı fiyat tepeleri (close)
+        highs = RSIEngine._pivots_high(p, strength, a, min_atr_mult)
         if len(highs) >= 2:
             i1, i2 = highs[-2], highs[-1]
             if p[i2] > p[i1] and r[i2] < r[i1]:
@@ -1448,7 +1472,8 @@ class MarketBrain:
     Haftalık bias: WeeklyBiasProvider üzerinden. Bias yoksa o hafta işlem yapılmaz.
     """
 
-    RSI_WINDOW         = 30   # mum sayısı (5M → ~150 dk) — iki pivot sığsın
+    RSI_WINDOW         = 50   # mum sayısı (5M) — anlamlı swing pivotları için
+                              # iki ATR-anlamlı close pivotu sığsın (eski 30 dardı)
     TOUCH_MAX_AGE_BARS = 24   # dokunuştan sonra MSB için bekleme penceresi (24×5dk=2sa)
                               # HTF FVG içi LTF akümülasyonu (XAUUSD) için 100dk dardı.
 
@@ -1464,10 +1489,12 @@ class MarketBrain:
         self.pending: Dict[str, List[dict]] = {'bull': [], 'bear': []}
 
     # ── RSI Diverjansı (RSIEngine'e delege) ──────────────────────────────
-    def rsi_divergence(self, prices: np.ndarray,
-                       rsi_vals: np.ndarray) -> Tuple[Optional[str], float]:
-        """Pivot-tabanlı regular diverjans — bkz. RSIEngine.divergence."""
-        return RSIEngine.divergence(prices, rsi_vals, strength=2)
+    def rsi_divergence(self, prices: np.ndarray, rsi_vals: np.ndarray,
+                       atr_vals: Optional[np.ndarray] = None
+                       ) -> Tuple[Optional[str], float]:
+        """Anlamlı (ATR-filtreli) close pivotları üzerinden regular diverjans."""
+        return RSIEngine.divergence(prices, rsi_vals, strength=2,
+                                    atr=atr_vals, min_atr_mult=0.5)
 
     # ── EMA Onayı ───────────────────────────────────────────────────────
     def ema_confirm(self, close: float, e100: float, e200: float,
@@ -1499,7 +1526,8 @@ class MarketBrain:
                  przfvg_bear: Optional[List[FVG]] = None,
                  mit_prz: Optional[Dict] = None,
                  prz_eng: Optional['FVGEngine'] = None,
-                 prz_harm: Optional[Dict] = None
+                 prz_harm: Optional[Dict] = None,
+                 ATR: Optional[np.ndarray] = None
                  ) -> Optional[TradeSignal]:
 
         # last_skip_reason her çağrıda sıfırlanır (stale değer bug fix)
@@ -1573,7 +1601,9 @@ class MarketBrain:
             ema_ok, ema_d = self.ema_confirm(
                 cur_close, float(E100[idx]), float(E200[idx]), direction)
             sl_ = max(0, idx - self.RSI_WINDOW)
-            div_type, div_str = self.rsi_divergence(C[sl_:idx + 1], RSI[sl_:idx + 1])
+            atr_win = ATR[sl_:idx + 1] if ATR is not None else None
+            div_type, div_str = self.rsi_divergence(
+                C[sl_:idx + 1], RSI[sl_:idx + 1], atr_win)
             rsi_ok = (div_type == direction)
             bias_main = bias_allows and (ema_ok or rsi_ok)
 
@@ -1873,7 +1903,7 @@ class BacktestEngine:
             signal = self.brain.evaluate(
                 idx=idx,
                 C=C, O=O, H=H, L=L,
-                E100=E100, E200=E200, RSI=RSI,
+                E100=E100, E200=E200, RSI=RSI, ATR=ATR,
                 TM=TM,
                 fvg1_bull=fvg1_bull, mit1_bull=mit1_bull,
                 fvg1_bear=fvg1_bear, mit1_bear=mit1_bear,
