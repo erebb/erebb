@@ -271,6 +271,63 @@ class WeeklyBiasProvider:
         return "\n".join(lines)
 
 
+class DailyBiasProvider:
+    """
+    daily_bias.json dosyasından GÜNLÜK bias okur (anahtar: 'YYYY-MM-DD').
+    WeeklyBiasProvider ile aynı sözleşme: get(dt) → 'bull'|'bear'|None.
+    """
+
+    def __init__(self, filepath: str = 'daily_bias.json'):
+        self.filepath = Path(filepath)
+        self._data: Dict[str, str] = {}
+        self._load()
+
+    def _load(self):
+        if self.filepath.exists():
+            with open(self.filepath, 'r', encoding='utf-8') as f:
+                raw = json.load(f)
+            self._data = {
+                k: v.strip().lower()
+                for k, v in raw.items()
+                if not k.startswith('_') and isinstance(v, str)
+                and v.strip().lower() in ('bull', 'bear')
+            }
+            print(f"  Günlük bias yüklendi: {len(self._data)} aktif gün "
+                  f"({self.filepath.name})")
+        else:
+            print(f"  UYARI: {self.filepath} bulunamadı — günlük bias devre dışı")
+
+    def get(self, dt: Any) -> Optional[str]:
+        t = to_naive(dt)
+        return self._data.get(t.strftime('%Y-%m-%d'))
+
+    @staticmethod
+    def build_from_1h(df_1h: pd.DataFrame, filepath: str = 'daily_bias.json',
+                      flat_pct: float = 0.25) -> Dict[str, str]:
+        """
+        1H verisinden her takvim gününün GERÇEKLEŞEN yönünü (close vs open)
+        üretir ve daily_bias.json'a yazar. |net%| < flat_pct → 'none'.
+        NOT: gerçekleşen yön HINDSIGHT içerir (gün içi işlem o günün net
+        yönünü 'bilir') — 'mükemmel günlük bias' üst-sınır testi.
+        """
+        df = df_1h.copy()
+        df.index = pd.to_datetime(df.index)
+        out: Dict[str, str] = {
+            '_kaynak': ('XAUUSD 1H verisinden günlük gerçekleşen yön (close vs '
+                        f'open). |net%|<{flat_pct} -> none. HINDSIGHT içerir.')
+        }
+        for day, g in df.groupby(df.index.normalize()):
+            o = float(g['Open'].iloc[0]); c = float(g['Close'].iloc[-1])
+            net = (c - o) / o * 100
+            if abs(net) < flat_pct:
+                continue                       # flat gün → giriş yok
+            key = pd.Timestamp(day).strftime('%Y-%m-%d')
+            out[key] = 'bull' if c > o else 'bear'
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(out, f, ensure_ascii=False, indent=2)
+        return out
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 2: VERİ ENGİNİ
 # ═══════════════════════════════════════════════════════════════════════════
@@ -2241,11 +2298,23 @@ def main():
     # Veri
     df_1h, df_5m, bt_start = DataEngine.download(verbose=True)
 
-    # Bileşenler — BIAS=0 ortam değişkeni ile bias'sız test (weekly_bias.json'a dokunmadan)
-    use_bias = os.environ.get('BIAS', '1') != '0'
-    bias_provider = WeeklyBiasProvider('weekly_bias.json') if use_bias else None
+    # Bileşenler — bias seçimi ortam değişkenleriyle:
+    #   BIAS=0        → bias yok (her iki yön serbest)
+    #   BIASMODE=daily→ günlük bias (daily_bias.json; yoksa veriden üretilir)
+    #   varsayılan    → haftalık bias (weekly_bias.json)
+    use_bias  = os.environ.get('BIAS', '1') != '0'
+    bias_mode = os.environ.get('BIASMODE', 'weekly').lower()
     if not use_bias:
-        print("  [BIAS=0] Haftalık bias DEVRE DIŞI — her iki yön serbest.\n")
+        bias_provider = None
+        print("  [BIAS=0] Bias DEVRE DIŞI — her iki yön serbest.\n")
+    elif bias_mode == 'daily':
+        if not Path('daily_bias.json').exists():
+            print("  daily_bias.json yok → 1H verisinden üretiliyor...")
+            DailyBiasProvider.build_from_1h(df_1h, 'daily_bias.json')
+        bias_provider = DailyBiasProvider('daily_bias.json')
+        print("  [BIASMODE=daily] Günlük bias aktif (TEST — hindsight içerir).\n")
+    else:
+        bias_provider = WeeklyBiasProvider('weekly_bias.json')
     brain    = MarketBrain(bias_provider=bias_provider)
     risk_mgr = RiskManager(rr=2.0, sl_buffer=0.0005)
     # Fix 1:2 RR (breakeven kapalı). BE testi için breakeven_at_R=1.0 verilebilir.
