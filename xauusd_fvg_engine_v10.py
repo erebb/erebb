@@ -764,47 +764,40 @@ class MSB5MEngine:
                 seq.append((p_idx, p_price, p_kind))
                 if len(seq) > 8:
                     del seq[0]
-                # Bullish mitigation: ... L1, H1, L2  ve L2 > L1 (HIGHER LOW)
+                # Bullish A-B-C: ... L1(A), H1(B), L2(C). Süpürme ayrımı:
+                #   C < A → breaker (önceki low likiditesi süpürüldü)
+                #   C > A → mitigation (failure swing, süpürme yok)
                 if p_kind == 'L' and len(seq) >= 3:
                     l1, h1, l2 = seq[-3], seq[-2], seq[-1]
-                    if (l1[2] == 'L' and h1[2] == 'H' and l2[2] == 'L'
-                            and l2[1] > l1[1]):
+                    if l1[2] == 'L' and h1[2] == 'H' and l2[2] == 'L':
+                        kind = 'breaker' if l2[1] < l1[1] else 'mitigation'
                         p2 = l2[0]
                         mblocks.append(dict(
-                            dir='bull', rev=float(h1[1]),
+                            dir='bull', kind=kind, rev=float(h1[1]),
                             b_hi=float(H[p2]), b_lo=float(L[p2]),
                             state='armed', formed=i, active=-1))
-                # Bearish mitigation: ... H1, L1, H2  ve H2 < H1 (LOWER HIGH)
+                # Bearish A-B-C: ... H1(A), L1(B), H2(C). Süpürme ayrımı:
+                #   C > A → breaker (önceki high likiditesi süpürüldü)
+                #   C < A → mitigation (failure swing, süpürme yok)
                 elif p_kind == 'H' and len(seq) >= 3:
                     h1, l1, h2 = seq[-3], seq[-2], seq[-1]
-                    if (h1[2] == 'H' and l1[2] == 'L' and h2[2] == 'H'
-                            and h2[1] < h1[1]):
+                    if h1[2] == 'H' and l1[2] == 'L' and h2[2] == 'H':
+                        kind = 'breaker' if h2[1] > h1[1] else 'mitigation'
                         p2 = h2[0]
                         mblocks.append(dict(
-                            dir='bear', rev=float(l1[1]),
+                            dir='bear', kind=kind, rev=float(l1[1]),
                             b_hi=float(H[p2]), b_lo=float(L[p2]),
                             state='armed', formed=i, active=-1))
                 pv += 1
 
-            # ── (a) BREAKER — close ile BOS ───────────────────────────────
-            if not np.isnan(sh) and C[i] > sh and C[i - 1] <= sh:
-                stop, _ = SwingEngine.best_swing_low(L, H, atr, i,
-                                                     lookback=50, min_strength=2,
-                                                     max_strength=5, min_atr_mult=0.3)
-                events.append(MSBEvent(
-                    msb_type='breaker', direction='bull', confirm_idx=i,
-                    detect_time=T[i], stop_price=float(stop),
-                    swing_level=float(sh), quality=min(1.0, (C[i] - sh) / atr_i)))
-            if not np.isnan(sl) and C[i] < sl and C[i - 1] >= sl:
-                stop, _ = SwingEngine.best_swing_high(H, L, atr, i,
-                                                      lookback=50, min_strength=2,
-                                                      max_strength=5, min_atr_mult=0.3)
-                events.append(MSBEvent(
-                    msb_type='breaker', direction='bear', confirm_idx=i,
-                    detect_time=T[i], stop_price=float(stop),
-                    swing_level=float(sl), quality=min(1.0, (sl - C[i]) / atr_i)))
+            # ── (a) BREAKER / MITIGATION BLOCK — birleşik A-B-C tespiti ────
+            # Naive BOS kaldırıldı. Breaker ve mitigation aynı A-B-C yapısının
+            # iki türü; tek fark ara swing önceki swing'i SÜPÜRÜYOR mu:
+            #   breaker    → süpürme VAR (likidite avı), sonra dönüş
+            #   mitigation → süpürme YOK (failure swing), sonra dönüş
+            # Kurulum (b)'de yapılır; tetikleme bloğa geri dönüşte (c) gelir.
 
-            # ── (b) MITIGATION BLOCK — failure-swing + yapı tersine + dönüş ─
+            # ── (b) MITIGATION/BREAKER BLOCK — yapı tersine + bloğa dönüş ───
             # Gerçek mitigation block: failure-to-swing (yüksek-dip/düşük-tepe)
             # ile yapı tersine kırılır; fiyat blok bölgesine GERİ döner ki
             # terste kalan akıllı para başabaşta kurtulsun → o dönüşte işlem.
@@ -825,9 +818,9 @@ class MSB5MEngine:
                         stop, _ = SwingEngine.best_swing_low(
                             L, H, atr, i, lookback=50, min_strength=2,
                             max_strength=5, min_atr_mult=0.3)
-                        stop = min(float(stop), b['b_lo'])        # failure-low altı
+                        stop = min(float(stop), b['b_lo'])        # blok-low altı
                         events.append(MSBEvent(
-                            msb_type='mitigation', direction='bull', confirm_idx=i,
+                            msb_type=b['kind'], direction='bull', confirm_idx=i,
                             detect_time=T[i], stop_price=float(stop),
                             swing_level=float(b['b_hi']),
                             quality=min(1.0, (C[i] - b['b_hi']) / atr_i)))
@@ -844,9 +837,9 @@ class MSB5MEngine:
                         stop, _ = SwingEngine.best_swing_high(
                             H, L, atr, i, lookback=50, min_strength=2,
                             max_strength=5, min_atr_mult=0.3)
-                        stop = max(float(stop), b['b_hi'])        # failure-high üstü
+                        stop = max(float(stop), b['b_hi'])        # blok-high üstü
                         events.append(MSBEvent(
-                            msb_type='mitigation', direction='bear', confirm_idx=i,
+                            msb_type=b['kind'], direction='bear', confirm_idx=i,
                             detect_time=T[i], stop_price=float(stop),
                             swing_level=float(b['b_lo']),
                             quality=min(1.0, (b['b_lo'] - C[i]) / atr_i)))
