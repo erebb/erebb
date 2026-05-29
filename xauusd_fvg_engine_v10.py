@@ -1574,6 +1574,98 @@ class MarketBrain:
 
         return best_signal
 
+    # ── Bias'sız Harmonik Yolu ───────────────────────────────────────────
+    def evaluate_harmonic(self,
+                          idx: int,
+                          C: np.ndarray, O: np.ndarray,
+                          H: np.ndarray, L: np.ndarray,
+                          ATR: np.ndarray,
+                          TM: 'pd.Index',
+                          fvg1_bull: List['FVG'], mit1_bull: Dict,
+                          fvg1_bear: List['FVG'], mit1_bear: Dict,
+                          fvg1_eng: 'FVGEngine',
+                          harmonics_bull: List['HarmonicSignal'],
+                          harmonics_bear: List['HarmonicSignal'],
+                          ) -> Optional['TradeSignal']:
+        """
+        Bias/EMA/RSI/MSB gerektirmeyen harmonik-FVG örtüşme yolu.
+        Harmonik PRZ taze 1H FVG ile örtüşüyorsa ve fiyat o FVG'ye
+        wick ile dokunuyorsa bias'sız direkt işlem alır.
+        Stop = best_swing_low/high. Risk = 0.5R (0.005).
+        Lookahead: harmonik detect_time ≤ TM[idx] < expiry_time.
+        """
+        t = to_naive(TM[idx])
+        best_signal: Optional[TradeSignal] = None
+        best_conf = -1.0
+
+        for direction in ('bull', 'bear'):
+            fvg1_raw  = fvg1_bull if direction == 'bull' else fvg1_bear
+            mit1      = mit1_bull if direction == 'bull' else mit1_bear
+            harmonics = harmonics_bull if direction == 'bull' else harmonics_bear
+
+            # Aktif harmonikler (detect_time onaylı, henüz süresi dolmamış)
+            active_harm = [s for s in harmonics
+                           if to_naive(s.detect_time) <= t < to_naive(s.expiry_time)]
+            if not active_harm:
+                continue
+
+            # Aktif ve kullanılmamış 1H FVG'ler
+            active_fvgs = fvg1_eng.get_active(fvg1_raw, mit1, t)
+            active_fvgs = [f for f in active_fvgs
+                           if f.fvg_id not in self.used_fvg_ids]
+            if not active_fvgs:
+                continue
+
+            for fvg in active_fvgs:
+                span = fvg.top - fvg.bottom
+                buf  = span * fvg1_eng.buf_ratio
+
+                # Wick dokunuş testi
+                if not (float(L[idx]) <= fvg.top + buf and
+                        float(H[idx]) >= fvg.bottom - buf):
+                    continue
+
+                # Aynı yönlü, PRZ'si FVG ile örtüşen en iyi harmonik
+                best_harm: Optional[HarmonicSignal] = None
+                best_harm_c = -1.0
+                for sig in active_harm:
+                    if sig.prz_low <= fvg.top and sig.prz_high >= fvg.bottom:
+                        if sig.conf > best_harm_c:
+                            best_harm   = sig
+                            best_harm_c = sig.conf
+                if best_harm is None:
+                    continue
+
+                # Stop: swing
+                if direction == 'bull':
+                    stop, _ = SwingEngine.best_swing_low(
+                        L, H, ATR, idx, lookback=50, min_strength=2,
+                        max_strength=5, min_atr_mult=0.3)
+                else:
+                    stop, _ = SwingEngine.best_swing_high(
+                        H, L, ATR, idx, lookback=50, min_strength=2,
+                        max_strength=5, min_atr_mult=0.3)
+
+                sig_conf = min(100.0, 40.0 * (fvg.quality_score / 100.0) +
+                               60.0 * (best_harm.conf / 100.0))
+
+                if sig_conf > best_conf:
+                    best_conf = sig_conf
+                    best_signal = TradeSignal(
+                        entry_time        = TM[idx],
+                        direction         = direction,
+                        trigger_fvg       = fvg,
+                        confirmation_type = 'HARMONIC',
+                        confidence        = sig_conf,
+                        msb_type          = best_harm.pattern,
+                        confluence_count  = 1,
+                        stop_price        = float(stop),
+                        risk_fraction     = 0.005,
+                        harmonic          = best_harm,
+                    )
+
+        return best_signal
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 6: RİSK YÖNETİCİSİ
@@ -1796,6 +1888,15 @@ class BacktestEngine:
                 mit_prz=mit_prz, prz_eng=prz_eng, prz_harm=prz_harm,
             )
 
+            if signal is None:
+                # Bias'sız harmonik yolu: PRZ taze 1H FVG ile örtüşüyorsa direkt giriş
+                signal = self.brain.evaluate_harmonic(
+                    idx=idx, C=C, O=O, H=H, L=L, ATR=ATR, TM=TM,
+                    fvg1_bull=fvg1_bull, mit1_bull=mit1_bull,
+                    fvg1_bear=fvg1_bear, mit1_bear=mit1_bear,
+                    fvg1_eng=fvg1_eng,
+                    harmonics_bull=harm_bull, harmonics_bear=harm_bear,
+                )
             if signal is None:
                 reason = self.brain.last_skip_reason
                 if reason == 'no_bias':
