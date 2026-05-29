@@ -1635,10 +1635,10 @@ class MarketBrain:
             div_type, div_str = self.rsi_divergence(
                 C[sl_:idx + 1], RSI[sl_:idx + 1], atr_win)
             rsi_ok = (div_type == direction)
-            bias_main = bias_allows and (ema_ok or rsi_ok)
+            # EMA100 ve EMA233 ikisi de kesin şart (price > her iki EMA bull için,
+            # her ikisinin altında bear için). RSI ek konfluens; risk boyutunu etkiler.
+            bias_main = bias_allows and ema_ok
 
-            # Hem gerçek 1H FVG hem harmonik PRZ POI'leri yalnız bias_main
-            # (EMA/RSI + haftalık bias) ile işlem açar. (Senaryo-1 kaldırıldı.)
             if not bias_main:
                 continue                                       # konfluens yok → bekle
             stage = max(stage, 2)
