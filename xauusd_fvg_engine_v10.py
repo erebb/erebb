@@ -565,9 +565,12 @@ class SwingEngine:
                     if (ld + rd) / 2 >= min_atr_mult * atr_j:
                         cur_sl = float(L[j])
 
-            # Fallback: görünür pivot yoksa son 20 barın ekstrem değeri
-            last_sh[i] = cur_sh if not np.isnan(cur_sh) else float(np.max(H[max(0, i - 20):i + 1]))
-            last_sl[i] = cur_sl if not np.isnan(cur_sl) else float(np.min(L[max(0, i - 20):i + 1]))
+            # Onaylı fraktal swing yoksa NaN bırak — rolling-20 ekstremi
+            # "swing" saymak sahte BOS/MSB üretirdi (yatay/trend dinlenmesinde
+            # son 20 mum zirvesi aşılır ama gerçek yapı kırılımı yoktur).
+            # Tüm tüketiciler NaN-korumalı (MSB5MEngine/BreakerEngine/MSBEngine).
+            last_sh[i] = cur_sh
+            last_sl[i] = cur_sl
 
         return last_sh, last_sl
 
@@ -1374,7 +1377,8 @@ class MarketBrain:
     """
 
     RSI_WINDOW         = 30   # mum sayısı (5M → ~150 dk) — iki pivot sığsın
-    TOUCH_MAX_AGE_BARS = 20   # dokunuştan sonra MSB için bekleme penceresi (20×5dk)
+    TOUCH_MAX_AGE_BARS = 24   # dokunuştan sonra MSB için bekleme penceresi (24×5dk=2sa)
+                              # HTF FVG içi LTF akümülasyonu (XAUUSD) için 100dk dardı.
 
     def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None):
         self.bias = bias_provider
@@ -1769,13 +1773,33 @@ class BacktestEngine:
                     in_trade = False
                     active   = None
                 # Breakeven: bu barda çıkış olmadıysa ve 1R kâra ulaşıldıysa
-                # SL'i entry'ye taşı (sonraki barlardan itibaren geçerli).
+                # SL'i entry'ye taşı.
                 elif self.breakeven_at_R is not None and active.sl != entry:
                     be_lvl = (entry + self.breakeven_at_R * R if d == 'bull'
                               else entry - self.breakeven_at_R * R)
                     reached = (H[idx] >= be_lvl) if d == 'bull' else (L[idx] <= be_lvl)
                     if reached:
                         active.sl = round(entry, 2)
+                        # KONSERVATİF intra-bar: aynı mumda BE seviyesine
+                        # ulaşıp giriş seviyesine geri çekiliş varsa, iyimser
+                        # "TP'ye taşındı" varsayımı yerine BE ile kapat (PnL~0).
+                        # Tek tick yolunu bilemeyiz; drawdown sızıntısını önler.
+                        be_hit_now = ((L[idx] <= active.sl) if d == 'bull'
+                                      else (H[idx] >= active.sl))
+                        if be_hit_now:
+                            exit_price = active.sl          # = entry → BE
+                            mult = ((exit_price - entry) if d == 'bull'
+                                    else (entry - exit_price)) / (R + 1e-10)
+                            dollar = mult * active.risk_dollar
+                            equity += dollar
+                            active.exit_price   = exit_price
+                            active.exit_time    = TM[idx]
+                            active.result       = 'BE'
+                            active.pnl_dollar   = round(dollar, 2)
+                            active.equity_after = round(equity, 2)
+                            trades.append(active)
+                            in_trade = False
+                            active   = None
                 # Exit sonrası aynı barda yeni giriş değerlendirilebilir;
                 # hâlâ açık işlem varsa bu barı atla.
                 if in_trade:
