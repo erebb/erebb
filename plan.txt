@@ -1,0 +1,46 @@
+İşlem alma mantığı şöyle olucak 1 saatlik fvgye değdi ema 100 ve ema 200 üstünde ise fiyat msb beklenilecek msb geldiyse(msb=breaker yada mitigation block yada üç tane büyük hacimli mum bear ise bear bull ise bull olucak şekilde) stop msbyi(breaker yada mitigation için) yaptıran son swing low eğer üç haciml mum ise 2. mumun bear ise highi bull ise lowu fitil(wick)dahil stoplar her ikisi içinde fix 1:2rr. Rsi içinde 1 saatlik fvg değdi rsi uyumsuzluğu var ise msb arayacak msbinin tanımını önceden yapmıştım yine aynı stop mantığı ile fix 1:2rr. Tek başına msb geldiyse işlem alınmayacak. Msb gelmeden 1 saatlik mum fvgnin içinde kapanırsa artık o fvg bakılmayacak(wick kalırsa devam eder aramaya) fvglerin hepsi daha önce kullanılmamış olması lazım.  özetle Ema yada rsi 1 varsa msb arıyor bulunca işlem mantığı stop mantığıyla işlem alıyor. Eğer 2si birden varsa(RSI+EMA) bahsettiğim msb mantığı geldiğinde aynı stop ve işlem mantığı ile işlem alınacak ama bu sefer işlemdeki risk 0.5r değil 1 r olucak.
+GC=F (Vadeli İşlemler) vs Spot Veri: Kod XAUUSD için GC=F (Gold Futures) kullanıyor. Vadeli işlemlerin saatleri ve gap'leri, spot piyasa (Forex CFD) verilerinden ufak farklılıklar gösterebilir. İşlem yapılacak aracı kurumun verileriyle (Örn: OANDA verisi) test edilmesi daha doğru sonuç verir.
+3. ORTA DERECE HATA: RSI Uyumsuzluğu (Divergence) Algoritması
+rsi_divergence fonksiyonu içindeki mantık aşırı basitleştirilmiş ve hatalı sinyal üretmeye çok müsait.
+
+Sorun: il = int(np.argmin(p[:half])) ile son 10 mumun ilk yarısındaki en düşük dibi buluyorsun. Sonra bunu sadece son mum (p[-1]) ile kıyaslıyorsun. Eğer fiyat son 3 mumdur sürekli düşüyorsa, sistem art arda 3 kez "uyumsuzluk var" diyebilir. Çünkü gerçek fraktal dipleri değil, sadece "pencerenin başı ile sonu" arasındaki farkı ölçüyo
+2. KRİTİK HATA: Temasın İğne (Wick) Yerine Kapanışla (Close) Aranması
+FVGEngine içindeki price_touching fonksiyonuna fiyat olarak 5M mumunun kapanış fiyatı (cur_close) gönderiliyor.
+
+Sorun: Fiyat FVG bölgesine iğne atıp (Low veya High) gövdeyi dışarıda kapatırsa, price_touching bunu bir temas olarak görmez. Kurumsal konseptlerde POI (Point of Interest) teması her zaman iğne uçlarıyla (Low/High) kabul edilir.
+4. ORTA DERECE HATA: 5M FVG Onayındaki Zaman Çakışması
+Adım 3b'de MSC sırasında oluşan 5dk FVG oluşumu onay olarak aranıyor.
+has5, q5 = fvg5_eng.has_recent_active(..., window_secs=self.FVG5_WIN)
+
+Sorun: Bu fonksiyon sadece "son 1 saat içinde herhangi bir aktif 5M FVG var mı?" diye soruyor. O FVG'nin kırılım (MSC) dalgası tarafından oluşturulup oluşturulmadığını kontrol etmiyor. Sırf 45 dakika önce alakasız bir yerde bir FVG oluştu diye bu onaydan geçebilirsin.
+
+5. GÖZDEN KAÇAN RİSK DETAYI: Hacim ve Lot Boyutu Eksikliği
+RiskManager içinde risk dolar bazlı (equity * risk_per_trade) hesaplanıyor. Bu matematiksel bir simülasyon için doğru olsa da;
+
+Sorun: Gerçekte XAUUSD kontratlarında (Lot/Volume) 0.01 lot gibi adım büyüklükleri vardır. Eğer Stop Loss mesafen çok darsa (örneğin 3 pip), hesaplanan Lot miktarı aracı kurumun izin verdiği maksimum limiti aşabilir veya minimum lot'un altında kalabilir.
+1. KRİTİK HATA: "Temas Sonrası" Mantığının Çökmesi (Stateless Paradox)
+Şemanda ve stratejinde kural net: "Fiyat 1H FVG'ye temas etti mi? -> Evet ise temas SONRASI 5dk MSC geldi mi?"
+Ancak MarketBrain içindeki evaluate fonksiyonu bu sırayı takip etmiyor. Fiyatın şu anki mum kapanışının (cur_close) 1H FVG içinde olmasını şart koşuyor:
+touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
+
+Sorun: Piyasada fiyat 1H FVG'ye bir iğne (wick) atar ve hızla oradan seker. Sen 5 dakikalık grafikte bir Kırılım (MSC) beklerken, kırılımı yapan mum büyük ihtimalle 1H FVG'nin dışında kapanacaktır. Mum FVG dışında kapandığı için touching_fvg = None döner ve sistem aslında harika çalışan bir işlemi sırf o an FVG içinde değil diye es geçer.
+Konum: MarketBrain.evaluate() + BacktestEngine.run() içindeki dbg sayımları.
+Sorun:
+
+last_skip_reason sadece no_bias durumunda set ediliyor.
+evaluate() her çağrıldığında sıfırlanmıyor.
+Session dışı veya "sinyal yok" (adım 1-2-3) durumlarda reason overwrite edilmiyor.
+Backtest'te reason = brain.last_skip_reason okunup sonra None yapılıyor ama bir sonraki bar'da stale değer kalabiliyor.
+
+Sonuç:
+
+Haftalık bias olmayan bir bar'dan sonra, bias olan ama seans dışı bir bar "no_bias" olarak sayılıyor.
+Teşhis özeti (FİLTRE ÖZETİ) yanlış rakamlar veriyor (özellikle bias + seans karışık dönemlerde).
+
+Örnek senaryo:
+Bar 100: no_bias → reason='no_bias'
+Bar 101: bias var ama seans dışı → evaluate() reason'ı değiştirmiyor → backtest "no_bias" sayıyor (yanlış).
+2. MSC "Temas Sonrası" Koşulu Tam Olarak Uygulanmıyor (MarketBrain)
+3BacktestEngine.run()Exit işlendikten sonra continue → aynı barda yeni sinyal kontrolü yapılmıyorNadir (aynı barda exit + yeni entry), ama teorik olarak aynı bar'da yön değişimi kaçırılabilir. continue'yu kaldırıp if in_trade: continue şeklinde guard koymak更好4RiskManager.compute()idx (sinyal barı) kullanılıyor, entry ise O[idx+1]5M'de fark küçük ama idealde swing'i entry bar'ına göre almak更好5SwingEngine.best_swing_low/highHiç aday yoksa son lookback içindeki min/max fallbackErken bar'larda veya flat piyasada çok geniş SL riski doğurabilir (max_risk filtresi zaten engelliyor büyük oranda)6FVGEngine.price_touchingbuf_ratio=0.05 (gap'in %5'i)Oldukça geniş buffer. Daha sıkı (0.02-0.03) daha az false touch verebilir7ReportGenerator.generateBaşlıkta hala v9.0 yazıyorKüçük, düzelt: v10.08DataEngineCSV yoksa sadece son ~60 gün 5M veriUzun backtest için kullanıcıdan uzun CSV bekliyor. Uyarı eklenebilir9PerformanceAnalyticspf = inf durumunda print'te sorun yok ama görselde garip durabilirif len(loss_p) == 0: pf = float('inf') zaten var, kabul edilebilir
+SEANS FILTRESINI TAMAMEN KALDIR. 
+https://www.youtube.com/watch?v=Zwthp-JQT0k referans video 
