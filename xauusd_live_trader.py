@@ -629,19 +629,12 @@ class LiveTrader:
 
         # Lot hesabı: kullanıcının risk_pct'si + konfluens ölçeği
         # signal.risk_fraction: 0.01 (EMA+RSI) veya 0.005 (EMA tek)
+        # Pozisyon büyüklüğü YALNIZCA stop riskine göre belirlenir:
+        #   lot = (stop olursa kaybedilecek $) / |entry - sl|
+        # Kaldıraç lot'u değiştirmez; sadece gereken marjini etkiler.
         confluence_scale = signal.risk_fraction / 0.01   # 1.0 veya 0.5
         actual_risk      = equity * self.risk_pct * confluence_scale
         qty              = compute_lot(entry, r['sl'], actual_risk)
-
-        # ── Kaldıraç / marjin sınırı ─────────────────────────────────────────
-        # Açılabilecek maksimum notional = kasa × kaldıraç.
-        # Risk bazlı lot bu sınırı aşarsa, lot kaldıraca göre kısılır.
-        max_notional = equity * self.leverage
-        max_qty      = max_notional / entry if entry > 0 else 0.0
-        capped       = False
-        if qty > max_qty:
-            qty    = round(max_qty, 3)
-            capped = True
 
         if qty < 0.001:
             print(f"  Lot çok küçük ({qty:.4f}) — işlem atlandı")
@@ -659,11 +652,14 @@ class LiveTrader:
         print(f"  │  Entry : ~{entry:.2f}")
         print(f"  │  SL    : {r['sl']:.2f}")
         print(f"  │  TP    : {r['tp']:.2f}")
-        print(f"  │  Lot   : {qty} oz" + ("  ⚠ kaldıraç sınırına kısıldı" if capped else ""))
+        print(f"  │  Lot   : {qty} oz")
         print(f"  │  Risk  : ${actual_risk:.2f} ({self.risk_pct*100:.1f}% × "
-              f"{confluence_scale:.1f}x)")
+              f"{confluence_scale:.1f}x)  [stop olursa kayıp]")
         print(f"  │  Kasa  : ${equity:.2f}  |  Kaldıraç: {self.leverage}x")
         print(f"  │  Pozis.: ${notional:.2f} notional  |  Marjin: ${margin:.2f}")
+        if margin > equity:
+            print(f"  │  ⚠ Gereken marjin (${margin:.2f}) kasadan büyük — "
+                  f"kaldıracı artırın")
         print(f"  └{'─'*40}")
 
         if self.dry_run:
