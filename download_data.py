@@ -80,6 +80,17 @@ def fetch_page(symbol: str, interval: str,
     return []
 
 
+def subtract_months(dt: datetime, months: int) -> datetime:
+    """dt tarihinden takvim-doğru olarak 'months' ay çıkarır."""
+    import calendar
+    month_index = (dt.year * 12 + (dt.month - 1)) - months
+    year, month = divmod(month_index, 12)
+    month += 1
+    # Ay sonu taşmasını önle (örn. 31 → 28/30)
+    day = min(dt.day, calendar.monthrange(year, month)[1])
+    return dt.replace(year=year, month=month, day=day)
+
+
 def parse_rows(raw: list) -> pd.DataFrame:
     """[[ts, o, h, l, c, v], ...] → DataFrame[Open,High,Low,Close,Volume]"""
     rows = []
