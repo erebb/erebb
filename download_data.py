@@ -1,16 +1,20 @@
 """
-XAUUSD Veri İndirici  —  BingX public klines API (kayıt/anahtar gerekmez)
+XAUUSD Veri İndirici  —  BingX public klines API + Yahoo Finance (kayıt/anahtar gerekmez)
 
   • Başlangıçta altın sembolünü otomatik bulur (contracts → klines deneme)
-  • swap/v3/quote/klines; istek başına 1440 mum; endTime ile GERİYE sayfalanır
+  • swap/v3/quote/klines; istek başına 1440 mum; ileri sayfalama
   • Her çalıştırmada yeni veriyi mevcut CSV'ye ekler (dedup + sort)
   • Çıktı formatı engine ile uyumlu (Open/High/Low/Close/Volume)
 
+  --yahoo-1h      : 1H veriyi Yahoo Finance GC=F'ten çeker (2 yıla kadar)
+                    5M BingX'ten gelmeye devam eder.
+  --yahoo-years N : Yahoo 1H için kaç yıl (varsayılan: 2)
+
 Kullanım:
-  python download_data.py --months 6        # son 6 ay, 5m + 1h
-  python download_data.py --months 12       # son 12 ay
-  python download_data.py --list-symbols    # BingX'teki altın sembollerini göster
-  python download_data.py --symbol XAU-USDT --months 6  # sembolü elle gir
+  python download_data.py --months 6           # son 6 ay BingX 5m + 1h
+  python download_data.py --yahoo-1h           # 1H Yahoo (2 yıl) + BingX 5m (3 ay)
+  python download_data.py --yahoo-1h --yahoo-years 1  # 1H Yahoo 1 yıl
+  python download_data.py --list-symbols       # BingX'teki altın sembollerini göster
 """
 
 from __future__ import annotations
@@ -328,6 +332,53 @@ def download_range(symbol: str, interval: str,
     return out
 
 
+def download_yahoo_1h(years: int = 2) -> pd.DataFrame:
+    """
+    Yahoo Finance GC=F (Altın Vadeli) 1H OHLCV indirir.
+    yfinance ile yapılır — kayıt/anahtar gerekmez, yıllarca veri sunar.
+
+    NOT: yfinance 1H için yaklaşık 730 gün (2 yıl) geçmişi destekler.
+    """
+    try:
+        import yfinance as yf
+    except ImportError:
+        print("  HATA: yfinance kurulu değil. Kurmak için: pip install yfinance")
+        return pd.DataFrame()
+
+    from datetime import datetime, timedelta
+    end   = datetime.now()
+    start = end - timedelta(days=min(years * 365, 729))  # yfinance 730g limiti
+    print(f"  Yahoo Finance GC=F indiriliyor ({start.date()} → {end.date()})...")
+    try:
+        df = yf.download(
+            "GC=F", start=start, end=end,
+            interval="1h", progress=False, auto_adjust=True,
+        )
+    except Exception as e:
+        print(f"  HATA: Yahoo indirme başarısız: {e}")
+        return pd.DataFrame()
+
+    if df.empty:
+        print("  UYARI: Yahoo veri boş döndü.")
+        return pd.DataFrame()
+
+    # Çok seviyeli sütun başlıklarını düzleştir
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [c[0] for c in df.columns]
+    df.columns = [c.strip().capitalize() for c in df.columns]
+    # Sütunları engine formatına çek
+    rename = {"Open": "Open", "High": "High", "Low": "Low",
+              "Close": "Close", "Volume": "Volume"}
+    df = df[[c for c in rename if c in df.columns]].rename(columns=rename)
+    if hasattr(df.index, "tz") and df.index.tz is not None:
+        df.index = df.index.tz_localize(None)
+    df.index.name = "Datetime"
+    df.dropna(subset=["Close"], inplace=True)
+    print(f"  Yahoo 1H: {len(df)} mum  "
+          f"({df.index.min().date()} → {df.index.max().date()})")
+    return df
+
+
 def merge_save(new_df: pd.DataFrame, filepath: str, label: str) -> None:
     if new_df is None or new_df.empty:
         print(f"  UYARI: {label} için veri gelmedi\n")
@@ -395,6 +446,14 @@ def main() -> None:
         "--start", default=None,
         help="Başlangıç tarihi YYYY-MM-DD",
     )
+    parser.add_argument(
+        "--yahoo-1h", action="store_true",
+        help="1H veriyi Yahoo Finance GC=F'ten indir (BingX yerine). 5M BingX'ten gelir.",
+    )
+    parser.add_argument(
+        "--yahoo-years", type=int, default=2,
+        help="Yahoo 1H için kaç yıl (varsayılan: 2)",
+    )
     args = parser.parse_args()
 
     # ── Sembol listele ve çık ─────────────────────────────────────────────────
@@ -414,6 +473,35 @@ def main() -> None:
             ok = test_klines(g["symbol"])
             print(f"  {g['symbol']:<30}  {'✓ klines OK' if ok else '✗ klines KABUL ETMİYOR'}")
             time.sleep(0.2)
+        return
+
+    # ── Yahoo 1H modu ─────────────────────────────────────────────────────────
+    if args.yahoo_1h:
+        print("\n" + "═" * 62)
+        print("  Yahoo Finance 1H  +  BingX 5M")
+        print("═" * 62)
+
+        # 1) Yahoo 1H
+        print("\n▶ 1H  →  xauusd_1h.csv  (Yahoo Finance GC=F)")
+        df_1h = download_yahoo_1h(years=args.yahoo_years)
+        merge_save(df_1h, "xauusd_1h.csv", "1H")
+
+        # 2) BingX 5M (son 3 ay, kontrat verisinin başından itibaren)
+        symbol = resolve_symbol(args.symbol)
+        if symbol:
+            start_5m = subtract_months(datetime.utcnow(), 4)
+            end_dt   = datetime.utcnow()
+            start_ms = int(start_5m.replace(tzinfo=timezone.utc).timestamp() * 1000)
+            end_ms   = int(end_dt.replace(tzinfo=timezone.utc).timestamp() * 1000)
+            print(f"\n▶ 5M  →  xauusd_5m.csv  (BingX {start_5m.date()} → {end_dt.date()})")
+            df_5m = download_range(symbol, "5m", start_ms, end_ms)
+            merge_save(df_5m, "xauusd_5m.csv", "5M")
+        else:
+            print("\n  BingX sembolü bulunamadı — 5M atlandı.")
+
+        print("═" * 62)
+        print("  Tamamlandı.")
+        print("═" * 62)
         return
 
     # ── Sembol belirle ────────────────────────────────────────────────────────
