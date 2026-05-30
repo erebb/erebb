@@ -171,20 +171,24 @@ def resolve_symbol(user_symbol: str | None) -> str | None:
 
 # ── API / veri işleme ─────────────────────────────────────────────────────────
 
-def fetch_klines(symbol: str, interval: str, end_ms: int) -> list:
+def fetch_klines(symbol: str, interval: str,
+                 start_ms: int, end_ms: int) -> list:
     """
-    end_ms'i (endTime) baz alarak GERİYE doğru PAGE_SIZE mum çeker.
+    [start_ms, end_ms] PENCERESİNDEKİ mumları çeker.
 
-    NOT: BingX v3, startTime+endTime+limit birlikte verilince endTime'ı
-    baz alıp en yeni 'limit' mumu döndürür (startTime'dan ileri değil).
-    Bu yüzden yalnızca endTime gönderip geriye sayfalıyoruz; veri bitince
-    (kontrat başlangıcından öncesi) [] gelir.
+    NOT (resmi BingX dokümanından doğrulandı): v3 klines, geniş bir aralık
+    + limit verilince "en yeni limit mum"u döndürür. Bu yüzden geçmişe
+    gitmek için pencereyi DAR tutmak gerekir: endTime = startTime + tam
+    PAGE_SIZE bar. Böylece limit pencerenin tamamını kapsar ve o pencerenin
+    gerçek mumları döner ("latest" değil). Pencereyi ileri kaydırarak
+    tüm geçmiş toplanır.
     """
     params = {
-        "symbol":   symbol,
-        "interval": interval,
-        "endTime":  end_ms,
-        "limit":    PAGE_SIZE,
+        "symbol":    symbol,
+        "interval":  interval,
+        "startTime": start_ms,
+        "endTime":   end_ms,
+        "limit":     PAGE_SIZE,
     }
     for attempt in range(4):
         try:
@@ -261,61 +265,66 @@ def parse_rows(raw: list) -> pd.DataFrame:
 def download_range(symbol: str, interval: str,
                    start_ms: int, end_ms: int) -> pd.DataFrame:
     """
-    end_ms'ten başlayıp GERİYE doğru sayfalayarak start_ms'e kadar çeker.
+    start_ms'ten başlayıp İLERİ doğru, DAR pencerelerle sayfalayarak çeker.
 
-    BingX v3 klines endTime'ı baz alıp en yeni PAGE_SIZE mumu döndürür.
-    Bu yüzden her sayfanın endTime'ı, bir önceki sayfanın EN ESKİ mumunun
-    bir tık öncesidir. Veri start_ms'in altına inince, boş sayfa gelince
-    ya da kontrat başlangıcına ulaşınca durur.
+    Resmi BingX dokümanı: v3 klines geniş aralık + limit verilince "en yeni
+    limit mum"u döndürür. Geçmişe gitmek için her isteğin penceresini tam
+    PAGE_SIZE bar genişliğinde tutarız: endTime = win_start + PAGE_SIZE*bar.
+    Böylece limit pencereyi tam kapsar ve o pencerenin GERÇEK mumları döner.
+    Pencereyi gelen en yeni mumdan ileri kaydırarak kontrattan bugüne kadar
+    tüm geçmiş toplanır.
+
+    Rate limit 1/s (resmi) — sayfalar arası ~1.1s beklenir.
     """
     bar_ms    = INTERVAL_MS.get(interval, 300_000)
-    cursor    = end_ms             # geriye doğru gerileyen endTime
+    win_ms    = bar_ms * PAGE_SIZE   # pencere genişliği
+    cursor    = start_ms             # ileri doğru ilerleyen pencere başı
     frames    = []
     page      = 0
-    seen_min  = None               # tekrar/sonsuz döngü koruması
+    seen_max  = None                 # tekrar/sonsuz döngü koruması
 
-    while cursor >= start_ms:
+    while cursor < end_ms:
         page += 1
+        win_end = min(cursor + win_ms, end_ms)
         c_dt = datetime.utcfromtimestamp(cursor / 1000).strftime("%Y-%m-%d %H:%M")
-        print(f"  [sayfa {page}]  ≤ {c_dt} ...", end=" ", flush=True)
+        print(f"  [sayfa {page}]  ≥ {c_dt} ...", end=" ", flush=True)
 
-        raw = fetch_klines(symbol, interval, cursor)
+        raw = fetch_klines(symbol, interval, cursor, win_end)
         df  = parse_rows(raw)
+
         if df.empty:
-            print("boş — kontrat başlangıcına ulaşıldı")
-            break
+            # Bu pencerede veri yok. Kontrat henüz başlamamış olabilir →
+            # pencereyi ileri kaydırıp devam et (sona kadar boşsa zaten biter).
+            print("boş — pencere ileri kaydırılıyor")
+            cursor = win_end
+            time.sleep(1.1)
+            continue
 
         oldest_ms = int(df.index[0].value // 1_000_000)
         newest_ms = int(df.index[-1].value // 1_000_000)
         o_dt = datetime.utcfromtimestamp(oldest_ms / 1000).strftime("%Y-%m-%d %H:%M")
         print(f"{len(df)} mum  (en eski {o_dt})")
 
-        # Yalnızca start_ms üstündekileri sakla
-        keep = df[df.index >= pd.to_datetime(start_ms, unit="ms")]
-        if not keep.empty:
-            frames.append(keep)
+        frames.append(df)
 
-        # En eski mum start_ms'e ulaştıysa bitti
-        if oldest_ms <= start_ms:
-            break
-
-        # Bu sayfa PAGE_SIZE'dan az mum getirdiyse sona ulaşıldı
-        if len(raw) < PAGE_SIZE:
-            break
-
-        # İlerleme yoksa dur (aynı en-eski tekrar geldi)
-        if seen_min is not None and oldest_ms >= seen_min:
+        # İlerleme yoksa dur (aynı en-yeni tekrar geldi)
+        if seen_max is not None and newest_ms <= seen_max:
             print("  İlerleme durdu — bitiriliyor.")
             break
-        seen_min = oldest_ms
+        seen_max = newest_ms
 
-        cursor = oldest_ms - bar_ms    # bir önceki muma geç
-        time.sleep(0.15)
+        # Bir sonraki pencere, gelen en yeni mumun hemen ardından başlar
+        cursor = newest_ms + bar_ms
+        time.sleep(1.1)   # rate limit 1/s
 
     if not frames:
         return pd.DataFrame()
     out = pd.concat(frames)
     out = out[~out.index.duplicated(keep="last")].sort_index()
+    # İstenen aralığa kırp
+    lo = pd.to_datetime(start_ms, unit="ms")
+    hi = pd.to_datetime(end_ms, unit="ms")
+    out = out[(out.index >= lo) & (out.index <= hi)]
     return out
 
 
