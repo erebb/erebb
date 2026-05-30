@@ -2,7 +2,7 @@
 XAUUSD Veri İndirici  —  BingX public klines API (kayıt/anahtar gerekmez)
 
   • Başlangıçta altın sembolünü otomatik bulur (contracts → klines deneme)
-  • İstek başına 1440 mum; startTime/endTime döngüsüyle sayfalanır
+  • swap/v3/quote/klines; istek başına 1440 mum; startTime ile İLERİ sayfalanır
   • Her çalıştırmada yeni veriyi mevcut CSV'ye ekler (dedup + sort)
   • Çıktı formatı engine ile uyumlu (Open/High/Low/Close/Volume)
 
@@ -22,8 +22,9 @@ from datetime import datetime, timedelta, timezone
 import pandas as pd
 import requests
 
-BASE_URL  = "https://open-api.bingx.com"
-PAGE_SIZE = 1440  # BingX istek başına maksimum
+BASE_URL   = "https://open-api.bingx.com"
+KLINES_PATH = "/openApi/swap/v3/quote/klines"  # perpetual OHLCV (CCXT ile aynı)
+PAGE_SIZE  = 1440  # BingX istek başına maksimum
 
 INTERVAL_FILES = {
     "5m":  "xauusd_5m.csv",
@@ -102,7 +103,7 @@ def test_klines(symbol: str) -> bool:
     """Sembolün klines endpoint'ini kabul edip etmediğini kontrol eder."""
     try:
         r = requests.get(
-            BASE_URL + "/openApi/swap/v2/quote/klines",
+            BASE_URL + KLINES_PATH,
             params={"symbol": symbol, "interval": "1h", "limit": 1},
             timeout=10,
         )
@@ -170,22 +171,24 @@ def resolve_symbol(user_symbol: str | None) -> str | None:
 
 # ── API / veri işleme ─────────────────────────────────────────────────────────
 
-def fetch_klines(symbol: str, interval: str, end_ms: int) -> list:
+def fetch_klines(symbol: str, interval: str,
+                 start_ms: int, end_ms: int) -> list:
     """
-    end_ms'den GERİYE doğru PAGE_SIZE mum çeker (startTime vermeden).
-    BingX bu modda endTime'dan geriye en fazla 'limit' mum döndürür;
+    [start_ms, end_ms] aralığından İLERİ doğru PAGE_SIZE mum çeker.
+    BingX v3 startTime'dan itibaren en fazla 'limit' mum döndürür;
     veri bitince [] gelir. Boşsa [] döner.
     """
     params = {
-        "symbol":   symbol,
-        "interval": interval,
-        "endTime":  end_ms,
-        "limit":    PAGE_SIZE,
+        "symbol":    symbol,
+        "interval":  interval,
+        "startTime": start_ms,
+        "endTime":   end_ms,
+        "limit":     PAGE_SIZE,
     }
     for attempt in range(4):
         try:
             r = requests.get(
-                BASE_URL + "/openApi/swap/v2/quote/klines",
+                BASE_URL + KLINES_PATH,
                 params=params, timeout=15,
             )
             r.raise_for_status()
@@ -214,18 +217,37 @@ def subtract_months(dt: datetime, months: int) -> datetime:
 
 
 def parse_rows(raw: list) -> pd.DataFrame:
+    """
+    BingX kline yanıtını DataFrame'e çevirir. İki biçimi de destekler:
+      • v3: isimli alanlı nesne  {time, open, high, low, close, volume}
+      • v2: pozisyonel dizi       [ts, o, h, l, c, v]
+    (alan adları CCXT parseOHLCV'den: timestamp 'time', fallback 'closeTime')
+    """
     rows = []
     for row in raw:
-        if not isinstance(row, (list, tuple)) or len(row) < 6:
+        if isinstance(row, dict):
+            ts = row.get("time", row.get("closeTime"))
+            if ts is None:
+                continue
+            rows.append({
+                "ts":     int(ts),
+                "Open":   float(row["open"]),
+                "High":   float(row["high"]),
+                "Low":    float(row["low"]),
+                "Close":  float(row["close"]),
+                "Volume": float(row.get("volume", 0)),
+            })
+        elif isinstance(row, (list, tuple)) and len(row) >= 6:
+            rows.append({
+                "ts":     int(row[0]),
+                "Open":   float(row[1]),
+                "High":   float(row[2]),
+                "Low":    float(row[3]),
+                "Close":  float(row[4]),
+                "Volume": float(row[5]),
+            })
+        else:
             continue
-        rows.append({
-            "ts":     int(row[0]),
-            "Open":   float(row[1]),
-            "High":   float(row[2]),
-            "Low":    float(row[3]),
-            "Close":  float(row[4]),
-            "Volume": float(row[5]),
-        })
     if not rows:
         return pd.DataFrame()
     df = pd.DataFrame(rows)
@@ -238,47 +260,52 @@ def parse_rows(raw: list) -> pd.DataFrame:
 def download_range(symbol: str, interval: str,
                    start_ms: int, end_ms: int) -> pd.DataFrame:
     """
-    end_ms'den başlayıp GERİYE doğru sayfalayarak start_ms'e kadar çeker.
-    Her istek endTime'dan geriye PAGE_SIZE mum getirir; bir sonraki
-    isteğin endTime'ı, gelen en eski mumun bir tık öncesidir.
-    Veri start_ms'in altına inince ya da boş sayfa gelince durur.
-    """
-    bar_ms   = INTERVAL_MS.get(interval, 300_000)
-    cursor   = end_ms              # geriye doğru ilerleyen endTime
-    frames   = []
-    page     = 0
-    seen_min = None                # tekrar/sonsuz döngü koruması
+    start_ms'ten başlayıp İLERİ doğru sayfalayarak end_ms'e kadar çeker.
+    (CCXT'in kanıtlı yaklaşımı: startTime ile ileri sayfalama.)
 
-    while cursor > start_ms:
+    Her istek startTime'dan itibaren PAGE_SIZE mum getirir; bir sonraki
+    isteğin startTime'ı, gelen en yeni mumun bir tık sonrasıdır. Gelen mum
+    sayısı PAGE_SIZE'ın altına düşünce ya da boş sayfa gelince durur.
+
+    NOT: BingX, start_ms kontratın listelenme tarihinden önceyse otomatik
+    olarak mevcut en eski mumdan başlatır. Bu yüzden çok geriye bir start_ms
+    versek bile "kontrat ne zaman başladıysa oradan bugüne" toplanır.
+    """
+    bar_ms    = INTERVAL_MS.get(interval, 300_000)
+    cursor    = start_ms           # ileri doğru ilerleyen startTime
+    frames    = []
+    page      = 0
+    seen_max  = None               # tekrar/sonsuz döngü koruması
+
+    while cursor < end_ms:
         page += 1
         c_dt = datetime.utcfromtimestamp(cursor / 1000).strftime("%Y-%m-%d %H:%M")
-        print(f"  [sayfa {page}]  ≤ {c_dt} ...", end=" ", flush=True)
+        print(f"  [sayfa {page}]  ≥ {c_dt} ...", end=" ", flush=True)
 
-        raw = fetch_klines(symbol, interval, cursor)
+        raw = fetch_klines(symbol, interval, cursor, end_ms)
         df  = parse_rows(raw)
         if df.empty:
             print("boş — durdu")
             break
 
-        # Yalnızca start_ms üstündekileri tut
-        df = df[df.index >= pd.to_datetime(start_ms, unit="ms")]
-        if not df.empty:
-            frames.append(df)
-
-        oldest_ms = int(raw[0][0])     # gelen partinin en eski mumu
-        newest_ms = int(raw[-1][0])
+        oldest_ms = int(df.index[0].value // 1_000_000)
+        newest_ms = int(df.index[-1].value // 1_000_000)
         o_dt = datetime.utcfromtimestamp(oldest_ms / 1000).strftime("%Y-%m-%d %H:%M")
-        print(f"{len(raw)} mum  (en eski {o_dt})")
+        print(f"{len(df)} mum  (en eski {o_dt})")
 
-        # İlerleme yoksa dur (aynı min tekrar geldi)
-        if seen_min is not None and oldest_ms >= seen_min:
+        frames.append(df)
+
+        # Bu sayfa PAGE_SIZE'dan az mum getirdiyse sona ulaşıldı
+        if len(raw) < PAGE_SIZE:
+            break
+
+        # İlerleme yoksa dur (aynı en-yeni tekrar geldi)
+        if seen_max is not None and newest_ms <= seen_max:
             print("  İlerleme durdu — bitiriliyor.")
             break
-        seen_min = oldest_ms
+        seen_max = newest_ms
 
-        if oldest_ms <= start_ms:
-            break
-        cursor = oldest_ms - bar_ms    # bir önceki muma geç
+        cursor = newest_ms + bar_ms    # bir sonraki muma geç
         time.sleep(0.15)
 
     if not frames:
