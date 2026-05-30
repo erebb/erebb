@@ -2,7 +2,7 @@
 XAUUSD Veri İndirici  —  BingX public klines API (kayıt/anahtar gerekmez)
 
   • Başlangıçta altın sembolünü otomatik bulur (contracts → klines deneme)
-  • swap/v3/quote/klines; istek başına 1440 mum; startTime ile İLERİ sayfalanır
+  • swap/v3/quote/klines; istek başına 1440 mum; endTime ile GERİYE sayfalanır
   • Her çalıştırmada yeni veriyi mevcut CSV'ye ekler (dedup + sort)
   • Çıktı formatı engine ile uyumlu (Open/High/Low/Close/Volume)
 
@@ -171,19 +171,20 @@ def resolve_symbol(user_symbol: str | None) -> str | None:
 
 # ── API / veri işleme ─────────────────────────────────────────────────────────
 
-def fetch_klines(symbol: str, interval: str,
-                 start_ms: int, end_ms: int) -> list:
+def fetch_klines(symbol: str, interval: str, end_ms: int) -> list:
     """
-    [start_ms, end_ms] aralığından İLERİ doğru PAGE_SIZE mum çeker.
-    BingX v3 startTime'dan itibaren en fazla 'limit' mum döndürür;
-    veri bitince [] gelir. Boşsa [] döner.
+    end_ms'i (endTime) baz alarak GERİYE doğru PAGE_SIZE mum çeker.
+
+    NOT: BingX v3, startTime+endTime+limit birlikte verilince endTime'ı
+    baz alıp en yeni 'limit' mumu döndürür (startTime'dan ileri değil).
+    Bu yüzden yalnızca endTime gönderip geriye sayfalıyoruz; veri bitince
+    (kontrat başlangıcından öncesi) [] gelir.
     """
     params = {
-        "symbol":    symbol,
-        "interval":  interval,
-        "startTime": start_ms,
-        "endTime":   end_ms,
-        "limit":     PAGE_SIZE,
+        "symbol":   symbol,
+        "interval": interval,
+        "endTime":  end_ms,
+        "limit":    PAGE_SIZE,
     }
     for attempt in range(4):
         try:
@@ -260,32 +261,28 @@ def parse_rows(raw: list) -> pd.DataFrame:
 def download_range(symbol: str, interval: str,
                    start_ms: int, end_ms: int) -> pd.DataFrame:
     """
-    start_ms'ten başlayıp İLERİ doğru sayfalayarak end_ms'e kadar çeker.
-    (CCXT'in kanıtlı yaklaşımı: startTime ile ileri sayfalama.)
+    end_ms'ten başlayıp GERİYE doğru sayfalayarak start_ms'e kadar çeker.
 
-    Her istek startTime'dan itibaren PAGE_SIZE mum getirir; bir sonraki
-    isteğin startTime'ı, gelen en yeni mumun bir tık sonrasıdır. Gelen mum
-    sayısı PAGE_SIZE'ın altına düşünce ya da boş sayfa gelince durur.
-
-    NOT: BingX, start_ms kontratın listelenme tarihinden önceyse otomatik
-    olarak mevcut en eski mumdan başlatır. Bu yüzden çok geriye bir start_ms
-    versek bile "kontrat ne zaman başladıysa oradan bugüne" toplanır.
+    BingX v3 klines endTime'ı baz alıp en yeni PAGE_SIZE mumu döndürür.
+    Bu yüzden her sayfanın endTime'ı, bir önceki sayfanın EN ESKİ mumunun
+    bir tık öncesidir. Veri start_ms'in altına inince, boş sayfa gelince
+    ya da kontrat başlangıcına ulaşınca durur.
     """
     bar_ms    = INTERVAL_MS.get(interval, 300_000)
-    cursor    = start_ms           # ileri doğru ilerleyen startTime
+    cursor    = end_ms             # geriye doğru gerileyen endTime
     frames    = []
     page      = 0
-    seen_max  = None               # tekrar/sonsuz döngü koruması
+    seen_min  = None               # tekrar/sonsuz döngü koruması
 
-    while cursor < end_ms:
+    while cursor >= start_ms:
         page += 1
         c_dt = datetime.utcfromtimestamp(cursor / 1000).strftime("%Y-%m-%d %H:%M")
-        print(f"  [sayfa {page}]  ≥ {c_dt} ...", end=" ", flush=True)
+        print(f"  [sayfa {page}]  ≤ {c_dt} ...", end=" ", flush=True)
 
-        raw = fetch_klines(symbol, interval, cursor, end_ms)
+        raw = fetch_klines(symbol, interval, cursor)
         df  = parse_rows(raw)
         if df.empty:
-            print("boş — durdu")
+            print("boş — kontrat başlangıcına ulaşıldı")
             break
 
         oldest_ms = int(df.index[0].value // 1_000_000)
@@ -293,19 +290,26 @@ def download_range(symbol: str, interval: str,
         o_dt = datetime.utcfromtimestamp(oldest_ms / 1000).strftime("%Y-%m-%d %H:%M")
         print(f"{len(df)} mum  (en eski {o_dt})")
 
-        frames.append(df)
+        # Yalnızca start_ms üstündekileri sakla
+        keep = df[df.index >= pd.to_datetime(start_ms, unit="ms")]
+        if not keep.empty:
+            frames.append(keep)
+
+        # En eski mum start_ms'e ulaştıysa bitti
+        if oldest_ms <= start_ms:
+            break
 
         # Bu sayfa PAGE_SIZE'dan az mum getirdiyse sona ulaşıldı
         if len(raw) < PAGE_SIZE:
             break
 
-        # İlerleme yoksa dur (aynı en-yeni tekrar geldi)
-        if seen_max is not None and newest_ms <= seen_max:
+        # İlerleme yoksa dur (aynı en-eski tekrar geldi)
+        if seen_min is not None and oldest_ms >= seen_min:
             print("  İlerleme durdu — bitiriliyor.")
             break
-        seen_max = newest_ms
+        seen_min = oldest_ms
 
-        cursor = newest_ms + bar_ms    # bir sonraki muma geç
+        cursor = oldest_ms - bar_ms    # bir önceki muma geç
         time.sleep(0.15)
 
     if not frames:
