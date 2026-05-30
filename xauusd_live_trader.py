@@ -48,7 +48,7 @@ class BingXClient:
     BASE = "https://open-api.bingx.com"
 
     def __init__(self, api_key: str, api_secret: str,
-                 symbol: str = "XAUT-USDT"):
+                 symbol: str = "GOLD(XAU)-USDT"):
         self.key    = api_key
         self.secret = api_secret
         self.symbol = symbol
@@ -127,6 +127,42 @@ class BingXClient:
         if isinstance(data, dict):
             data = data.get('data', data)
         return data if isinstance(data, list) else []
+
+    # ── Kontratlar / sembol doğrulama ───────────────────────────────────────────
+    def contracts(self) -> list:
+        """Tüm perpetual kontratları (public). [{'symbol':..,'asset':..}, ...]"""
+        data = self._request(
+            'GET', '/openApi/swap/v2/quote/contracts', params={}, signed=False,
+        )
+        if isinstance(data, dict):
+            data = data.get('data', data)
+        return data if isinstance(data, list) else []
+
+    def verify_symbol(self) -> bool:
+        """
+        self.symbol borsada var mı kontrol eder.
+        Yoksa altın içeren geçerli sembolleri ekrana yazar. Hata olursa
+        (ör. ağ) True döndürür — başlatmayı engellemez.
+        """
+        try:
+            rows = self.contracts()
+        except Exception as e:
+            print(f"  Sembol doğrulanamadı (ağ?): {e} — devam ediliyor.")
+            return True
+        if not rows:
+            return True
+        syms = {str(c.get('symbol', '')) for c in rows}
+        if self.symbol in syms:
+            return True
+        gold = sorted(s for s in syms
+                      if 'XAU' in s.upper() or 'GOLD' in s.upper())
+        print(f"\n  ⚠ '{self.symbol}' BingX'te bulunamadı!")
+        if gold:
+            print("  Altın sembolleri:")
+            for s in gold:
+                print(f"      {s}")
+            print("  --symbol ile doğru olanı seçin ya da config'e yazın.")
+        return False
 
     # ── Hesap ──────────────────────────────────────────────────────────────────
     def get_balance(self) -> float:
@@ -727,6 +763,11 @@ class LiveTrader:
             print("  Bias   : NONE (EMA zorunlu, bias yok)")
         print("═" * 58)
 
+        # Sembol borsada gerçekten var mı? (yanlış sembol = sessiz hata önler)
+        if not self.client.verify_symbol():
+            print("  Doğru sembolle tekrar çalıştırın. Çıkılıyor.")
+            return
+
         # Kaldıraç ayarla (canlı modda)
         if not self.dry_run:
             try:
@@ -808,7 +849,7 @@ class LiveTrader:
 _CONFIG_TEMPLATE = {
     "api_key":    "YOUR_BINGX_API_KEY",
     "api_secret": "YOUR_BINGX_API_SECRET",
-    "symbol":     "XAUT-USDT",
+    "symbol":     "GOLD(XAU)-USDT",
     "leverage":   10,
     "risk_pct":   1.0,
     "capital":    0,
@@ -850,7 +891,7 @@ def main() -> None:
     parser.add_argument('--balance',  type=float, default=None,
                         help='Kasa ($). Girilirse API bakiyesi yerine bu kullanılır')
     parser.add_argument('--symbol',   default=None,
-                        help='BingX sembolü (varsayılan: XAUT-USDT)')
+                        help='BingX sembolü (varsayılan: GOLD(XAU)-USDT)')
     parser.add_argument('--config',   default='live_config.json',
                         help='Config dosyası yolu')
     parser.add_argument('--dry-run',  action='store_true',
@@ -863,7 +904,7 @@ def main() -> None:
 
     api_key    = cfg.get('api_key',    '')
     api_secret = cfg.get('api_secret', '')
-    symbol     = args.symbol   or cfg.get('symbol',   'XAUT-USDT')
+    symbol     = args.symbol   or cfg.get('symbol',   'GOLD(XAU)-USDT')
     leverage   = args.leverage or int(cfg.get('leverage', 10))
     risk_pct   = args.risk_pct or float(cfg.get('risk_pct',  1.0))
     capital    = (args.balance if args.balance is not None
