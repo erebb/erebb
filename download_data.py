@@ -7,10 +7,11 @@ XAUUSD Veri İndirici  —  BingX public klines API (kayıt/anahtar gerekmez)
 
 Kullanım:
   python download_data.py                         # varsayılan: 5m + 1h, son 90 gün
+  python download_data.py --months 6              # son 6 ay, 5m + 1h
   python download_data.py --days 365              # son 365 gün
   python download_data.py --start 2024-01-01      # belirli başlangıç
   python download_data.py --interval 5m           # yalnızca 5m
-  python download_data.py --symbol NCCGOLD2USD-USDT --interval 1h --days 730
+  python download_data.py --symbol NCCGOLD2USD-USDT --interval 1h --months 24
 """
 
 import argparse
@@ -170,6 +171,8 @@ def main() -> None:
         epilog="""
 Örnekler:
   python download_data.py                              # 5m + 1h, son 90 gün
+  python download_data.py --months 6                   # 5m + 1h, son 6 AY
+  python download_data.py --months 12                  # 5m + 1h, son 12 ay
   python download_data.py --days 365                   # son 1 yıl
   python download_data.py --start 2024-01-01           # belirli başlangıç
   python download_data.py --interval 5m --days 180     # yalnızca 5m, 6 ay
@@ -191,6 +194,10 @@ def main() -> None:
         help="5m + 15m + 1h + 4h + 1d hepsini indir",
     )
     parser.add_argument(
+        "--months", type=int, default=None,
+        help="Kaç AY geriye gidilsin (örn. 6 = son 6 ay). --days'i geçersiz kılar",
+    )
+    parser.add_argument(
         "--days", type=int, default=90,
         help="Kaç gün geriye gidilsin (varsayılan: 90)",
     )
@@ -202,6 +209,8 @@ def main() -> None:
 
     if args.start:
         start_dt = datetime.strptime(args.start, "%Y-%m-%d")
+    elif args.months:
+        start_dt = subtract_months(datetime.utcnow(), args.months)
     else:
         start_dt = datetime.utcnow() - timedelta(days=args.days)
 
