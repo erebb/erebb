@@ -2209,8 +2209,8 @@ class BacktestEngine:
 
         ob_bull = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bull')
         ob_bear = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bear')
-        bb_bull = detect_breaker_blocks_1h(ob_bear, C1, T1)   # bear OB ihlali → bull BB
-        bb_bear = detect_breaker_blocks_1h(ob_bull, C1, T1)   # bull OB ihlali → bear BB
+        bb_bull: List[FVG] = []   # kapalı: %38 WR
+        bb_bear: List[FVG] = []   # kapalı: %38 WR
         hs_bull = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bull')
         hs_bear = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bear')
 
