@@ -13,6 +13,8 @@ Kullanım:
   python download_data.py --symbol XAU-USDT --months 6  # sembolü elle gir
 """
 
+from __future__ import annotations
+
 import argparse
 import time
 from datetime import datetime, timedelta, timezone
