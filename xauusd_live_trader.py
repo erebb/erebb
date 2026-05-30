@@ -48,7 +48,7 @@ class BingXClient:
     BASE = "https://open-api.bingx.com"
 
     def __init__(self, api_key: str, api_secret: str,
-                 symbol: str = "XAU-USDT"):
+                 symbol: str = "XAUT-USDT"):
         self.key    = api_key
         self.secret = api_secret
         self.symbol = symbol
@@ -787,7 +787,7 @@ class LiveTrader:
 _CONFIG_TEMPLATE = {
     "api_key":    "YOUR_BINGX_API_KEY",
     "api_secret": "YOUR_BINGX_API_SECRET",
-    "symbol":     "XAU-USDT",
+    "symbol":     "XAUT-USDT",
     "leverage":   10,
     "risk_pct":   1.0,
 }
@@ -825,7 +825,7 @@ def main() -> None:
     parser.add_argument('--risk-pct', type=float, default=None,
                         help='Risk yüzdesi, örn. 1.0 = %%1')
     parser.add_argument('--symbol',   default=None,
-                        help='BingX sembolü (varsayılan: XAU-USDT)')
+                        help='BingX sembolü (varsayılan: XAUT-USDT)')
     parser.add_argument('--config',   default='live_config.json',
                         help='Config dosyası yolu')
     parser.add_argument('--dry-run',  action='store_true',
@@ -838,7 +838,7 @@ def main() -> None:
 
     api_key    = cfg.get('api_key',    '')
     api_secret = cfg.get('api_secret', '')
-    symbol     = args.symbol   or cfg.get('symbol',   'XAU-USDT')
+    symbol     = args.symbol   or cfg.get('symbol',   'XAUT-USDT')
     leverage   = args.leverage or int(cfg.get('leverage', 10))
     risk_pct   = args.risk_pct or float(cfg.get('risk_pct',  1.0))
 
