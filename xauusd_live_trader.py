@@ -48,7 +48,7 @@ class BingXClient:
     BASE = "https://open-api.bingx.com"
 
     def __init__(self, api_key: str, api_secret: str,
-                 symbol: str = "GOLD(XAU)-USDT"):
+                 symbol: str = "NCCGOLD2USD-USDT"):
         self.key    = api_key
         self.secret = api_secret
         self.symbol = symbol
@@ -140,9 +140,13 @@ class BingXClient:
 
     def verify_symbol(self) -> bool:
         """
-        self.symbol borsada var mı kontrol eder.
-        Yoksa altın içeren geçerli sembolleri ekrana yazar. Hata olursa
-        (ör. ağ) True döndürür — başlatmayı engellemez.
+        self.symbol borsada gerçek API sembolü mü kontrol eder.
+
+        DİKKAT: BingX uygulamasında görünen ad (ör. 'GOLD(XAU)-USDT') bir
+        displayName'dir; gerçek API sembolü farklıdır (ör. 'NCCGOLD2USD-USDT').
+        Kullanıcı yanlışlıkla displayName girerse, otomatik olarak gerçek
+        sembole çevirir. Hiç eşleşme yoksa altın kontratlarını listeler.
+        Ağ hatasında True döndürür — başlatmayı engellemez.
         """
         try:
             rows = self.contracts()
@@ -151,17 +155,31 @@ class BingXClient:
             return True
         if not rows:
             return True
+
         syms = {str(c.get('symbol', '')) for c in rows}
         if self.symbol in syms:
             return True
-        gold = sorted(s for s in syms
-                      if 'XAU' in s.upper() or 'GOLD' in s.upper())
+
+        # Kullanıcı displayName girmiş olabilir → gerçek sembole çevir
+        for c in rows:
+            if str(c.get('displayName', '')) == self.symbol:
+                real = str(c.get('symbol', ''))
+                print(f"  '{self.symbol}' bir görünen ad (displayName); "
+                      f"gerçek sembol: '{real}' — otomatik geçildi.")
+                self.symbol = real
+                return True
+
+        # Hiç eşleşme yok → altın kontratlarını sembol + displayName ile listele
         print(f"\n  ⚠ '{self.symbol}' BingX'te bulunamadı!")
+        gold = [c for c in rows
+                if 'XAU' in str(c.get('symbol', '')).upper()
+                or 'GOLD' in str(c.get('symbol', '')).upper()
+                or 'GOLD' in str(c.get('displayName', '')).upper()]
         if gold:
-            print("  Altın sembolleri:")
-            for s in gold:
-                print(f"      {s}")
-            print("  --symbol ile doğru olanı seçin ya da config'e yazın.")
+            print("  Altın kontratları (API sembolü  ←  uygulamada görünen):")
+            for c in gold:
+                print(f"      {c.get('symbol'):<22}  ←  {c.get('displayName')}")
+            print("  --symbol'e soldaki API sembolünü yazın.")
         return False
 
     # ── Hesap ──────────────────────────────────────────────────────────────────
@@ -849,7 +867,7 @@ class LiveTrader:
 _CONFIG_TEMPLATE = {
     "api_key":    "YOUR_BINGX_API_KEY",
     "api_secret": "YOUR_BINGX_API_SECRET",
-    "symbol":     "GOLD(XAU)-USDT",
+    "symbol":     "NCCGOLD2USD-USDT",  # = uygulamadaki 'GOLD(XAU)-USDT'
     "leverage":   10,
     "risk_pct":   1.0,
     "capital":    0,
@@ -891,7 +909,8 @@ def main() -> None:
     parser.add_argument('--balance',  type=float, default=None,
                         help='Kasa ($). Girilirse API bakiyesi yerine bu kullanılır')
     parser.add_argument('--symbol',   default=None,
-                        help='BingX sembolü (varsayılan: GOLD(XAU)-USDT)')
+                        help='BingX API sembolü (varsayılan: NCCGOLD2USD-USDT '
+                             '= uygulamadaki GOLD(XAU)-USDT)')
     parser.add_argument('--config',   default='live_config.json',
                         help='Config dosyası yolu')
     parser.add_argument('--dry-run',  action='store_true',
@@ -904,7 +923,7 @@ def main() -> None:
 
     api_key    = cfg.get('api_key',    '')
     api_secret = cfg.get('api_secret', '')
-    symbol     = args.symbol   or cfg.get('symbol',   'GOLD(XAU)-USDT')
+    symbol     = args.symbol   or cfg.get('symbol',   'NCCGOLD2USD-USDT')
     leverage   = args.leverage or int(cfg.get('leverage', 10))
     risk_pct   = args.risk_pct or float(cfg.get('risk_pct',  1.0))
     capital    = (args.balance if args.balance is not None
