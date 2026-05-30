@@ -48,13 +48,14 @@ INTERVAL_MS = {
     "1w":  604_800_000,
 }
 
-# Otomatik aramada denenecek bilinen altın sembol adayları
+# Otomatik aramada denenecek bilinen altın sembol adayları.
+# DİKKAT: uygulamadaki "GOLD(XAU)-USDT" görünen ad; gerçek API sembolü
+# NCCOGOLD2USD-USDT (NCC-O-GOLD). Saf XAUUSD budur, PAXG/XAUT token'dır.
 GOLD_CANDIDATES = [
+    "NCCOGOLD2USD-USDT",   # = GOLD(XAU)-USDT (saf XAUUSD)
     "GOLD-USDT",
     "XAU-USDT",
     "XAUUSD",
-    "NCCGOLD2USD-USDT",
-    "GOLD(XAU)-USDT",
     "PAXG-USDT",
     "XAUT-USDT",
 ]
@@ -138,6 +139,15 @@ def resolve_symbol(user_symbol: str | None) -> str | None:
             print(f"  Contracts'ta {len(gold)} altın sembolü bulundu:")
             for g in gold:
                 print(f"    {g['symbol']:<28}  ←  {g['displayName']}")
+            # ÖNCELİK: uygulamadaki "GOLD(XAU)" (saf XAUUSD) en üste;
+            # ardından XAU içerenler; PAXG/XAUT gibi token'lar en sona.
+            def rank(g):
+                d = g["displayName"].upper()
+                if "GOLD(XAU)" in d:        return 0
+                if "XAU" in d and "USD" in d: return 1
+                if "XAU" in d:              return 2
+                return 3
+            gold.sort(key=rank)
             candidates = [g["symbol"] for g in gold]
 
     # 3) Bilinen adayları da ekle (contracts'ta olmayabilir)
@@ -160,15 +170,17 @@ def resolve_symbol(user_symbol: str | None) -> str | None:
 
 # ── API / veri işleme ─────────────────────────────────────────────────────────
 
-def fetch_page(symbol: str, interval: str,
-               start_ms: int, end_ms: int) -> list:
-    """Tek sayfa kline verisi; boşsa [] döner."""
+def fetch_klines(symbol: str, interval: str, end_ms: int) -> list:
+    """
+    end_ms'den GERİYE doğru PAGE_SIZE mum çeker (startTime vermeden).
+    BingX bu modda endTime'dan geriye en fazla 'limit' mum döndürür;
+    veri bitince [] gelir. Boşsa [] döner.
+    """
     params = {
-        "symbol":    symbol,
-        "interval":  interval,
-        "startTime": start_ms,
-        "endTime":   end_ms,
-        "limit":     PAGE_SIZE,
+        "symbol":   symbol,
+        "interval": interval,
+        "endTime":  end_ms,
+        "limit":    PAGE_SIZE,
     }
     for attempt in range(4):
         try:
@@ -225,33 +237,55 @@ def parse_rows(raw: list) -> pd.DataFrame:
 
 def download_range(symbol: str, interval: str,
                    start_ms: int, end_ms: int) -> pd.DataFrame:
-    step   = INTERVAL_MS.get(interval, 300_000) * PAGE_SIZE
-    cursor = start_ms
-    frames = []
-    total  = max(1, (end_ms - start_ms) // step + 1)
-    page   = 0
+    """
+    end_ms'den başlayıp GERİYE doğru sayfalayarak start_ms'e kadar çeker.
+    Her istek endTime'dan geriye PAGE_SIZE mum getirir; bir sonraki
+    isteğin endTime'ı, gelen en eski mumun bir tık öncesidir.
+    Veri start_ms'in altına inince ya da boş sayfa gelince durur.
+    """
+    bar_ms   = INTERVAL_MS.get(interval, 300_000)
+    cursor   = end_ms              # geriye doğru ilerleyen endTime
+    frames   = []
+    page     = 0
+    seen_min = None                # tekrar/sonsuz döngü koruması
 
-    while cursor < end_ms:
-        page_end = min(cursor + step, end_ms)
+    while cursor > start_ms:
         page += 1
-        s = datetime.utcfromtimestamp(cursor / 1000).strftime("%Y-%m-%d %H:%M")
-        e = datetime.utcfromtimestamp(page_end / 1000).strftime("%Y-%m-%d %H:%M")
-        print(f"  [{page}/{total}]  {s}  →  {e} ...", end=" ", flush=True)
+        c_dt = datetime.utcfromtimestamp(cursor / 1000).strftime("%Y-%m-%d %H:%M")
+        print(f"  [sayfa {page}]  ≤ {c_dt} ...", end=" ", flush=True)
 
-        raw = fetch_page(symbol, interval, cursor, page_end)
-        if raw:
-            df = parse_rows(raw)
+        raw = fetch_klines(symbol, interval, cursor)
+        df  = parse_rows(raw)
+        if df.empty:
+            print("boş — durdu")
+            break
+
+        # Yalnızca start_ms üstündekileri tut
+        df = df[df.index >= pd.to_datetime(start_ms, unit="ms")]
+        if not df.empty:
             frames.append(df)
-            print(f"{len(df)} mum")
-        else:
-            print("boş")
 
-        cursor = page_end + 1
+        oldest_ms = int(raw[0][0])     # gelen partinin en eski mumu
+        newest_ms = int(raw[-1][0])
+        o_dt = datetime.utcfromtimestamp(oldest_ms / 1000).strftime("%Y-%m-%d %H:%M")
+        print(f"{len(raw)} mum  (en eski {o_dt})")
+
+        # İlerleme yoksa dur (aynı min tekrar geldi)
+        if seen_min is not None and oldest_ms >= seen_min:
+            print("  İlerleme durdu — bitiriliyor.")
+            break
+        seen_min = oldest_ms
+
+        if oldest_ms <= start_ms:
+            break
+        cursor = oldest_ms - bar_ms    # bir önceki muma geç
         time.sleep(0.15)
 
     if not frames:
         return pd.DataFrame()
-    return pd.concat(frames).sort_index()
+    out = pd.concat(frames)
+    out = out[~out.index.duplicated(keep="last")].sort_index()
+    return out
 
 
 def merge_save(new_df: pd.DataFrame, filepath: str, label: str) -> None:
