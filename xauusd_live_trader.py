@@ -413,11 +413,13 @@ class LiveTrader:
                  bias_provider,                # InteractiveBiasProvider | None
                  leverage:      int   = 10,
                  risk_pct:      float = 1.0,   # % (örn. 1.0 = %1)
+                 capital:       float = 0.0,   # $ kasa (0 = API'den oku)
                  dry_run:       bool  = False):
         self.client        = client
         self.bias_provider = bias_provider
         self.leverage      = leverage
         self.risk_pct      = risk_pct / 100.0  # 1.0 → 0.01
+        self.capital       = capital
         self.dry_run       = dry_run
         self.state         = StateManager()
         self.risk_mgr      = RiskManager(rr=2.0)
@@ -631,9 +633,22 @@ class LiveTrader:
         actual_risk      = equity * self.risk_pct * confluence_scale
         qty              = compute_lot(entry, r['sl'], actual_risk)
 
+        # ── Kaldıraç / marjin sınırı ─────────────────────────────────────────
+        # Açılabilecek maksimum notional = kasa × kaldıraç.
+        # Risk bazlı lot bu sınırı aşarsa, lot kaldıraca göre kısılır.
+        max_notional = equity * self.leverage
+        max_qty      = max_notional / entry if entry > 0 else 0.0
+        capped       = False
+        if qty > max_qty:
+            qty    = round(max_qty, 3)
+            capped = True
+
         if qty < 0.001:
             print(f"  Lot çok küçük ({qty:.4f}) — işlem atlandı")
             return
+
+        notional = qty * entry
+        margin   = notional / self.leverage if self.leverage else notional
 
         side  = 'BUY' if signal.direction == 'bull' else 'SELL'
         label = signal.confirmation_type
@@ -644,9 +659,11 @@ class LiveTrader:
         print(f"  │  Entry : ~{entry:.2f}")
         print(f"  │  SL    : {r['sl']:.2f}")
         print(f"  │  TP    : {r['tp']:.2f}")
-        print(f"  │  Lot   : {qty} oz")
+        print(f"  │  Lot   : {qty} oz" + ("  ⚠ kaldıraç sınırına kısıldı" if capped else ""))
         print(f"  │  Risk  : ${actual_risk:.2f} ({self.risk_pct*100:.1f}% × "
               f"{confluence_scale:.1f}x)")
+        print(f"  │  Kasa  : ${equity:.2f}  |  Kaldıraç: {self.leverage}x")
+        print(f"  │  Pozis.: ${notional:.2f} notional  |  Marjin: ${margin:.2f}")
         print(f"  └{'─'*40}")
 
         if self.dry_run:
@@ -704,6 +721,9 @@ class LiveTrader:
         print(f"  Sembol : {self.client.symbol}")
         print(f"  Risk   : {self.risk_pct*100:.1f}%  |  "
               f"Kaldıraç: {self.leverage}x")
+        kasa_str = (f"${self.capital:.2f} (manuel)" if self.capital > 0
+                    else "API bakiyesi")
+        print(f"  Kasa   : {kasa_str}")
         print(f"  Mod    : {'DRY-RUN  ⚠️' if self.dry_run else 'CANLI  ✓'}")
         if self.bias_provider is not None:
             print(f"  Bias   : {self.bias_provider.mode.upper()} (terminal prompt)")
@@ -756,8 +776,13 @@ class LiveTrader:
                     signal = self._find_signal(ctx, brain)
 
                     if signal is not None:
-                        equity = (self.client.get_balance()
-                                  if not self.dry_run else 10_000.0)
+                        # Kasa önceliği: manuel capital > API bakiyesi > dry-run varsayılanı
+                        if self.capital > 0:
+                            equity = self.capital
+                        elif not self.dry_run:
+                            equity = self.client.get_balance()
+                        else:
+                            equity = 10_000.0
                         self._enter_trade(signal, equity, last_close)
                     else:
                         reason = brain.last_skip_reason or '—'
@@ -790,6 +815,7 @@ _CONFIG_TEMPLATE = {
     "symbol":     "XAUT-USDT",
     "leverage":   10,
     "risk_pct":   1.0,
+    "capital":    0,
 }
 
 
@@ -813,6 +839,7 @@ def main() -> None:
   python3 xauusd_live_trader.py --bias none
   python3 xauusd_live_trader.py --bias weekly --dry-run
   python3 xauusd_live_trader.py --bias weekly --leverage 5 --risk-pct 0.5
+  python3 xauusd_live_trader.py --bias weekly --balance 500 --leverage 10
   python3 xauusd_live_trader.py --close   (açık pozisyonu kapat)
         """,
     )
@@ -824,6 +851,8 @@ def main() -> None:
                         help='Kaldıraç (config varsayılanını geçersiz kılar)')
     parser.add_argument('--risk-pct', type=float, default=None,
                         help='Risk yüzdesi, örn. 1.0 = %%1')
+    parser.add_argument('--balance',  type=float, default=None,
+                        help='Kasa ($). Girilirse API bakiyesi yerine bu kullanılır')
     parser.add_argument('--symbol',   default=None,
                         help='BingX sembolü (varsayılan: XAUT-USDT)')
     parser.add_argument('--config',   default='live_config.json',
@@ -841,6 +870,8 @@ def main() -> None:
     symbol     = args.symbol   or cfg.get('symbol',   'XAUT-USDT')
     leverage   = args.leverage or int(cfg.get('leverage', 10))
     risk_pct   = args.risk_pct or float(cfg.get('risk_pct',  1.0))
+    capital    = (args.balance if args.balance is not None
+                  else float(cfg.get('capital', 0)))
 
     # API anahtarı kontrolü (dry-run hariç)
     if not args.dry_run and (
@@ -871,6 +902,7 @@ def main() -> None:
         bias_provider = bias_provider,
         leverage      = leverage,
         risk_pct      = risk_pct,
+        capital       = capital,
         dry_run       = args.dry_run,
     )
     trader.run()
