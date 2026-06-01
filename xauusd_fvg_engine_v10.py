@@ -151,6 +151,7 @@ class TradeSignal:
     rsi_div_type      : Optional[str] = None
     fvg5_quality      : float = 0.0
     ema_distance_pct  : float = 0.0
+    fib_level         : float = 0.0   # FibRetestBrain: 0.618 retest giriş seviyesi
 
 
 @dataclass
@@ -1773,16 +1774,17 @@ class RiskManager:
 
     def compute(self, direction: str, entry: float,
                 stop_price: float, equity: float,
-                risk_fraction: float) -> Optional[Dict]:
+                risk_fraction: float,
+                tp_override: Optional[float] = None) -> Optional[Dict]:
 
         if direction == 'bull':
             sl   = stop_price * (1.0 - self.sl_buffer)
             risk = abs(entry - sl)
-            tp   = entry + risk * self.rr
+            tp   = tp_override if tp_override is not None else entry + risk * self.rr
         else:
             sl   = stop_price * (1.0 + self.sl_buffer)
             risk = abs(sl - entry)
-            tp   = entry - risk * self.rr
+            tp   = tp_override if tp_override is not None else entry - risk * self.rr
 
         if not (self.min_risk <= risk <= self.max_risk):
             return None
@@ -2133,6 +2135,33 @@ class BacktestEngine:
         # (None → kapalı). Örn 1.0 → 1R'de breakeven.
         self.breakeven_at_R = breakeven_at_R
 
+    def _make_entry_trade(self, signal: TradeSignal, idx: int,
+                          O: np.ndarray, equity: float, trade_id: int,
+                          fvg1_bull=None, fvg1_bear=None,
+                          mit1_bull=None, mit1_bear=None,
+                          fvg1_eng=None) -> Optional[Trade]:
+        """
+        Entry trade nesnesi oluşturur.
+        Alt sınıflar bunu override ederek dinamik TP vs. uygulayabilir.
+        """
+        entry = float(O[idx + 1])
+        r = self.risk.compute(signal.direction, entry,
+                              signal.stop_price, equity, signal.risk_fraction)
+        if r is None:
+            return None
+        return Trade(
+            trade_id      = trade_id,
+            signal        = signal,
+            entry_price   = round(entry, 2),
+            sl            = r['sl'],
+            tp            = r['tp'],
+            risk          = r['risk'],
+            risk_pct      = r['risk_pct'],
+            risk_dollar   = r['risk_dollar'],
+            rr            = self.risk.rr,
+            risk_fraction = r['risk_fraction'],
+        )
+
     def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
             backtest_start: datetime) -> List[Trade]:
 
@@ -2340,30 +2369,22 @@ class BacktestEngine:
             if not is_prz and active_fvg is not None:
                 continue   # FVG slot dolu; PRZ slot serbest ama FVG sinyali geldi
 
-            # Risk hesapla
-            entry = float(O[idx + 1])
-            r = self.risk.compute(signal.direction, entry,
-                                  signal.stop_price, equity, signal.risk_fraction)
-            if r is None:
+            # Entry trade oluştur (alt sınıflar _make_entry_trade override eder)
+            trade_id += 1
+            new_trade = self._make_entry_trade(
+                signal=signal, idx=idx, O=O, equity=equity, trade_id=trade_id,
+                fvg1_bull=fvg1_bull, fvg1_bear=fvg1_bear,
+                mit1_bull=mit1_bull, mit1_bear=mit1_bear,
+                fvg1_eng=fvg1_eng,
+            )
+            if new_trade is None:
+                trade_id -= 1
                 dbg['risk_fail'] += 1
                 continue
 
-            trade_id += 1
             dbg['generated'] += 1
             if signal.harmonic is not None:
                 dbg['harmonic'] += 1
-            new_trade = Trade(
-                trade_id      = trade_id,
-                signal        = signal,
-                entry_price   = round(entry, 2),
-                sl            = r['sl'],
-                tp            = r['tp'],
-                risk          = r['risk'],
-                risk_pct      = r['risk_pct'],
-                risk_dollar   = r['risk_dollar'],
-                rr            = self.risk.rr,
-                risk_fraction = r['risk_fraction'],
-            )
             if is_prz:
                 active_prz = new_trade
             else:
@@ -2900,6 +2921,462 @@ def main():
         ReportGenerator.save_csv(trades, 'xauusd_fvg_v10_trades.csv')
 
     print("\n  Backtest tamamlandı!")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BÖLÜM 10: FİB RETEST STRATEJİSİ
+# ═══════════════════════════════════════════════════════════════════════════
+
+import calendar as _cal
+
+class SessionFilter:
+    """
+    London + NY seansı — DST-düzeltmeli UTC saatleri.
+
+    Londra BST: son Pazar Mart → son Pazar Ekim (UTC+1 yaz saati)
+      GMT kışı : 08:00–12:00 UTC   |  BST yazı: 07:00–11:00 UTC
+    New York:
+      EST kışı : 13:00–21:00 UTC   |  EDT yazı: 12:00–20:00 UTC
+
+    Tatil: US + UK piyasa tatilleri (statik set).
+    Tokyo 05.11.2024 değişikliği: 30 dk erkene alındı — bilgi notu, filtrelenmiyor.
+    """
+
+    # ABD piyasa tatilleri (ay-gün çiftleri; bazıları yıla göre kayar)
+    _US_FIXED = {(1,1),(6,19),(7,4),(12,25)}        # New Year, Juneteenth, IndDay, Xmas
+
+    # UK sabit tatiller (ay-gün)
+    _UK_FIXED = {(1,1),(12,25),(12,26)}              # New Year, Christmas, Boxing Day
+
+    # Yüzer tatiller için yaklaşım tablosu (2024-2028)
+    _US_FLOAT: Dict[str, set] = {
+        '2024': {(1,15),(2,19),(3,29),(5,27),(9,2),(11,28)},
+        '2025': {(1,20),(2,17),(4,18),(5,26),(9,1),(11,27)},
+        '2026': {(1,19),(2,16),(4,3),(5,25),(9,7),(11,26)},
+        '2027': {(1,18),(2,15),(4,26),(5,31),(9,6),(11,25)},
+        '2028': {(1,17),(2,21),(4,14),(5,29),(9,4),(11,23)},
+    }
+    _UK_FLOAT: Dict[str, set] = {
+        '2024': {(3,29),(4,1),(5,6),(5,27),(8,26),(12,26)},
+        '2025': {(4,18),(4,21),(5,5),(5,26),(8,25)},
+        '2026': {(4,3),(4,6),(5,4),(5,25),(8,31)},
+        '2027': {(3,26),(3,29),(5,3),(5,31),(8,30)},
+        '2028': {(4,14),(4,17),(5,1),(5,29),(8,28)},
+    }
+
+    @staticmethod
+    def _last_sunday(year: int, month: int) -> datetime:
+        last_day = _cal.monthrange(year, month)[1]
+        d = datetime(year, month, last_day)
+        return d - timedelta(days=d.weekday() + 1 if d.weekday() != 6 else 0)
+
+    @staticmethod
+    def _nth_sunday(year: int, month: int, n: int) -> datetime:
+        d = datetime(year, month, 1)
+        offset = (6 - d.weekday()) % 7
+        return d + timedelta(days=offset + (n - 1) * 7)
+
+    def is_london_dst(self, dt: datetime) -> bool:
+        y = dt.year
+        start = self._last_sunday(y, 3)
+        end   = self._last_sunday(y, 10)
+        return start <= dt.replace(hour=1,minute=0,second=0,microsecond=0) < end
+
+    def is_ny_dst(self, dt: datetime) -> bool:
+        y = dt.year
+        start = self._nth_sunday(y, 3, 2)
+        end   = self._nth_sunday(y, 11, 1)
+        return start <= dt.replace(hour=2,minute=0,second=0,microsecond=0) < end
+
+    def is_london_session(self, dt: datetime) -> bool:
+        h = dt.hour + dt.minute / 60.0
+        if self.is_london_dst(dt):
+            return 7.0 <= h < 11.0   # BST yazı: 07–11 UTC
+        return 8.0 <= h < 12.0       # GMT kışı: 08–12 UTC
+
+    def is_ny_session(self, dt: datetime) -> bool:
+        h = dt.hour + dt.minute / 60.0
+        if self.is_ny_dst(dt):
+            return 12.0 <= h < 20.0  # EDT yazı: 12–20 UTC
+        return 13.0 <= h < 21.0      # EST kışı: 13–21 UTC
+
+    def is_holiday(self, dt: datetime) -> bool:
+        key = str(dt.year)
+        md  = (dt.month, dt.day)
+        us_h = self._US_FIXED | self._US_FLOAT.get(key, set())
+        uk_h = self._UK_FIXED | self._UK_FLOAT.get(key, set())
+        return md in us_h or md in uk_h
+
+    def is_active(self, dt: datetime) -> bool:
+        if self.is_holiday(dt):
+            return False
+        return self.is_london_session(dt) or self.is_ny_session(dt)
+
+
+@dataclass
+class FibRetestState:
+    """MSB sonrası 0.618 retest bekleme durumu."""
+    direction      : str
+    fvg            : FVG
+    fvg_touch_idx  : int
+    fib_low        : float    # bull: FVG bölgesindeki en düşük dip
+    fib_high       : float    # bull: MSB'den sonra görülen en yüksek tepe (rolling)
+    msb_confirm_idx: int
+    msb_event      : MSBEvent
+    age_bars       : int = 0
+    peak_locked    : bool = False
+    bars_no_new_peak: int = 0  # tepe güncellemesiz geçen bar sayısı (kilitleme için)
+
+    PEAK_LOCK_BARS  : int = field(default=3, init=False, repr=False)
+    TIMEOUT_BARS    : int = field(default=48, init=False, repr=False)
+
+
+class LiquidityTargetFinder:
+    """
+    TP: entry'den yön doğrultusunda 2R–5R aralığındaki
+    ilk mitigas edilmemiş 1H FVG kenarı.
+    Aralıkta hedef yoksa 2R kullanılır.
+    """
+
+    def find_tp(self, direction: str, entry: float, sl: float,
+                fvg1_list: List[FVG], mit_map: Dict,
+                current_time: Any,
+                fvg1_eng: 'FVGEngine') -> float:
+        risk = abs(entry - sl)
+        if risk < 1e-6:
+            return entry + 2 * risk if direction == 'bull' else entry - 2 * risk
+
+        if direction == 'bull':
+            min_tp = entry + 2.0 * risk
+            max_tp = entry + 5.0 * risk
+        else:
+            min_tp = entry - 2.0 * risk
+            max_tp = entry - 5.0 * risk
+
+        active = fvg1_eng.get_active(fvg1_list, mit_map, current_time)
+        candidates = []
+        for fvg in active:
+            if direction == 'bull':
+                edge = fvg.bottom   # yukarıdaki FVG alt kenarı = likidite
+                if min_tp < edge <= max_tp:
+                    candidates.append(edge)
+            else:
+                edge = fvg.top      # aşağıdaki FVG üst kenarı = likidite
+                if max_tp <= edge < min_tp:
+                    candidates.append(edge)
+        if candidates:
+            return min(candidates) if direction == 'bull' else max(candidates)
+        return min_tp  # fallback: 2R
+
+
+class FibRetestBrain:
+    """
+    Bias-özel Fib 0.618 Retest Stratejisi.
+
+    Akış (her 5M barında):
+      Adım 1: 1H FVG'ye wick dokunuşu → pending kayıt
+              bull: fib_anchor = lowest L(-40bar..touch)
+              bear: fib_anchor = highest H(-40bar..touch)
+      Adım 2: Bias + EMA onayı (MarketBrain ile aynı kural)
+      Adım 3: MSB onayı (5M) → FibRetestState oluştur
+              bull: fib_extreme başlangıcı = H[msb_bar] (rolling max)
+              bear: fib_extreme başlangıcı = L[msb_bar] (rolling min)
+      Adım 4: Rolling extreme güncelle; L/H 0.618'e ulaşırsa sinyal üret
+              İptal: yapı kırıldı VEYA peak kilitli sonrası yeni extreme VEYA timeout
+    """
+
+    TOUCH_MAX_AGE_BARS = 24
+    FIB_RATIO          = 0.618
+    PEAK_LOCK_BARS     = 3     # bu kadar bar yeni extreme olmadıysa kilitle
+    TIMEOUT_BARS       = 48    # 48×5dk = 4sa
+
+    def __init__(self,
+                 bias_provider: Optional['WeeklyBiasProvider'] = None,
+                 session_filter: Optional[SessionFilter] = None):
+        self.bias    = bias_provider
+        self.session = session_filter
+        self.used_fvg_ids: set = set()
+        self.pending_msb: Dict[str, List[dict]] = {'bull': [], 'bear': []}
+        self.tracking: Dict[str, List[FibRetestState]] = {'bull': [], 'bear': []}
+        self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0,
+                          step4_no_session=0, step4_cancelled=0)
+
+    def _ema_confirm(self, close: float, e100: float, e200: float,
+                     direction: str) -> bool:
+        if direction == 'bull':
+            return close > e100 and close > e200
+        return close < e100 and close < e200
+
+    def evaluate(self,
+                 idx: int,
+                 C: np.ndarray, O: np.ndarray,
+                 H: np.ndarray, L: np.ndarray,
+                 E100: np.ndarray, E200: np.ndarray,
+                 RSI: np.ndarray,
+                 TM: pd.Index,
+                 fvg1_bull: List[FVG], mit1_bull: Dict,
+                 fvg1_bear: List[FVG], mit1_bear: Dict,
+                 fvg1_eng: 'FVGEngine',
+                 msb_events_bull: List[MSBEvent],
+                 msb_events_bear: List[MSBEvent],
+                 ATR: Optional[np.ndarray] = None,
+                 **kwargs) -> Optional[TradeSignal]:
+
+        cur_time   = TM[idx]
+        t          = to_naive(cur_time)
+        cur_close  = float(C[idx])
+        weekly_dir = self.bias.get(cur_time) if self.bias is not None else None
+
+        for direction in ('bull', 'bear'):
+            fvg1_raw   = fvg1_bull if direction == 'bull' else fvg1_bear
+            mit1       = mit1_bull if direction == 'bull' else mit1_bear
+            msb_events = msb_events_bull if direction == 'bull' else msb_events_bear
+            pend       = self.pending_msb[direction]
+            track      = self.tracking[direction]
+
+            # ── ADIM 1: 1H FVG wick dokunuşu ─────────────────────────────
+            active_fvgs = fvg1_eng.get_active(fvg1_raw, mit1, t)
+            pend_ids    = {p['fvg_id'] for p in pend}
+            track_ids   = {s.fvg.fvg_id for s in track}
+            for fvg in active_fvgs:
+                if fvg.fvg_id in self.used_fvg_ids:
+                    continue
+                if fvg.fvg_id in pend_ids or fvg.fvg_id in track_ids:
+                    continue
+                span = fvg.top - fvg.bottom
+                buf  = span * fvg1_eng.buf_ratio
+                if L[idx] <= (fvg.top + buf) and H[idx] >= (fvg.bottom - buf):
+                    lk_start = max(0, idx - 40)
+                    # anchor: bull=lowest L (fib başlangıç dibi), bear=highest H (fib başlangıç tepesi)
+                    anchor = (float(np.min(L[lk_start:idx + 1]))
+                              if direction == 'bull'
+                              else float(np.max(H[lk_start:idx + 1])))
+                    pend.append({'fvg_id': fvg.fvg_id, 'fvg': fvg,
+                                 'touch_idx': idx, 'touch_time': t,
+                                 'fib_anchor': anchor})
+                    pend_ids.add(fvg.fvg_id)
+
+            # Pending yaşlandır / tüket
+            self.pending_msb[direction] = [
+                p for p in pend
+                if p['fvg_id'] not in self.used_fvg_ids
+                and (mit1.get(p['fvg_id']) is None
+                     or to_naive(mit1[p['fvg_id']]) > t)
+                and (idx - p['touch_idx']) <= self.TOUCH_MAX_AGE_BARS
+            ]
+            pend = self.pending_msb[direction]
+
+            if not pend and not track:
+                self.stats['step1_fail'] += 1
+                continue
+
+            # ── ADIM 2: Bias + EMA onayı ──────────────────────────────────
+            bias_ok = (self.bias is None) or (weekly_dir == direction)
+            ema_ok  = self._ema_confirm(cur_close,
+                                        float(E100[idx]), float(E200[idx]),
+                                        direction)
+            if not (bias_ok and ema_ok):
+                if not track:
+                    self.stats['step2_fail'] += 1
+                    continue
+
+            # ── ADIM 3: MSB onayı → pending'den tracking'e geçir ─────────
+            if bias_ok and ema_ok and pend:
+                promoted = set()
+                for p in list(pend):
+                    tch   = p['touch_idx']
+                    event: Optional[MSBEvent] = None
+                    for e in reversed(msb_events):
+                        if e.confirm_idx > idx:
+                            continue
+                        if e.confirm_idx < tch:
+                            break
+                        event = e
+                        break
+                    if event is None:
+                        continue
+                    # bull: fib_low=anchor(dip), fib_high=extreme_init(tepe)
+                    # bear: fib_high=anchor(tepe), fib_low=extreme_init(dip)
+                    if direction == 'bull':
+                        fl = p['fib_anchor']
+                        fh = float(H[event.confirm_idx])
+                    else:
+                        fl = float(L[event.confirm_idx])
+                        fh = p['fib_anchor']
+                    state = FibRetestState(
+                        direction       = direction,
+                        fvg             = p['fvg'],
+                        fvg_touch_idx   = tch,
+                        fib_low         = fl,
+                        fib_high        = fh,
+                        msb_confirm_idx = event.confirm_idx,
+                        msb_event       = event,
+                    )
+                    track.append(state)
+                    promoted.add(p['fvg_id'])
+                self.pending_msb[direction] = [
+                    x for x in self.pending_msb[direction]
+                    if x['fvg_id'] not in promoted
+                ]
+
+            # ── ADIM 4: Tracking — extreme güncelle, 0.618 bekle ─────────
+            signal_candidate: Optional[TradeSignal] = None
+            still_tracking: List[FibRetestState] = []
+
+            for state in track:
+                state.age_bars += 1
+
+                if state.age_bars > self.TIMEOUT_BARS:
+                    self.stats['step4_cancelled'] += 1
+                    self.used_fvg_ids.add(state.fvg.fvg_id)
+                    continue
+
+                # Yapısal iptal: fib anchor kırıldı
+                if direction == 'bull' and L[idx] < state.fib_low * 0.999:
+                    self.stats['step4_cancelled'] += 1
+                    self.used_fvg_ids.add(state.fvg.fvg_id)
+                    continue
+                if direction == 'bear' and H[idx] > state.fib_high * 1.001:
+                    self.stats['step4_cancelled'] += 1
+                    self.used_fvg_ids.add(state.fvg.fvg_id)
+                    continue
+
+                # Extreme güncelle
+                if direction == 'bull':
+                    # fib_high = rolling max (impulse tepesi)
+                    if H[idx] > state.fib_high:
+                        if state.peak_locked:
+                            self.stats['step4_cancelled'] += 1
+                            self.used_fvg_ids.add(state.fvg.fvg_id)
+                            continue
+                        state.fib_high = float(H[idx])
+                        state.bars_no_new_peak = 0
+                    else:
+                        state.bars_no_new_peak += 1
+                        if (not state.peak_locked
+                                and state.bars_no_new_peak >= self.PEAK_LOCK_BARS):
+                            state.peak_locked = True
+                else:
+                    # fib_low = rolling min (impulse dibi)
+                    if L[idx] < state.fib_low:
+                        if state.peak_locked:
+                            self.stats['step4_cancelled'] += 1
+                            self.used_fvg_ids.add(state.fvg.fvg_id)
+                            continue
+                        state.fib_low = float(L[idx])
+                        state.bars_no_new_peak = 0
+                    else:
+                        state.bars_no_new_peak += 1
+                        if (not state.peak_locked
+                                and state.bars_no_new_peak >= self.PEAK_LOCK_BARS):
+                            state.peak_locked = True
+
+                # 0.618 seviyesi
+                swing_range = state.fib_high - state.fib_low
+                if swing_range < 0.5:
+                    still_tracking.append(state)
+                    continue
+
+                if direction == 'bull':
+                    fib_0618 = state.fib_high - self.FIB_RATIO * swing_range
+                    touched  = L[idx] <= fib_0618
+                else:
+                    fib_0618 = state.fib_low + self.FIB_RATIO * swing_range
+                    touched  = H[idx] >= fib_0618
+
+                if not touched:
+                    still_tracking.append(state)
+                    continue
+
+                # Seans filtresi
+                if self.session is not None and not self.session.is_active(t):
+                    self.stats['step4_no_session'] += 1
+                    still_tracking.append(state)
+                    continue
+
+                # Sinyal oluştur
+                sig = TradeSignal(
+                    entry_time        = cur_time,
+                    direction         = direction,
+                    trigger_fvg       = state.fvg,
+                    confirmation_type = 'FIB618',
+                    confidence        = min(100.0, 50 + state.fvg.quality_score / 2),
+                    msb_type          = state.msb_event.msb_type,
+                    confluence_count  = 1,
+                    stop_price        = state.msb_event.stop_price,
+                    risk_fraction     = 0.005,
+                    fib_level         = round(fib_0618, 2),
+                )
+                if (signal_candidate is None or
+                        state.fvg.quality_score >
+                        signal_candidate.trigger_fvg.quality_score):
+                    signal_candidate = sig
+                self.used_fvg_ids.add(state.fvg.fvg_id)
+
+            self.tracking[direction] = still_tracking
+            if signal_candidate is not None:
+                return signal_candidate
+
+        return None
+
+
+class FibBacktestEngine(BacktestEngine):
+    """
+    BacktestEngine'den kalıtım alır; tek fark: entry sırasında
+    LiquidityTargetFinder üzerinden dinamik TP hesaplanır (2R–5R).
+    liq_finder=None olursa standart RR TP kullanılır (BacktestEngine gibi).
+    """
+
+    def __init__(self, brain: 'FibRetestBrain', risk_mgr: RiskManager,
+                 liq_finder: Optional[LiquidityTargetFinder] = None,
+                 initial_capital: float = 10_000,
+                 breakeven_at_R: Optional[float] = None):
+        super().__init__(brain, risk_mgr, initial_capital, breakeven_at_R)
+        self.liq_finder = liq_finder
+
+    def _make_entry_trade(self, signal: TradeSignal, idx: int,
+                          O: np.ndarray, equity: float, trade_id: int,
+                          fvg1_bull=None, fvg1_bear=None,
+                          mit1_bull=None, mit1_bear=None,
+                          fvg1_eng=None) -> Optional[Trade]:
+        entry = float(O[idx + 1])
+        tp_override = None
+
+        if self.liq_finder is not None and fvg1_eng is not None:
+            fvg_list = fvg1_bull if signal.direction == 'bull' else fvg1_bear
+            mit_map  = mit1_bull if signal.direction == 'bull' else mit1_bear
+            sl_est = (signal.stop_price * (1.0 - self.risk.sl_buffer)
+                      if signal.direction == 'bull'
+                      else signal.stop_price * (1.0 + self.risk.sl_buffer))
+            tp_cand = self.liq_finder.find_tp(
+                signal.direction, entry, sl_est,
+                fvg_list or [], mit_map or {},
+                to_naive(signal.entry_time),
+                fvg1_eng,
+            )
+            if signal.direction == 'bull' and tp_cand > entry:
+                tp_override = tp_cand
+            elif signal.direction == 'bear' and tp_cand < entry:
+                tp_override = tp_cand
+
+        r = self.risk.compute(signal.direction, entry,
+                              signal.stop_price, equity,
+                              signal.risk_fraction,
+                              tp_override=tp_override)
+        if r is None:
+            return None
+        return Trade(
+            trade_id      = trade_id,
+            signal        = signal,
+            entry_price   = round(entry, 2),
+            sl            = r['sl'],
+            tp            = r['tp'],
+            risk          = r['risk'],
+            risk_pct      = r['risk_pct'],
+            risk_dollar   = r['risk_dollar'],
+            rr            = self.risk.rr,
+            risk_fraction = r['risk_fraction'],
+        )
 
 
 if __name__ == '__main__':
