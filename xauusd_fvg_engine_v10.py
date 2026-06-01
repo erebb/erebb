@@ -3100,6 +3100,9 @@ class FibRetestBrain:
         self.tracking: Dict[str, List[FibRetestState]] = {'bull': [], 'bear': []}
         self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0,
                           step4_no_session=0, step4_cancelled=0)
+        self.last_skip_reason: Optional[str] = None  # BacktestEngine uyumluluğu
+        # MarketBrain uyumluluğu için pending dict (BacktestEngine'in FVG tüketim mantığı)
+        self.pending: Dict[str, List[dict]] = {'bull': [], 'bear': []}
 
     def _ema_confirm(self, close: float, e100: float, e200: float,
                      direction: str) -> bool:
@@ -3122,10 +3125,14 @@ class FibRetestBrain:
                  ATR: Optional[np.ndarray] = None,
                  **kwargs) -> Optional[TradeSignal]:
 
+        self.last_skip_reason = None
         cur_time   = TM[idx]
         t          = to_naive(cur_time)
         cur_close  = float(C[idx])
         weekly_dir = self.bias.get(cur_time) if self.bias is not None else None
+
+        if self.bias is not None and weekly_dir is None:
+            self.last_skip_reason = 'no_bias'
 
         for direction in ('bull', 'bear'):
             fvg1_raw   = fvg1_bull if direction == 'bull' else fvg1_bear
