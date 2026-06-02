@@ -49,16 +49,10 @@ EQL_CONFIGS = [
     ('EQL 3-4R BE2', LiquidityTPConfig(min_r=3.0, max_r=4.0), 2.0),  # BE@2R
 ]
 
-# BÖLÜM J strateji tanımları — (etiket, brain_type, poi_mode, enable_bb, use_session)
+# BÖLÜM J strateji tanımları — SADECE 1H FVG girişi için
+# (etiket, brain_type, poi_mode, enable_bb, use_session)
 EQL_STRATEGIES = [
-    ('FVG-v10',  'fvg',             'all',  False, False),
-    ('Fib0618',  'fib',             'all',  False, True),
-    ('3VOL-Dir', 'threevol',        'all',  False, False),
-    ('3VOL-Ret', 'threevol_retest', 'all',  False, False),
-    ('OB-Only',  'fvg',             'ob',   False, False),
-    ('BB-Only',  'fvg',             'bb',   True,  False),
-    ('PRZ-Only', 'fvg',             'prz',  False, False),
-    ('HS-Only',  'fvg',             'hs',   False, False),
+    ('FVG-v10', 'fvg', 'all', False, False),
 ]
 
 BIAS_MODES = ['weekly', 'daily', 'none']
@@ -438,11 +432,11 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM J: Tüm Stratejiler × EqualLiquidityFinder TP × 3 BİAS = 72 TEST
+    # BÖLÜM J: 1H FVG × EqualLiquidityFinder TP × 3 BİAS = 9 TEST
     # ══════════════════════════════════════════════════════════════════════════
     print("\n" + "═" * 78)
-    print("  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  8 STR × 3 BİAS × 3 EQL = 72 TEST")
-    print("  (Önce eşit seviyeler, yoksa 1H FVG kenarı, yoksa 2R fallback)")
+    print("  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  1H FVG × 3 BİAS × 3 EQL = 9 TEST")
+    print("  (Önce eşit seviyeler, yoksa 1H FVG kenarı, yoksa 2R/3R fallback)")
     print("═" * 78)
 
     results_j = []

@@ -2162,11 +2162,13 @@ class BacktestEngine:
                           fvg1_bull=None, fvg1_bear=None,
                           mit1_bull=None, mit1_bear=None,
                           fvg1_eng=None,
-                          H1=None, L1=None, ATR1=None) -> Optional[Trade]:
+                          H1=None, L1=None, ATR1=None,
+                          T1: Optional[np.ndarray] = None) -> Optional[Trade]:
         """
         Entry trade nesnesi oluşturur.
         Alt sınıflar bunu override ederek dinamik TP vs. uygulayabilir.
-        H1/L1/ATR1: EqualLiquidityFinder kullanan alt sınıflar için geçirilir.
+        H1/L1/ATR1/T1: EqualLiquidityFinder kullanan alt sınıflar için geçirilir.
+        T1: float timestamp array (np.array([t.timestamp() for t in df1.index])).
         """
         entry = float(O[idx + 1])
         r = self.risk.compute(signal.direction, entry,
@@ -2259,6 +2261,7 @@ class BacktestEngine:
         C1   = df1['Close'].values.astype(float)
         T1   = df1.index
         atr1 = df1['atr'].values.astype(float)
+        t1_ts = np.array([to_naive(t).timestamp() for t in T1])
 
         ob_bull = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bull')
         ob_bear = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bear')
@@ -2415,7 +2418,7 @@ class BacktestEngine:
                 fvg1_bull=fvg1_bull, fvg1_bear=fvg1_bear,
                 mit1_bull=mit1_bull, mit1_bear=mit1_bear,
                 fvg1_eng=fvg1_eng,
-                H1=H1, L1=L1, ATR1=atr1,
+                H1=H1, L1=L1, ATR1=atr1, T1=t1_ts,
             )
             if new_trade is None:
                 trade_id -= 1
@@ -3133,7 +3136,9 @@ class EqualLiquidityFinder:
                 fvg1_list   : List[FVG],
                 mit_map     : Dict,
                 current_time: Any,
-                fvg1_eng    : 'FVGEngine') -> float:
+                fvg1_eng    : 'FVGEngine',
+                T1          : Optional[np.ndarray] = None) -> float:
+        """T1: float timestamp array of 1H bars (from np.array([t.timestamp() for t in df1.index]))."""
 
         risk = abs(entry - sl)
         if risk < 1e-6:
@@ -3148,19 +3153,36 @@ class EqualLiquidityFinder:
             max_tp = entry - self.cfg.max_r * risk
 
         # ── Adım 1: Eşit tepeler/dipler ──────────────────────────────────
-        look_start = max(0, idx - self.cfg.swing_lookback)
-        atr_now    = float(ATR1[idx]) if idx < len(ATR1) and ATR1[idx] > 0 \
-                     else max(risk * 0.5, 1e-6)
-        tol        = self.cfg.eq_tol_atr * atr_now
+        # Compute correct 1H index — idx is the 5M bar index, not 1H
+        if T1 is not None and len(T1) > 0:
+            ct     = to_naive(current_time).timestamp()
+            h1_idx = int(np.searchsorted(T1, ct, side='right')) - 1
+            h1_idx = max(0, min(h1_idx, len(H1) - 1))
+        else:
+            h1_idx = min(idx, len(H1) - 1)
 
-        slice_h   = H1[look_start : idx + 1]
-        slice_l   = L1[look_start : idx + 1]
-        slice_atr = ATR1[look_start : idx + 1]
-        ph, pl = SwingEngine.compute(slice_h, slice_l, slice_atr,
-                                     strength=self.cfg.swing_strength)
+        look_start = max(0, h1_idx - self.cfg.swing_lookback)
+        n_slice    = h1_idx - look_start + 1
 
-        raw_levels = slice_h[ph == 1] if direction == 'bull' \
-                     else slice_l[pl == 1]
+        slice_h   = H1[look_start : h1_idx + 1]
+        slice_l   = L1[look_start : h1_idx + 1]
+        slice_atr = ATR1[look_start : h1_idx + 1]
+
+        atr_now = float(slice_atr[-1]) if len(slice_atr) > 0 and slice_atr[-1] > 0 \
+                  else max(risk * 0.5, 1e-6)
+        tol = self.cfg.eq_tol_atr * atr_now
+
+        # Use _pivots_1h for actual swing high/low prices (SwingEngine returns
+        # rolling-last-price arrays, not binary indicators)
+        if n_slice >= 2 * self.cfg.swing_strength + 1:
+            pivots = _pivots_1h(slice_h, slice_l, slice_atr, n_slice,
+                                strength=self.cfg.swing_strength)
+            if direction == 'bull':
+                raw_levels = np.array([p[2] for p in pivots if p[3] == 'H'])
+            else:
+                raw_levels = np.array([p[2] for p in pivots if p[3] == 'L'])
+        else:
+            raw_levels = np.array([])
 
         eql_candidates = []
         for level in raw_levels:
@@ -3473,7 +3495,8 @@ class FibBacktestEngine(BacktestEngine):
                           fvg1_bull=None, fvg1_bear=None,
                           mit1_bull=None, mit1_bear=None,
                           fvg1_eng=None,
-                          H1=None, L1=None, ATR1=None) -> Optional[Trade]:
+                          H1=None, L1=None, ATR1=None,
+                          T1: Optional[np.ndarray] = None) -> Optional[Trade]:
         entry = float(O[idx + 1])
         tp_override = None
 
@@ -3490,6 +3513,7 @@ class FibBacktestEngine(BacktestEngine):
                     H1, L1, ATR1, idx,
                     fvg_list or [], mit_map or {},
                     to_naive(signal.entry_time), fvg1_eng,
+                    T1=T1,
                 )
             else:
                 tp_cand = self.liq_finder.find_tp(
