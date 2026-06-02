@@ -174,6 +174,18 @@ class Trade:
     equity_after: float = 0.0
 
 
+@dataclass
+class LiquidityTPConfig:
+    """EqualLiquidityFinder için konfigürasyon — hardcoded değer kalmaz."""
+    min_r         : float = 2.0   # TP minimum mesafe (R cinsinden)
+    max_r         : float = 4.0   # TP maksimum mesafe
+    eq_tol_atr    : float = 0.5   # eşit seviye toleransı = eq_tol_atr × ATR
+    swing_strength: int   = 2     # pivot tespiti için minimum strength
+    swing_lookback: int   = 80    # kaç bar geriye bakılır (1H barlarda)
+    min_touches   : int   = 2     # "eşit" sayılabilmesi için min dokunuş
+    fallback_fvg  : bool  = True  # FVG kenarını fallback olarak kullan
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 1: YARDIMCI FONKSİYONLAR
 # ═══════════════════════════════════════════════════════════════════════════
@@ -2149,10 +2161,12 @@ class BacktestEngine:
                           O: np.ndarray, equity: float, trade_id: int,
                           fvg1_bull=None, fvg1_bear=None,
                           mit1_bull=None, mit1_bear=None,
-                          fvg1_eng=None) -> Optional[Trade]:
+                          fvg1_eng=None,
+                          H1=None, L1=None, ATR1=None) -> Optional[Trade]:
         """
         Entry trade nesnesi oluşturur.
         Alt sınıflar bunu override ederek dinamik TP vs. uygulayabilir.
+        H1/L1/ATR1: EqualLiquidityFinder kullanan alt sınıflar için geçirilir.
         """
         entry = float(O[idx + 1])
         r = self.risk.compute(signal.direction, entry,
@@ -2401,6 +2415,7 @@ class BacktestEngine:
                 fvg1_bull=fvg1_bull, fvg1_bear=fvg1_bear,
                 mit1_bull=mit1_bull, mit1_bear=mit1_bear,
                 fvg1_eng=fvg1_eng,
+                H1=H1, L1=L1, ATR1=atr1,
             )
             if new_trade is None:
                 trade_id -= 1
@@ -3094,6 +3109,91 @@ class LiquidityTargetFinder:
         return min_tp  # fallback: 2R
 
 
+class EqualLiquidityFinder:
+    """
+    TP hedef önceliği:
+      1. Eşit tepeler/dipler (equal highs/lows) — liquidity cluster
+      2. Açık 1H FVG kenarı (doldurulmamış dengesizlik)
+      3. Fallback: min_tp = config.min_r × risk
+
+    config.min_r – config.max_r (varsayılan 2R–4R) dışındaki hedefler elenir.
+    """
+
+    def __init__(self, config: LiquidityTPConfig = None):
+        self.cfg = config or LiquidityTPConfig()
+
+    def find_tp(self,
+                direction   : str,
+                entry       : float,
+                sl          : float,
+                H1          : np.ndarray,
+                L1          : np.ndarray,
+                ATR1        : np.ndarray,
+                idx         : int,
+                fvg1_list   : List[FVG],
+                mit_map     : Dict,
+                current_time: Any,
+                fvg1_eng    : 'FVGEngine') -> float:
+
+        risk = abs(entry - sl)
+        if risk < 1e-6:
+            return (entry + self.cfg.min_r * risk if direction == 'bull'
+                    else entry - self.cfg.min_r * risk)
+
+        if direction == 'bull':
+            min_tp = entry + self.cfg.min_r * risk
+            max_tp = entry + self.cfg.max_r * risk
+        else:
+            min_tp = entry - self.cfg.min_r * risk
+            max_tp = entry - self.cfg.max_r * risk
+
+        # ── Adım 1: Eşit tepeler/dipler ──────────────────────────────────
+        look_start = max(0, idx - self.cfg.swing_lookback)
+        atr_now    = float(ATR1[idx]) if idx < len(ATR1) and ATR1[idx] > 0 \
+                     else max(risk * 0.5, 1e-6)
+        tol        = self.cfg.eq_tol_atr * atr_now
+
+        slice_h   = H1[look_start : idx + 1]
+        slice_l   = L1[look_start : idx + 1]
+        slice_atr = ATR1[look_start : idx + 1]
+        ph, pl = SwingEngine.compute(slice_h, slice_l, slice_atr,
+                                     strength=self.cfg.swing_strength)
+
+        raw_levels = slice_h[ph == 1] if direction == 'bull' \
+                     else slice_l[pl == 1]
+
+        eql_candidates = []
+        for level in raw_levels:
+            in_range = (min_tp < level <= max_tp) if direction == 'bull' \
+                       else (max_tp <= level < min_tp)
+            if not in_range:
+                continue
+            touches = int(np.sum(np.abs(raw_levels - level) <= tol))
+            if touches >= self.cfg.min_touches:
+                eql_candidates.append(level)
+
+        if eql_candidates:
+            return (min(eql_candidates) if direction == 'bull'
+                    else max(eql_candidates))
+
+        # ── Adım 2: Açık 1H FVG kenarı ───────────────────────────────────
+        if self.cfg.fallback_fvg and fvg1_eng is not None:
+            active = fvg1_eng.get_active(fvg1_list, mit_map, current_time)
+            fvg_cands = []
+            for fvg in active:
+                edge = fvg.bottom if direction == 'bull' else fvg.top
+                if direction == 'bull' and min_tp < edge <= max_tp:
+                    fvg_cands.append(edge)
+                elif direction == 'bear' and max_tp <= edge < min_tp:
+                    fvg_cands.append(edge)
+            if fvg_cands:
+                return (min(fvg_cands) if direction == 'bull'
+                        else max(fvg_cands))
+
+        # ── Adım 3: Fallback min_r ────────────────────────────────────────
+        return min_tp
+
+
 class FibRetestBrain:
     """
     Bias-özel Fib 0.618 Retest Stratejisi.
@@ -3355,22 +3455,25 @@ class FibRetestBrain:
 class FibBacktestEngine(BacktestEngine):
     """
     BacktestEngine'den kalıtım alır; tek fark: entry sırasında
-    LiquidityTargetFinder üzerinden dinamik TP hesaplanır (2R–5R).
+    LiquidityTargetFinder veya EqualLiquidityFinder üzerinden dinamik TP.
     liq_finder=None olursa standart RR TP kullanılır (BacktestEngine gibi).
     """
 
-    def __init__(self, brain: 'FibRetestBrain', risk_mgr: RiskManager,
-                 liq_finder: Optional[LiquidityTargetFinder] = None,
+    def __init__(self, brain, risk_mgr: RiskManager,
+                 liq_finder=None,
                  initial_capital: float = 10_000,
-                 breakeven_at_R: Optional[float] = None):
-        super().__init__(brain, risk_mgr, initial_capital, breakeven_at_R)
+                 breakeven_at_R: Optional[float] = None,
+                 enable_bb: bool = False):
+        super().__init__(brain, risk_mgr, initial_capital, breakeven_at_R,
+                         enable_bb=enable_bb)
         self.liq_finder = liq_finder
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
                           fvg1_bull=None, fvg1_bear=None,
                           mit1_bull=None, mit1_bear=None,
-                          fvg1_eng=None) -> Optional[Trade]:
+                          fvg1_eng=None,
+                          H1=None, L1=None, ATR1=None) -> Optional[Trade]:
         entry = float(O[idx + 1])
         tp_override = None
 
@@ -3380,12 +3483,21 @@ class FibBacktestEngine(BacktestEngine):
             sl_est = (signal.stop_price * (1.0 - self.risk.sl_buffer)
                       if signal.direction == 'bull'
                       else signal.stop_price * (1.0 + self.risk.sl_buffer))
-            tp_cand = self.liq_finder.find_tp(
-                signal.direction, entry, sl_est,
-                fvg_list or [], mit_map or {},
-                to_naive(signal.entry_time),
-                fvg1_eng,
-            )
+
+            if isinstance(self.liq_finder, EqualLiquidityFinder):
+                tp_cand = self.liq_finder.find_tp(
+                    signal.direction, entry, sl_est,
+                    H1, L1, ATR1, idx,
+                    fvg_list or [], mit_map or {},
+                    to_naive(signal.entry_time), fvg1_eng,
+                )
+            else:
+                tp_cand = self.liq_finder.find_tp(
+                    signal.direction, entry, sl_est,
+                    fvg_list or [], mit_map or {},
+                    to_naive(signal.entry_time), fvg1_eng,
+                )
+
             if signal.direction == 'bull' and tp_cand > entry:
                 tp_override = tp_cand
             elif signal.direction == 'bear' and tp_cand < entry:
