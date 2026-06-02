@@ -437,10 +437,10 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM J: Tüm Stratejiler × EqualLiquidityFinder TP — bias=weekly
+    # BÖLÜM J: Tüm Stratejiler × EqualLiquidityFinder TP × 3 BİAS = 72 TEST
     # ══════════════════════════════════════════════════════════════════════════
     print("\n" + "═" * 78)
-    print("  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  8 STR × 3 EQL = 24 TEST (weekly bias)")
+    print("  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  8 STR × 3 BİAS × 3 EQL = 72 TEST")
     print("  (Önce eşit seviyeler, yoksa 1H FVG kenarı, yoksa 2R fallback)")
     print("═" * 78)
 
@@ -449,24 +449,25 @@ def main():
         print(f"\n  ── STRATEJİ: {strat_label} " + "─" * 50)
         print(_header())
         print("  " + "─" * 76)
-        for eql_label, eql_cfg in EQL_CONFIGS:
-            trades, m = run_one_eql(df_1h, df_5m, bt_start, 'weekly',
-                                    brain_type, poi_mode, enable_bb,
-                                    use_session, eql_cfg)
-            if m is None:
-                print(f"  {'weekly':<8} {eql_label:<11} {'— tamamlanan işlem yok —':>50}")
-                continue
-            row = dict(bias='weekly', rr=eql_label,
-                       total=m['total'], wins=m['wins'], losses=m['losses'],
-                       be=m['breakeven'], wr=m['win_rate'] * 100,
-                       pnl=m['net_pnl'], ret=m['ret_pct'],
-                       pf=m['profit_factor'], sharpe=m['sharpe'],
-                       maxdd=m['max_dd'])
-            results_j.append(dict(strateji=f'J:{strat_label}', **row))
-            _print_row(row)
+        for bias_mode in BIAS_MODES:
+            for eql_label, eql_cfg in EQL_CONFIGS:
+                trades, m = run_one_eql(df_1h, df_5m, bt_start, bias_mode,
+                                        brain_type, poi_mode, enable_bb,
+                                        use_session, eql_cfg)
+                if m is None:
+                    print(f"  {bias_mode:<8} {eql_label:<11} {'— tamamlanan işlem yok —':>50}")
+                    continue
+                row = dict(bias=bias_mode, rr=eql_label,
+                           total=m['total'], wins=m['wins'], losses=m['losses'],
+                           be=m['breakeven'], wr=m['win_rate'] * 100,
+                           pnl=m['net_pnl'], ret=m['ret_pct'],
+                           pf=m['profit_factor'], sharpe=m['sharpe'],
+                           maxdd=m['max_dd'])
+                results_j.append(dict(strateji=f'EQL:{strat_label}', **row))
+                _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # ÖZET — Tüm stratejilerin en iyileri, Net PnL sıralı
+    # KAPSAMLI ÖZET — Teknik × Bias × TP tablosu, Net PnL sıralı
     # ══════════════════════════════════════════════════════════════════════════
     all_results = (
         [dict(strateji='FVG-v10',  **r) for r in results_a] +
