@@ -1515,8 +1515,12 @@ class MarketBrain:
     TOUCH_MAX_AGE_BARS = 24   # dokunuştan sonra MSB için bekleme penceresi (24×5dk=2sa)
                               # HTF FVG içi LTF akümülasyonu (XAUUSD) için 100dk dardı.
 
-    def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None):
+    def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None,
+                 poi_mode: str = 'all'):
         self.bias = bias_provider
+        # poi_mode: 'all' | 'fvg' | 'ob' | 'bb' | 'hs' | 'prz'
+        # 'all' → mevcut davranış (tüm POI kaynakları)
+        self.poi_mode = poi_mode
         self.last_skip_reason: Optional[str] = None
         # Adım-bazlı teşhis: sinyalin hangi adımda öldüğünü sayar
         self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
@@ -1620,14 +1624,17 @@ class MarketBrain:
             mit_hs     = mit_hs_bull if direction == 'bull' else mit_hs_bear
 
             # ── ADIM 1: WICK dokunuşu — çoklu POI kaynağı ─────────────────
-            #   'fvg'→1H FVG, 'prz'→harmonik PRZ, 'ob'→OB, 'bb'→BB, 'hs'→HS
-            sources = [('fvg', fvg1_raw, mit1, fvg1_eng)]
-            if prz_eng is not None and przfvg_raw:
+            #   poi_mode filtresi: 'all'→hepsi, 'fvg'/'ob'/'bb'/'hs'/'prz'→yalnız o
+            pm = self.poi_mode
+            sources: List[tuple] = []
+            if pm in ('all', 'fvg'):
+                sources.append(('fvg', fvg1_raw, mit1, fvg1_eng))
+            if pm in ('all', 'prz') and prz_eng is not None and przfvg_raw:
                 sources.append(('prz', przfvg_raw, mit_prz, prz_eng))
             if poi1h_eng is not None:
                 for _k, _r, _m in [('ob', ob1_raw, mit_ob), ('bb', bb1_raw, mit_bb),
                                     ('hs', hs1_raw, mit_hs)]:
-                    if _r:
+                    if _r and pm in ('all', _k):
                         sources.append((_k, _r, _m, poi1h_eng))
 
             pend_ids = {p['fvg_id'] for p in pend}
@@ -2127,13 +2134,16 @@ class BacktestEngine:
 
     def __init__(self, brain: MarketBrain, risk_mgr: RiskManager,
                  initial_capital: float = 10_000,
-                 breakeven_at_R: Optional[float] = None):
+                 breakeven_at_R: Optional[float] = None,
+                 enable_bb: bool = False):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
         # breakeven_at_R: fiyat bu kadar R kâra ulaşınca SL entry'ye taşınır
         # (None → kapalı). Örn 1.0 → 1R'de breakeven.
         self.breakeven_at_R = breakeven_at_R
+        # enable_bb: True → BreakerEngine çalıştırılır; False → kapalı (eski davranış)
+        self.enable_bb = enable_bb
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
@@ -2238,8 +2248,23 @@ class BacktestEngine:
 
         ob_bull = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bull')
         ob_bear = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bear')
-        bb_bull: List[FVG] = []   # kapalı: %38 WR
-        bb_bear: List[FVG] = []   # kapalı: %38 WR
+        if self.enable_bb:
+            _bb_eng = BreakerEngine(max_age_hours=72, buf_ratio=0.05)
+            _bb_raw_bull = _bb_eng.detect(df1, 'bull', df1['atr'])
+            _bb_raw_bear = _bb_eng.detect(df1, 'bear', df1['atr'])
+            # BreakerBlock → FVG dönüşümü (MarketBrain FVG beklediği için)
+            def _bb2fvg(b: BreakerBlock) -> FVG:
+                return FVG(fvg_id=b.block_id, timeframe='bb',
+                           direction=b.direction, index=b.break_time,
+                           detect_time=b.detect_time, top=b.high, bottom=b.low,
+                           mid=(b.high + b.low) / 2, gap_size=b.high - b.low,
+                           gap_atr_ratio=0.0, momentum=0.0,
+                           quality_score=b.quality_score, created_i=0)
+            bb_bull: List[FVG] = [_bb2fvg(b) for b in _bb_raw_bull]
+            bb_bear: List[FVG] = [_bb2fvg(b) for b in _bb_raw_bear]
+        else:
+            bb_bull: List[FVG] = []   # kapalı varsayılan
+            bb_bear: List[FVG] = []
         hs_bull = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bull')
         hs_bear = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bear')
 
@@ -3384,6 +3409,211 @@ class FibBacktestEngine(BacktestEngine):
             rr            = self.risk.rr,
             risk_fraction = r['risk_fraction'],
         )
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BÖLÜM 12: THREE_VOL STRATEJİLERİ
+# ═══════════════════════════════════════════════════════════════════════════
+
+@dataclass
+class ThreeVolRetestState:
+    """ThreeVolRetestBrain için bekleme kaydı."""
+    direction  : str
+    event_idx  : int
+    body_top   : float   # bull: C[i], bear: O[i-2]
+    body_bot   : float   # bull: O[i-2], bear: C[i]
+    stop_price : float   # bull: min(L), bear: max(H) — pattern'ın dışı
+    age_bars   : int = 0
+
+
+class ThreeVolBrain:
+    """
+    Three White Soldiers / Three Black Crows → doğrudan momentum girişi.
+    FVG veya POI dokunuşu GEREKMİYOR.
+
+    Akış:
+      1. MSB5MEngine three_vol olayı bu barda onaylandı
+      2. Bias + EMA100/200 onayı (her ikisi şart)
+      3. Giriş: bir sonraki bar açılışı
+      SL: olay.stop_price (2. mumun Low/High, wick dahil)
+    """
+
+    THREE_VOL_MAX_BARS = 1   # sinyal yalnızca olayın onay barında geçerli
+
+    def __init__(self, bias_provider=None):
+        self.bias             = bias_provider
+        self.last_skip_reason: Optional[str] = None
+        self.used_fvg_ids: set = set()
+        self.pending: Dict[str, list] = {'bull': [], 'bear': []}
+        self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
+
+    def _ema_ok(self, close: float, e100: float, e200: float, direction: str) -> bool:
+        if direction == 'bull':
+            return close > e100 and close > e200
+        return close < e100 and close < e200
+
+    def evaluate(self, idx: int,
+                 C: np.ndarray, O: np.ndarray,
+                 H: np.ndarray, L: np.ndarray,
+                 E100: np.ndarray, E200: np.ndarray,
+                 TM: pd.Index,
+                 msb_events_bull: List[MSBEvent],
+                 msb_events_bear: List[MSBEvent],
+                 ATR: Optional[np.ndarray] = None,
+                 RSI: Optional[np.ndarray] = None,
+                 **_) -> Optional[TradeSignal]:
+        self.last_skip_reason = None
+        cur_time  = TM[idx]
+        cur_close = float(C[idx])
+        weekly_dir = self.bias.get(cur_time) if self.bias is not None else None
+
+        for direction in ('bull', 'bear'):
+            if self.bias is not None and weekly_dir != direction:
+                continue
+            if not self._ema_ok(cur_close, float(E100[idx]), float(E200[idx]), direction):
+                self.stats['step2_fail'] += 1
+                continue
+            events = msb_events_bull if direction == 'bull' else msb_events_bear
+            for e in events:
+                if e.confirm_idx == idx and e.msb_type == 'three_vol':
+                    return TradeSignal(
+                        entry_time        = cur_time,
+                        direction         = direction,
+                        trigger_fvg       = None,
+                        confirmation_type = 'EMA+3VOL',
+                        confidence        = min(100.0, float(e.quality) * 100),
+                        msb_type          = 'three_vol',
+                        confluence_count  = 1,
+                        stop_price        = e.stop_price,
+                        risk_fraction     = 0.01,
+                    )
+            self.stats['step1_fail'] += 1
+
+        if self.bias is not None and weekly_dir is None:
+            self.last_skip_reason = 'no_bias'
+        else:
+            self.last_skip_reason = 'no_signal'
+        return None
+
+
+class ThreeVolRetestBrain:
+    """
+    Three_vol pattern → body aralığına retest bekleme → giriş.
+
+    Bull pattern (bars i-2..i): body_top=C[i], body_bot=O[i-2]
+    Retest tetikleyici: L[j] <= body_top AND C[j] > body_bot AND j>i
+    SL: min(L[i-2:i+1]) (tüm pattern'ın low'u)
+
+    Bear: simetrik.
+    """
+
+    RETEST_MAX_BARS = 48   # pattern bittikten sonra bekleme süresi
+
+    def __init__(self, bias_provider=None):
+        self.bias             = bias_provider
+        self.last_skip_reason: Optional[str] = None
+        self.used_fvg_ids: set = set()
+        self.pending: Dict[str, List[ThreeVolRetestState]] = {'bull': [], 'bear': []}
+        self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
+        self._seen: set = set()   # (confirm_idx, direction) → tekrar eklemeyi engelle
+
+    def _ema_ok(self, close: float, e100: float, e200: float, direction: str) -> bool:
+        if direction == 'bull':
+            return close > e100 and close > e200
+        return close < e100 and close < e200
+
+    def evaluate(self, idx: int,
+                 C: np.ndarray, O: np.ndarray,
+                 H: np.ndarray, L: np.ndarray,
+                 E100: np.ndarray, E200: np.ndarray,
+                 TM: pd.Index,
+                 msb_events_bull: List[MSBEvent],
+                 msb_events_bear: List[MSBEvent],
+                 ATR: Optional[np.ndarray] = None,
+                 RSI: Optional[np.ndarray] = None,
+                 **_) -> Optional[TradeSignal]:
+        self.last_skip_reason = None
+        cur_time  = TM[idx]
+        cur_close = float(C[idx])
+        weekly_dir = self.bias.get(cur_time) if self.bias is not None else None
+
+        for direction in ('bull', 'bear'):
+            if self.bias is not None and weekly_dir != direction:
+                continue
+
+            events = msb_events_bull if direction == 'bull' else msb_events_bear
+
+            # Yeni three_vol olaylarını pending'e ekle
+            for e in events:
+                key = (e.confirm_idx, direction)
+                if e.confirm_idx <= idx and e.msb_type == 'three_vol' and key not in self._seen:
+                    self._seen.add(key)
+                    ei = e.confirm_idx
+                    s  = max(0, ei - 2)
+                    if direction == 'bull':
+                        body_top   = float(C[ei])
+                        body_bot   = float(O[s])
+                        stop_price = float(np.min(L[s: ei + 1]))
+                    else:
+                        body_top   = float(O[s])
+                        body_bot   = float(C[ei])
+                        stop_price = float(np.max(H[s: ei + 1]))
+                    self.pending[direction].append(ThreeVolRetestState(
+                        direction=direction, event_idx=ei,
+                        body_top=body_top, body_bot=body_bot,
+                        stop_price=stop_price,
+                    ))
+
+            # EMA onayı
+            ema_ok = self._ema_ok(cur_close, float(E100[idx]), float(E200[idx]), direction)
+
+            kept: List[ThreeVolRetestState] = []
+            signal: Optional[TradeSignal] = None
+
+            for state in self.pending[direction]:
+                state.age_bars = idx - state.event_idx
+                if state.age_bars <= 0 or state.age_bars > self.RETEST_MAX_BARS:
+                    continue   # olayın kendisi veya süresi dolmuş
+
+                # Yapı bütünlüğü: SL kırılmadı mı?
+                if direction == 'bull' and float(L[idx]) < state.stop_price:
+                    continue   # pattern low kırıldı → iptal
+                if direction == 'bear' and float(H[idx]) > state.stop_price:
+                    continue   # pattern high kırıldı → iptal
+
+                # Retest koşulu
+                if direction == 'bull':
+                    in_range = float(L[idx]) <= state.body_top and float(C[idx]) > state.body_bot
+                else:
+                    in_range = float(H[idx]) >= state.body_bot and float(C[idx]) < state.body_top
+
+                if in_range and ema_ok and signal is None:
+                    signal = TradeSignal(
+                        entry_time        = cur_time,
+                        direction         = direction,
+                        trigger_fvg       = None,
+                        confirmation_type = 'EMA+3VOL-RETEST',
+                        confidence        = 70.0,
+                        msb_type          = 'three_vol',
+                        confluence_count  = 1,
+                        stop_price        = state.stop_price,
+                        risk_fraction     = 0.01,
+                    )
+                    # tüketildi → kept'e ekleme
+                else:
+                    kept.append(state)
+
+            self.pending[direction] = kept
+            if signal is not None:
+                return signal
+
+            self.stats['step1_fail'] += 1
+
+        if self.bias is not None and weekly_dir is None:
+            self.last_skip_reason = 'no_bias'
+        else:
+            self.last_skip_reason = 'no_signal'
+        return None
 
 
 if __name__ == '__main__':
