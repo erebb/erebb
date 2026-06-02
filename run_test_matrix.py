@@ -9,6 +9,7 @@ BÖLÜM E: Order Block (OB) POI Only    — 3 BİAS × 3 RR = 9 test
 BÖLÜM F: Breaker Block (BB) POI Only  — 3 BİAS × 3 RR = 9 test
 BÖLÜM G: Harmonik PRZ Only            — 3 BİAS × 3 RR = 9 test
 BÖLÜM H: Horseshoe (HS) POI Only      — 3 BİAS × 3 RR = 9 test
+BÖLÜM I: FVG v10 + Açık Likidite TP   — 3 BİAS × 3 TP = 9 test
 
 Kullanım: python3 run_test_matrix.py
 """
@@ -67,6 +68,23 @@ def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all', enable_bb
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
+    return trades, metrics
+
+
+def run_one_fvg_liq(df_1h, df_5m, bt_start, bias_mode, rr, use_liq_tp):
+    """FVG v10 girişi + açık likidite TP (LiquidityTargetFinder)."""
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        bias_provider = make_bias(bias_mode, df_1h)
+        brain      = MarketBrain(bias_provider=bias_provider)
+        risk_mgr   = RiskManager(rr=rr, sl_buffer=0.0005)
+        liq_finder = LiquidityTargetFinder() if use_liq_tp else None
+        engine     = FibBacktestEngine(brain, risk_mgr, liq_finder,
+                                       initial_capital=INITIAL_CAPITAL,
+                                       breakeven_at_R=None)
+        trades     = engine.run(df_1h, df_5m, bt_start)
+        analytics  = PerformanceAnalytics(trades, INITIAL_CAPITAL)
+        metrics    = analytics.compute()
     return trades, metrics
 
 
@@ -342,17 +360,45 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM I: FVG v10 + Açık Likidite TP — 3×3 = 9 test
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 78)
+    print("  BÖLÜM I — FVG v10 + AÇIK LİKİDİTE TP  │  3 BİAS × 3 TP  =  9 TEST")
+    print("  (FVG dokunuşu + 5M MSB girişi, TP = 2–5R aralığındaki ilk açık 1H FVG)")
+    print("═" * 78)
+
+    results_i = []
+    for bias_mode in BIAS_MODES:
+        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
+        print(_header())
+        print("  " + "─" * 76)
+        for tp_label, rr, use_liq in FIB_CONFIGS:
+            trades, m = run_one_fvg_liq(df_1h, df_5m, bt_start, bias_mode, rr, use_liq)
+            if m is None:
+                print(f"  {bias_mode:<8} {tp_label:<11} {'— tamamlanan işlem yok —':>50}")
+                continue
+            row = dict(bias=bias_mode, rr=tp_label,
+                       total=m['total'], wins=m['wins'], losses=m['losses'],
+                       be=m['breakeven'], wr=m['win_rate'] * 100,
+                       pnl=m['net_pnl'], ret=m['ret_pct'],
+                       pf=m['profit_factor'], sharpe=m['sharpe'],
+                       maxdd=m['max_dd'])
+            results_i.append(row)
+            _print_row(row)
+
+    # ══════════════════════════════════════════════════════════════════════════
     # ÖZET — Tüm stratejilerin en iyileri, Net PnL sıralı
     # ══════════════════════════════════════════════════════════════════════════
     all_results = (
-        [dict(strateji='FVG-v10', **r) for r in results_a] +
-        [dict(strateji='Fib0618', **r) for r in results_b] +
+        [dict(strateji='FVG-v10',  **r) for r in results_a] +
+        [dict(strateji='Fib0618',  **r) for r in results_b] +
         [dict(strateji='3VOL-Dir', **r) for r in results_c] +
         [dict(strateji='3VOL-Ret', **r) for r in results_d] +
         [dict(strateji='OB-Only',  **r) for r in results_e] +
         [dict(strateji='BB-Only',  **r) for r in results_f] +
         [dict(strateji='PRZ-Only', **r) for r in results_g] +
-        [dict(strateji='HS-Only',  **r) for r in results_h]
+        [dict(strateji='HS-Only',  **r) for r in results_h] +
+        [dict(strateji='FVG-Liq',  **r) for r in results_i]
     )
 
     print("\n" + "═" * 90)
