@@ -42,11 +42,11 @@ FIB_CONFIGS = [
     ('Sabit 3R', 3.0, False),
 ]
 
-# EqualLiquidityFinder konfigürasyonları — (etiket, LiquidityTPConfig)
+# EqualLiquidityFinder konfigürasyonları — (etiket, LiquidityTPConfig, breakeven_at_R)
 EQL_CONFIGS = [
-    ('EQL 2-4R', LiquidityTPConfig(min_r=2.0, max_r=4.0)),
-    ('EQL 2-3R', LiquidityTPConfig(min_r=2.0, max_r=3.0)),
-    ('EQL 3-4R', LiquidityTPConfig(min_r=3.0, max_r=4.0)),
+    ('EQL 2-4R BE2', LiquidityTPConfig(min_r=2.0, max_r=4.0), 2.0),  # BE@2R
+    ('EQL 2-3R',     LiquidityTPConfig(min_r=2.0, max_r=3.0), None),
+    ('EQL 3-4R BE2', LiquidityTPConfig(min_r=3.0, max_r=4.0), 2.0),  # BE@2R
 ]
 
 # BÖLÜM J strateji tanımları — (etiket, brain_type, poi_mode, enable_bb, use_session)
@@ -145,7 +145,8 @@ def run_one_fib(df_1h, df_5m, bt_start, bias_mode, rr, use_liq_tp):
 
 
 def run_one_eql(df_1h, df_5m, bt_start, bias_mode, brain_type, poi_mode,
-                enable_bb, use_session, eql_cfg: LiquidityTPConfig):
+                enable_bb, use_session, eql_cfg: LiquidityTPConfig,
+                be_r=None):
     """Herhangi bir strateji + EqualLiquidityFinder TP."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -166,7 +167,7 @@ def run_one_eql(df_1h, df_5m, bt_start, bias_mode, brain_type, poi_mode,
         eql_finder = EqualLiquidityFinder(eql_cfg)
         engine     = FibBacktestEngine(brain, risk_mgr, eql_finder,
                                        initial_capital=INITIAL_CAPITAL,
-                                       breakeven_at_R=None,
+                                       breakeven_at_R=be_r,
                                        enable_bb=enable_bb)
         trades     = engine.run(df_1h, df_5m, bt_start)
         analytics  = PerformanceAnalytics(trades, INITIAL_CAPITAL)
@@ -450,10 +451,10 @@ def main():
         print(_header())
         print("  " + "─" * 76)
         for bias_mode in BIAS_MODES:
-            for eql_label, eql_cfg in EQL_CONFIGS:
+            for eql_label, eql_cfg, be_r in EQL_CONFIGS:
                 trades, m = run_one_eql(df_1h, df_5m, bt_start, bias_mode,
                                         brain_type, poi_mode, enable_bb,
-                                        use_session, eql_cfg)
+                                        use_session, eql_cfg, be_r)
                 if m is None:
                     print(f"  {bias_mode:<8} {eql_label:<11} {'— tamamlanan işlem yok —':>50}")
                     continue
