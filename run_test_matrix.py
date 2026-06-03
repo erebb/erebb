@@ -1,15 +1,16 @@
 """
-Standart Test Matrisi — XAUUSD FVG Engine v10 + Tüm Stratejiler
-================================================================
+Standart Test Matrisi — XAUUSD FVG Engine v10 + Kârlı Stratejiler
+==================================================================
 BÖLÜM A: FVG v10 Stratejisi           — 3 BİAS × 3 RR = 9 test
-BÖLÜM B: Fib 0.618 Retest             — 3 BİAS × 3 TP = 9 test
+BÖLÜM B: Fib 0.618 Retest             — 3 BİAS × 2 TP = 6 test
 BÖLÜM C: Three_vol Doğrudan           — 3 BİAS × 3 RR = 9 test
-BÖLÜM D: Three_vol Body Retest        — 3 BİAS × 3 RR = 9 test
-BÖLÜM E: Order Block (OB) POI Only    — 3 BİAS × 3 RR = 9 test
-BÖLÜM F: Breaker Block (BB) POI Only  — 3 BİAS × 3 RR = 9 test
+BÖLÜM F: Breaker Block (BB) POI Only  — 1 BİAS × 3 RR = 3 test  (sadece daily)
 BÖLÜM G: Harmonik PRZ Only            — 3 BİAS × 3 RR = 9 test
-BÖLÜM H: Horseshoe (HS) POI Only      — 3 BİAS × 3 RR = 9 test
-BÖLÜM I: FVG v10 + Açık Likidite TP   — 3 BİAS × 3 TP = 9 test
+BÖLÜM I: FVG v10 + Açık Likidite TP   — 3 BİAS × 2 TP = 6 test
+BÖLÜM J: FVG v10 + EQL TP             — 3 BİAS × 2 EQL = 6 test
+
+Kaldırılanlar (sürekli zarar): 3VOL-Ret, OB-Only, HS-Only, BB weekly/none,
+                                Sabit 3R TP, EQL 3-4R BE2
 
 Kullanım: python3 run_test_matrix.py
 """
@@ -22,7 +23,7 @@ from xauusd_fvg_engine_v10 import (
     DataEngine, MarketBrain, RiskManager, BacktestEngine,
     PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
     FibRetestBrain, FibBacktestEngine, LiquidityTargetFinder, SessionFilter,
-    ThreeVolBrain, ThreeVolRetestBrain,
+    ThreeVolBrain,
     EqualLiquidityFinder, LiquidityTPConfig,
 )
 
@@ -39,14 +40,12 @@ RR_CONFIGS = [
 FIB_CONFIGS = [
     ('Lik.2-5R', 2.0, True),   # LiquidityTargetFinder (min 2R fallback)
     ('Sabit 2R', 2.0, False),
-    ('Sabit 3R', 3.0, False),
 ]
 
 # EqualLiquidityFinder konfigürasyonları — (etiket, LiquidityTPConfig, breakeven_at_R)
 EQL_CONFIGS = [
     ('EQL 2-4R BE2', LiquidityTPConfig(min_r=2.0, max_r=4.0), 2.0),  # BE@2R
     ('EQL 2-3R',     LiquidityTPConfig(min_r=2.0, max_r=3.0), None),
-    ('EQL 3-4R BE2', LiquidityTPConfig(min_r=3.0, max_r=4.0), 2.0),  # BE@2R
 ]
 
 # BÖLÜM J strateji tanımları — SADECE 1H FVG girişi için
@@ -102,13 +101,12 @@ def run_one_fvg_liq(df_1h, df_5m, bt_start, bias_mode, rr, use_liq_tp):
     return trades, metrics
 
 
-def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, retest=False):
-    """Three_vol doğrudan veya retest: tek konfigürasyon."""
+def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be):
+    """Three_vol doğrudan: tek konfigürasyon."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         bias_provider = make_bias(bias_mode, df_1h)
-        brain = ThreeVolRetestBrain(bias_provider=bias_provider) if retest \
-                else ThreeVolBrain(bias_provider=bias_provider)
+        brain    = ThreeVolBrain(bias_provider=bias_provider)
         risk_mgr = RiskManager(rr=rr, sl_buffer=0.0005)
         engine   = BacktestEngine(brain, risk_mgr,
                                   initial_capital=INITIAL_CAPITAL,
@@ -152,8 +150,6 @@ def run_one_eql(df_1h, df_5m, bt_start, bias_mode, brain_type, poi_mode,
                                    session_filter=session)
         elif brain_type == 'threevol':
             brain = ThreeVolBrain(bias_provider=bias_provider)
-        elif brain_type == 'threevol_retest':
-            brain = ThreeVolRetestBrain(bias_provider=bias_provider)
         else:
             brain = MarketBrain(bias_provider=bias_provider, poi_mode=poi_mode)
 
@@ -217,7 +213,7 @@ def main():
     # BÖLÜM B: Fib 0.618 Retest — 3×3 = 9 test
     # ══════════════════════════════════════════════════════════════════════════
     print("\n" + "═" * 78)
-    print("  BÖLÜM B — FİB 0.618 RETEST STRATEJİSİ  │  3 BİAS × 3 HEDEF  =  9 TEST")
+    print("  BÖLÜM B — FİB 0.618 RETEST STRATEJİSİ  │  3 BİAS × 2 HEDEF  =  6 TEST")
     print("  (Seans: London 07-12 UTC / NY 12-21 UTC  |  Giriş: MSB→0.618 retest)")
     print("═" * 78)
 
@@ -255,7 +251,7 @@ def main():
         print(_header())
         print("  " + "─" * 76)
         for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, retest=False)
+            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be)
             if m is None:
                 print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
@@ -269,86 +265,31 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM D: Three_vol Body Retest — 3×3 = 9 test
+    # BÖLÜM F: Breaker Block (BB) POI Only — sadece daily bias (weekly/none zarar)
     # ══════════════════════════════════════════════════════════════════════════
     print("\n" + "═" * 78)
-    print("  BÖLÜM D — THREE_VOL BODY RETEST  │  3 BİAS × 3 RR  =  9 TEST")
-    print("  (Pattern body aralığına geri çekilme beklenir, sonra giriş)")
-    print("═" * 78)
-
-    results_d = []
-    for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
-        print(_header())
-        print("  " + "─" * 76)
-        for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, retest=True)
-            if m is None:
-                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
-                continue
-            row = dict(bias=bias_mode, rr=rr_label,
-                       total=m['total'], wins=m['wins'], losses=m['losses'],
-                       be=m['breakeven'], wr=m['win_rate'] * 100,
-                       pnl=m['net_pnl'], ret=m['ret_pct'],
-                       pf=m['profit_factor'], sharpe=m['sharpe'],
-                       maxdd=m['max_dd'])
-            results_d.append(row)
-            _print_row(row)
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM E: Order Block (OB) POI Only — 3×3 = 9 test
-    # ══════════════════════════════════════════════════════════════════════════
-    print("\n" + "═" * 78)
-    print("  BÖLÜM E — ORDER BLOCK POI ONLY  │  3 BİAS × 3 RR  =  9 TEST")
-    print("  (Giriş: 1H OB dokunuşu + 5M MSB, FVG filtresi yok)")
-    print("═" * 78)
-
-    results_e = []
-    for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
-        print(_header())
-        print("  " + "─" * 76)
-        for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='ob')
-            if m is None:
-                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
-                continue
-            row = dict(bias=bias_mode, rr=rr_label,
-                       total=m['total'], wins=m['wins'], losses=m['losses'],
-                       be=m['breakeven'], wr=m['win_rate'] * 100,
-                       pnl=m['net_pnl'], ret=m['ret_pct'],
-                       pf=m['profit_factor'], sharpe=m['sharpe'],
-                       maxdd=m['max_dd'])
-            results_e.append(row)
-            _print_row(row)
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM F: Breaker Block (BB) POI Only — 3×3 = 9 test
-    # ══════════════════════════════════════════════════════════════════════════
-    print("\n" + "═" * 78)
-    print("  BÖLÜM F — BREAKER BLOCK POI ONLY  │  3 BİAS × 3 RR  =  9 TEST")
-    print("  (Giriş: 1H BB reclaim + 5M MSB)")
+    print("  BÖLÜM F — BREAKER BLOCK POI ONLY  │  DAILY BİAS × 3 RR  =  3 TEST")
+    print("  (Giriş: 1H BB reclaim + 5M MSB  |  weekly/none zarar verdiğinden kaldırıldı)")
     print("═" * 78)
 
     results_f = []
-    for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
-        print(_header())
-        print("  " + "─" * 76)
-        for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
-                                poi_mode='bb', enable_bb=True)
-            if m is None:
-                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
-                continue
-            row = dict(bias=bias_mode, rr=rr_label,
-                       total=m['total'], wins=m['wins'], losses=m['losses'],
-                       be=m['breakeven'], wr=m['win_rate'] * 100,
-                       pnl=m['net_pnl'], ret=m['ret_pct'],
-                       pf=m['profit_factor'], sharpe=m['sharpe'],
-                       maxdd=m['max_dd'])
-            results_f.append(row)
-            _print_row(row)
+    print(f"\n  ── BİAS: DAILY " + "─" * 55)
+    print(_header())
+    print("  " + "─" * 76)
+    for rr_label, rr, be in RR_CONFIGS:
+        trades, m = run_one(df_1h, df_5m, bt_start, 'daily', rr, be,
+                            poi_mode='bb', enable_bb=True)
+        if m is None:
+            print(f"  {'daily':<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
+            continue
+        row = dict(bias='daily', rr=rr_label,
+                   total=m['total'], wins=m['wins'], losses=m['losses'],
+                   be=m['breakeven'], wr=m['win_rate'] * 100,
+                   pnl=m['net_pnl'], ret=m['ret_pct'],
+                   pf=m['profit_factor'], sharpe=m['sharpe'],
+                   maxdd=m['max_dd'])
+        results_f.append(row)
+        _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
     # BÖLÜM G: Harmonik PRZ Only — 3×3 = 9 test
@@ -378,37 +319,10 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM H: Horseshoe (HS) POI Only — 3×3 = 9 test
-    # ══════════════════════════════════════════════════════════════════════════
-    print("\n" + "═" * 78)
-    print("  BÖLÜM H — HORSESHOE POI ONLY  │  3 BİAS × 3 RR  =  9 TEST")
-    print("  (Giriş: 1H horseshoe pattern dokunuşu + 5M MSB)")
-    print("═" * 78)
-
-    results_h = []
-    for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
-        print(_header())
-        print("  " + "─" * 76)
-        for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='hs')
-            if m is None:
-                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
-                continue
-            row = dict(bias=bias_mode, rr=rr_label,
-                       total=m['total'], wins=m['wins'], losses=m['losses'],
-                       be=m['breakeven'], wr=m['win_rate'] * 100,
-                       pnl=m['net_pnl'], ret=m['ret_pct'],
-                       pf=m['profit_factor'], sharpe=m['sharpe'],
-                       maxdd=m['max_dd'])
-            results_h.append(row)
-            _print_row(row)
-
-    # ══════════════════════════════════════════════════════════════════════════
     # BÖLÜM I: FVG v10 + Açık Likidite TP — 3×3 = 9 test
     # ══════════════════════════════════════════════════════════════════════════
     print("\n" + "═" * 78)
-    print("  BÖLÜM I — FVG v10 + AÇIK LİKİDİTE TP  │  3 BİAS × 3 TP  =  9 TEST")
+    print("  BÖLÜM I — FVG v10 + AÇIK LİKİDİTE TP  │  3 BİAS × 2 TP  =  6 TEST")
     print("  (FVG dokunuşu + 5M MSB girişi, TP = 2–5R aralığındaki ilk açık 1H FVG)")
     print("═" * 78)
 
@@ -435,7 +349,7 @@ def main():
     # BÖLÜM J: 1H FVG × EqualLiquidityFinder TP × 3 BİAS = 9 TEST
     # ══════════════════════════════════════════════════════════════════════════
     print("\n" + "═" * 78)
-    print("  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  1H FVG × 3 BİAS × 3 EQL = 9 TEST")
+    print("  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  1H FVG × 3 BİAS × 2 EQL = 6 TEST")
     print("  (Önce eşit seviyeler, yoksa 1H FVG kenarı, yoksa 2R/3R fallback)")
     print("═" * 78)
 
@@ -468,11 +382,8 @@ def main():
         [dict(strateji='FVG-v10',  **r) for r in results_a] +
         [dict(strateji='Fib0618',  **r) for r in results_b] +
         [dict(strateji='3VOL-Dir', **r) for r in results_c] +
-        [dict(strateji='3VOL-Ret', **r) for r in results_d] +
-        [dict(strateji='OB-Only',  **r) for r in results_e] +
         [dict(strateji='BB-Only',  **r) for r in results_f] +
         [dict(strateji='PRZ-Only', **r) for r in results_g] +
-        [dict(strateji='HS-Only',  **r) for r in results_h] +
         [dict(strateji='FVG-Liq',  **r) for r in results_i] +
         results_j
     )
