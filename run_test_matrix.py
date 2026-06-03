@@ -1,14 +1,9 @@
 """
-Standart Test Matrisi — XAUUSD FVG Engine v10 + Kârlı Stratejiler
-==================================================================
+Standart Test Matrisi — XAUUSD FVG Engine v10
+=============================================
 BÖLÜM A: FVG v10 Stratejisi           — 3 BİAS × 3 RR = 9 test
-BÖLÜM B: Fib 0.618 Retest             — 3 BİAS × 2 TP = 6 test
 BÖLÜM C: Three_vol Doğrudan           — 3 BİAS × 3 RR = 9 test
 BÖLÜM G: Harmonik PRZ Only            — 3 BİAS × 3 RR = 9 test
-BÖLÜM J: FVG v10 + EQL TP             — 3 BİAS × 2 EQL = 6 test
-
-Kaldırılanlar (sürekli zarar / tekrar): 3VOL-Ret, OB-Only, HS-Only, BB-Only,
-                                         Sabit 3R TP, EQL 3-4R BE2, FVG-Liq (FVG-v10 tekrarı)
 
 Kullanım: python3 run_test_matrix.py
 """
@@ -20,35 +15,16 @@ from pathlib import Path
 from xauusd_fvg_engine_v10 import (
     DataEngine, MarketBrain, RiskManager, BacktestEngine,
     PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
-    FibRetestBrain, FibBacktestEngine, SessionFilter,
-    ThreeVolBrain, EqualLiquidityFinder, LiquidityTPConfig,
+    ThreeVolBrain,
 )
 
 INITIAL_CAPITAL = 10_000
 
-# FVG v10 RR konfigürasyonları — (etiket, rr, breakeven_at_R)
+# RR konfigürasyonları — (etiket, rr, breakeven_at_R)
 RR_CONFIGS = [
     ('1:1',       1.0, None),
     ('1:2 BE@1R', 2.0, 1.0),
     ('1:2 fix',   2.0, None),
-]
-
-# Fib TP konfigürasyonları — (etiket, rr, use_liquidity_tp)
-FIB_CONFIGS = [
-    ('Lik.2-5R', 2.0, True),   # LiquidityTargetFinder (min 2R fallback)
-    ('Sabit 2R', 2.0, False),
-]
-
-# EqualLiquidityFinder konfigürasyonları — (etiket, LiquidityTPConfig, breakeven_at_R)
-EQL_CONFIGS = [
-    ('EQL 2-4R BE2', LiquidityTPConfig(min_r=2.0, max_r=4.0), 2.0),  # BE@2R
-    ('EQL 2-3R',     LiquidityTPConfig(min_r=2.0, max_r=3.0), None),
-]
-
-# BÖLÜM J strateji tanımları — SADECE 1H FVG girişi için
-# (etiket, brain_type, poi_mode, use_session)
-EQL_STRATEGIES = [
-    ('FVG-v10', 'fvg', 'all', False),
 ]
 
 BIAS_MODES = ['weekly', 'daily', 'none']
@@ -65,7 +41,7 @@ def make_bias(mode, df_1h):
 
 
 def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all'):
-    """FVG v10 / POI-only: tek konfigürasyon çalıştır."""
+    """FVG v10 / PRZ: tek konfigürasyon çalıştır."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         bias_provider = make_bias(bias_mode, df_1h)
@@ -78,7 +54,6 @@ def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all'):
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
     return trades, metrics
-
 
 
 def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be):
@@ -94,52 +69,6 @@ def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be):
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
-    return trades, metrics
-
-
-def run_one_fib(df_1h, df_5m, bt_start, bias_mode, rr, use_liq_tp):
-    """Fib Retest: tek konfigürasyon çalıştır."""
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        bias_provider = make_bias(bias_mode, df_1h)
-        session       = SessionFilter()
-        brain         = FibRetestBrain(bias_provider=bias_provider,
-                                       session_filter=session)
-        risk_mgr      = RiskManager(rr=rr, sl_buffer=0.0005)
-        liq_finder    = LiquidityTargetFinder() if use_liq_tp else None
-        engine        = FibBacktestEngine(brain, risk_mgr, liq_finder,
-                                          initial_capital=INITIAL_CAPITAL,
-                                          breakeven_at_R=None)
-        trades        = engine.run(df_1h, df_5m, bt_start)
-        analytics     = PerformanceAnalytics(trades, INITIAL_CAPITAL)
-        metrics       = analytics.compute()
-    return trades, metrics
-
-
-def run_one_eql(df_1h, df_5m, bt_start, bias_mode, brain_type, poi_mode,
-                use_session, eql_cfg: LiquidityTPConfig, be_r=None):
-    """Herhangi bir strateji + EqualLiquidityFinder TP."""
-    buf = io.StringIO()
-    with contextlib.redirect_stdout(buf):
-        bias_provider = make_bias(bias_mode, df_1h)
-        session       = SessionFilter() if use_session else None
-
-        if brain_type == 'fib':
-            brain = FibRetestBrain(bias_provider=bias_provider,
-                                   session_filter=session)
-        elif brain_type == 'threevol':
-            brain = ThreeVolBrain(bias_provider=bias_provider)
-        else:
-            brain = MarketBrain(bias_provider=bias_provider, poi_mode=poi_mode)
-
-        risk_mgr   = RiskManager(rr=2.0, sl_buffer=0.0005)
-        eql_finder = EqualLiquidityFinder(eql_cfg)
-        engine     = FibBacktestEngine(brain, risk_mgr, eql_finder,
-                                       initial_capital=INITIAL_CAPITAL,
-                                       breakeven_at_R=be_r)
-        trades     = engine.run(df_1h, df_5m, bt_start)
-        analytics  = PerformanceAnalytics(trades, INITIAL_CAPITAL)
-        metrics    = analytics.compute()
     return trades, metrics
 
 
@@ -175,8 +104,7 @@ def main():
         for rr_label, rr, be in RR_CONFIGS:
             trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be)
             if m is None:
-                print(f"  {bias_mode:<8} {rr_label:<11} "
-                      f"{'— tamamlanan işlem yok —':>50}")
+                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
             row = dict(bias=bias_mode, rr=rr_label,
                        total=m['total'], wins=m['wins'], losses=m['losses'],
@@ -185,34 +113,6 @@ def main():
                        pf=m['profit_factor'], sharpe=m['sharpe'],
                        maxdd=m['max_dd'])
             results_a.append(row)
-            _print_row(row)
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM B: Fib 0.618 Retest — 3×3 = 9 test
-    # ══════════════════════════════════════════════════════════════════════════
-    print("\n" + "═" * 78)
-    print("  BÖLÜM B — FİB 0.618 RETEST STRATEJİSİ  │  3 BİAS × 2 HEDEF  =  6 TEST")
-    print("  (Seans: London 07-12 UTC / NY 12-21 UTC  |  Giriş: MSB→0.618 retest)")
-    print("═" * 78)
-
-    results_b = []
-    for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
-        print(_header())
-        print("  " + "─" * 76)
-        for tp_label, rr, use_liq in FIB_CONFIGS:
-            trades, m = run_one_fib(df_1h, df_5m, bt_start, bias_mode, rr, use_liq)
-            if m is None:
-                print(f"  {bias_mode:<8} {tp_label:<11} "
-                      f"{'— tamamlanan işlem yok —':>50}")
-                continue
-            row = dict(bias=bias_mode, rr=tp_label,
-                       total=m['total'], wins=m['wins'], losses=m['losses'],
-                       be=m['breakeven'], wr=m['win_rate'] * 100,
-                       pnl=m['net_pnl'], ret=m['ret_pct'],
-                       pf=m['profit_factor'], sharpe=m['sharpe'],
-                       maxdd=m['max_dd'])
-            results_b.append(row)
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
@@ -270,48 +170,16 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM J: 1H FVG × EqualLiquidityFinder TP × 3 BİAS = 9 TEST
-    # ══════════════════════════════════════════════════════════════════════════
-    print("\n" + "═" * 78)
-    print("  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  1H FVG × 3 BİAS × 2 EQL = 6 TEST")
-    print("  (Önce eşit seviyeler, yoksa 1H FVG kenarı, yoksa 2R/3R fallback)")
-    print("═" * 78)
-
-    results_j = []
-    for strat_label, brain_type, poi_mode, use_session in EQL_STRATEGIES:
-        print(f"\n  ── STRATEJİ: {strat_label} " + "─" * 50)
-        print(_header())
-        print("  " + "─" * 76)
-        for bias_mode in BIAS_MODES:
-            for eql_label, eql_cfg, be_r in EQL_CONFIGS:
-                trades, m = run_one_eql(df_1h, df_5m, bt_start, bias_mode,
-                                        brain_type, poi_mode,
-                                        use_session, eql_cfg, be_r)
-                if m is None:
-                    print(f"  {bias_mode:<8} {eql_label:<11} {'— tamamlanan işlem yok —':>50}")
-                    continue
-                row = dict(bias=bias_mode, rr=eql_label,
-                           total=m['total'], wins=m['wins'], losses=m['losses'],
-                           be=m['breakeven'], wr=m['win_rate'] * 100,
-                           pnl=m['net_pnl'], ret=m['ret_pct'],
-                           pf=m['profit_factor'], sharpe=m['sharpe'],
-                           maxdd=m['max_dd'])
-                results_j.append(dict(strateji=f'EQL:{strat_label}', **row))
-                _print_row(row)
-
-    # ══════════════════════════════════════════════════════════════════════════
-    # KAPSAMLI ÖZET — Teknik × Bias × TP tablosu, Net PnL sıralı
+    # ÖZET — Net PnL'e göre sıralı
     # ══════════════════════════════════════════════════════════════════════════
     all_results = (
         [dict(strateji='FVG-v10',  **r) for r in results_a] +
-        [dict(strateji='Fib0618',  **r) for r in results_b] +
         [dict(strateji='3VOL-Dir', **r) for r in results_c] +
-        [dict(strateji='PRZ-Only', **r) for r in results_g] +
-        results_j
+        [dict(strateji='PRZ-Only', **r) for r in results_g]
     )
 
     print("\n" + "═" * 90)
-    print("  GENEL ÖZET — Net PnL'e göre sıralı (tüm stratejiler)")
+    print("  GENEL ÖZET — Net PnL'e göre sıralı")
     print("═" * 90)
     print(f"\n  {'STRATEJİ':<9} {'BİAS':<8} {'RR/TP':<11} {'İŞL':>4} {'WIN':>4} "
           f"{'LOSS':>5} {'BE':>3} {'WR%':>6} {'NetPnL$':>11} {'Ret%':>7} "
