@@ -1,46 +1,380 @@
-İşlem alma mantığı şöyle olucak 1 saatlik fvgye değdi ema 100 ve ema 200 üstünde ise fiyat msb beklenilecek msb geldiyse(msb=breaker yada mitigation block yada üç tane büyük hacimli mum bear ise bear bull ise bull olucak şekilde) stop msbyi(breaker yada mitigation için) yaptıran son swing low eğer üç haciml mum ise 2. mumun bear ise highi bull ise lowu fitil(wick)dahil stoplar her ikisi içinde fix 1:2rr. Rsi içinde 1 saatlik fvg değdi rsi uyumsuzluğu var ise msb arayacak msbinin tanımını önceden yapmıştım yine aynı stop mantığı ile fix 1:2rr. Tek başına msb geldiyse işlem alınmayacak. Msb gelmeden 1 saatlik mum fvgnin içinde kapanırsa artık o fvg bakılmayacak(wick kalırsa devam eder aramaya) fvglerin hepsi daha önce kullanılmamış olması lazım.  özetle Ema yada rsi 1 varsa msb arıyor bulunca işlem mantığı stop mantığıyla işlem alıyor. Eğer 2si birden varsa(RSI+EMA) bahsettiğim msb mantığı geldiğinde aynı stop ve işlem mantığı ile işlem alınacak ama bu sefer işlemdeki risk 0.5r değil 1 r olucak.
-GC=F (Vadeli İşlemler) vs Spot Veri: Kod XAUUSD için GC=F (Gold Futures) kullanıyor. Vadeli işlemlerin saatleri ve gap'leri, spot piyasa (Forex CFD) verilerinden ufak farklılıklar gösterebilir. İşlem yapılacak aracı kurumun verileriyle (Örn: OANDA verisi) test edilmesi daha doğru sonuç verir.
-3. ORTA DERECE HATA: RSI Uyumsuzluğu (Divergence) Algoritması
-rsi_divergence fonksiyonu içindeki mantık aşırı basitleştirilmiş ve hatalı sinyal üretmeye çok müsait.
+  XAUUSD  │  FVG Strategy Engine  │  v10.0 │  Day Trade
+═════════════════════════════════════════════════════════════════
 
-Sorun: il = int(np.argmin(p[:half])) ile son 10 mumun ilk yarısındaki en düşük dibi buluyorsun. Sonra bunu sadece son mum (p[-1]) ile kıyaslıyorsun. Eğer fiyat son 3 mumdur sürekli düşüyorsa, sistem art arda 3 kez "uyumsuzluk var" diyebilir. Çünkü gerçek fraktal dipleri değil, sadece "pencerenin başı ile sonu" arasındaki farkı ölçüyo
-2. KRİTİK HATA: Temasın İğne (Wick) Yerine Kapanışla (Close) Aranması
-FVGEngine içindeki price_touching fonksiyonuna fiyat olarak 5M mumunun kapanış fiyatı (cur_close) gönderiliyor.
+  Yerel CSV bulundu → dosyadan yükleniyor
+  Kaynak: CSV
+  1H : 4353 mum  (2025-10-14 → 2026-05-30)
+  5M : 28545 mum  (ısınma:1070  backtest:27475)
+  Backtest dönemi: 2026-02-19 → 2026-05-30
 
-Sorun: Fiyat FVG bölgesine iğne atıp (Low veya High) gövdeyi dışarıda kapatırsa, price_touching bunu bir temas olarak görmez. Kurumsal konseptlerde POI (Point of Interest) teması her zaman iğne uçlarıyla (Low/High) kabul edilir.
-4. ORTA DERECE HATA: 5M FVG Onayındaki Zaman Çakışması
-Adım 3b'de MSC sırasında oluşan 5dk FVG oluşumu onay olarak aranıyor.
-has5, q5 = fvg5_eng.has_recent_active(..., window_secs=self.FVG5_WIN)
 
-Sorun: Bu fonksiyon sadece "son 1 saat içinde herhangi bir aktif 5M FVG var mı?" diye soruyor. O FVG'nin kırılım (MSC) dalgası tarafından oluşturulup oluşturulmadığını kontrol etmiyor. Sırf 45 dakika önce alakasız bir yerde bir FVG oluştu diye bu onaydan geçebilirsin.
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM A — FVG v10 STRATEJİSİ  │  3 BİAS × 3 RR  =  9 TEST
+══════════════════════════════════════════════════════════════════════════════
 
-5. GÖZDEN KAÇAN RİSK DETAYI: Hacim ve Lot Boyutu Eksikliği
-RiskManager içinde risk dolar bazlı (equity * risk_per_trade) hesaplanıyor. Bu matematiksel bir simülasyon için doğru olsa da;
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
 
-Sorun: Gerçekte XAUUSD kontratlarında (Lot/Volume) 0.01 lot gibi adım büyüklükleri vardır. Eğer Stop Loss mesafen çok darsa (örneğin 3 pip), hesaplanan Lot miktarı aracı kurumun izin verdiği maksimum limiti aşabilir veya minimum lot'un altında kalabilir.
-1. KRİTİK HATA: "Temas Sonrası" Mantığının Çökmesi (Stateless Paradox)
-Şemanda ve stratejinde kural net: "Fiyat 1H FVG'ye temas etti mi? -> Evet ise temas SONRASI 5dk MSC geldi mi?"
-Ancak MarketBrain içindeki evaluate fonksiyonu bu sırayı takip etmiyor. Fiyatın şu anki mum kapanışının (cur_close) 1H FVG içinde olmasını şart koşuyor:
-touching_fvg = fvg1_eng.price_touching(cur_close, active_1h)
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   1:1           20   12     8   0   60.0     +249.95   +2.50   1.62    1.77    1.49
+  weekly   1:2 BE@1R     20    5     8   7   38.5     +196.96   +1.97   1.49    1.11    1.99
+  weekly   1:2 fix       20    8    12   0   40.0     +296.95   +2.97   1.49    1.38    3.45
 
-Sorun: Piyasada fiyat 1H FVG'ye bir iğne (wick) atar ve hızla oradan seker. Sen 5 dakikalık grafikte bir Kırılım (MSC) beklerken, kırılımı yapan mum büyük ihtimalle 1H FVG'nin dışında kapanacaktır. Mum FVG dışında kapandığı için touching_fvg = None döner ve sistem aslında harika çalışan bir işlemi sırf o an FVG içinde değil diye es geçer.
-Konum: MarketBrain.evaluate() + BacktestEngine.run() içindeki dbg sayımları.
-Sorun:
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
 
-last_skip_reason sadece no_bias durumunda set ediliyor.
-evaluate() her çağrıldığında sıfırlanmıyor.
-Session dışı veya "sinyal yok" (adım 1-2-3) durumlarda reason overwrite edilmiyor.
-Backtest'te reason = brain.last_skip_reason okunup sonra None yapılıyor ama bir sonraki bar'da stale değer kalabiliyor.
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    1:1           21   16     5   0   76.2     +667.75   +6.68   3.60    4.17    0.50
+  daily    1:2 BE@1R     21    6     5  10   54.5     +455.00   +4.55   2.80    2.46    1.00
+  daily    1:2 fix       21   10    11   0   47.6     +661.53   +6.62   2.20    2.68    2.48
 
-Sonuç:
+  ── BİAS: NONE ───────────────────────────────────────────────────────
 
-Haftalık bias olmayan bir bar'dan sonra, bias olan ama seans dışı bir bar "no_bias" olarak sayılıyor.
-Teşhis özeti (FİLTRE ÖZETİ) yanlış rakamlar veriyor (özellikle bias + seans karışık dönemlerde).
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     1:1           47   23    24   0   48.9      +43.00   +0.43   1.04    0.18    2.97
+  none     1:2 BE@1R     47   10    24  13   29.4     -109.06   -1.09   0.91   -0.40    3.47
+  none     1:2 fix       46   15    31   0   32.6     +135.94   +1.36   1.09    0.41    5.86
 
-Örnek senaryo:
-Bar 100: no_bias → reason='no_bias'
-Bar 101: bias var ama seans dışı → evaluate() reason'ı değiştirmiyor → backtest "no_bias" sayıyor (yanlış).
-2. MSC "Temas Sonrası" Koşulu Tam Olarak Uygulanmıyor (MarketBrain)
-3BacktestEngine.run()Exit işlendikten sonra continue → aynı barda yeni sinyal kontrolü yapılmıyorNadir (aynı barda exit + yeni entry), ama teorik olarak aynı bar'da yön değişimi kaçırılabilir. continue'yu kaldırıp if in_trade: continue şeklinde guard koymak更好4RiskManager.compute()idx (sinyal barı) kullanılıyor, entry ise O[idx+1]5M'de fark küçük ama idealde swing'i entry bar'ına göre almak更好5SwingEngine.best_swing_low/highHiç aday yoksa son lookback içindeki min/max fallbackErken bar'larda veya flat piyasada çok geniş SL riski doğurabilir (max_risk filtresi zaten engelliyor büyük oranda)6FVGEngine.price_touchingbuf_ratio=0.05 (gap'in %5'i)Oldukça geniş buffer. Daha sıkı (0.02-0.03) daha az false touch verebilir7ReportGenerator.generateBaşlıkta hala v9.0 yazıyorKüçük, düzelt: v10.08DataEngineCSV yoksa sadece son ~60 gün 5M veriUzun backtest için kullanıcıdan uzun CSV bekliyor. Uyarı eklenebilir9PerformanceAnalyticspf = inf durumunda print'te sorun yok ama görselde garip durabilirif len(loss_p) == 0: pf = float('inf') zaten var, kabul edilebilir
-SEANS FILTRESINI TAMAMEN KALDIR. 
-https://www.youtube.com/watch?v=Zwthp-JQT0k referans video 
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM B — FİB 0.618 RETEST STRATEJİSİ  │  3 BİAS × 3 HEDEF  =  9 TEST
+  (Seans: London 07-12 UTC / NY 12-21 UTC  |  Giriş: MSB→0.618 retest)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   Lik.2-5R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  weekly   Sabit 2R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  weekly   Sabit 3R       3    1     2   0   33.3      +48.55   +0.49   1.49    0.71    0.50
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    Lik.2-5R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  daily    Sabit 2R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  daily    Sabit 3R       3    1     2   0   33.3      +48.55   +0.49   1.49    0.71    0.50
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     Lik.2-5R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  none     Sabit 2R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  none     Sabit 3R       3    1     2   0   33.3      +48.55   +0.49   1.49    0.71    0.50
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM C — THREE_VOL DOĞRUDAN  │  3 BİAS × 3 RR  =  9 TEST
+  (Giriş: three_vol onay barında, FVG/POI dokunuşu yok)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   1:1           26   14    12   0   53.8     +188.76   +1.89   1.15    0.64    4.95
+  weekly   1:2 BE@1R     26   10    12   4   45.5     +804.72   +8.05   1.63    1.93    4.03
+  weekly   1:2 fix       25   13    12   0   52.0    +1466.13  +14.66   2.10    3.04    4.00
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    1:1           26   16    10   0   61.5     +604.60   +6.05   1.59    1.90    2.02
+  daily    1:2 BE@1R     26   10    10   6   50.0    +1024.06  +10.24   2.00    2.27    2.97
+  daily    1:2 fix       26   15    11   0   57.7    +2049.33  +20.49   2.76    3.58    3.94
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     1:1           49   24    25   0   49.0     -123.73   -1.24   0.95   -0.28    4.96
+  none     1:2 BE@1R     49   15    25   9   37.5     +467.77   +4.68   1.19    0.82    5.91
+  none     1:2 fix       46   19    27   0   41.3    +1105.33  +11.05   1.39    1.70    5.85
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM D — THREE_VOL BODY RETEST  │  3 BİAS × 3 RR  =  9 TEST
+  (Pattern body aralığına geri çekilme beklenir, sonra giriş)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   1:1            1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  weekly   1:2 BE@1R      1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  weekly   1:2 fix        1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    1:1            1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  daily    1:2 BE@1R      1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  daily    1:2 fix        1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     1:1            1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  none     1:2 BE@1R      1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  none     1:2 fix        1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM E — ORDER BLOCK POI ONLY  │  3 BİAS × 3 RR  =  9 TEST
+  (Giriş: 1H OB dokunuşu + 5M MSB, FVG filtresi yok)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   1:1                                   — tamamlanan işlem yok —
+  weekly   1:2 BE@1R                             — tamamlanan işlem yok —
+  weekly   1:2 fix                               — tamamlanan işlem yok —
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    1:1            1    1     0   0  100.0      +50.00   +0.50    inf     nan    0.00
+  daily    1:2 BE@1R      1    0     0   1    0.0       +0.00   +0.00    inf     nan    0.00
+  daily    1:2 fix        1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     1:1            2    1     1   0   50.0       -0.25   -0.00   0.99   -0.02    0.00
+  none     1:2 BE@1R      2    0     1   1    0.0      -50.00   -0.50   0.00   -4.79    0.00
+  none     1:2 fix        2    0     2   0    0.0      -99.75   -1.00   0.00   -7.14    0.50
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM F — BREAKER BLOCK POI ONLY  │  3 BİAS × 3 RR  =  9 TEST
+  (Giriş: 1H BB reclaim + 5M MSB)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   1:1           33   12    21   0   36.4     -491.99   -4.92   0.55   -2.96    5.84
+	  weekly   1:2 BE@1R     33    7    21   5   25.0     -398.39   -3.98   0.64   -1.86    5.85
+  weekly   1:2 fix       32    9    23   0   28.1     -303.10   -3.03   0.75   -1.23    5.85
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    1:1           39   22    17   0   56.4     +248.16   +2.48   1.29    1.20    1.50
+  daily    1:2 BE@1R     38   11    17  10   39.3     +245.27   +2.45   1.29    0.96    2.48
+  daily    1:2 fix       38   16    22   0   42.1     +501.17   +5.01   1.44    1.62    2.48
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     1:1           63   27    36   0   42.9     -495.58   -4.96   0.73   -2.15    6.36
+  none     1:2 BE@1R     63   14    36  13   28.0     -451.51   -4.52   0.75   -1.56    5.89
+  none     1:2 fix       61   18    43   0   29.5     -406.49   -4.06   0.81   -1.22    4.54
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM G — HARMONİK PRZ ONLY  │  3 BİAS × 3 RR  =  9 TEST
+  (Giriş: 5M harmonik PRZ dokunuşu + 5M MSB, FVG filtresi yok)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   1:1           11    7     4   0   63.6     +200.24   +2.00   1.99    1.91    1.00
+  weekly   1:2 BE@1R     11    3     4   4   42.9     +198.44   +1.98   1.98    1.34    1.49
+  weekly   1:2 fix       11    4     7   0   36.4     +146.77   +1.47   1.41    0.88    2.48
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    1:1           10    8     2   0   80.0     +406.04   +4.06   4.98    4.59    0.50
+  daily    1:2 BE@1R     10    5     2   3   71.4     +508.34   +5.08   5.97    3.90    0.50
+  daily    1:2 fix       10    6     4   0   60.0     +611.71   +6.12   3.98    3.78    1.00
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     1:1           27   13    14   0   48.1      +45.99   +0.46   1.07    0.26    2.48
+  none     1:2 BE@1R     27    8    14   5   36.4     +194.65   +1.95   1.27    0.85    2.96
+  none     1:2 fix       26   10    16   0   38.5     +397.82   +3.98   1.49    1.46    3.94
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM H — HORSESHOE POI ONLY  │  3 BİAS × 3 RR  =  9 TEST
+  (Giriş: 1H horseshoe pattern dokunuşu + 5M MSB)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   1:1            1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+  weekly   1:2 BE@1R      1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+  weekly   1:2 fix        1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    1:1                                   — tamamlanan işlem yok —
+  daily    1:2 BE@1R                             — tamamlanan işlem yok —
+  daily    1:2 fix                               — tamamlanan işlem yok —
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     1:1            3    0     3   0    0.0     -149.25   -1.49   0.00   -3.36    1.00
+  none     1:2 BE@1R      3    0     3   0    0.0     -149.25   -1.49   0.00   -3.36    1.00
+  none     1:2 fix        3    0     3   0    0.0     -149.25   -1.49   0.00   -3.36    1.00
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM I — FVG v10 + AÇIK LİKİDİTE TP  │  3 BİAS × 3 TP  =  9 TEST
+  (FVG dokunuşu + 5M MSB girişi, TP = 2–5R aralığındaki ilk açık 1H FVG)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── BİAS: WEEKLY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   Lik.2-5R      20    8    12   0   40.0     +296.95   +2.97   1.49    1.38    3.45
+  weekly   Sabit 2R      20    8    12   0   40.0     +296.95   +2.97   1.49    1.38    3.45
+  weekly   Sabit 3R      19    2    17   0   10.5     -400.16   -4.00   0.52   -1.86    4.41
+
+  ── BİAS: DAILY ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  daily    Lik.2-5R      21   10    11   0   47.6     +661.53   +6.62   2.20    2.68    2.48
+  daily    Sabit 2R      21   10    11   0   47.6     +661.53   +6.62   2.20    2.68    2.48
+  daily    Sabit 3R      19    6    13   0   31.6     +549.62   +5.50   1.83    1.71    2.00
+
+  ── BİAS: NONE ───────────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  none     Lik.2-5R      46   15    31   0   32.6     +135.94   +1.36   1.09    0.41    5.86
+  none     Sabit 2R      46   15    31   0   32.6     +135.94   +1.36   1.09    0.41    5.86
+  none     Sabit 3R      43    8    35   0   18.6     -267.75   -2.68   0.84   -0.71    6.81
+
+══════════════════════════════════════════════════════════════════════════════
+  BÖLÜM J — EŞİT TEPE/DİP LİKİDİTE TP  │  1H FVG × 3 BİAS × 3 EQL = 9 TEST
+  (Önce eşit seviyeler, yoksa 1H FVG kenarı, yoksa 2R/3R fallback)
+══════════════════════════════════════════════════════════════════════════════
+
+  ── STRATEJİ: FVG-v10 ──────────────────────────────────────────────────
+
+  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────
+  weekly   EQL 2-4R BE2   20    7    12   1   36.8     +207.34   +2.07   1.34    0.99    3.45
+  weekly   EQL 2-3R      20    8    12   0   40.0     +309.36   +3.09   1.51    1.43    3.45
+  weekly   EQL 3-4R BE2   20    1    12   7    7.7     -443.02   -4.43   0.24   -3.46    4.43
+  daily    EQL 2-4R BE2   21    9    11   1   45.0     +566.49   +5.66   2.03    2.35    2.48
+  daily    EQL 2-3R      21   10    11   0   47.6     +672.11   +6.72   2.21    2.71    2.48
+  daily    EQL 3-4R BE2   20    4    11   5   26.7     +192.62   +1.93   1.35    0.78    3.45
+  none     EQL 2-4R BE2   46   14    31   1   31.1     +139.57   +1.40   1.09    0.41    5.86
+  none     EQL 2-3R      46   15    31   0   32.6     +148.20   +1.48   1.10    0.45    5.86
+  none     EQL 3-4R BE2   45    6    31   8   16.2     -462.12   -4.62   0.69   -1.43    7.73
+
+══════════════════════════════════════════════════════════════════════════════════════════
+  GENEL ÖZET — Net PnL'e göre sıralı (tüm stratejiler)
+══════════════════════════════════════════════════════════════════════════════════════════
+
+  STRATEJİ  BİAS     RR/TP        İŞL  WIN  LOSS  BE    WR%     NetPnL$    Ret%     PF  Sharpe  MaxDD%
+  ────────────────────────────────────────────────────────────────────────────────────────
+  3VOL-Dir  daily    1:2 fix       26   15    11   0   57.7    +2049.33  +20.49   2.76    3.58    3.94
+  3VOL-Dir  weekly   1:2 fix       25   13    12   0   52.0    +1466.13  +14.66   2.10    3.04    4.00
+  3VOL-Dir  none     1:2 fix       46   19    27   0   41.3    +1105.33  +11.05   1.39    1.70    5.85
+  3VOL-Dir  daily    1:2 BE@1R     26   10    10   6   50.0    +1024.06  +10.24   2.00    2.27    2.97
+  3VOL-Dir  weekly   1:2 BE@1R     26   10    12   4   45.5     +804.72   +8.05   1.63    1.93    4.03
+  EQL:FVG-v10 daily    EQL 2-3R      21   10    11   0   47.6     +672.11   +6.72   2.21    2.71    2.48
+  FVG-v10   daily    1:1           21   16     5   0   76.2     +667.75   +6.68   3.60    4.17    0.50
+  FVG-v10   daily    1:2 fix       21   10    11   0   47.6     +661.53   +6.62   2.20    2.68    2.48
+  FVG-Liq   daily    Lik.2-5R      21   10    11   0   47.6     +661.53   +6.62   2.20    2.68    2.48
+  FVG-Liq   daily    Sabit 2R      21   10    11   0   47.6     +661.53   +6.62   2.20    2.68    2.48
+  PRZ-Only  daily    1:2 fix       10    6     4   0   60.0     +611.71   +6.12   3.98    3.78    1.00
+  3VOL-Dir  daily    1:1           26   16    10   0   61.5     +604.60   +6.05   1.59    1.90    2.02
+  EQL:FVG-v10 daily    EQL 2-4R BE2   21    9    11   1   45.0     +566.49   +5.66   2.03    2.35    2.48
+  FVG-Liq   daily    Sabit 3R      19    6    13   0   31.6     +549.62   +5.50   1.83    1.71    2.00
+  PRZ-Only  daily    1:2 BE@1R     10    5     2   3   71.4     +508.34   +5.08   5.97    3.90    0.50
+  BB-Only   daily    1:2 fix       38   16    22   0   42.1     +501.17   +5.01   1.44    1.62    2.48
+  3VOL-Dir  none     1:2 BE@1R     49   15    25   9   37.5     +467.77   +4.68   1.19    0.82    5.91
+  FVG-v10   daily    1:2 BE@1R     21    6     5  10   54.5     +455.00   +4.55   2.80    2.46    1.00
+  PRZ-Only  daily    1:1           10    8     2   0   80.0     +406.04   +4.06   4.98    4.59    0.50
+  PRZ-Only  none     1:2 fix       26   10    16   0   38.5     +397.82   +3.98   1.49    1.46    3.94
+  EQL:FVG-v10 weekly   EQL 2-3R      20    8    12   0   40.0     +309.36   +3.09   1.51    1.43    3.45
+  FVG-v10   weekly   1:2 fix       20    8    12   0   40.0     +296.95   +2.97   1.49    1.38    3.45
+  FVG-Liq   weekly   Lik.2-5R      20    8    12   0   40.0     +296.95   +2.97   1.49    1.38    3.45
+  FVG-Liq   weekly   Sabit 2R      20    8    12   0   40.0     +296.95   +2.97   1.49    1.38    3.45
+  FVG-v10   weekly   1:1           20   12     8   0   60.0     +249.95   +2.50   1.62    1.77    1.49
+  BB-Only   daily    1:1           39   22    17   0   56.4     +248.16   +2.48   1.29    1.20    1.50
+  BB-Only   daily    1:2 BE@1R     38   11    17  10   39.3     +245.27   +2.45   1.29    0.96    2.48
+  EQL:FVG-v10 weekly   EQL 2-4R BE2   20    7    12   1   36.8     +207.34   +2.07   1.34    0.99    3.45
+  PRZ-Only  weekly   1:1           11    7     4   0   63.6     +200.24   +2.00   1.99    1.91    1.00
+  PRZ-Only  weekly   1:2 BE@1R     11    3     4   4   42.9     +198.44   +1.98   1.98    1.34    1.49
+  FVG-v10   weekly   1:2 BE@1R     20    5     8   7   38.5     +196.96   +1.97   1.49    1.11    1.99
+  PRZ-Only  none     1:2 BE@1R     27    8    14   5   36.4     +194.65   +1.95   1.27    0.85    2.96
+  EQL:FVG-v10 daily    EQL 3-4R BE2   20    4    11   5   26.7     +192.62   +1.93   1.35    0.78    3.45
+  3VOL-Dir  weekly   1:1           26   14    12   0   53.8     +188.76   +1.89   1.15    0.64    4.95
+  Fib0618   weekly   Lik.2-5R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  Fib0618   weekly   Sabit 2R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  Fib0618   daily    Lik.2-5R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  Fib0618   daily    Sabit 2R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  Fib0618   none     Lik.2-5R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  Fib0618   none     Sabit 2R       3    2     1   0   66.7     +149.79   +1.50   4.00    2.42    0.00
+  EQL:FVG-v10 none     EQL 2-3R      46   15    31   0   32.6     +148.20   +1.48   1.10    0.45    5.86
+  PRZ-Only  weekly   1:2 fix       11    4     7   0   36.4     +146.77   +1.47   1.41    0.88    2.48
+  EQL:FVG-v10 none     EQL 2-4R BE2   46   14    31   1   31.1     +139.57   +1.40   1.09    0.41    5.86
+  FVG-v10   none     1:2 fix       46   15    31   0   32.6     +135.94   +1.36   1.09    0.41    5.86
+  FVG-Liq   none     Lik.2-5R      46   15    31   0   32.6     +135.94   +1.36   1.09    0.41    5.86
+  FVG-Liq   none     Sabit 2R      46   15    31   0   32.6     +135.94   +1.36   1.09    0.41    5.86
+  OB-Only   daily    1:1            1    1     0   0  100.0      +50.00   +0.50    inf     nan    0.00
+  Fib0618   weekly   Sabit 3R       3    1     2   0   33.3      +48.55   +0.49   1.49    0.71    0.50
+  Fib0618   daily    Sabit 3R       3    1     2   0   33.3      +48.55   +0.49   1.49    0.71    0.50
+  Fib0618   none     Sabit 3R       3    1     2   0   33.3      +48.55   +0.49   1.49    0.71    0.50
+  PRZ-Only  none     1:1           27   13    14   0   48.1      +45.99   +0.46   1.07    0.26    2.48
+  FVG-v10   none     1:1           47   23    24   0   48.9      +43.00   +0.43   1.04    0.18    2.97
+  OB-Only   daily    1:2 BE@1R      1    0     0   1    0.0       +0.00   +0.00    inf     nan    0.00
+  OB-Only   none     1:1            2    1     1   0   50.0       -0.25   -0.00   0.99   -0.02    0.00
+  OB-Only   daily    1:2 fix        1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+  OB-Only   none     1:2 BE@1R      2    0     1   1    0.0      -50.00   -0.50   0.00   -4.79    0.00
+  HS-Only   weekly   1:1            1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+  HS-Only   weekly   1:2 BE@1R      1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+  HS-Only   weekly   1:2 fix        1    0     1   0    0.0      -50.00   -0.50   0.00     nan    0.00
+  OB-Only   none     1:2 fix        2    0     2   0    0.0      -99.75   -1.00   0.00   -7.14    0.50
+  3VOL-Ret  weekly   1:1            1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  weekly   1:2 BE@1R      1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  weekly   1:2 fix        1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  daily    1:1            1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  daily    1:2 BE@1R      1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  daily    1:2 fix        1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  none     1:1            1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  none     1:2 BE@1R      1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  3VOL-Ret  none     1:2 fix        1    0     1   0    0.0     -100.00   -1.00   0.00     nan    0.00
+  FVG-v10   none     1:2 BE@1R     47   10    24  13   29.4     -109.06   -1.09   0.91   -0.40    3.47
+  3VOL-Dir  none     1:1           49   24    25   0   49.0     -123.73   -1.24   0.95   -0.28    4.96
+  HS-Only   none     1:1            3    0     3   0    0.0     -149.25   -1.49   0.00   -3.36    1.00
+  HS-Only   none     1:2 BE@1R      3    0     3   0    0.0     -149.25   -1.49   0.00   -3.36    1.00
+  HS-Only   none     1:2 fix        3    0     3   0    0.0     -149.25   -1.49   0.00   -3.36    1.00
+  FVG-Liq   none     Sabit 3R      43    8    35   0   18.6     -267.75   -2.68   0.84   -0.71    6.81
+  BB-Only   weekly   1:2 fix       32    9    23   0   28.1     -303.10   -3.03   0.75   -1.23    5.85
+  BB-Only   weekly   1:2 BE@1R     33    7    21   5   25.0     -398.39   -3.98   0.64   -1.86    5.85
+  FVG-Liq   weekly   Sabit 3R      19    2    17   0   10.5     -400.16   -4.00   0.52   -1.86    4.41
+  BB-Only   none     1:2 fix       61   18    43   0   29.5     -406.49   -4.06   0.81   -1.22    4.54
+  EQL:FVG-v10 weekly   EQL 3-4R BE2   20    1    12   7    7.7     -443.02   -4.43   0.24   -3.46    4.43
+  BB-Only   none     1:2 BE@1R     63   14    36  13   28.0     -451.51   -4.52   0.75   -1.56    5.89
+  EQL:FVG-v10 none     EQL 3-4R BE2   45    6    31   8   16.2     -462.12   -4.62   0.69   -1.43    7.73
+  BB-Only   weekly   1:1           33   12    21   0   36.4     -491.99   -4.92   0.55   -2.96    5.84
+  BB-Only   none     1:1           63   27    36   0   42.9     -495.58   -4.96   0.73   -2.15    6.36
+══════════════════════════════════════════════════════════════════════════
