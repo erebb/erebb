@@ -134,7 +134,6 @@ class TradeSignal:
     stop_price        : float = 0.0
     risk_fraction     : float = 0.005
     msc_signal        : Optional[MSCSignal] = None
-    trigger_bb        : Optional['BreakerBlock'] = None
     harmonic          : Optional['HarmonicSignal'] = None
     rsi_div_type      : Optional[str] = None
     fvg5_quality      : float = 0.0
@@ -1458,7 +1457,7 @@ class MarketBrain:
             mit_ob     = mit_ob_bull if direction == 'bull' else mit_ob_bear
 
             # ── ADIM 1: WICK dokunuşu — çoklu POI kaynağı ─────────────────
-            #   poi_mode filtresi: 'all'→hepsi, 'fvg'/'ob'/'bb'/'hs'/'prz'→yalnız o
+            #   poi_mode filtresi: 'all'→hepsi, 'fvg'/'ob'/'prz'→yalnız o
             pm = self.poi_mode
             sources: List[tuple] = []
             if pm in ('all', 'fvg'):
@@ -1963,8 +1962,8 @@ class BacktestEngine:
             prz_harm[pf.fvg_id] = hsig
             (przfvg_bull if hsig.direction == 'bull' else przfvg_bear).append(pf)
 
-        # 1H OB / Breaker Block / Horseshoe POI
-        print("  1H POI (OB/BB/HS)...", end=' ')
+        # 1H OB POI
+        print("  1H POI (OB)...", end=' ')
         H1   = df1['High'].values.astype(float)
         L1   = df1['Low'].values.astype(float)
         O1   = df1['Open'].values.astype(float)
@@ -3229,10 +3228,8 @@ class FibBacktestEngine(BacktestEngine):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# BÖLÜM 12: THREE_VOL STRATEJİLERİ
+# BÖLÜM 12: THREE_VOL (ThreeVolBrain)
 # ═══════════════════════════════════════════════════════════════════════════
-
-
 
 class ThreeVolBrain:
     """
