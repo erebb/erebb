@@ -74,18 +74,6 @@ class FVG:
     created_i     : int   = 0
 
 
-@dataclass
-class BreakerBlock:
-    """1H MSB olayından türeyen breaker block (order block kırılımı)."""
-    block_id      : int
-    direction     : str   # 'bull' → kırılan swing-high, geri çekilmede LONG; 'bear' → kırılan swing-low, geri çekilmede SHORT
-    break_time    : Any   # MSB mumunun zamanı (index open time)
-    detect_time   : Any   # görünür olduğu an = MSB mumu kapandıktan sonra
-    high          : float # MSB mumunun yüksek değeri
-    low           : float # MSB mumunun düşük değeri
-    swing_level   : float # kırılan swing seviyesi
-    quality_score : float # 0–100
-
 
 @dataclass
 class MSCSignal:
@@ -1186,156 +1174,6 @@ class HarmonicEngine:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# BÖLÜM 3b: BREAKER BLOCK ENGİNİ
-# ═══════════════════════════════════════════════════════════════════════════
-
-_bb_id_counter = 0
-
-def _next_bb_id() -> int:
-    global _bb_id_counter
-    _bb_id_counter += 1
-    return _bb_id_counter
-
-
-class BreakerEngine:
-    """
-    1H MSB (Market Structure Break) olaylarından breaker block tespiti.
-
-    Kural:
-      • Bull breaker: 1H close, önceki onaylı swing-high'ı YUKARI kırarsa
-        → o mumun H/L aralığı = bullish breaker block
-        → fiyat aşağı çekilip bloğa girerse: LONG entry (kırılım yönünde devam)
-      • Bear breaker: 1H close, önceki onaylı swing-low'u AŞAĞI kırarsa
-        → o mumun H/L aralığı = bearish breaker block
-        → fiyat yukarı çekilip bloğa girerse: SHORT entry
-
-    Tespit: MUM KAPANIS bazlı (wick değil).
-    Tüketim: bloğun karşı kenarından (mum kapanışıyla) geçilirse geçersiz.
-    """
-
-    def __init__(self, max_age_hours: float = 72, buf_ratio: float = 0.05):
-        self.max_age_hours = max_age_hours
-        self.buf_ratio     = buf_ratio
-        self._detect_offset = timedelta(hours=1)
-
-    def detect(self, df: pd.DataFrame, direction: str,
-               atr_series: pd.Series, strength: int = 2) -> List[BreakerBlock]:
-        """
-        df: 1H DataFrame. direction: 'bull' | 'bear'.
-        SwingEngine kullanarak close-bazlı MSB tespiti yapar.
-        """
-        H   = df['High'].values.astype(float)
-        L   = df['Low'].values.astype(float)
-        C   = df['Close'].values.astype(float)
-        O   = df['Open'].values.astype(float)
-        T   = df.index
-        atr = atr_series.values.astype(float)
-        n   = len(df)
-
-        last_sh, last_sl = SwingEngine.compute(H, L, atr, strength=strength)
-
-        blocks: List[BreakerBlock] = []
-        for i in range(1, n):
-            atr_i = max(float(atr[i]), 1e-6)
-            if direction == 'bull':
-                sh = last_sh[i - 1]
-                if np.isnan(sh):
-                    continue
-                # Bull BOS: close kırıyor, bir önceki bar kırmamış
-                if C[i] > sh and C[i - 1] <= sh:
-                    body   = abs(C[i] - O[i]) / (H[i] - L[i] + 1e-10)
-                    brk    = (C[i] - sh) / atr_i
-                    qual   = min(100.0, 40 * min(1.0, brk) + 40 * body + 20 * min(1.0, (H[i]-L[i])/atr_i))
-                    blocks.append(BreakerBlock(
-                        block_id      = _next_bb_id(),
-                        direction     = 'bull',
-                        break_time    = T[i],
-                        detect_time   = T[i] + self._detect_offset,
-                        high          = float(H[i]),
-                        low           = float(L[i]),
-                        swing_level   = float(sh),
-                        quality_score = qual,
-                    ))
-            else:
-                sl = last_sl[i - 1]
-                if np.isnan(sl):
-                    continue
-                # Bear BOS: close kırıyor, bir önceki bar kırmamış
-                if C[i] < sl and C[i - 1] >= sl:
-                    body   = abs(C[i] - O[i]) / (H[i] - L[i] + 1e-10)
-                    brk    = (sl - C[i]) / atr_i
-                    qual   = min(100.0, 40 * min(1.0, brk) + 40 * body + 20 * min(1.0, (H[i]-L[i])/atr_i))
-                    blocks.append(BreakerBlock(
-                        block_id      = _next_bb_id(),
-                        direction     = 'bear',
-                        break_time    = T[i],
-                        detect_time   = T[i] + self._detect_offset,
-                        high          = float(H[i]),
-                        low           = float(L[i]),
-                        swing_level   = float(sl),
-                        quality_score = qual,
-                    ))
-        return blocks
-
-    def build_mitigation_map(self, df: pd.DataFrame,
-                              bb_list: List[BreakerBlock]) -> Dict[int, Optional[Any]]:
-        """
-        Bloğun geçersiz olduğu anı ön-hesapla.
-          Bull breaker: close < bb.low  → blok tutmadı, geçersiz
-          Bear breaker: close > bb.high → blok tutmadı, geçersiz
-        """
-        C = df['Close'].values.astype(float)
-        T = df.index
-        n = len(df)
-        mit_map: Dict[int, Optional[Any]] = {}
-        for bb in bb_list:
-            det     = to_naive(bb.detect_time)
-            start_i = next((j for j in range(n) if to_naive(T[j]) >= det), None)
-            mit_map[bb.block_id] = None
-            if start_i is None:
-                continue
-            for j in range(start_i, n):
-                c = C[j]
-                # Close-bazlı geçersizleştirme
-                invalid = (c < bb.low) if bb.direction == 'bull' else (c > bb.high)
-                if invalid:
-                    mit_map[bb.block_id] = to_naive(T[j]) + self._detect_offset
-                    break
-        return mit_map
-
-    def get_active(self, bb_list: List[BreakerBlock],
-                   mit_map: Dict[int, Optional[Any]],
-                   current_time: Any) -> List[BreakerBlock]:
-        t      = to_naive(current_time)
-        cutoff = t - timedelta(hours=self.max_age_hours)
-        active = []
-        for bb in bb_list:
-            det = to_naive(bb.detect_time)
-            if det >= t:
-                continue
-            if det < cutoff:
-                continue
-            mit = mit_map.get(bb.block_id)
-            if mit is not None and mit <= t:
-                continue
-            active.append(bb)
-        return active
-
-    def price_touching(self, price: float,
-                       active: List[BreakerBlock]) -> Optional[BreakerBlock]:
-        """Fiyat aktif bir breaker block içinde mi? En kalitelisini döndür."""
-        best: Optional[BreakerBlock] = None
-        best_q = -1.0
-        for bb in reversed(active):
-            span = bb.high - bb.low
-            buf  = span * self.buf_ratio
-            if (bb.low - buf) <= price <= (bb.high + buf):
-                if bb.quality_score > best_q:
-                    best, best_q = bb, bb.quality_score
-        return best
-
-
-# ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 4: FVG ENGİNİ
 # ═══════════════════════════════════════════════════════════════════════════
 
@@ -1530,7 +1368,7 @@ class MarketBrain:
     def __init__(self, bias_provider: Optional['WeeklyBiasProvider'] = None,
                  poi_mode: str = 'all'):
         self.bias = bias_provider
-        # poi_mode: 'all' | 'fvg' | 'ob' | 'bb' | 'hs' | 'prz'
+        # poi_mode: 'all' | 'fvg' | 'ob' | 'prz'
         # 'all' → mevcut davranış (tüm POI kaynakları)
         self.poi_mode = poi_mode
         self.last_skip_reason: Optional[str] = None
@@ -1582,19 +1420,11 @@ class MarketBrain:
                  prz_eng: Optional['FVGEngine'] = None,
                  prz_harm: Optional[Dict] = None,
                  ATR: Optional[np.ndarray] = None,
-                 # 1H Order Block / Breaker Block / Horseshoe POIs
+                 # 1H Order Block POIs
                  ob1_bull: Optional[List[FVG]] = None,
                  ob1_bear: Optional[List[FVG]] = None,
                  mit_ob_bull: Optional[Dict] = None,
                  mit_ob_bear: Optional[Dict] = None,
-                 bb1_bull: Optional[List[FVG]] = None,
-                 bb1_bear: Optional[List[FVG]] = None,
-                 mit_bb_bull: Optional[Dict] = None,
-                 mit_bb_bear: Optional[Dict] = None,
-                 hs1_bull: Optional[List[FVG]] = None,
-                 hs1_bear: Optional[List[FVG]] = None,
-                 mit_hs_bull: Optional[Dict] = None,
-                 mit_hs_bear: Optional[Dict] = None,
                  poi1h_eng: Optional['FVGEngine'] = None,
                  ) -> Optional[TradeSignal]:
 
@@ -1604,10 +1434,6 @@ class MarketBrain:
         mit_prz      = mit_prz or {};      prz_harm     = prz_harm or {}
         ob1_bull     = ob1_bull or [];     ob1_bear     = ob1_bear or []
         mit_ob_bull  = mit_ob_bull or {};  mit_ob_bear  = mit_ob_bear or {}
-        bb1_bull     = bb1_bull or [];     bb1_bear     = bb1_bear or []
-        mit_bb_bull  = mit_bb_bull or {};  mit_bb_bear  = mit_bb_bear or {}
-        hs1_bull     = hs1_bull or [];     hs1_bear     = hs1_bear or []
-        mit_hs_bull  = mit_hs_bull or {};  mit_hs_bear  = mit_hs_bear or {}
 
         cur_time  = TM[idx]
         cur_close = float(C[idx])
@@ -1630,10 +1456,6 @@ class MarketBrain:
             pend       = self.pending[direction]
             ob1_raw    = ob1_bull if direction == 'bull' else ob1_bear
             mit_ob     = mit_ob_bull if direction == 'bull' else mit_ob_bear
-            bb1_raw    = bb1_bull if direction == 'bull' else bb1_bear
-            mit_bb     = mit_bb_bull if direction == 'bull' else mit_bb_bear
-            hs1_raw    = hs1_bull if direction == 'bull' else hs1_bear
-            mit_hs     = mit_hs_bull if direction == 'bull' else mit_hs_bear
 
             # ── ADIM 1: WICK dokunuşu — çoklu POI kaynağı ─────────────────
             #   poi_mode filtresi: 'all'→hepsi, 'fvg'/'ob'/'bb'/'hs'/'prz'→yalnız o
@@ -1643,11 +1465,8 @@ class MarketBrain:
                 sources.append(('fvg', fvg1_raw, mit1, fvg1_eng))
             if pm in ('all', 'prz') and prz_eng is not None and przfvg_raw:
                 sources.append(('prz', przfvg_raw, mit_prz, prz_eng))
-            if poi1h_eng is not None:
-                for _k, _r, _m in [('ob', ob1_raw, mit_ob), ('bb', bb1_raw, mit_bb),
-                                    ('hs', hs1_raw, mit_hs)]:
-                    if _r and pm in ('all', _k):
-                        sources.append((_k, _r, _m, poi1h_eng))
+            if poi1h_eng is not None and ob1_raw and pm in ('all', 'ob'):
+                sources.append(('ob', ob1_raw, mit_ob, poi1h_eng))
 
             pend_ids = {p['fvg_id'] for p in pend}
             for kind, raw, mitm, eng in sources:
@@ -1664,7 +1483,7 @@ class MarketBrain:
 
             # PRUNE: tüketilmiş / yaşlanmış / iptal pending'leri at
             mit_by_kind = {'fvg': mit1, 'prz': mit_prz,
-                           'ob': mit_ob, 'bb': mit_bb, 'hs': mit_hs}
+                           'ob': mit_ob}
             kept = []
             for p in pend:
                 m = mit_by_kind.get(p['kind'], {}).get(p['fvg_id'])
@@ -1728,8 +1547,6 @@ class MarketBrain:
             tk = trigger['kind']
             if   tk == 'prz': src.append('PRZ')
             elif tk == 'ob':  src.append('OB')
-            elif tk == 'bb':  src.append('BB')
-            elif tk == 'hs':  src.append('HS')
             conf_label = '+'.join(src)
 
             harmonic_ref = (prz_harm.get(trigger['fvg_id'])
@@ -1825,7 +1642,7 @@ class RiskManager:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# BÖLÜM 6b: 1H ORDER BLOCK / BREAKER BLOCK / HORSESHOE POI TESPİTİ
+# BÖLÜM 6b: 1H ORDER BLOCK POI TESPİTİ
 # ═══════════════════════════════════════════════════════════════════════════
 
 def _pivots_1h(
@@ -2000,110 +1817,6 @@ def detect_order_blocks_1h(
     return fvgs
 
 
-def detect_breaker_blocks_1h(
-    ob_list: List[FVG], C: np.ndarray, T: Any,
-) -> List[FVG]:
-    """
-    OB ihlali → Breaker Block (ters-polarite bölgesi).
-    Bull OB close < b_lo → BEAR breaker (direnç).
-    Bear OB close > b_hi → BULL breaker (destek).
-    detect_time = ihlal barı kapanışı (lookahead engeli).
-    Zone = orijinal OB ile aynı; yön tersine döner.
-    """
-    detect_offset = pd.Timedelta(hours=1)
-    n = len(C)
-    bb_list: List[FVG] = []
-
-    for ob in ob_list:
-        ob_detect = to_naive(ob.detect_time)
-        start_i = next((i for i in range(n) if to_naive(T[i]) >= ob_detect), None)
-        if start_i is None:
-            continue
-        for i in range(start_i, n):
-            ci = float(C[i])
-            if ob.direction == 'bull' and ci < ob.bottom:
-                new_dir = 'bear'
-                detect_t = to_naive(T[i]) + detect_offset
-            elif ob.direction == 'bear' and ci > ob.top:
-                new_dir = 'bull'
-                detect_t = to_naive(T[i]) + detect_offset
-            else:
-                continue
-            bb_list.append(FVG(
-                fvg_id=_next_fvg_id(), timeframe='1h_bb', direction=new_dir,
-                index=ob.index, detect_time=detect_t,
-                top=ob.top, bottom=ob.bottom, mid=ob.mid,
-                gap_size=ob.gap_size, gap_atr_ratio=ob.gap_atr_ratio,
-                momentum=ob.momentum,
-                quality_score=min(100.0, ob.quality_score * 1.1),
-                created_i=ob.created_i,
-            ))
-            break
-    return bb_list
-
-
-def detect_horseshoe_1h(
-    H: np.ndarray, L: np.ndarray, O: np.ndarray, C: np.ndarray,
-    T: Any, direction: str,
-) -> List[FVG]:
-    """
-    Horseshoe (at nalı) deseni — 4 mum penceresi (lookahead-safe).
-    ŞEKİL: 1. ve 4. mum (dış), 2. ve 3. mumdan (iç) GÖVDE olarak BÜYÜK olmalı
-           → at-nalı/kâse görünümü (büyük-küçük-küçük-büyük).
-    Bull: 4. mum BREAKOUT mumu — önceki 3 mumun min-low'unun ALTINA wick atar
-          (likidite süpürür) + bullish kapanır (dönüş).
-    Bear: 4. mum önceki 3 mumun max-high'ının ÜSTÜNE wick atar + bearish kapanır.
-    POI zone = 4. mumun gövdesi [min(O,C), max(O,C)].
-    detect_time = T[i] + 1h (4. mum kapandıktan sonra — lookahead engeli).
-    """
-    detect_offset = pd.Timedelta(hours=1)
-    n = len(H)
-    fvgs: List[FVG] = []
-
-    for i in range(3, n):
-        h4, l4 = float(H[i]), float(L[i])
-        o4, c4 = float(O[i]), float(C[i])
-
-        # ── ŞEKİL: dış mumlar (1=i-3, 4=i) iç mumlardan (2=i-2, 3=i-1) büyük ─
-        b1 = abs(float(C[i - 3]) - float(O[i - 3]))
-        b2 = abs(float(C[i - 2]) - float(O[i - 2]))
-        b3 = abs(float(C[i - 1]) - float(O[i - 1]))
-        b4 = abs(c4 - o4)
-        if not (b1 > b2 and b1 > b3 and b4 > b2 and b4 > b3):
-            continue                              # at-nalı şekli değil
-
-        if direction == 'bull':
-            prior_min = min(float(L[i - 3]), float(L[i - 2]), float(L[i - 1]))
-            if l4 >= prior_min or c4 <= o4:
-                continue
-            body_lo, body_hi = o4, c4
-            sweep_d = prior_min - l4
-        else:
-            prior_max = max(float(H[i - 3]), float(H[i - 2]), float(H[i - 1]))
-            if h4 <= prior_max or c4 >= o4:
-                continue
-            body_lo, body_hi = c4, o4
-            sweep_d = h4 - prior_max
-
-        span = body_hi - body_lo
-        if span < 0.5:
-            continue
-
-        body_range = h4 - l4 if h4 > l4 else 1e-10
-        quality = min(100.0,
-                      40.0 + 40.0 * min(1.0, sweep_d / max(span, 1e-6)) +
-                      20.0 * abs(c4 - o4) / body_range)
-        fvgs.append(FVG(
-            fvg_id=_next_fvg_id(), timeframe='1h_hs', direction=direction,
-            index=T[i],
-            detect_time=T[i] + detect_offset,
-            top=body_hi, bottom=body_lo, mid=(body_hi + body_lo) / 2,
-            gap_size=span, gap_atr_ratio=0.0, momentum=0.0,
-            quality_score=quality, created_i=i,
-        ))
-    return fvgs
-
-
 def _build_poi_mit_map(
     poi_list: List[FVG], C: np.ndarray, T: Any,
     detect_offset: pd.Timedelta = pd.Timedelta(hours=1),
@@ -2146,16 +1859,13 @@ class BacktestEngine:
 
     def __init__(self, brain: MarketBrain, risk_mgr: RiskManager,
                  initial_capital: float = 10_000,
-                 breakeven_at_R: Optional[float] = None,
-                 enable_bb: bool = False):
+                 breakeven_at_R: Optional[float] = None):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
         # breakeven_at_R: fiyat bu kadar R kâra ulaşınca SL entry'ye taşınır
         # (None → kapalı). Örn 1.0 → 1R'de breakeven.
         self.breakeven_at_R = breakeven_at_R
-        # enable_bb: True → BreakerEngine çalıştırılır; False → kapalı (eski davranış)
-        self.enable_bb = enable_bb
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
@@ -2265,35 +1975,12 @@ class BacktestEngine:
 
         ob_bull = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bull')
         ob_bear = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bear')
-        if self.enable_bb:
-            _bb_eng = BreakerEngine(max_age_hours=72, buf_ratio=0.05)
-            _bb_raw_bull = _bb_eng.detect(df1, 'bull', df1['atr'])
-            _bb_raw_bear = _bb_eng.detect(df1, 'bear', df1['atr'])
-            # BreakerBlock → FVG dönüşümü (MarketBrain FVG beklediği için)
-            def _bb2fvg(b: BreakerBlock) -> FVG:
-                return FVG(fvg_id=b.block_id, timeframe='bb',
-                           direction=b.direction, index=b.break_time,
-                           detect_time=b.detect_time, top=b.high, bottom=b.low,
-                           mid=(b.high + b.low) / 2, gap_size=b.high - b.low,
-                           gap_atr_ratio=0.0, momentum=0.0,
-                           quality_score=b.quality_score, created_i=0)
-            bb_bull: List[FVG] = [_bb2fvg(b) for b in _bb_raw_bull]
-            bb_bear: List[FVG] = [_bb2fvg(b) for b in _bb_raw_bear]
-        else:
-            bb_bull: List[FVG] = []   # kapalı varsayılan
-            bb_bear: List[FVG] = []
-        hs_bull = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bull')
-        hs_bear = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bear')
 
         poi1h_eng  = FVGEngine('1h_ob', max_age_hours=72, buf_ratio=0.02)
         _off1h     = pd.Timedelta(hours=1)
         mit_ob_bull = _build_poi_mit_map(ob_bull, C1, T1, _off1h)
         mit_ob_bear = _build_poi_mit_map(ob_bear, C1, T1, _off1h)
-        mit_bb_bull = _build_poi_mit_map(bb_bull, C1, T1, _off1h)
-        mit_bb_bear = _build_poi_mit_map(bb_bear, C1, T1, _off1h)
-        mit_hs_bull = _build_poi_mit_map(hs_bull, C1, T1, _off1h)
-        mit_hs_bear = _build_poi_mit_map(hs_bear, C1, T1, _off1h)
-        print(f"OB {len(ob_bull)}b/{len(ob_bear)}s | BB {len(bb_bull)}b/{len(bb_bear)}s | HS {len(hs_bull)}b/{len(hs_bear)}s")
+        print(f"OB {len(ob_bull)}b/{len(ob_bear)}s")
 
         # Array'ler
         C    = df5['Close'].values.astype(float)
@@ -2389,10 +2076,6 @@ class BacktestEngine:
                 mit_prz=mit_prz, prz_eng=prz_eng, prz_harm=prz_harm,
                 ob1_bull=ob_bull, ob1_bear=ob_bear,
                 mit_ob_bull=mit_ob_bull, mit_ob_bear=mit_ob_bear,
-                bb1_bull=bb_bull, bb1_bear=bb_bear,
-                mit_bb_bull=mit_bb_bull, mit_bb_bear=mit_bb_bear,
-                hs1_bull=hs_bull, hs1_bear=hs_bear,
-                mit_hs_bull=mit_hs_bull, mit_hs_bear=mit_hs_bear,
                 poi1h_eng=poi1h_eng,
             )
 
@@ -3484,10 +3167,8 @@ class FibBacktestEngine(BacktestEngine):
     def __init__(self, brain, risk_mgr: RiskManager,
                  liq_finder=None,
                  initial_capital: float = 10_000,
-                 breakeven_at_R: Optional[float] = None,
-                 enable_bb: bool = False):
-        super().__init__(brain, risk_mgr, initial_capital, breakeven_at_R,
-                         enable_bb=enable_bb)
+                 breakeven_at_R: Optional[float] = None):
+        super().__init__(brain, risk_mgr, initial_capital, breakeven_at_R)
         self.liq_finder = liq_finder
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
@@ -3551,15 +3232,6 @@ class FibBacktestEngine(BacktestEngine):
 # BÖLÜM 12: THREE_VOL STRATEJİLERİ
 # ═══════════════════════════════════════════════════════════════════════════
 
-@dataclass
-class ThreeVolRetestState:
-    """ThreeVolRetestBrain için bekleme kaydı."""
-    direction  : str
-    event_idx  : int
-    body_top   : float   # bull: C[i], bear: O[i-2]
-    body_bot   : float   # bull: O[i-2], bear: C[i]
-    stop_price : float   # bull: min(L), bear: max(H) — pattern'ın dışı
-    age_bars   : int = 0
 
 
 class ThreeVolBrain:
@@ -3623,126 +3295,6 @@ class ThreeVolBrain:
                         stop_price        = e.stop_price,
                         risk_fraction     = 0.01,
                     )
-            self.stats['step1_fail'] += 1
-
-        if self.bias is not None and weekly_dir is None:
-            self.last_skip_reason = 'no_bias'
-        else:
-            self.last_skip_reason = 'no_signal'
-        return None
-
-
-class ThreeVolRetestBrain:
-    """
-    Three_vol pattern → body aralığına retest bekleme → giriş.
-
-    Bull pattern (bars i-2..i): body_top=C[i], body_bot=O[i-2]
-    Retest tetikleyici: L[j] <= body_top AND C[j] > body_bot AND j>i
-    SL: min(L[i-2:i+1]) (tüm pattern'ın low'u)
-
-    Bear: simetrik.
-    """
-
-    RETEST_MAX_BARS = 48   # pattern bittikten sonra bekleme süresi
-
-    def __init__(self, bias_provider=None):
-        self.bias             = bias_provider
-        self.last_skip_reason: Optional[str] = None
-        self.used_fvg_ids: set = set()
-        self.pending: Dict[str, List[ThreeVolRetestState]] = {'bull': [], 'bear': []}
-        self.stats = dict(step1_fail=0, step2_fail=0, step3_fail=0)
-        self._seen: set = set()   # (confirm_idx, direction) → tekrar eklemeyi engelle
-
-    def _ema_ok(self, close: float, e100: float, e200: float, direction: str) -> bool:
-        if direction == 'bull':
-            return close > e100 and close > e200
-        return close < e100 and close < e200
-
-    def evaluate(self, idx: int,
-                 C: np.ndarray, O: np.ndarray,
-                 H: np.ndarray, L: np.ndarray,
-                 E100: np.ndarray, E200: np.ndarray,
-                 TM: pd.Index,
-                 msb_events_bull: List[MSBEvent],
-                 msb_events_bear: List[MSBEvent],
-                 ATR: Optional[np.ndarray] = None,
-                 RSI: Optional[np.ndarray] = None,
-                 **_) -> Optional[TradeSignal]:
-        self.last_skip_reason = None
-        cur_time  = TM[idx]
-        cur_close = float(C[idx])
-        weekly_dir = self.bias.get(cur_time) if self.bias is not None else None
-
-        for direction in ('bull', 'bear'):
-            if self.bias is not None and weekly_dir != direction:
-                continue
-
-            events = msb_events_bull if direction == 'bull' else msb_events_bear
-
-            # Yeni three_vol olaylarını pending'e ekle
-            for e in events:
-                key = (e.confirm_idx, direction)
-                if e.confirm_idx <= idx and e.msb_type == 'three_vol' and key not in self._seen:
-                    self._seen.add(key)
-                    ei = e.confirm_idx
-                    s  = max(0, ei - 2)
-                    if direction == 'bull':
-                        body_top   = float(C[ei])
-                        body_bot   = float(O[s])
-                        stop_price = float(np.min(L[s: ei + 1]))
-                    else:
-                        body_top   = float(O[s])
-                        body_bot   = float(C[ei])
-                        stop_price = float(np.max(H[s: ei + 1]))
-                    self.pending[direction].append(ThreeVolRetestState(
-                        direction=direction, event_idx=ei,
-                        body_top=body_top, body_bot=body_bot,
-                        stop_price=stop_price,
-                    ))
-
-            # EMA onayı
-            ema_ok = self._ema_ok(cur_close, float(E100[idx]), float(E200[idx]), direction)
-
-            kept: List[ThreeVolRetestState] = []
-            signal: Optional[TradeSignal] = None
-
-            for state in self.pending[direction]:
-                state.age_bars = idx - state.event_idx
-                if state.age_bars <= 0 or state.age_bars > self.RETEST_MAX_BARS:
-                    continue   # olayın kendisi veya süresi dolmuş
-
-                # Yapı bütünlüğü: SL kırılmadı mı?
-                if direction == 'bull' and float(L[idx]) < state.stop_price:
-                    continue   # pattern low kırıldı → iptal
-                if direction == 'bear' and float(H[idx]) > state.stop_price:
-                    continue   # pattern high kırıldı → iptal
-
-                # Retest koşulu
-                if direction == 'bull':
-                    in_range = float(L[idx]) <= state.body_top and float(C[idx]) > state.body_bot
-                else:
-                    in_range = float(H[idx]) >= state.body_bot and float(C[idx]) < state.body_top
-
-                if in_range and ema_ok and signal is None:
-                    signal = TradeSignal(
-                        entry_time        = cur_time,
-                        direction         = direction,
-                        trigger_fvg       = None,
-                        confirmation_type = 'EMA+3VOL-RETEST',
-                        confidence        = 70.0,
-                        msb_type          = 'three_vol',
-                        confluence_count  = 1,
-                        stop_price        = state.stop_price,
-                        risk_fraction     = 0.01,
-                    )
-                    # tüketildi → kept'e ekleme
-                else:
-                    kept.append(state)
-
-            self.pending[direction] = kept
-            if signal is not None:
-                return signal
-
             self.stats['step1_fail'] += 1
 
         if self.bias is not None and weekly_dir is None:

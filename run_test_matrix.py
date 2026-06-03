@@ -4,12 +4,11 @@ Standart Test Matrisi — XAUUSD FVG Engine v10 + Kârlı Stratejiler
 BÖLÜM A: FVG v10 Stratejisi           — 3 BİAS × 3 RR = 9 test
 BÖLÜM B: Fib 0.618 Retest             — 3 BİAS × 2 TP = 6 test
 BÖLÜM C: Three_vol Doğrudan           — 3 BİAS × 3 RR = 9 test
-BÖLÜM F: Breaker Block (BB) POI Only  — 1 BİAS × 3 RR = 3 test  (sadece daily)
 BÖLÜM G: Harmonik PRZ Only            — 3 BİAS × 3 RR = 9 test
 BÖLÜM I: FVG v10 + Açık Likidite TP   — 3 BİAS × 2 TP = 6 test
 BÖLÜM J: FVG v10 + EQL TP             — 3 BİAS × 2 EQL = 6 test
 
-Kaldırılanlar (sürekli zarar): 3VOL-Ret, OB-Only, HS-Only, BB weekly/none,
+Kaldırılanlar (sürekli zarar): 3VOL-Ret, OB-Only, HS-Only, BB-Only (tüm bias),
                                 Sabit 3R TP, EQL 3-4R BE2
 
 Kullanım: python3 run_test_matrix.py
@@ -23,8 +22,7 @@ from xauusd_fvg_engine_v10 import (
     DataEngine, MarketBrain, RiskManager, BacktestEngine,
     PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
     FibRetestBrain, FibBacktestEngine, LiquidityTargetFinder, SessionFilter,
-    ThreeVolBrain,
-    EqualLiquidityFinder, LiquidityTPConfig,
+    ThreeVolBrain, EqualLiquidityFinder, LiquidityTPConfig,
 )
 
 INITIAL_CAPITAL = 10_000
@@ -49,9 +47,9 @@ EQL_CONFIGS = [
 ]
 
 # BÖLÜM J strateji tanımları — SADECE 1H FVG girişi için
-# (etiket, brain_type, poi_mode, enable_bb, use_session)
+# (etiket, brain_type, poi_mode, use_session)
 EQL_STRATEGIES = [
-    ('FVG-v10', 'fvg', 'all', False, False),
+    ('FVG-v10', 'fvg', 'all', False),
 ]
 
 BIAS_MODES = ['weekly', 'daily', 'none']
@@ -67,7 +65,7 @@ def make_bias(mode, df_1h):
     return WeeklyBiasProvider('weekly_bias.json')
 
 
-def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all', enable_bb=False):
+def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all'):
     """FVG v10 / POI-only: tek konfigürasyon çalıştır."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -76,8 +74,7 @@ def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all', enable_bb
         risk_mgr = RiskManager(rr=rr, sl_buffer=0.0005)
         engine   = BacktestEngine(brain, risk_mgr,
                                   initial_capital=INITIAL_CAPITAL,
-                                  breakeven_at_R=be,
-                                  enable_bb=enable_bb)
+                                  breakeven_at_R=be)
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
@@ -137,8 +134,7 @@ def run_one_fib(df_1h, df_5m, bt_start, bias_mode, rr, use_liq_tp):
 
 
 def run_one_eql(df_1h, df_5m, bt_start, bias_mode, brain_type, poi_mode,
-                enable_bb, use_session, eql_cfg: LiquidityTPConfig,
-                be_r=None):
+                use_session, eql_cfg: LiquidityTPConfig, be_r=None):
     """Herhangi bir strateji + EqualLiquidityFinder TP."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -157,8 +153,7 @@ def run_one_eql(df_1h, df_5m, bt_start, bias_mode, brain_type, poi_mode,
         eql_finder = EqualLiquidityFinder(eql_cfg)
         engine     = FibBacktestEngine(brain, risk_mgr, eql_finder,
                                        initial_capital=INITIAL_CAPITAL,
-                                       breakeven_at_R=be_r,
-                                       enable_bb=enable_bb)
+                                       breakeven_at_R=be_r)
         trades     = engine.run(df_1h, df_5m, bt_start)
         analytics  = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics    = analytics.compute()
@@ -265,33 +260,6 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM F: Breaker Block (BB) POI Only — sadece daily bias (weekly/none zarar)
-    # ══════════════════════════════════════════════════════════════════════════
-    print("\n" + "═" * 78)
-    print("  BÖLÜM F — BREAKER BLOCK POI ONLY  │  DAILY BİAS × 3 RR  =  3 TEST")
-    print("  (Giriş: 1H BB reclaim + 5M MSB  |  weekly/none zarar verdiğinden kaldırıldı)")
-    print("═" * 78)
-
-    results_f = []
-    print(f"\n  ── BİAS: DAILY " + "─" * 55)
-    print(_header())
-    print("  " + "─" * 76)
-    for rr_label, rr, be in RR_CONFIGS:
-        trades, m = run_one(df_1h, df_5m, bt_start, 'daily', rr, be,
-                            poi_mode='bb', enable_bb=True)
-        if m is None:
-            print(f"  {'daily':<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
-            continue
-        row = dict(bias='daily', rr=rr_label,
-                   total=m['total'], wins=m['wins'], losses=m['losses'],
-                   be=m['breakeven'], wr=m['win_rate'] * 100,
-                   pnl=m['net_pnl'], ret=m['ret_pct'],
-                   pf=m['profit_factor'], sharpe=m['sharpe'],
-                   maxdd=m['max_dd'])
-        results_f.append(row)
-        _print_row(row)
-
-    # ══════════════════════════════════════════════════════════════════════════
     # BÖLÜM G: Harmonik PRZ Only — 3×3 = 9 test
     # ══════════════════════════════════════════════════════════════════════════
     print("\n" + "═" * 78)
@@ -354,14 +322,14 @@ def main():
     print("═" * 78)
 
     results_j = []
-    for strat_label, brain_type, poi_mode, enable_bb, use_session in EQL_STRATEGIES:
+    for strat_label, brain_type, poi_mode, use_session in EQL_STRATEGIES:
         print(f"\n  ── STRATEJİ: {strat_label} " + "─" * 50)
         print(_header())
         print("  " + "─" * 76)
         for bias_mode in BIAS_MODES:
             for eql_label, eql_cfg, be_r in EQL_CONFIGS:
                 trades, m = run_one_eql(df_1h, df_5m, bt_start, bias_mode,
-                                        brain_type, poi_mode, enable_bb,
+                                        brain_type, poi_mode,
                                         use_session, eql_cfg, be_r)
                 if m is None:
                     print(f"  {bias_mode:<8} {eql_label:<11} {'— tamamlanan işlem yok —':>50}")
@@ -382,7 +350,6 @@ def main():
         [dict(strateji='FVG-v10',  **r) for r in results_a] +
         [dict(strateji='Fib0618',  **r) for r in results_b] +
         [dict(strateji='3VOL-Dir', **r) for r in results_c] +
-        [dict(strateji='BB-Only',  **r) for r in results_f] +
         [dict(strateji='PRZ-Only', **r) for r in results_g] +
         [dict(strateji='FVG-Liq',  **r) for r in results_i] +
         results_j
