@@ -305,32 +305,22 @@ class DailyBiasProvider:
     def build_from_1h(df_1h: pd.DataFrame, filepath: str = 'daily_bias.json',
                       flat_pct: float = 0.25) -> Dict[str, str]:
         """
-        Bir önceki işlem gününün yönünü (close vs open) bugünün bias'ı olarak
-        kullanır — gün başlamadan önce bilinen bilgi, lookahead yok.
-        |net%| < flat_pct → o gün flat sayılır, ertesi gün bias yok.
+        1H verisinden her takvim gününün gerçekleşen yönünü (close vs open)
+        üretir ve daily_bias.json'a yazar. |net%| < flat_pct → o gün bias yok.
         """
         df = df_1h.copy()
         df.index = pd.to_datetime(df.index)
-
-        # Her işlem gününün kendi yönünü hesapla
-        daily_dirs: Dict[str, Optional[str]] = {}
+        out: Dict[str, str] = {
+            '_kaynak': (f'XAUUSD 1H verisinden günlük yön (close vs open). '
+                        f'|net%|<{flat_pct} → bias yok.')
+        }
         for day, g in df.groupby(df.index.normalize()):
             o = float(g['Open'].iloc[0]); c = float(g['Close'].iloc[-1])
             net = (c - o) / o * 100
+            if abs(net) < flat_pct:
+                continue
             key = pd.Timestamp(day).strftime('%Y-%m-%d')
-            daily_dirs[key] = None if abs(net) < flat_pct else ('bull' if c > o else 'bear')
-
-        # Bir gün kaydır: D günü yönü → D+1 işlem günü bias'ı
-        sorted_days = sorted(daily_dirs.keys())
-        out: Dict[str, str] = {
-            '_kaynak': (f'Bir önceki işlem gününün yönü (close>open). '
-                        f'|net%|<{flat_pct} → ertesi gün bias yok. Lookahead yok.')
-        }
-        for i in range(len(sorted_days) - 1):
-            direction = daily_dirs[sorted_days[i]]
-            if direction is not None:
-                out[sorted_days[i + 1]] = direction
-
+            out[key] = 'bull' if c > o else 'bear'
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(out, f, ensure_ascii=False, indent=2)
         return out
