@@ -4,6 +4,7 @@ Standart Test Matrisi — XAUUSD FVG Engine v10
 BÖLÜM A: FVG v10 Stratejisi           — 3 BİAS × 3 RR = 9 test
 BÖLÜM C: Three_vol Doğrudan           — 3 BİAS × 3 RR = 9 test
 BÖLÜM G: Harmonik PRZ Only            — 3 BİAS × 3 RR = 9 test
+BÖLÜM T: Zaman Bazlı Çıkış (TBE)     — 3 STR × 3 TBE = 9 test (daily 1:2 fix)
 
 Kullanım: python3 run_test_matrix.py
 """
@@ -40,7 +41,8 @@ def make_bias(mode, df_1h):
     return WeeklyBiasProvider('weekly_bias.json')
 
 
-def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all'):
+def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
+            poi_mode='all', tbe=None):
     """FVG v10 / PRZ: tek konfigürasyon çalıştır."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -49,14 +51,15 @@ def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='all'):
         risk_mgr = RiskManager(rr=rr, sl_buffer=0.0005)
         engine   = BacktestEngine(brain, risk_mgr,
                                   initial_capital=INITIAL_CAPITAL,
-                                  breakeven_at_R=be)
+                                  breakeven_at_R=be,
+                                  time_exit_bars=tbe)
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
     return trades, metrics
 
 
-def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be):
+def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=None):
     """Three_vol doğrudan: tek konfigürasyon."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
@@ -65,7 +68,8 @@ def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be):
         risk_mgr = RiskManager(rr=rr, sl_buffer=0.0005)
         engine   = BacktestEngine(brain, risk_mgr,
                                   initial_capital=INITIAL_CAPITAL,
-                                  breakeven_at_R=be)
+                                  breakeven_at_R=be,
+                                  time_exit_bars=tbe)
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
@@ -168,6 +172,70 @@ def main():
                        maxdd=m['max_dd'])
             results_g.append(row)
             _print_row(row)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM T: Zaman Bazlı Çıkış — daily bias / 1:2 fix / 3 strateji × 3 TBE
+    # ══════════════════════════════════════════════════════════════════════════
+    # TBE = time_exit_bars (5M bar cinsinden)
+    #   24 bar = 2 saat  |  48 bar = 4 saat  |  96 bar = 8 saat
+    TBE_CONFIGS = [
+        ('TBE-2h',  24),
+        ('TBE-4h',  48),
+        ('TBE-8h',  96),
+    ]
+
+    print("\n" + "═" * 90)
+    print("  BÖLÜM T — ZAMAN BAZLI ÇIKIŞ  │  daily bias / 1:2 fix  │  3 STR × 3 TBE  =  9 TEST")
+    print("  (TBE süresi dolunca mevcut fiyattan kapatılır, TP/SL dokunmadan)")
+    print("═" * 90)
+
+    def _tbe_header():
+        return (f"\n  {'STRATEJİ':<10} {'TBE':>6} {'İŞL':>4} {'WIN':>4} {'LOSS':>5} "
+                f"{'BE':>3} {'WR%':>6} {'NetPnL$':>11} {'Ret%':>7} "
+                f"{'PF':>6} {'Sharpe':>7} {'MaxDD%':>7}")
+
+    results_t = []
+    print(_tbe_header())
+    print("  " + "─" * 88)
+    for tbe_label, tbe_bars in TBE_CONFIGS:
+        for str_label, runner in [
+            ('FVG-v10',  lambda tbe: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None, 'all', tbe)),
+            ('3VOL-Dir', lambda tbe: run_one_threevol(df_1h, df_5m, bt_start, 'daily', 2.0, None, tbe)),
+            ('PRZ-Only', lambda tbe: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None, 'prz', tbe)),
+        ]:
+            _, m = runner(tbe_bars)
+            if m is None:
+                print(f"  {str_label:<10} {tbe_label:>6} {'— işlem yok —':>60}")
+                continue
+            pf_str = f"{m['profit_factor']:.2f}" if m['profit_factor'] != float('inf') else "inf"
+            row = dict(strateji=str_label, tbe=tbe_label,
+                       total=m['total'], wins=m['wins'], losses=m['losses'],
+                       be=m['breakeven'], wr=m['win_rate'] * 100,
+                       pnl=m['net_pnl'], ret=m['ret_pct'],
+                       pf=m['profit_factor'], sharpe=m['sharpe'],
+                       maxdd=m['max_dd'])
+            results_t.append(row)
+            print(f"  {str_label:<10} {tbe_label:>6} {m['total']:>4} {m['wins']:>4} "
+                  f"{m['losses']:>5} {m['breakeven']:>3} {m['win_rate']*100:>6.1f} "
+                  f"{m['net_pnl']:>+11.2f} {m['ret_pct']:>+7.2f} "
+                  f"{pf_str:>6} {m['sharpe']:>7.2f} {m['max_dd']:>7.2f}")
+
+    # Baseline (TBE yok) ile karşılaştırma
+    print("\n  ── Karşılaştırma: TBE yok (baseline daily 1:2 fix) " + "─" * 38)
+    for str_label, runner in [
+        ('FVG-v10',  lambda: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None)),
+        ('3VOL-Dir', lambda: run_one_threevol(df_1h, df_5m, bt_start, 'daily', 2.0, None)),
+        ('PRZ-Only', lambda: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None, 'prz')),
+    ]:
+        _, m = runner()
+        if m is None:
+            continue
+        pf_str = f"{m['profit_factor']:.2f}" if m['profit_factor'] != float('inf') else "inf"
+        print(f"  {str_label:<10} {'Yok':>6} {m['total']:>4} {m['wins']:>4} "
+              f"{m['losses']:>5} {m['breakeven']:>3} {m['win_rate']*100:>6.1f} "
+              f"{m['net_pnl']:>+11.2f} {m['ret_pct']:>+7.2f} "
+              f"{pf_str:>6} {m['sharpe']:>7.2f} {m['max_dd']:>7.2f}")
+    print("═" * 90)
 
     # ══════════════════════════════════════════════════════════════════════════
     # ÖZET — Net PnL'e göre sıralı

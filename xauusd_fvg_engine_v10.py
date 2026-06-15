@@ -154,11 +154,12 @@ class Trade:
     risk_dollar : float
     rr            : float = 2.0
     risk_fraction : float = 0.005
-    exit_price  : Optional[float] = None
-    exit_time   : Optional[Any]   = None
-    result      : str   = 'OPEN'
-    pnl_dollar  : float = 0.0
-    equity_after: float = 0.0
+    exit_price   : Optional[float] = None
+    exit_time    : Optional[Any]   = None
+    result       : str   = 'OPEN'
+    pnl_dollar   : float = 0.0
+    equity_after : float = 0.0
+    entry_bar_idx: int   = -1        # zaman bazlı çıkış için giriş bar indeksi
 
 
 @dataclass
@@ -1856,13 +1857,15 @@ class BacktestEngine:
 
     def __init__(self, brain: MarketBrain, risk_mgr: RiskManager,
                  initial_capital: float = 10_000,
-                 breakeven_at_R: Optional[float] = None):
+                 breakeven_at_R: Optional[float] = None,
+                 time_exit_bars: Optional[int] = None):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
-        # breakeven_at_R: fiyat bu kadar R kâra ulaşınca SL entry'ye taşınır
-        # (None → kapalı). Örn 1.0 → 1R'de breakeven.
         self.breakeven_at_R = breakeven_at_R
+        # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
+        # None → kapalı. Örn 48 → 48×5dk = 4 saat.
+        self.time_exit_bars = time_exit_bars
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
@@ -1893,6 +1896,7 @@ class BacktestEngine:
             risk_dollar   = r['risk_dollar'],
             rr            = self.risk.rr,
             risk_fraction = r['risk_fraction'],
+            entry_bar_idx = idx,
         )
 
     def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
@@ -2045,6 +2049,20 @@ class BacktestEngine:
                 if t is None:
                     continue
                 exited, delta = _process_exit(t)
+                if not exited and self.time_exit_bars is not None:
+                    bars_open = idx - t.entry_bar_idx
+                    if bars_open >= self.time_exit_bars:
+                        close_price = float(C[idx])
+                        d = t.signal.direction
+                        mult = ((close_price - t.entry_price) if d == 'bull'
+                                else (t.entry_price - close_price)) / (t.risk + 1e-10)
+                        delta = mult * t.risk_dollar
+                        t.exit_price = round(close_price, 2)
+                        t.exit_time  = TM[idx]
+                        t.result     = ('WIN' if mult > 0.01 else
+                                        ('BE' if abs(mult) <= 0.01 else 'LOSS'))
+                        t.pnl_dollar = round(delta, 2)
+                        exited = True
                 if exited:
                     equity         += delta
                     t.equity_after  = round(equity, 2)
