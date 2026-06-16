@@ -33,7 +33,7 @@ from xauusd_fvg_engine_v10 import (
     FVGEngine, MSB5MEngine, HarmonicEngine,
     MarketBrain, RiskManager,
     EMAEngine, RSIEngine, IndicatorEngine,
-    detect_order_blocks_1h, detect_horseshoe_1h,
+    detect_order_blocks_1h,
     _build_poi_mit_map, to_naive,
 )
 
@@ -586,7 +586,7 @@ class LiveTrader:
             (przfvg_bull if hsig.direction == 'bull'
              else przfvg_bear).append(pf)
 
-        # 1H OB / HS (BB kapalı: %38 WR)
+        # 1H Order Blocks
         H1   = df1['High'].values.astype(float)
         L1   = df1['Low'].values.astype(float)
         O1   = df1['Open'].values.astype(float)
@@ -596,19 +596,11 @@ class LiveTrader:
 
         ob_bull = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bull')
         ob_bear = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bear')
-        hs_bull = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bull')
-        hs_bear = detect_horseshoe_1h(H1, L1, O1, C1, T1, 'bear')
-        bb_bull: List[FVG] = []
-        bb_bear: List[FVG] = []
 
         poi1h_eng   = FVGEngine('1h_ob', max_age_hours=72, buf_ratio=0.02)
         _off1h      = pd.Timedelta(hours=1)
         mit_ob_bull = _build_poi_mit_map(ob_bull, C1, T1, _off1h)
         mit_ob_bear = _build_poi_mit_map(ob_bear, C1, T1, _off1h)
-        mit_bb_bull = _build_poi_mit_map(bb_bull, C1, T1, _off1h)
-        mit_bb_bear = _build_poi_mit_map(bb_bear, C1, T1, _off1h)
-        mit_hs_bull = _build_poi_mit_map(hs_bull, C1, T1, _off1h)
-        mit_hs_bear = _build_poi_mit_map(hs_bear, C1, T1, _off1h)
 
         # 5M numpy array'leri
         C    = df5['Close'].values.astype(float)
@@ -633,10 +625,6 @@ class LiveTrader:
             mit_prz=mit_prz, prz_eng=prz_eng, prz_harm=prz_harm,
             ob1_bull=ob_bull,    ob1_bear=ob_bear,
             mit_ob_bull=mit_ob_bull, mit_ob_bear=mit_ob_bear,
-            bb1_bull=bb_bull,    bb1_bear=bb_bear,
-            mit_bb_bull=mit_bb_bull, mit_bb_bear=mit_bb_bear,
-            hs1_bull=hs_bull,    hs1_bear=hs_bear,
-            mit_hs_bull=mit_hs_bull, mit_hs_bear=mit_hs_bear,
             poi1h_eng=poi1h_eng,
         )
 
@@ -676,14 +664,6 @@ class LiveTrader:
                 ob1_bear     = ctx['ob1_bear'],
                 mit_ob_bull  = ctx['mit_ob_bull'],
                 mit_ob_bear  = ctx['mit_ob_bear'],
-                bb1_bull     = ctx['bb1_bull'],
-                bb1_bear     = ctx['bb1_bear'],
-                mit_bb_bull  = ctx['mit_bb_bull'],
-                mit_bb_bear  = ctx['mit_bb_bear'],
-                hs1_bull     = ctx['hs1_bull'],
-                hs1_bear     = ctx['hs1_bear'],
-                mit_hs_bull  = ctx['mit_hs_bull'],
-                mit_hs_bear  = ctx['mit_hs_bear'],
                 poi1h_eng    = ctx['poi1h_eng'],
             )
             # Yalnız son barın sinyalini al
