@@ -1,10 +1,10 @@
 """
 Standart Test Matrisi — XAUUSD FVG Engine v10
 =============================================
-BÖLÜM A: FVG v10 Stratejisi           — 3 BİAS × 3 RR = 9 test
-BÖLÜM C: Three_vol Doğrudan           — 3 BİAS × 3 RR = 9 test
-BÖLÜM G: Harmonik PRZ Only            — 3 BİAS × 3 RR = 9 test
-BÖLÜM T: Zaman Bazlı Çıkış (TBE)     — 3 STR × 3 TBE = 9 test (daily 1:2 fix)
+BÖLÜM T: TBE taraması              — 3 STR × 3 BİAS × 4 TBE = 36 test
+BÖLÜM A: FVG v10 (optimal TBE)    — 3 BİAS × 3 RR = 9 test
+BÖLÜM C: Three_vol (optimal TBE)  — 3 BİAS × 3 RR = 9 test
+BÖLÜM G: PRZ Only (optimal TBE)   — 3 BİAS × 3 RR = 9 test
 
 Kullanım: python3 run_test_matrix.py
 """
@@ -21,7 +21,6 @@ from xauusd_fvg_engine_v10 import (
 
 INITIAL_CAPITAL = 10_000
 
-# RR konfigürasyonları — (etiket, rr, breakeven_at_R)
 RR_CONFIGS = [
     ('1:1',       1.0, None),
     ('1:2 BE@1R', 2.0, 1.0),
@@ -29,6 +28,13 @@ RR_CONFIGS = [
 ]
 
 BIAS_MODES = ['weekly', 'daily', 'none']
+
+TBE_OPTIONS = [
+    ('Yok',    None),
+    ('TBE-2h', 24),
+    ('TBE-4h', 48),
+    ('TBE-8h', 96),
+]
 
 
 def make_bias(mode, df_1h):
@@ -43,7 +49,6 @@ def make_bias(mode, df_1h):
 
 def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
             poi_mode='all', tbe=None):
-    """FVG v10 / PRZ: tek konfigürasyon çalıştır."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         bias_provider = make_bias(bias_mode, df_1h)
@@ -60,7 +65,6 @@ def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
 
 
 def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=None):
-    """Three_vol doğrudan: tek konfigürasyon."""
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         bias_provider = make_bias(bias_mode, df_1h)
@@ -90,14 +94,103 @@ def _header():
             f"{'PF':>6} {'Sharpe':>7} {'MaxDD%':>7}")
 
 
+def _tbe_scan(df_1h, df_5m, bt_start):
+    """
+    3 strateji × 3 bias × 4 TBE seçeneği × 1:2 fix = 36 test.
+    Skor = sharpe × (1 - maxdd/100).
+    Her strateji için bias ortalaması en yüksek TBE'yi seçer.
+    """
+    print("\n" + "═" * 90)
+    print("  BÖLÜM T — TBE TARAMASI  │  3 STR × 3 BİAS × 4 TBE  =  36 TEST  │  1:2 fix")
+    print("  Skor = Sharpe × (1 - MaxDD/100)  |  optimal TBE → A/C/G bölümlerine uygulanır")
+    print("═" * 90)
+
+    # (str_key, bias, tbe_label) → metrics
+    scan: dict = {}
+
+    str_runners = [
+        ('fvg',      'FVG-v10',
+         lambda bias, tbe: run_one(df_1h, df_5m, bt_start, bias, 2.0, None, 'all', tbe)),
+        ('threevol', '3VOL-Dir',
+         lambda bias, tbe: run_one_threevol(df_1h, df_5m, bt_start, bias, 2.0, None, tbe)),
+        ('prz',      'PRZ-Only',
+         lambda bias, tbe: run_one(df_1h, df_5m, bt_start, bias, 2.0, None, 'prz', tbe)),
+    ]
+
+    for bias in BIAS_MODES:
+        print(f"\n  ── BİAS: {bias.upper()} " + "─" * 60)
+        print(f"  {'Strateji':<10} {'TBE':>6} {'İŞL':>4} {'WR%':>6} "
+              f"{'PnL$':>10} {'Sharpe':>7} {'MaxDD%':>7} {'Skor':>7}")
+        print("  " + "─" * 65)
+        for str_key, str_name, runner in str_runners:
+            for tbe_label, tbe_bars in TBE_OPTIONS:
+                _, m = runner(bias, tbe_bars)
+                if m is None:
+                    continue
+                score = m['sharpe'] * (1.0 - m['max_dd'] / 100.0)
+                scan[(str_key, bias, tbe_label)] = {**m, 'score': score}
+                marker = ' ←' if tbe_label == 'Yok' else ''
+                print(f"  {str_name:<10} {tbe_label:>6} {m['total']:>4} "
+                      f"{m['win_rate']*100:>6.1f} {m['net_pnl']:>+10.2f} "
+                      f"{m['sharpe']:>7.2f} {m['max_dd']:>7.2f} "
+                      f"{score:>7.3f}{marker}")
+
+    # ── Optimal TBE seçimi ───────────────────────────────────────────────────
+    print("\n  ── Optimal TBE seçimi (bias ortalaması üzerinden) " + "─" * 38)
+
+    optimal: dict = {}
+    for str_key, str_name, _ in str_runners:
+        best_tbe_label, best_avg = None, -1e9
+        for tbe_label, _ in TBE_OPTIONS:
+            scores = [
+                scan[(str_key, bias, tbe_label)]['score']
+                for bias in BIAS_MODES
+                if (str_key, bias, tbe_label) in scan
+            ]
+            if not scores:
+                continue
+            avg = sum(scores) / len(scores)
+            if avg > best_avg:
+                best_avg = avg
+                best_tbe_label = tbe_label
+
+        best_bars = dict(TBE_OPTIONS)[best_tbe_label]
+        optimal[str_key] = best_bars
+
+        # Baseline ile karşılaştır
+        base_scores = [
+            scan[(str_key, bias, 'Yok')]['score']
+            for bias in BIAS_MODES
+            if (str_key, bias, 'Yok') in scan
+        ]
+        base_avg = sum(base_scores) / len(base_scores) if base_scores else 0
+        delta = best_avg - base_avg
+        bars_str = f"{best_bars}bar" if best_bars else "—"
+        print(f"  {str_name:<10} → {best_tbe_label:<8} ({bars_str:<6})  "
+              f"Ort.Skor: {best_avg:.3f}  (baseline: {base_avg:.3f}  Δ{delta:+.3f})")
+
+    print("═" * 90)
+    return optimal
+
+
 def main():
     df_1h, df_5m, bt_start = DataEngine.download(verbose=True)
 
+    # ── TBE taraması (BÖLÜM T) ————————————————————————————————————————————
+    OPTIMAL_TBE = _tbe_scan(df_1h, df_5m, bt_start)
+
+    # TBE etiketleri (başlıklar için)
+    def _tbe_label(bars):
+        if bars is None:
+            return 'TBE:Yok'
+        return f"TBE:{bars//12}h"
+
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM A: FVG v10 — 3×3 = 9 test
+    # BÖLÜM A: FVG v10
     # ══════════════════════════════════════════════════════════════════════════
+    tbe_a = OPTIMAL_TBE['fvg']
     print("\n" + "═" * 78)
-    print("  BÖLÜM A — FVG v10 STRATEJİSİ  │  3 BİAS × 3 RR  =  9 TEST")
+    print(f"  BÖLÜM A — FVG v10 STRATEJİSİ  │  {_tbe_label(tbe_a)}  │  3 BİAS × 3 RR  =  9 TEST")
     print("═" * 78)
 
     results_a = []
@@ -106,7 +199,7 @@ def main():
         print(_header())
         print("  " + "─" * 76)
         for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be)
+            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=tbe_a)
             if m is None:
                 print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
@@ -120,10 +213,11 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM C: Three_vol Doğrudan — 3×3 = 9 test
+    # BÖLÜM C: Three_vol
     # ══════════════════════════════════════════════════════════════════════════
+    tbe_c = OPTIMAL_TBE['threevol']
     print("\n" + "═" * 78)
-    print("  BÖLÜM C — THREE_VOL DOĞRUDAN  │  3 BİAS × 3 RR  =  9 TEST")
+    print(f"  BÖLÜM C — THREE_VOL DOĞRUDAN  │  {_tbe_label(tbe_c)}  │  3 BİAS × 3 RR  =  9 TEST")
     print("  (Giriş: three_vol onay barında, FVG/POI dokunuşu yok)")
     print("═" * 78)
 
@@ -133,7 +227,7 @@ def main():
         print(_header())
         print("  " + "─" * 76)
         for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be)
+            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=tbe_c)
             if m is None:
                 print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
@@ -147,10 +241,11 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM G: Harmonik PRZ Only — 3×3 = 9 test
+    # BÖLÜM G: Harmonik PRZ Only
     # ══════════════════════════════════════════════════════════════════════════
+    tbe_g = OPTIMAL_TBE['prz']
     print("\n" + "═" * 78)
-    print("  BÖLÜM G — HARMONİK PRZ ONLY  │  3 BİAS × 3 RR  =  9 TEST")
+    print(f"  BÖLÜM G — HARMONİK PRZ ONLY  │  {_tbe_label(tbe_g)}  │  3 BİAS × 3 RR  =  9 TEST")
     print("  (Giriş: 5M harmonik PRZ dokunuşu + 5M MSB, FVG filtresi yok)")
     print("═" * 78)
 
@@ -160,7 +255,8 @@ def main():
         print(_header())
         print("  " + "─" * 76)
         for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, poi_mode='prz')
+            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
+                                poi_mode='prz', tbe=tbe_g)
             if m is None:
                 print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
@@ -174,70 +270,6 @@ def main():
             _print_row(row)
 
     # ══════════════════════════════════════════════════════════════════════════
-    # BÖLÜM T: Zaman Bazlı Çıkış — daily bias / 1:2 fix / 3 strateji × 3 TBE
-    # ══════════════════════════════════════════════════════════════════════════
-    # TBE = time_exit_bars (5M bar cinsinden)
-    #   24 bar = 2 saat  |  48 bar = 4 saat  |  96 bar = 8 saat
-    TBE_CONFIGS = [
-        ('TBE-2h',  24),
-        ('TBE-4h',  48),
-        ('TBE-8h',  96),
-    ]
-
-    print("\n" + "═" * 90)
-    print("  BÖLÜM T — ZAMAN BAZLI ÇIKIŞ  │  daily bias / 1:2 fix  │  3 STR × 3 TBE  =  9 TEST")
-    print("  (TBE süresi dolunca mevcut fiyattan kapatılır, TP/SL dokunmadan)")
-    print("═" * 90)
-
-    def _tbe_header():
-        return (f"\n  {'STRATEJİ':<10} {'TBE':>6} {'İŞL':>4} {'WIN':>4} {'LOSS':>5} "
-                f"{'BE':>3} {'WR%':>6} {'NetPnL$':>11} {'Ret%':>7} "
-                f"{'PF':>6} {'Sharpe':>7} {'MaxDD%':>7}")
-
-    results_t = []
-    print(_tbe_header())
-    print("  " + "─" * 88)
-    for tbe_label, tbe_bars in TBE_CONFIGS:
-        for str_label, runner in [
-            ('FVG-v10',  lambda tbe: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None, 'all', tbe)),
-            ('3VOL-Dir', lambda tbe: run_one_threevol(df_1h, df_5m, bt_start, 'daily', 2.0, None, tbe)),
-            ('PRZ-Only', lambda tbe: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None, 'prz', tbe)),
-        ]:
-            _, m = runner(tbe_bars)
-            if m is None:
-                print(f"  {str_label:<10} {tbe_label:>6} {'— işlem yok —':>60}")
-                continue
-            pf_str = f"{m['profit_factor']:.2f}" if m['profit_factor'] != float('inf') else "inf"
-            row = dict(strateji=str_label, tbe=tbe_label,
-                       total=m['total'], wins=m['wins'], losses=m['losses'],
-                       be=m['breakeven'], wr=m['win_rate'] * 100,
-                       pnl=m['net_pnl'], ret=m['ret_pct'],
-                       pf=m['profit_factor'], sharpe=m['sharpe'],
-                       maxdd=m['max_dd'])
-            results_t.append(row)
-            print(f"  {str_label:<10} {tbe_label:>6} {m['total']:>4} {m['wins']:>4} "
-                  f"{m['losses']:>5} {m['breakeven']:>3} {m['win_rate']*100:>6.1f} "
-                  f"{m['net_pnl']:>+11.2f} {m['ret_pct']:>+7.2f} "
-                  f"{pf_str:>6} {m['sharpe']:>7.2f} {m['max_dd']:>7.2f}")
-
-    # Baseline (TBE yok) ile karşılaştırma
-    print("\n  ── Karşılaştırma: TBE yok (baseline daily 1:2 fix) " + "─" * 38)
-    for str_label, runner in [
-        ('FVG-v10',  lambda: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None)),
-        ('3VOL-Dir', lambda: run_one_threevol(df_1h, df_5m, bt_start, 'daily', 2.0, None)),
-        ('PRZ-Only', lambda: run_one(df_1h, df_5m, bt_start, 'daily', 2.0, None, 'prz')),
-    ]:
-        _, m = runner()
-        if m is None:
-            continue
-        pf_str = f"{m['profit_factor']:.2f}" if m['profit_factor'] != float('inf') else "inf"
-        print(f"  {str_label:<10} {'Yok':>6} {m['total']:>4} {m['wins']:>4} "
-              f"{m['losses']:>5} {m['breakeven']:>3} {m['win_rate']*100:>6.1f} "
-              f"{m['net_pnl']:>+11.2f} {m['ret_pct']:>+7.2f} "
-              f"{pf_str:>6} {m['sharpe']:>7.2f} {m['max_dd']:>7.2f}")
-    print("═" * 90)
-
-    # ══════════════════════════════════════════════════════════════════════════
     # ÖZET — Net PnL'e göre sıralı
     # ══════════════════════════════════════════════════════════════════════════
     all_results = (
@@ -247,7 +279,8 @@ def main():
     )
 
     print("\n" + "═" * 90)
-    print("  GENEL ÖZET — Net PnL'e göre sıralı")
+    print(f"  GENEL ÖZET — Net PnL'e göre sıralı  "
+          f"│  FVG:{_tbe_label(tbe_a)}  3VOL:{_tbe_label(tbe_c)}  PRZ:{_tbe_label(tbe_g)}")
     print("═" * 90)
     print(f"\n  {'STRATEJİ':<9} {'BİAS':<8} {'RR/TP':<11} {'İŞL':>4} {'WIN':>4} "
           f"{'LOSS':>5} {'BE':>3} {'WR%':>6} {'NetPnL$':>11} {'Ret%':>7} "
