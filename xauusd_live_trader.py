@@ -397,6 +397,8 @@ class StateManager:
         self.tp          = 0.0
         self.qty         = 0.0
         self.signal_type = ''
+        self.open_time: Optional[str] = None    # TBE: giriş zamanı (ISO UTC)
+        self.tbe_minutes: Optional[int] = None  # TBE: maksimum açık kalma süresi
         self._load()
 
     def _load(self) -> None:
@@ -412,15 +414,19 @@ class StateManager:
             self.tp          = float(d.get('tp',     0))
             self.qty         = float(d.get('qty',    0))
             self.signal_type = d.get('signal_type', '')
+            self.open_time   = d.get('open_time')
+            self.tbe_minutes = d.get('tbe_minutes')
             if self.active:
+                tbe_str = f"  TBE: {self.tbe_minutes}dk" if self.tbe_minutes else ""
                 print(f"  Önceki pozisyon bulundu: "
                       f"{self.direction.upper()} @ {self.entry:.2f} "
-                      f"(SL:{self.sl} TP:{self.tp})")
+                      f"(SL:{self.sl} TP:{self.tp}){tbe_str}")
         except Exception as e:
             print(f"  live_state.json okuma hatası: {e}")
 
     def save(self, order_id: Any, direction: str, entry: float,
-             sl: float, tp: float, qty: float, signal_type: str) -> None:
+             sl: float, tp: float, qty: float, signal_type: str,
+             tbe_minutes: Optional[int] = None) -> None:
         self.active      = True
         self.order_id    = order_id
         self.direction   = direction
@@ -429,10 +435,14 @@ class StateManager:
         self.tp          = tp
         self.qty         = qty
         self.signal_type = signal_type
+        self.open_time   = datetime.utcnow().isoformat()
+        self.tbe_minutes = tbe_minutes
         self._write()
 
     def clear(self) -> None:
-        self.active = False
+        self.active      = False
+        self.open_time   = None
+        self.tbe_minutes = None
         self._write()
 
     def _write(self) -> None:
@@ -445,6 +455,8 @@ class StateManager:
             'tp':          self.tp,
             'qty':         self.qty,
             'signal_type': self.signal_type,
+            'open_time':   self.open_time,
+            'tbe_minutes': self.tbe_minutes,
         }, indent=2))
 
 
@@ -462,13 +474,21 @@ class LiveTrader:
     # TOUCH_MAX_AGE_BARS = 24; biraz daha geniş tutalım.
     LOOKBACK_BARS = 32
 
+    # Bias moduna göre varsayılan TBE (dakika cinsinden):
+    #   weekly → 480dk (8h)   — backtest'te Δskor +0.81
+    #   none   → 480dk (8h)   — backtest'te Δskor +0.77
+    #   daily  → None (kapalı) — backtest'te daily bias'a zarar verdi
+    _DEFAULT_TBE: dict = {'weekly': 480, 'none': 480, 'daily': None}
+
     def __init__(self,
                  client:        BingXClient,
                  bias_provider,                # InteractiveBiasProvider | None
+                 bias_mode:     str   = 'none',
                  leverage:      int   = 10,
                  risk_pct:      float = 1.0,   # % (örn. 1.0 = %1)
                  capital:       float = 0.0,   # $ kasa (0 = API'den oku)
-                 dry_run:       bool  = False):
+                 dry_run:       bool  = False,
+                 tbe_minutes:   Optional[int] = -1):  # -1 = bias'a göre otomatik
         self.client        = client
         self.bias_provider = bias_provider
         self.leverage      = leverage
@@ -477,6 +497,11 @@ class LiveTrader:
         self.dry_run       = dry_run
         self.state         = StateManager()
         self.risk_mgr      = RiskManager(rr=2.0)
+        # TBE: -1 → bias moduna göre varsayılanı kullan
+        if tbe_minutes == -1:
+            self.tbe_minutes: Optional[int] = self._DEFAULT_TBE.get(bias_mode)
+        else:
+            self.tbe_minutes = tbe_minutes
 
     # ── 5M bar kapanışına senkronize ─────────────────────────────────────────
     def _wait_for_bar_close(self) -> None:
@@ -714,10 +739,23 @@ class LiveTrader:
         if margin > equity:
             print(f"  │  ⚠ Gereken marjin (${margin:.2f}) kasadan büyük — "
                   f"kaldıracı artırın")
+        tbe_str = f"{self.tbe_minutes}dk ({self.tbe_minutes//60}h)" \
+                  if self.tbe_minutes else "kapalı"
+        print(f"  │  TBE   : {tbe_str}")
         print(f"  └{'─'*40}")
 
         if self.dry_run:
             print("  [DRY-RUN] Order gönderilmedi.\n")
+            self.state.save(
+                order_id    = 'DRY-RUN',
+                direction   = signal.direction,
+                entry       = entry,
+                sl          = r['sl'],
+                tp          = r['tp'],
+                qty         = qty,
+                signal_type = label,
+                tbe_minutes = self.tbe_minutes,
+            )
             return
 
         try:
@@ -732,18 +770,43 @@ class LiveTrader:
                 tp          = r['tp'],
                 qty         = qty,
                 signal_type = label,
+                tbe_minutes = self.tbe_minutes,
             )
         except Exception as e:
             print(f"  ✗  ORDER HATASI: {e}\n")
 
     # ── Pozisyon kontrolü ─────────────────────────────────────────────────────
     def _check_position(self) -> None:
-        """Kaydedilmiş pozisyon BingX'te kapandıysa state'i temizler."""
+        """
+        Kaydedilmiş pozisyon BingX'te kapandıysa state'i temizler.
+        TBE süresi dolduysa pozisyonu market'ten kapatır.
+        """
         if not self.state.active:
             return
         if self.dry_run:
+            # Dry-run: sadece TBE süresini logla
+            if self.state.tbe_minutes and self.state.open_time:
+                open_dt  = datetime.fromisoformat(self.state.open_time)
+                elapsed  = (datetime.utcnow() - open_dt).total_seconds() / 60
+                remaining = self.state.tbe_minutes - elapsed
+                if remaining <= 0:
+                    print(f"  [DRY-RUN] TBE: {elapsed:.0f}dk geçti → "
+                          f"gerçekte market'ten kapatılırdı.")
+                    self.state.clear()
             return
         try:
+            # ── TBE kontrolü (TP/SL'den önce) ───────────────────────────────
+            if self.state.tbe_minutes and self.state.open_time:
+                open_dt = datetime.fromisoformat(self.state.open_time)
+                elapsed = (datetime.utcnow() - open_dt).total_seconds() / 60
+                if elapsed >= self.state.tbe_minutes:
+                    print(f"  TBE: {elapsed:.0f}dk geçti "
+                          f"({self.state.tbe_minutes}dk limit) → pozisyon kapatılıyor")
+                    self.client.close_position()
+                    self.state.clear()
+                    return
+
+            # ── Normal TP/SL kontrolü ────────────────────────────────────────
             pos = self.client.get_position()
             if not pos:
                 print(f"  Pozisyon kapandı  "
@@ -779,6 +842,10 @@ class LiveTrader:
             print(f"  Bias   : {self.bias_provider.mode.upper()} (terminal prompt)")
         else:
             print("  Bias   : NONE (EMA zorunlu, bias yok)")
+        tbe_str = (f"{self.tbe_minutes}dk ({self.tbe_minutes//60}h) — "
+                   f"süre dolunca market kapat"
+                   if self.tbe_minutes else "kapalı")
+        print(f"  TBE    : {tbe_str}")
         print("═" * 58)
 
         # Sembol borsada gerçekten var mı? (yanlış sembol = sessiz hata önler)
@@ -915,6 +982,9 @@ def main() -> None:
                         help='Config dosyası yolu')
     parser.add_argument('--dry-run',  action='store_true',
                         help='Kağıt işlem — BingX\'e order gönderilmez')
+    parser.add_argument('--tbe',      type=int, default=None,
+                        help='Zaman bazlı çıkış (dakika). Varsayılan: '
+                             'weekly/none=480dk, daily=kapalı. 0=zorla kapat')
     parser.add_argument('--close',    action='store_true',
                         help='Açık pozisyonu market\'ten kapat ve çık')
     args = parser.parse_args()
@@ -953,13 +1023,20 @@ def main() -> None:
     else:
         bias_provider = InteractiveBiasProvider(args.bias)
 
+    # TBE: --tbe 0 → kapalı, --tbe N → N dakika, --tbe yok → bias'a göre otomatik
+    tbe_minutes = -1  # -1 = otomatik
+    if args.tbe is not None:
+        tbe_minutes = None if args.tbe == 0 else args.tbe
+
     trader = LiveTrader(
         client        = client,
         bias_provider = bias_provider,
+        bias_mode     = args.bias,
         leverage      = leverage,
         risk_pct      = risk_pct,
         capital       = capital,
         dry_run       = args.dry_run,
+        tbe_minutes   = tbe_minutes,
     )
     trader.run()
 
