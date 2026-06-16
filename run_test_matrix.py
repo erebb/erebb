@@ -48,7 +48,7 @@ def make_bias(mode, df_1h):
 
 
 def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
-            poi_mode='all', tbe=None):
+            poi_mode='all', tbe=None, emf=False):
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         bias_provider = make_bias(bias_mode, df_1h)
@@ -57,14 +57,15 @@ def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
         engine   = BacktestEngine(brain, risk_mgr,
                                   initial_capital=INITIAL_CAPITAL,
                                   breakeven_at_R=be,
-                                  time_exit_bars=tbe)
+                                  time_exit_bars=tbe,
+                                  ema_macd_filter=emf)
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
     return trades, metrics
 
 
-def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=None):
+def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=None, emf=False):
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
         bias_provider = make_bias(bias_mode, df_1h)
@@ -73,7 +74,8 @@ def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=None):
         engine   = BacktestEngine(brain, risk_mgr,
                                   initial_capital=INITIAL_CAPITAL,
                                   breakeven_at_R=be,
-                                  time_exit_bars=tbe)
+                                  time_exit_bars=tbe,
+                                  ema_macd_filter=emf)
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
@@ -292,6 +294,63 @@ def main():
               f"{row['wins']:>4} {row['losses']:>5} {row['be']:>3} "
               f"{row['wr']:>6.1f} {row['pnl']:>+11.2f} {row['ret']:>+7.2f} "
               f"{pf_str:>6} {row['sharpe']:>7.2f} {row['maxdd']:>7.2f}")
+    print("═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM E: EMA-MACD Filtresi — optimal TBE + 1:2 fix, filtreli vs filtresiz
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM E — EMA 9/21 + MACD(12,26,9) FİLTRESİ  │  1H  │  1:2 fix  │  Optimal TBE")
+    print("  Koşul: EMA9>EMA21, Close>EMA9, MACD>Signal (bull) / tersi (bear)")
+    print("═" * 90)
+
+    str_runners_e = [
+        ('FVG-v10',  'fvg',
+         lambda b, emf: run_one(df_1h, df_5m, bt_start, b, 2.0, None, 'all',  OPTIMAL_TBE['fvg'],      emf)),
+        ('3VOL-Dir', 'threevol',
+         lambda b, emf: run_one_threevol(df_1h, df_5m, bt_start, b, 2.0, None, OPTIMAL_TBE['threevol'], emf)),
+        ('PRZ-Only', 'prz',
+         lambda b, emf: run_one(df_1h, df_5m, bt_start, b, 2.0, None, 'prz',  OPTIMAL_TBE['prz'],      emf)),
+    ]
+
+    print(f"\n  {'Strateji':<9} {'Bias':<7} {'Filtre':<8} "
+          f"{'İŞL':>4} {'WR%':>6} {'PnL$':>10} {'Sharpe':>7} {'MaxDD%':>7}")
+    print("  " + "─" * 70)
+
+    for str_name, str_key, runner in str_runners_e:
+        for bias in BIAS_MODES:
+            _, m0 = runner(bias, False)
+            _, m1 = runner(bias, True)
+            if m0 is None and m1 is None:
+                continue
+
+            def _erow(m, lbl):
+                if m is None:
+                    return f"  {str_name:<9} {bias:<7} {lbl:<8} {'—':>4}"
+                return (f"  {str_name:<9} {bias:<7} {lbl:<8} "
+                        f"{m['total']:>4} {m['win_rate']*100:>6.1f} "
+                        f"{m['net_pnl']:>+10.2f} {m['sharpe']:>7.2f} "
+                        f"{m['max_dd']:>7.2f}")
+
+            print(_erow(m0, 'Yok'))
+            if m1 is not None and m0 is not None:
+                dpnl   = m1['net_pnl']   - m0['net_pnl']
+                dsh    = m1['sharpe']     - m0['sharpe']
+                ddd    = m1['max_dd']     - m0['max_dd']
+                dtrd   = m1['total']      - m0['total']
+                print(_erow(m1, 'EMA-MACD'))
+                sign_pnl = '+' if dpnl >= 0 else ''
+                sign_sh  = '+' if dsh  >= 0 else ''
+                sign_dd  = '+' if ddd  >= 0 else ''
+                sign_tr  = '+' if dtrd >= 0 else ''
+                print(f"  {'':9} {'':7} {'  Δ':<8} "
+                      f"{sign_tr}{dtrd:>3} {'':>6} "
+                      f"{sign_pnl}{dpnl:>+9.2f} {sign_sh}{dsh:>+6.2f} "
+                      f"{sign_dd}{ddd:>+6.2f}")
+            else:
+                print(_erow(m1, 'EMA-MACD'))
+            print("  " + "·" * 70)
+
     print("═" * 90)
 
 

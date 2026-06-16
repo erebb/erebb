@@ -532,6 +532,20 @@ class EMAEngine:
         return df
 
 
+class MACDEngine:
+    """MACD (12, 26, 9) hesabı."""
+
+    @staticmethod
+    def compute(series: pd.Series,
+                fast: int = 12, slow: int = 26,
+                signal: int = 9) -> Tuple[pd.Series, pd.Series, pd.Series]:
+        ema_fast    = series.ewm(span=fast,   adjust=False).mean()
+        ema_slow    = series.ewm(span=slow,   adjust=False).mean()
+        macd_line   = ema_fast - ema_slow
+        signal_line = macd_line.ewm(span=signal, adjust=False).mean()
+        return macd_line, signal_line, macd_line - signal_line
+
+
 class SwingEngine:
     """
     Lookahead-safe fraktal pivot tespiti.
@@ -1858,14 +1872,17 @@ class BacktestEngine:
     def __init__(self, brain: MarketBrain, risk_mgr: RiskManager,
                  initial_capital: float = 10_000,
                  breakeven_at_R: Optional[float] = None,
-                 time_exit_bars: Optional[int] = None):
+                 time_exit_bars: Optional[int] = None,
+                 ema_macd_filter: bool = False):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
         self.breakeven_at_R = breakeven_at_R
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
-        self.time_exit_bars = time_exit_bars
+        self.time_exit_bars   = time_exit_bars
+        # ema_macd_filter: True ise sinyal sonrası 1H EMA9/21 + MACD kontrolü.
+        self.ema_macd_filter  = ema_macd_filter
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
@@ -1912,6 +1929,10 @@ class BacktestEngine:
 
         df1 = df_1h.copy()
         df1['atr'] = IndicatorEngine.atr(df1, 14)
+        df1 = EMAEngine.add(df1, 9, 21)
+        _ml, _ms, _ = MACDEngine.compute(df1['Close'])
+        df1['macd_line']   = _ml
+        df1['macd_signal'] = _ms
 
         # 1H FVG motoru (yüksek-zaman dilimi POI) — wick dokunuş için dar buffer
         fvg1_eng = FVGEngine('1h', min_gap=2.0, max_age_hours=48, buf_ratio=0.02)
@@ -1973,6 +1994,11 @@ class BacktestEngine:
         T1   = df1.index
         atr1 = df1['atr'].values.astype(float)
         t1_ts = np.array([to_naive(t).timestamp() for t in T1])
+        EMA9_1h   = df1['ema9'].values.astype(float)
+        EMA21_1h  = df1['ema21'].values.astype(float)
+        MACD_L_1h = df1['macd_line'].values.astype(float)
+        MACD_S_1h = df1['macd_signal'].values.astype(float)
+        C1_arr    = df1['Close'].values.astype(float)
 
         ob_bull = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bull')
         ob_bear = detect_order_blocks_1h(H1, L1, O1, C1, T1, atr1, 'bear')
@@ -2101,6 +2127,24 @@ class BacktestEngine:
                 else:
                     dbg['no_signal'] += 1
                 continue
+
+            # ── EMA-MACD filtresi (opsiyonel) ─────────────────────────────
+            if self.ema_macd_filter:
+                cur_ts = to_naive(TM[idx]).timestamp()
+                h1_pos = int(np.searchsorted(t1_ts, cur_ts, side='right')) - 1
+                if h1_pos >= 0:
+                    ema9 = EMA9_1h[h1_pos]
+                    ema21 = EMA21_1h[h1_pos]
+                    ml   = MACD_L_1h[h1_pos]
+                    ms   = MACD_S_1h[h1_pos]
+                    c1   = C1_arr[h1_pos]
+                    if signal.direction == 'bull':
+                        ok = (ema9 > ema21) and (c1 > ema9) and (ml > ms)
+                    else:
+                        ok = (ema9 < ema21) and (c1 < ema9) and (ml < ms)
+                    if not ok:
+                        dbg['no_signal'] += 1
+                        continue
 
             # Sinyali ilgili slota yönlendir; dolu slot için atla
             is_prz = 'PRZ' in signal.confirmation_type
