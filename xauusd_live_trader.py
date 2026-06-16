@@ -32,7 +32,7 @@ from xauusd_fvg_engine_v10 import (
     FVG, MSBEvent, TradeSignal, HarmonicSignal,
     FVGEngine, MSB5MEngine, HarmonicEngine,
     MarketBrain, RiskManager,
-    EMAEngine, RSIEngine, IndicatorEngine,
+    EMAEngine, RSIEngine, IndicatorEngine, MACDEngine,
     detect_order_blocks_1h,
     _build_poi_mit_map, to_naive,
 )
@@ -535,6 +535,11 @@ class LiveTrader:
         # 1H göstergeler
         df1 = df_1h.copy()
         df1['atr'] = IndicatorEngine.atr(df1, 14)
+        # EMA9/21 + MACD (none-bias filtresi için)
+        df1 = EMAEngine.add(df1, 9, 21)
+        _ml, _ms, _ = MACDEngine.compute(df1['Close'])
+        df1['macd_line']   = _ml
+        df1['macd_signal'] = _ms
 
         # 1H FVG
         fvg1_eng  = FVGEngine('1h', min_gap=2.0, max_age_hours=48, buf_ratio=0.02)
@@ -626,6 +631,7 @@ class LiveTrader:
             ob1_bull=ob_bull,    ob1_bear=ob_bear,
             mit_ob_bull=mit_ob_bull, mit_ob_bear=mit_ob_bear,
             poi1h_eng=poi1h_eng,
+            df_1h_ind=df1,   # 1H EMA9/21+MACD (none-bias filtresi için)
         )
 
     # ── Sliding-window sinyal ara ─────────────────────────────────────────────
@@ -668,9 +674,39 @@ class LiveTrader:
             )
             # Yalnız son barın sinyalini al
             if idx == end and sig is not None:
+                # None bias → EMA9/21+MACD filtresi (backtest davranışıyla tutarlı)
+                if self.bias_provider is None:
+                    sig = self._apply_ema_macd_filter(sig, ctx)
                 last_signal = sig
 
         return last_signal
+
+    def _apply_ema_macd_filter(self, sig: Optional[TradeSignal],
+                               ctx: dict) -> Optional[TradeSignal]:
+        """None bias'ta EMA9/21+MACD trend filtresi — backtestle tutarlı."""
+        if sig is None:
+            return None
+        import pandas as pd
+        df1 = ctx.get('df_1h_ind')
+        if df1 is None or df1.empty:
+            return sig
+        try:
+            row = df1.iloc[-1]   # en son kapanan 1H bar
+            ema9 = float(row['ema9'])
+            ema21= float(row['ema21'])
+            ml   = float(row['macd_line'])
+            ms   = float(row['macd_signal'])
+            c1   = float(row['Close'])
+        except (KeyError, IndexError):
+            return sig
+        if sig.direction == 'bull':
+            ok = (ema9 > ema21) and (c1 > ema9) and (ml > ms)
+        else:
+            ok = (ema9 < ema21) and (c1 < ema9) and (ml < ms)
+        if not ok:
+            print("  EMA-MACD filtresi → sinyal atlandı")
+            return None
+        return sig
 
     # ── İşlem aç ─────────────────────────────────────────────────────────────
     def _enter_trade(self, signal: TradeSignal,

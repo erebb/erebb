@@ -139,6 +139,7 @@ class TradeSignal:
     fvg5_quality      : float = 0.0
     ema_distance_pct  : float = 0.0
     fib_level         : float = 0.0   # FibRetestBrain: 0.618 retest giriş seviyesi
+    tp_hint           : float = 0.0   # LondonReversalBrain: Asya range karşı taraf TP
 
 
 @dataclass
@@ -1883,6 +1884,8 @@ class BacktestEngine:
         self.time_exit_bars   = time_exit_bars
         # ema_macd_filter: True ise sinyal sonrası 1H EMA9/21 + MACD kontrolü.
         self.ema_macd_filter  = ema_macd_filter
+        # Alt sınıflar brain.evaluate() çağrısına ek kwargs iletmek için kullanır.
+        self._extra_brain_kwargs: dict = {}
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
@@ -2118,6 +2121,7 @@ class BacktestEngine:
                 ob1_bull=ob_bull, ob1_bear=ob_bear,
                 mit_ob_bull=mit_ob_bull, mit_ob_bear=mit_ob_bear,
                 poi1h_eng=poi1h_eng,
+                **self._extra_brain_kwargs,
             )
 
             if signal is None:
@@ -3359,6 +3363,234 @@ class ThreeVolBrain:
         else:
             self.last_skip_reason = 'no_signal'
         return None
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# BÖLÜM 13: LONDON REVERSAL (ICT Judas Swing)
+# ═══════════════════════════════════════════════════════════════════════════
+
+class AsianRangeCalculator:
+    """
+    Her 5M bara karşı en son tamamlanmış Asya seansı (00:00–05:00 UTC) H/L.
+    Asya seans içindeki barlar için bir önceki günün range'i kullanılır → lookahead yok.
+    """
+
+    @staticmethod
+    def compute(df_5m: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+        idx = df_5m.index
+        if hasattr(idx, 'tz') and idx.tz is not None:
+            idx = idx.tz_convert('UTC').tz_localize(None)
+        dt  = pd.DatetimeIndex(idx)
+        H   = df_5m['High'].values.astype(float)
+        L   = df_5m['Low'].values.astype(float)
+        n   = len(df_5m)
+
+        asian_mask = dt.hour < 5   # 00:00–04:59 UTC
+
+        # Günlük Asya H/L sadece Asian-seans barlarından
+        daily_h: dict = {}
+        daily_l: dict = {}
+        for i in range(n):
+            if not asian_mask[i]:
+                continue
+            key = dt[i].strftime('%Y-%m-%d')
+            h_val = float(H[i])
+            l_val = float(L[i])
+            if key not in daily_h or h_val > daily_h[key]:
+                daily_h[key] = h_val
+            if key not in daily_l or l_val < daily_l[key]:
+                daily_l[key] = l_val
+
+        ASIAN_H = np.full(n, np.nan)
+        ASIAN_L = np.full(n, np.nan)
+        for i in range(n):
+            if asian_mask[i]:
+                # Asya seansı içindeyken önceki günün range'i
+                key = (dt[i] - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+            else:
+                key = dt[i].strftime('%Y-%m-%d')
+            if key in daily_h:
+                ASIAN_H[i] = daily_h[key]
+                ASIAN_L[i] = daily_l[key]
+
+        return ASIAN_H, ASIAN_L
+
+
+class LondonReversalBrain:
+    """
+    ICT Judas Swing: London açılışında Asya range H/L süpürülür → 5M MSB ile dönüş.
+
+    Akış:
+      1. Şu an London seansı mı?
+      2. Son MAX_SWEEP_BARS içinde H > asian_high (bear) veya L < asian_low (bull) var mı?
+      3. Aynı barda MSB ters yönde onaylandı mı?
+      4. SL = süpürme wick ucu; TP = Asya range karşı tarafı (min 2R garantisi yoktur
+         → LondonBacktestEngine._make_entry_trade() 2R'ı zorlar)
+    """
+
+    MAX_SWEEP_BARS = 4   # süpürme barından bu kadar bar içinde MSB gelmeli
+
+    def __init__(self, bias_provider=None):
+        self.bias             = bias_provider
+        self.last_skip_reason: Optional[str] = None
+        self.used_fvg_ids: set = set()          # arayüz uyumu için (kullanılmaz)
+        self.pending: Dict[str, list] = {'bull': [], 'bear': []}
+        self._session = SessionFilter()
+
+    def evaluate(self, idx: int,
+                 C: np.ndarray, O: np.ndarray,
+                 H: np.ndarray, L: np.ndarray,
+                 E100: np.ndarray, E200: np.ndarray,
+                 TM: pd.Index,
+                 msb_events_bull: List[MSBEvent],
+                 msb_events_bear: List[MSBEvent],
+                 asian_high: Optional[np.ndarray] = None,
+                 asian_low:  Optional[np.ndarray] = None,
+                 ATR: Optional[np.ndarray] = None,
+                 RSI: Optional[np.ndarray] = None,
+                 **_) -> Optional[TradeSignal]:
+
+        self.last_skip_reason = None
+        t = to_naive(TM[idx])
+
+        # Asya range dizileri gelmemişse atla
+        if asian_high is None or asian_low is None:
+            self.last_skip_reason = 'no_asian'
+            return None
+
+        ah = float(asian_high[idx])
+        al = float(asian_low[idx])
+        if np.isnan(ah) or np.isnan(al):
+            self.last_skip_reason = 'no_asian'
+            return None
+
+        # London seansı filtresi
+        if not self._session.is_london_session(t) or self._session.is_holiday(t):
+            self.last_skip_reason = 'no_session'
+            return None
+
+        weekly_dir = self.bias.get(t) if self.bias is not None else None
+        if self.bias is not None and weekly_dir is None:
+            self.last_skip_reason = 'no_bias'
+            return None
+
+        signal_candidate: Optional[TradeSignal] = None
+
+        for direction in ('bull', 'bear'):
+            if self.bias is not None and weekly_dir != direction:
+                continue
+
+            events = msb_events_bull if direction == 'bull' else msb_events_bear
+
+            # MSB bu barda onaylandı mı?
+            msb_now = next((e for e in events if e.confirm_idx == idx), None)
+            if msb_now is None:
+                continue
+
+            # Son MAX_SWEEP_BARS içinde sweep var mı?
+            sweep_stop: Optional[float] = None
+            sweep_tp:   Optional[float] = None
+            lo = max(0, idx - self.MAX_SWEEP_BARS)
+            for look in range(lo, idx + 1):
+                if direction == 'bull' and float(L[look]) < al:
+                    sweep_stop = float(L[look])
+                    sweep_tp   = float(ah)
+                    break
+                elif direction == 'bear' and float(H[look]) > ah:
+                    sweep_stop = float(H[look])
+                    sweep_tp   = float(al)
+                    break
+
+            if sweep_stop is None:
+                continue
+
+            sig = TradeSignal(
+                entry_time        = TM[idx],
+                direction         = direction,
+                trigger_fvg       = None,
+                confirmation_type = 'LONDON-REV',
+                confidence        = 72.0,
+                msb_type          = msb_now.msb_type,
+                confluence_count  = 1,
+                stop_price        = sweep_stop,
+                risk_fraction     = 0.005,
+                tp_hint           = sweep_tp,
+            )
+            if signal_candidate is None:
+                signal_candidate = sig
+
+        if signal_candidate is None:
+            self.last_skip_reason = 'no_signal'
+        return signal_candidate
+
+
+class LondonBacktestEngine(BacktestEngine):
+    """
+    LondonReversalBrain için özel engine.
+    Asya range dizilerini hesaplar → brain.evaluate()'a iletir.
+    TP = Asya range karşı tarafı (min 2R); yoksa sabit 1:2 RR.
+    """
+
+    def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
+            backtest_start: datetime) -> List[Trade]:
+        ASIAN_H, ASIAN_L = AsianRangeCalculator.compute(df_5m)
+        self._extra_brain_kwargs = {'asian_high': ASIAN_H, 'asian_low': ASIAN_L}
+        result = super().run(df_1h, df_5m, backtest_start)
+        self._extra_brain_kwargs = {}
+        return result
+
+    def _make_entry_trade(self, signal: TradeSignal, idx: int,
+                          O: np.ndarray, equity: float, trade_id: int,
+                          fvg1_bull=None, fvg1_bear=None,
+                          mit1_bull=None, mit1_bear=None,
+                          fvg1_eng=None,
+                          H1=None, L1=None, ATR1=None,
+                          T1: Optional[np.ndarray] = None) -> Optional[Trade]:
+        if signal.tp_hint == 0.0:
+            return super()._make_entry_trade(
+                signal, idx, O, equity, trade_id,
+                fvg1_bull=fvg1_bull, fvg1_bear=fvg1_bear,
+                mit1_bull=mit1_bull, mit1_bear=mit1_bear,
+                fvg1_eng=fvg1_eng, H1=H1, L1=L1, ATR1=ATR1, T1=T1,
+            )
+
+        entry     = float(O[idx + 1])
+        direction = signal.direction
+        buf       = self.risk.sl_buffer
+
+        if direction == 'bull':
+            sl_raw   = signal.stop_price * (1.0 - buf)
+            risk_per = max(entry - sl_raw, 0.01)
+        else:
+            sl_raw   = signal.stop_price * (1.0 + buf)
+            risk_per = max(sl_raw - entry, 0.01)
+
+        tp_override = None
+        asian_tp = signal.tp_hint
+        if direction == 'bull' and asian_tp > entry:
+            rr = (asian_tp - entry) / risk_per
+            tp_override = asian_tp if rr >= 2.0 else entry + 2.0 * risk_per
+        elif direction == 'bear' and asian_tp < entry:
+            rr = (entry - asian_tp) / risk_per
+            tp_override = asian_tp if rr >= 2.0 else entry - 2.0 * risk_per
+
+        r = self.risk.compute(direction, entry, signal.stop_price, equity,
+                              signal.risk_fraction, tp_override=tp_override)
+        if r is None:
+            return None
+        return Trade(
+            trade_id      = trade_id,
+            signal        = signal,
+            entry_price   = round(entry, 2),
+            sl            = r['sl'],
+            tp            = r['tp'],
+            risk          = r['risk'],
+            risk_pct      = r['risk_pct'],
+            risk_dollar   = r['risk_dollar'],
+            rr            = self.risk.rr,
+            risk_fraction = r['risk_fraction'],
+            entry_bar_idx = idx,
+        )
 
 
 if __name__ == '__main__':

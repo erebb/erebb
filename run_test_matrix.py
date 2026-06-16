@@ -16,7 +16,7 @@ from pathlib import Path
 from xauusd_fvg_engine_v10 import (
     DataEngine, MarketBrain, RiskManager, BacktestEngine,
     PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
-    ThreeVolBrain,
+    ThreeVolBrain, LondonReversalBrain, LondonBacktestEngine,
 )
 
 INITIAL_CAPITAL = 10_000
@@ -76,6 +76,23 @@ def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=None, emf=Fa
                                   breakeven_at_R=be,
                                   time_exit_bars=tbe,
                                   ema_macd_filter=emf)
+        trades   = engine.run(df_1h, df_5m, bt_start)
+        analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
+        metrics   = analytics.compute()
+    return trades, metrics
+
+
+def run_one_london(df_1h, df_5m, bt_start, bias_mode, be, tbe=None, emf=False):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        bias_provider = make_bias(bias_mode, df_1h)
+        brain    = LondonReversalBrain(bias_provider=bias_provider)
+        risk_mgr = RiskManager(rr=2.0, sl_buffer=0.0005)
+        engine   = LondonBacktestEngine(brain, risk_mgr,
+                                        initial_capital=INITIAL_CAPITAL,
+                                        breakeven_at_R=be,
+                                        time_exit_bars=tbe,
+                                        ema_macd_filter=emf)
         trades   = engine.run(df_1h, df_5m, bt_start)
         analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
         metrics   = analytics.compute()
@@ -361,6 +378,76 @@ def main():
             else:
                 print(_erow(m1, 'EMA-MACD'))
             print("  " + "·" * 70)
+
+    print("═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM H: London Reversal (ICT Judas Swing) — ilk backtest
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM H — LONDON REVERSAL (ICT Judas Swing)  │  TBE:Yok  │  3 BİAS  =  3 TEST")
+    print("  Giriş: London açılışı Asya H/L süpürme → 5M MSB → ters yön")
+    print("  TP: Asya range karşı tarafı (≥2R) veya sabit 1:2 RR")
+    print("═" * 90)
+
+    results_h = []
+    for bias_mode in BIAS_MODES:
+        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 60)
+        print(_header())
+        print("  " + "─" * 76)
+        trades_h, m = run_one_london(df_1h, df_5m, bt_start, bias_mode, be=None)
+        if m is None:
+            print(f"  {bias_mode:<8} {'adaptive':<11} {'— tamamlanan işlem yok —':>50}")
+            continue
+        row = dict(bias=bias_mode, rr='adaptive',
+                   total=m['total'], wins=m['wins'], losses=m['losses'],
+                   be=m['breakeven'], wr=m['win_rate'] * 100,
+                   pnl=m['net_pnl'], ret=m['ret_pct'],
+                   pf=m['profit_factor'], sharpe=m['sharpe'],
+                   maxdd=m['max_dd'])
+        results_h.append(row)
+        _print_row(row)
+
+    print("\n" + "═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM H-E: London Reversal × EMA-MACD Filtresi karşılaştırması
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM H-E — LONDON REVERSAL × EMA-MACD FİLTRESİ  │  TBE:Yok  │  3 bias")
+    print("  NOT: Reversal karşı-trend → trend filtresi olumsuz etki yapabilir")
+    print("═" * 90)
+    print(f"\n  {'Strateji':<12} {'Bias':<7} {'Filtre':<8} "
+          f"{'İŞL':>4} {'WR%':>6} {'PnL$':>10} {'Sharpe':>7} {'MaxDD%':>7}")
+    print("  " + "─" * 70)
+
+    for bias in BIAS_MODES:
+        _, m0 = run_one_london(df_1h, df_5m, bt_start, bias, be=None, emf=False)
+        _, m1 = run_one_london(df_1h, df_5m, bt_start, bias, be=None, emf=True)
+
+        def _hrow(m, lbl):
+            if m is None:
+                return f"  {'LR':<12} {bias:<7} {lbl:<8} {'—':>4}"
+            return (f"  {'LR':<12} {bias:<7} {lbl:<8} "
+                    f"{m['total']:>4} {m['win_rate']*100:>6.1f} "
+                    f"{m['net_pnl']:>+10.2f} {m['sharpe']:>7.2f} "
+                    f"{m['max_dd']:>7.2f}")
+
+        print(_hrow(m0, 'Yok'))
+        if m1 is not None and m0 is not None:
+            dpnl = m1['net_pnl'] - m0['net_pnl']
+            dsh  = m1['sharpe']  - m0['sharpe']
+            ddd  = m1['max_dd']  - m0['max_dd']
+            dtrd = m1['total']   - m0['total']
+            print(_hrow(m1, 'EMA-MACD'))
+            print(f"  {'':12} {'':7} {'  Δ':<8} "
+                  f"{'+' if dtrd>=0 else ''}{dtrd:>3} {'':>6} "
+                  f"{'+' if dpnl>=0 else ''}{dpnl:>+9.2f} "
+                  f"{'+' if dsh>=0 else ''}{dsh:>+6.2f} "
+                  f"{'+' if ddd>=0 else ''}{ddd:>+6.2f}")
+        else:
+            print(_hrow(m1, 'EMA-MACD'))
+        print("  " + "·" * 70)
 
     print("═" * 90)
 
