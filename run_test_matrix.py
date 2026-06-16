@@ -193,15 +193,19 @@ def main():
     tbe_a = OPTIMAL_TBE['fvg']
     print("\n" + "═" * 78)
     print(f"  BÖLÜM A — FVG v10 STRATEJİSİ  │  {_tbe_label(tbe_a)}  │  3 BİAS × 3 RR  =  9 TEST")
+    print("  (NONE bias → EMA9/21+MACD filtresi aktif)")
     print("═" * 78)
 
     results_a = []
     for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
+        emf = (bias_mode == 'none')
+        print(f"\n  ── BİAS: {bias_mode.upper()} " +
+              ("│ EMA-MACD " if emf else "") + "─" * 50)
         print(_header())
         print("  " + "─" * 76)
         for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=tbe_a)
+            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
+                                tbe=tbe_a, emf=emf)
             if m is None:
                 print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
@@ -221,15 +225,19 @@ def main():
     print("\n" + "═" * 78)
     print(f"  BÖLÜM C — THREE_VOL DOĞRUDAN  │  {_tbe_label(tbe_c)}  │  3 BİAS × 3 RR  =  9 TEST")
     print("  (Giriş: three_vol onay barında, FVG/POI dokunuşu yok)")
+    print("  (NONE bias → EMA9/21+MACD filtresi aktif)")
     print("═" * 78)
 
     results_c = []
     for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
+        emf = (bias_mode == 'none')
+        print(f"\n  ── BİAS: {bias_mode.upper()} " +
+              ("│ EMA-MACD " if emf else "") + "─" * 50)
         print(_header())
         print("  " + "─" * 76)
         for rr_label, rr, be in RR_CONFIGS:
-            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=tbe_c)
+            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be,
+                                         tbe=tbe_c, emf=emf)
             if m is None:
                 print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
@@ -249,16 +257,19 @@ def main():
     print("\n" + "═" * 78)
     print(f"  BÖLÜM G — HARMONİK PRZ ONLY  │  {_tbe_label(tbe_g)}  │  3 BİAS × 3 RR  =  9 TEST")
     print("  (Giriş: 5M harmonik PRZ dokunuşu + 5M MSB, FVG filtresi yok)")
+    print("  (NONE bias → EMA9/21+MACD filtresi aktif)")
     print("═" * 78)
 
     results_g = []
     for bias_mode in BIAS_MODES:
-        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 55)
+        emf = (bias_mode == 'none')
+        print(f"\n  ── BİAS: {bias_mode.upper()} " +
+              ("│ EMA-MACD " if emf else "") + "─" * 50)
         print(_header())
         print("  " + "─" * 76)
         for rr_label, rr, be in RR_CONFIGS:
             trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
-                                poi_mode='prz', tbe=tbe_g)
+                                poi_mode='prz', tbe=tbe_g, emf=emf)
             if m is None:
                 print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
                 continue
