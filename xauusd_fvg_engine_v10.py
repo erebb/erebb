@@ -329,6 +329,91 @@ class DailyBiasProvider:
         return out
 
 
+class PrivateBiasProvider:
+    """
+    GARCH-benzeri otomatik rejim tespiti (saf numpy, lookahead yok).
+
+    Algoritma:
+      1. 1H log returns → EWMA varyans σ²_t = λ·σ²_{t-1} + (1-λ)·r²_t  (λ=0.94)
+      2. Genişleyen medyan σ²_median[t] → trending: σ²_t > σ²_median × VOL_MULT
+         ranging piyasa → None döndür  ← bu zaten rejim filtresidir
+      3. Trend yönü: EMA21 > EMA55 → 'bull'; EMA21 < EMA55 → 'bear'
+      4. Her gün: London öncesi son 1H bar (hour < 7 UTC) değerlendirmesi
+
+    Döndür: 'bull' | 'bear' | None
+    """
+
+    VOL_LAMBDA = 0.94    # EWMA decay (RiskMetrics standardı)
+    VOL_MULT   = 1.20    # σ²_t > medyan × bu oran → trending
+    EMA_FAST   = 21      # 1H EMA hızlı
+    EMA_SLOW   = 55      # 1H EMA yavaş
+
+    def __init__(self, df_1h: pd.DataFrame):
+        self._data: Dict[str, Optional[str]] = {}
+        self._build(df_1h)
+
+    def _build(self, df_1h: pd.DataFrame) -> None:
+        df = df_1h.copy()
+        df.index = pd.to_datetime(df.index, utc=True)
+        close = df['Close'].values.astype(float)
+        n = len(close)
+        if n < self.EMA_SLOW + 10:
+            return
+
+        # 1. Log returns (causal: r[i] = log(C[i]/C[i-1]))
+        ret = np.empty(n)
+        ret[0] = 0.0
+        prev = np.where(close[:-1] > 0, close[:-1], 1e-10)
+        ret[1:] = np.log(np.where(close[1:] > 0, close[1:], 1e-10) / prev)
+
+        # 2. EWMA variance (lookahead yok: yalnızca geçmiş barlar)
+        lam = self.VOL_LAMBDA
+        ewma_var = np.empty(n)
+        ewma_var[0] = ret[0] ** 2
+        for i in range(1, n):
+            ewma_var[i] = lam * ewma_var[i - 1] + (1.0 - lam) * ret[i] ** 2
+
+        # 3. Genişleyen medyan (lookahead yok: her bar için yalnızca [0..i] kullanılır)
+        var_series = pd.Series(ewma_var)
+        var_median = var_series.expanding(min_periods=self.EMA_SLOW).median().values
+
+        # 4. EMA21 / EMA55 (adjust=False → causal / geçmişe dayalı)
+        close_s = pd.Series(close, index=df.index)
+        ema_fast = close_s.ewm(span=self.EMA_FAST, adjust=False).mean().values
+        ema_slow = close_s.ewm(span=self.EMA_SLOW, adjust=False).mean().values
+
+        # 5. Her gün için London öncesi son bar (hour < 7 UTC)
+        dt_naive = np.array([to_naive(ts) for ts in df.index])
+        daily_last_idx: Dict[str, int] = {}
+        for i in range(n):
+            t = dt_naive[i]
+            if t.hour < 7:
+                key = t.strftime('%Y-%m-%d')
+                daily_last_idx[key] = i   # aynı gün içinde en son pre-London bar
+
+        # 6. Etiketleme
+        for date_str, bi in daily_last_idx.items():
+            med = var_median[bi]
+            if np.isnan(med) or med <= 0:
+                continue
+            trending = ewma_var[bi] > med * self.VOL_MULT
+            if not trending:
+                continue   # ranging → None (rejim filtresi)
+            ef = ema_fast[bi]
+            es = ema_slow[bi]
+            if np.isnan(ef) or np.isnan(es):
+                continue
+            if ef > es:
+                self._data[date_str] = 'bull'
+            elif ef < es:
+                self._data[date_str] = 'bear'
+            # ef == es → eşit → bias yok
+
+    def get(self, dt) -> Optional[str]:
+        key = to_naive(dt).strftime('%Y-%m-%d')
+        return self._data.get(key)   # 'bull' | 'bear' | None
+
+
 # ═══════════════════════════════════════════════════════════════════════════
 # BÖLÜM 2: VERİ ENGİNİ
 # ═══════════════════════════════════════════════════════════════════════════
@@ -2296,6 +2381,28 @@ class PerformanceAnalytics:
             'drawdown'      : dd,
         }
 
+    def monte_carlo(self, n_sim: int = 10_000, ruin_dd: float = 20.0) -> Optional[Dict]:
+        """10k trade-sırası karıştırma ile MaxDD dağılımını hesaplar."""
+        pnls = np.array([t.pnl_dollar for t in self.done])
+        if len(pnls) < 5:
+            return None
+        rng = np.random.default_rng(42)
+        max_dds = np.empty(n_sim)
+        for i in range(n_sim):
+            shuffled = pnls[rng.permutation(len(pnls))]
+            eq = self.capital + np.cumsum(shuffled)
+            pk = np.maximum.accumulate(eq)
+            max_dds[i] = ((pk - eq) / (pk + 1e-10) * 100.0).max()
+        return {
+            'p50_maxdd': float(np.percentile(max_dds, 50)),
+            'p95_maxdd': float(np.percentile(max_dds, 95)),
+            'p99_maxdd': float(np.percentile(max_dds, 99)),
+            'ruin_pct' : float((max_dds > ruin_dd).mean() * 100.0),
+            'n_trades' : int(len(pnls)),
+            'n_sim'    : n_sim,
+            'ruin_dd'  : ruin_dd,
+        }
+
     def print_report(self, m: Dict):
         SEP = "═" * 65
         entry_times = [to_naive(t.signal.entry_time) for t in self.done]
@@ -2434,6 +2541,15 @@ class PerformanceAnalytics:
             wr_pct = wr_w / cnt * 100 if cnt else 0
             print(f"  {str(week.date())} : {cnt:2d} işlem | "
                   f"${sign}{s:>+7.0f} | %{wr_pct:.0f} WR | {bar}")
+
+        # Monte Carlo
+        mc = self.monte_carlo()
+        if mc:
+            print(f"\n  ── MONTE CARLO ({mc['n_sim']:,} simülasyon │ {mc['n_trades']} işlem) ────────────────────")
+            print(f"  Medyan MaxDD       : %{mc['p50_maxdd']:.2f}")
+            print(f"  P95 MaxDD          : %{mc['p95_maxdd']:.2f}  ← tipik kötü senaryo")
+            print(f"  P99 MaxDD          : %{mc['p99_maxdd']:.2f}  ← ekstrem senaryo")
+            print(f"  Çöküş ihtimali     : %{mc['ruin_pct']:.1f}  (MaxDD>%{mc['ruin_dd']:.0f})")
 
         print(f"\n{SEP}")
 

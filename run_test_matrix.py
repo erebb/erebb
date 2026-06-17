@@ -13,10 +13,15 @@ import io
 import contextlib
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
 from xauusd_fvg_engine_v10 import (
     DataEngine, MarketBrain, RiskManager, BacktestEngine,
     PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
+    PrivateBiasProvider,
     ThreeVolBrain, LondonReversalBrain, LondonBacktestEngine,
+    to_naive,
 )
 
 INITIAL_CAPITAL = 10_000
@@ -27,7 +32,7 @@ RR_CONFIGS = [
     ('1:2 fix',   2.0, None),
 ]
 
-BIAS_MODES = ['weekly', 'daily', 'none']
+BIAS_MODES = ['weekly', 'daily', 'none', 'private']
 
 TBE_OPTIONS = [
     ('Yok',    None),
@@ -44,6 +49,8 @@ def make_bias(mode, df_1h):
         if not Path('daily_bias.json').exists():
             DailyBiasProvider.build_from_1h(df_1h, 'daily_bias.json')
         return DailyBiasProvider('daily_bias.json')
+    if mode == 'private':
+        return PrivateBiasProvider(df_1h)
     return WeeklyBiasProvider('weekly_bias.json')
 
 
@@ -450,6 +457,121 @@ def main():
         print("  " + "·" * 70)
 
     print("═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM W: Walk-Forward Analizi (IS:3ay optimize → OOS:1ay kör test)
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM W — WALK-FORWARD ANALİZİ  │  IS:3ay  OOS:1ay  │  FVG Strateji")
+    print("═" * 90)
+
+    wfa_rows = run_wfa(df_1h, df_5m, bt_start)
+    if not wfa_rows:
+        print("  WFA için yeterli veri yok.")
+    else:
+        hdr = (f"  {'#':<3} {'IS Dönemi':<20} {'OOS Dönemi':<16} "
+               f"{'En İyi IS Cfg':<16} {'OOS İşl':>7} {'OOS WR%':>8} {'OOS PnL$':>11}")
+        print(hdr)
+        print("  " + "─" * 83)
+        cum_pnl = 0.0
+        wr_list = []
+        for r in wfa_rows:
+            is_lbl  = f"{r['is_s'].strftime('%Y-%m')}→{r['is_e'].strftime('%Y-%m')}"
+            oos_lbl = f"{r['is_e'].strftime('%Y-%m')}→{r['oos_e'].strftime('%Y-%m')}"
+            m       = r['oos_m']
+            if m and m['total'] > 0:
+                cum_pnl += m['net_pnl']
+                wr_list.append(m['win_rate'] * 100)
+                print(f"  {r['window']:<3} {is_lbl:<20} {oos_lbl:<16} "
+                      f"{r['cfg']:<16} {m['total']:>7} {m['win_rate']*100:>7.1f}% "
+                      f"{m['net_pnl']:>+11.2f}")
+            else:
+                print(f"  {r['window']:<3} {is_lbl:<20} {oos_lbl:<16} "
+                      f"{r['cfg']:<16} {'—':>7}")
+        print("  " + "─" * 83)
+        avg_wr = sum(wr_list) / len(wr_list) if wr_list else 0.0
+        print(f"  OOS Kümülatif PnL: ${cum_pnl:>+9.2f}  │  Ort OOS WR: {avg_wr:.1f}%")
+
+    print("═" * 90)
+
+
+def run_wfa(df_1h, df_5m, bt_start,
+            in_months: int = 3, out_months: int = 1, n_windows: int = 4):
+    """
+    Rolling Walk-Forward Analizi:
+      IS: in_months veri üzerinde bias×RR optimizasyonu (max Sharpe×(1-MaxDD))
+      OOS: IS'te seçilen konfigürasyonla gizli veriler üzerinde kör test
+    Lookahead yok: IS ve OOS dönemleri hiçbir zaman çakışmaz.
+    """
+    bt_ts = to_naive(pd.Timestamp(bt_start, tz='UTC'))
+
+    bias_list  = ['weekly', 'daily', 'none', 'private']
+    rr_configs = [(1.0, None), (2.0, 1.0), (2.0, None)]
+
+    def _filter(trades, s, e):
+        return [t for t in trades
+                if s <= to_naive(t.signal.entry_time) < e]
+
+    results = []
+
+    for w in range(n_windows):
+        is_s  = bt_ts + pd.DateOffset(months=w * out_months)
+        is_e  = bt_ts + pd.DateOffset(months=w * out_months + in_months)
+        oos_e = bt_ts + pd.DateOffset(months=w * out_months + in_months + out_months)
+
+        df5_last = to_naive(df_5m.index[-1])
+        if oos_e > df5_last:
+            break
+
+        # ── IS optimizasyonu ──────────────────────────────────────────────────
+        best_score = -np.inf
+        best_cfg   = None
+        best_is_m  = None
+
+        for bm in bias_list:
+            for (rr, be) in rr_configs:
+                try:
+                    all_tr, _ = run_one(df_1h, df_5m,
+                                        is_s.strftime('%Y-%m-%d'), bm, rr, be)
+                    is_tr = _filter(all_tr, is_s, is_e)
+                    if len(is_tr) < 3:
+                        continue
+                    m = PerformanceAnalytics(is_tr, INITIAL_CAPITAL).compute()
+                    if m is None:
+                        continue
+                    score = m['sharpe'] * (1.0 - m['max_dd'] / 100.0)
+                    if score > best_score:
+                        best_score = score
+                        best_cfg   = (bm, rr, be)
+                        best_is_m  = m
+                except Exception:
+                    continue
+
+        if best_cfg is None:
+            continue
+
+        # ── OOS kör testi ─────────────────────────────────────────────────────
+        bm, rr, be = best_cfg
+        cfg_lbl = f"{bm}/{rr:.0f}:{'BE' if be else 'fix'}"
+        try:
+            all_tr_oos, _ = run_one(df_1h, df_5m,
+                                    is_e.strftime('%Y-%m-%d'), bm, rr, be)
+            oos_tr = _filter(all_tr_oos, is_e, oos_e)
+            m_oos  = PerformanceAnalytics(oos_tr, INITIAL_CAPITAL).compute() \
+                     if oos_tr else None
+        except Exception:
+            m_oos = None
+
+        results.append({
+            'window': w + 1,
+            'is_s' : is_s, 'is_e': is_e, 'oos_e': oos_e,
+            'cfg'  : cfg_lbl,
+            'score': best_score,
+            'is_m' : best_is_m,
+            'oos_m': m_oos,
+        })
+
+    return results
 
 
 if __name__ == '__main__':
