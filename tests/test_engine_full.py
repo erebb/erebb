@@ -1,9 +1,12 @@
 """
 test_engine_full.py — Kalan tüm modüller için testler
 =======================================================
-test_engine.py ile birlikte çalıştır:
-  pytest test_engine.py test_engine_full.py -v
+Çalıştır: pytest tests/test_engine.py tests/test_engine_full.py -v
 """
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import contextlib
 import io

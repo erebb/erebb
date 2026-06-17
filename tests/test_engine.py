@@ -1,8 +1,12 @@
 """
 test_engine.py — XAUUSD FVG Engine v10 kapsamlı test paketi
 ============================================================
-Çalıştır: pytest test_engine.py -v
+Çalıştır: pytest tests/test_engine.py -v
 """
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import contextlib
 import io

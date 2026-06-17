@@ -6,12 +6,15 @@ BÖLÜM A: FVG v10 (optimal TBE)    — 3 BİAS × 3 RR = 9 test
 BÖLÜM C: Three_vol (optimal TBE)  — 3 BİAS × 3 RR = 9 test
 BÖLÜM G: PRZ Only (optimal TBE)   — 3 BİAS × 3 RR = 9 test
 
-Kullanım: python3 run_test_matrix.py
+Kullanım: python3 scripts/run_test_matrix.py
 """
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import io
 import contextlib
-from pathlib import Path
 
 import numpy as np
 import pandas as pd

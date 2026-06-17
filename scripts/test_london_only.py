@@ -1,5 +1,7 @@
 """Quick London Reversal backtest only (BÖLÜM H + H-E)."""
+import sys
 from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from xauusd_fvg_engine_v10 import (
     DataEngine, RiskManager, PerformanceAnalytics,
     WeeklyBiasProvider, DailyBiasProvider,
