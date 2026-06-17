@@ -139,8 +139,7 @@ class TradeSignal:
     fvg5_quality      : float = 0.0
     ema_distance_pct  : float = 0.0
     fib_level         : float = 0.0   # FibRetestBrain: 0.618 retest giriş seviyesi
-    tp_hint           : float = 0.0   # LondonReversalBrain: Asya range karşı taraf TP
-    tp_mid_hint       : float = 0.0   # LondonReversalBrain: Asya range orta noktası (Equilibrium)
+    tp_hint           : float = 0.0   # LondonReversalBrain: Asya range karşı taraf TP (tek hedef)
 
 
 @dataclass
@@ -3642,7 +3641,6 @@ class LondonReversalBrain:
         close_c = float(C[idx])
         low_c   = float(L[idx])
         high_c  = float(H[idx])
-        asian_mid = (ah + al) / 2.0   # Equilibrium = TP1 hedefi
 
         # ── Sweep+rejection tespiti → direkt sinyal (pending yok) ────────────
         # Giriş bar'ı kapandığında sinyal → sonraki bar'ın açılışında giriş (lookahead yok)
@@ -3670,10 +3668,9 @@ class LondonReversalBrain:
                     confidence        = 75.0,
                     msb_type          = 'london_sweep',
                     confluence_count  = 1,
-                    stop_price        = low_c,      # SL = wick ucu (lookahead yok)
+                    stop_price        = low_c,   # SL = wick ucu (lookahead yok)
                     risk_fraction     = 0.005,
-                    tp_hint           = ah,         # TP2 = Asya yüksek (opposite)
-                    tp_mid_hint       = asian_mid,  # TP1 = Equilibrium
+                    tp_hint           = ah,      # TP = Asya yüksek (tek hedef, min 2R zorunlu)
                 )
 
             else:  # bear
@@ -3694,10 +3691,9 @@ class LondonReversalBrain:
                     confidence        = 75.0,
                     msb_type          = 'london_sweep',
                     confluence_count  = 1,
-                    stop_price        = high_c,     # SL = wick ucu
+                    stop_price        = high_c,  # SL = wick ucu
                     risk_fraction     = 0.005,
-                    tp_hint           = al,         # TP2 = Asya düşük (opposite)
-                    tp_mid_hint       = asian_mid,  # TP1 = Equilibrium
+                    tp_hint           = al,      # TP = Asya düşük (tek hedef, min 2R zorunlu)
                 )
 
             if signal_candidate is None:
@@ -3714,8 +3710,12 @@ class LondonBacktestEngine(BacktestEngine):
     """
     LondonReversalBrain için özel engine.
     Asya range dizilerini hesaplar → brain.evaluate()'a iletir.
-    TP = Asya range karşı tarafı (min 2R); yoksa sabit 1:2 RR.
+    TP = Asya range karşı tarafı (tek hedef). RR < 2.0 → işlem reddedilir.
     """
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rr_reject_count = 0   # yetersiz RR nedeniyle reddedilen işlem sayısı
 
     def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
             backtest_start: datetime) -> List[Trade]:
@@ -3744,45 +3744,26 @@ class LondonBacktestEngine(BacktestEngine):
         direction = signal.direction
         buf       = self.risk.sl_buffer
 
-        if direction == 'bull':
-            sl_raw   = signal.stop_price * (1.0 - buf)
-            risk_per = max(entry - sl_raw, 0.01)
-        else:
-            sl_raw   = signal.stop_price * (1.0 + buf)
-            risk_per = max(sl_raw - entry, 0.01)
+        # ICT Judas Swing TP kuralı:
+        #   TP = Asya range karşı sınırı (tek ve değişmez hedef)
+        #   RR < 2.0 → işlemi tamamen reddet (fallback yok)
+        tp = signal.tp_hint   # bull: Asya yüksek; bear: Asya düşük
 
-        # TP priority: asian_opposite (≥2R) > asian_mid/equilibrium (≥1.5R) > 1:2 RR
-        # Hard cap: maksimum 1:3 RR (Asya range çok geniş olunca sınırla)
-        MAX_RR = 3.0
-        asian_opp = signal.tp_hint      # TP2: Asya range karşı tarafı
-        asian_mid = signal.tp_mid_hint  # TP1: Equilibrium (orta nokta)
         if direction == 'bull':
-            rr_opp = (asian_opp - entry) / risk_per if asian_opp > entry else 0.0
-            rr_mid = (asian_mid - entry) / risk_per if asian_mid > entry else 0.0
-            if rr_opp >= 2.0:
-                tp_override = asian_opp
-            elif rr_mid >= 1.5:
-                tp_override = asian_mid
-            else:
-                tp_override = entry + 2.0 * risk_per
-            # Kap: max 3R
-            tp_override = min(tp_override, entry + MAX_RR * risk_per)
-        elif direction == 'bear':
-            rr_opp = (entry - asian_opp) / risk_per if asian_opp < entry else 0.0
-            rr_mid = (entry - asian_mid) / risk_per if asian_mid < entry else 0.0
-            if rr_opp >= 2.0:
-                tp_override = asian_opp
-            elif rr_mid >= 1.5:
-                tp_override = asian_mid
-            else:
-                tp_override = entry - 2.0 * risk_per
-            # Kap: max 3R
-            tp_override = max(tp_override, entry - MAX_RR * risk_per)
+            sl_raw    = signal.stop_price * (1.0 - buf)
+            risk_per  = max(entry - sl_raw, 0.01)
+            actual_rr = (tp - entry) / risk_per
         else:
-            tp_override = None
+            sl_raw    = signal.stop_price * (1.0 + buf)
+            risk_per  = max(sl_raw - entry, 0.01)
+            actual_rr = (entry - tp) / risk_per
+
+        if actual_rr < 2.0:
+            self.rr_reject_count += 1
+            return None   # Asya hedefi yetersiz RR → işlem açılmaz
 
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
-                              signal.risk_fraction, tp_override=tp_override)
+                              signal.risk_fraction, tp_override=tp)
         if r is None:
             return None
         return Trade(
@@ -3794,7 +3775,7 @@ class LondonBacktestEngine(BacktestEngine):
             risk          = r['risk'],
             risk_pct      = r['risk_pct'],
             risk_dollar   = r['risk_dollar'],
-            rr            = self.risk.rr,
+            rr            = actual_rr,
             risk_fraction = r['risk_fraction'],
             entry_bar_idx = idx,
         )
