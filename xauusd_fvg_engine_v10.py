@@ -3436,6 +3436,8 @@ class LondonReversalBrain:
         self.used_fvg_ids: set = set()          # arayüz uyumu için (kullanılmaz)
         self.pending: Dict[str, list] = {'bull': [], 'bear': []}
         self._session = SessionFilter()
+        self.stats = dict(no_session=0, no_asian=0, no_sweep=0,
+                          no_msb=0, step1_fail=0, step2_fail=0, step3_fail=0)
 
     def evaluate(self, idx: int,
                  C: np.ndarray, O: np.ndarray,
