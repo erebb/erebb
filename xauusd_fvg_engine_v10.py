@@ -3636,7 +3636,8 @@ class LondonBacktestEngine(BacktestEngine):
             risk_per = max(sl_raw - entry, 0.01)
 
         # TP priority: asian_opposite (≥2R) > asian_mid/equilibrium (≥1.5R) > 1:2 RR
-        tp_override = None
+        # Hard cap: maksimum 1:3 RR (Asya range çok geniş olunca sınırla)
+        MAX_RR = 3.0
         asian_opp = signal.tp_hint      # TP2: Asya range karşı tarafı
         asian_mid = signal.tp_mid_hint  # TP1: Equilibrium (orta nokta)
         if direction == 'bull':
@@ -3648,6 +3649,8 @@ class LondonBacktestEngine(BacktestEngine):
                 tp_override = asian_mid
             else:
                 tp_override = entry + 2.0 * risk_per
+            # Kap: max 3R
+            tp_override = min(tp_override, entry + MAX_RR * risk_per)
         elif direction == 'bear':
             rr_opp = (entry - asian_opp) / risk_per if asian_opp < entry else 0.0
             rr_mid = (entry - asian_mid) / risk_per if asian_mid < entry else 0.0
@@ -3657,6 +3660,10 @@ class LondonBacktestEngine(BacktestEngine):
                 tp_override = asian_mid
             else:
                 tp_override = entry - 2.0 * risk_per
+            # Kap: max 3R
+            tp_override = max(tp_override, entry - MAX_RR * risk_per)
+        else:
+            tp_override = None
 
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
                               signal.risk_fraction, tp_override=tp_override)
