@@ -3418,26 +3418,45 @@ class AsianRangeCalculator:
 
 class LondonReversalBrain:
     """
-    ICT Judas Swing: London açılışında Asya range H/L süpürülür → 5M MSB ile dönüş.
+    ICT Judas Swing — London açılışı Asya likidite süpürmesi + dönüş.
 
-    Akış:
-      1. Şu an London seansı mı?
-      2. Son MAX_SWEEP_BARS içinde H > asian_high (bear) veya L < asian_low (bull) var mı?
-      3. Aynı barda MSB ters yönde onaylandı mı?
-      4. SL = süpürme wick ucu; TP = Asya range karşı tarafı (min 2R garantisi yoktur
-         → LondonBacktestEngine._make_entry_trade() 2R'ı zorlar)
+    Doğru forward-pending akışı:
+      ADIM 1 (erken London, sweep tespiti):
+        • L < asian_low VE C > asian_low → bull sweep+rejection → pending'e ekle
+        • H > asian_high VE C < asian_high → bear sweep+rejection → pending'e ekle
+        • Minimum derinlik filtresi (ATR bazlı) → gürültü elenir
+        • Süpürme YALNIZCA erken London'da aranır (ilk ~120dk)
+
+      ADIM 2 (tam London boyunca, yapısal kırılma onayı):
+        • Bull: H[idx] > p['sweep_high'] → sweep barının high'ını kırdı → sinyal
+        • Bear: L[idx] < p['sweep_low']  → sweep barının low'unu kırdı → sinyal
+        • Pre-computed MSBEngine kullanılmaz; sweep barı high/low inline break ile onay
+        • SL = süpürme wick ucu  |  TP = Asya range karşı tarafı
+
+    NOT: MSB5MEngine olayları bu strateji için çok seyrek (385 olay / 28k bar).
+    Inline yapısal kırılma daha güvenilir ve ICT'ye daha sadık.
     """
 
-    MAX_SWEEP_BARS = 4   # süpürme barından bu kadar bar içinde MSB gelmeli
+    MAX_PENDING_AGE  = 24    # sweep'ten bu kadar 5M bar içinde break gelmeli (120dk)
+    MIN_SWEEP_MULT   = 0.05  # ATR'ın bu kadarı kadar minimum sweep derinliği
+    MIN_SWEEP_PTS    = 0.30  # XAUUSD için mutlak minimum ($)
 
     def __init__(self, bias_provider=None):
         self.bias             = bias_provider
         self.last_skip_reason: Optional[str] = None
-        self.used_fvg_ids: set = set()          # arayüz uyumu için (kullanılmaz)
-        self.pending: Dict[str, list] = {'bull': [], 'bear': []}
+        self.used_fvg_ids: set = set()   # arayüz uyumu
+        self.pending: Dict[str, list]  = {'bull': [], 'bear': []}
         self._session = SessionFilter()
-        self.stats = dict(no_session=0, no_asian=0, no_sweep=0,
-                          no_msb=0, step1_fail=0, step2_fail=0, step3_fail=0)
+        self.stats = dict(no_session=0, no_asian=0, sweep_added=0,
+                          no_msb=0, signal=0, expired=0,
+                          step1_fail=0, step2_fail=0, step3_fail=0)
+
+    # ── Erken London saati mi? (ilk 120 dakika) ──────────────────────────────
+    def _is_early_london(self, t: datetime) -> bool:
+        h = t.hour + t.minute / 60.0
+        if self._session.is_london_dst(t):
+            return 7.0 <= h < 9.0    # BST (yaz): 07:00–09:00 UTC
+        return 8.0 <= h < 10.0       # GMT (kış): 08:00–10:00 UTC
 
     def evaluate(self, idx: int,
                  C: np.ndarray, O: np.ndarray,
@@ -3455,71 +3474,117 @@ class LondonReversalBrain:
         self.last_skip_reason = None
         t = to_naive(TM[idx])
 
-        # Asya range dizileri gelmemişse atla
+        # ── Asya range gerekli ───────────────────────────────────────────────
         if asian_high is None or asian_low is None:
             self.last_skip_reason = 'no_asian'
             return None
-
         ah = float(asian_high[idx])
         al = float(asian_low[idx])
-        if np.isnan(ah) or np.isnan(al):
+        if np.isnan(ah) or np.isnan(al) or (ah - al) < 0.5:
             self.last_skip_reason = 'no_asian'
             return None
 
-        # London seansı filtresi
-        if not self._session.is_london_session(t) or self._session.is_holiday(t):
+        # ── London seansı değilse pending'i de sıfırla (gün geçti) ──────────
+        in_london = (self._session.is_london_session(t)
+                     and not self._session.is_holiday(t))
+        if not in_london:
+            self.pending = {'bull': [], 'bear': []}
             self.last_skip_reason = 'no_session'
             return None
 
+        # ── Bias ─────────────────────────────────────────────────────────────
         weekly_dir = self.bias.get(t) if self.bias is not None else None
         if self.bias is not None and weekly_dir is None:
             self.last_skip_reason = 'no_bias'
             return None
 
+        # ── Minimum sweep derinliği ──────────────────────────────────────────
+        atr_val   = (float(ATR[idx]) if ATR is not None
+                     and not np.isnan(float(ATR[idx])) else 2.0)
+        min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
+
+        close_c = float(C[idx])
+        low_c   = float(L[idx])
+        high_c  = float(H[idx])
+
+        # ── ADIM 1: Erken London'da sweep+rejection tespiti → pending ────────
+        if self._is_early_london(t):
+            for direction in ('bull', 'bear'):
+                if self.bias is not None and weekly_dir != direction:
+                    continue
+
+                if direction == 'bull':
+                    # Wick aşağı (L < asian_low) VE kapanış geri döndü (C > asian_low)
+                    swept = (low_c < al - min_depth) and (close_c > al)
+                    if swept:
+                        self.pending['bull'].append({
+                            'sweep_idx':  idx,
+                            'sweep_high': high_c,   # inline MSS: bu high kırılınca giriş
+                            'stop':       low_c,    # SL = wick ucu
+                            'tp':         ah,       # TP = Asya yüksek
+                            'age':        0,
+                        })
+                        self.stats['sweep_added'] += 1
+
+                else:  # bear
+                    swept = (high_c > ah + min_depth) and (close_c < ah)
+                    if swept:
+                        self.pending['bear'].append({
+                            'sweep_idx': idx,
+                            'sweep_low': low_c,    # inline MSS: bu low kırılınca giriş
+                            'stop':      high_c,   # SL = wick ucu
+                            'tp':        al,       # TP = Asya düşük
+                            'age':       0,
+                        })
+                        self.stats['sweep_added'] += 1
+
+        # ── ADIM 2: Pending sweep'lerden yapısal kırılma onayı bekle ─────────
         signal_candidate: Optional[TradeSignal] = None
 
         for direction in ('bull', 'bear'):
             if self.bias is not None and weekly_dir != direction:
+                self.pending[direction] = []
                 continue
 
-            events = msb_events_bull if direction == 'bull' else msb_events_bear
+            still_pending = []
+            for p in self.pending[direction]:
+                p['age'] += 1
 
-            # MSB bu barda onaylandı mı?
-            msb_now = next((e for e in events if e.confirm_idx == idx), None)
-            if msb_now is None:
-                continue
+                if p['age'] > self.MAX_PENDING_AGE:
+                    self.stats['expired'] += 1
+                    continue   # süre doldu, at
 
-            # Son MAX_SWEEP_BARS içinde sweep var mı?
-            sweep_stop: Optional[float] = None
-            sweep_tp:   Optional[float] = None
-            lo = max(0, idx - self.MAX_SWEEP_BARS)
-            for look in range(lo, idx + 1):
-                if direction == 'bull' and float(L[look]) < al:
-                    sweep_stop = float(L[look])
-                    sweep_tp   = float(ah)
-                    break
-                elif direction == 'bear' and float(H[look]) > ah:
-                    sweep_stop = float(H[look])
-                    sweep_tp   = float(al)
-                    break
+                if idx <= p['sweep_idx']:
+                    still_pending.append(p)
+                    continue
 
-            if sweep_stop is None:
-                continue
+                # Inline yapısal kırılma: sweep barı high/low aşıldı mı?
+                if direction == 'bull':
+                    broke = high_c > p['sweep_high']
+                else:
+                    broke = low_c < p['sweep_low']
 
-            sig = TradeSignal(
-                entry_time        = TM[idx],
-                direction         = direction,
-                trigger_fvg       = None,
-                confirmation_type = 'LONDON-REV',
-                confidence        = 72.0,
-                msb_type          = msb_now.msb_type,
-                confluence_count  = 1,
-                stop_price        = sweep_stop,
-                risk_fraction     = 0.005,
-                tp_hint           = sweep_tp,
-            )
-            if signal_candidate is None:
-                signal_candidate = sig
+                if broke:
+                    sig = TradeSignal(
+                        entry_time        = TM[idx],
+                        direction         = direction,
+                        trigger_fvg       = None,
+                        confirmation_type = 'LONDON-REV',
+                        confidence        = 75.0,
+                        msb_type          = 'london_sweep',
+                        confluence_count  = 1,
+                        stop_price        = p['stop'],
+                        risk_fraction     = 0.005,
+                        tp_hint           = p['tp'],
+                    )
+                    if signal_candidate is None:
+                        signal_candidate = sig
+                        self.stats['signal'] += 1
+                    # pending'e geri koyma (tüketildi)
+                else:
+                    still_pending.append(p)
+
+            self.pending[direction] = still_pending
 
         if signal_candidate is None:
             self.last_skip_reason = 'no_signal'
