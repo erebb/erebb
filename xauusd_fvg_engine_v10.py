@@ -140,6 +140,7 @@ class TradeSignal:
     ema_distance_pct  : float = 0.0
     fib_level         : float = 0.0   # FibRetestBrain: 0.618 retest giriş seviyesi
     tp_hint           : float = 0.0   # LondonReversalBrain: Asya range karşı taraf TP
+    tp_mid_hint       : float = 0.0   # LondonReversalBrain: Asya range orta noktası (Equilibrium)
 
 
 @dataclass
@@ -3371,8 +3372,12 @@ class ThreeVolBrain:
 
 class AsianRangeCalculator:
     """
-    Her 5M bara karşı en son tamamlanmış Asya seansı (00:00–05:00 UTC) H/L.
-    Asya seans içindeki barlar için bir önceki günün range'i kullanılır → lookahead yok.
+    Her 5M bara karşı en son tamamlanmış Asya seansı (23:00–05:59 UTC) H/L.
+
+    Seans gece yarısını aşar → lookahead koruması kritik:
+      - 23:xx barlar: Pazartesi seansının başlangıcı ama seans devam ediyor
+        → önceki tamamlanmış seansı (Pazar 23:00–Pazartesi 05:59) kullan
+      - 06:00+ barlar: Seans tamamlandı → mevcut seansı kullan ✓
     """
 
     @staticmethod
@@ -3385,15 +3390,23 @@ class AsianRangeCalculator:
         L   = df_5m['Low'].values.astype(float)
         n   = len(df_5m)
 
-        asian_mask = dt.hour < 5   # 00:00–04:59 UTC
+        # Asya seansı 23:00–05:59 UTC (gece yarısını aşar)
+        asian_mask = (dt.hour < 6) | (dt.hour >= 23)
 
-        # Günlük Asya H/L sadece Asian-seans barlarından
+        # Seans tarihi = o seansın ait olduğu London günü (06:00'da kapanır)
+        # 23:xx barlar → ertesi günün London seansına ait
+        # 00:xx–05:xx barlar → aynı günün London seansına ait
         daily_h: dict = {}
         daily_l: dict = {}
+        one_day = pd.Timedelta(days=1)
         for i in range(n):
             if not asian_mask[i]:
                 continue
-            key = dt[i].strftime('%Y-%m-%d')
+            if dt[i].hour >= 23:
+                # Bu bar ertesi günün Asya seansına ait
+                key = (dt[i] + one_day).strftime('%Y-%m-%d')
+            else:
+                key = dt[i].strftime('%Y-%m-%d')
             h_val = float(H[i])
             l_val = float(L[i])
             if key not in daily_h or h_val > daily_h[key]:
@@ -3405,9 +3418,13 @@ class AsianRangeCalculator:
         ASIAN_L = np.full(n, np.nan)
         for i in range(n):
             if asian_mask[i]:
-                # Asya seansı içindeyken önceki günün range'i
-                key = (dt[i] - pd.Timedelta(days=1)).strftime('%Y-%m-%d')
+                # Seans devam ediyor → önceki tamamlanmış seans key'i (lookahead yok)
+                if dt[i].hour >= 23:
+                    key = dt[i].strftime('%Y-%m-%d')        # bugün = önceki seans
+                else:
+                    key = (dt[i] - one_day).strftime('%Y-%m-%d')  # dün = önceki seans
             else:
+                # Seans tamamlandı (06:00–22:59) → mevcut seansı kullan
                 key = dt[i].strftime('%Y-%m-%d')
             if key in daily_h:
                 ASIAN_H[i] = daily_h[key]
@@ -3418,45 +3435,40 @@ class AsianRangeCalculator:
 
 class LondonReversalBrain:
     """
-    ICT Judas Swing — London açılışı Asya likidite süpürmesi + dönüş.
+    ICT Judas Swing — London Killzone'da Asya likidite süpürmesi + dönüş.
 
-    Doğru forward-pending akışı:
-      ADIM 1 (erken London, sweep tespiti):
-        • L < asian_low VE C > asian_low → bull sweep+rejection → pending'e ekle
-        • H > asian_high VE C < asian_high → bear sweep+rejection → pending'e ekle
-        • Minimum derinlik filtresi (ATR bazlı) → gürültü elenir
-        • Süpürme YALNIZCA erken London'da aranır (ilk ~120dk)
+    Giriş kuralları (kullanıcı belgesine göre):
+      • London Killzone (06:00–09:00 UTC BST / 07:00–10:00 UTC GMT) içinde
+      • Fiyat Asya seansının H/L'ini aşar VE aynı barda geri döner (rejection close)
+      • Sweep derinliği: min_depth < depth < max_depth (gerçek breakout elenir)
+      • Günde max 1 işlem (aynı London seansında çoklu işlem yok)
+      • Sinyal bar'ın kapanışında üretilir → O[idx+1]'de giriş (lookahead yok)
+      • SL = sweep wick ucu | TP = Equilibrium (≥1.5R) veya Opposite (≥2R) veya 1:2 RR
 
-      ADIM 2 (tam London boyunca, yapısal kırılma onayı):
-        • Bull: H[idx] > p['sweep_high'] → sweep barının high'ını kırdı → sinyal
-        • Bear: L[idx] < p['sweep_low']  → sweep barının low'unu kırdı → sinyal
-        • Pre-computed MSBEngine kullanılmaz; sweep barı high/low inline break ile onay
-        • SL = süpürme wick ucu  |  TP = Asya range karşı tarafı
-
-    NOT: MSB5MEngine olayları bu strateji için çok seyrek (385 olay / 28k bar).
-    Inline yapısal kırılma daha güvenilir ve ICT'ye daha sadık.
+    Asya seansı: 23:00–05:59 UTC (gece yarısını aşar, AsianRangeCalculator lookahead-safe)
     """
 
-    MAX_PENDING_AGE  = 24    # sweep'ten bu kadar 5M bar içinde break gelmeli (120dk)
-    MIN_SWEEP_MULT   = 0.05  # ATR'ın bu kadarı kadar minimum sweep derinliği
-    MIN_SWEEP_PTS    = 0.30  # XAUUSD için mutlak minimum ($)
+    MIN_SWEEP_MULT      = 0.05   # ATR × bu oran = min sweep derinliği
+    MIN_SWEEP_PTS       = 0.30   # mutlak minimum ($)
+    MAX_SWEEP_DIST_MULT = 1.5    # ATR × bu orandan derin = gerçek breakout → atla
 
     def __init__(self, bias_provider=None):
         self.bias             = bias_provider
         self.last_skip_reason: Optional[str] = None
         self.used_fvg_ids: set = set()   # arayüz uyumu
-        self.pending: Dict[str, list]  = {'bull': [], 'bear': []}
-        self._session = SessionFilter()
+        self._session         = SessionFilter()
+        self._last_signal_date: Optional[object] = None   # günlük işlem limiti
         self.stats = dict(no_session=0, no_asian=0, sweep_added=0,
                           no_msb=0, signal=0, expired=0,
+                          too_deep=0, daily_limit=0,
                           step1_fail=0, step2_fail=0, step3_fail=0)
 
-    # ── Erken London saati mi? (ilk 120 dakika) ──────────────────────────────
-    def _is_early_london(self, t: datetime) -> bool:
+    # ── London Killzone: 06:00–09:00 UTC BST / 07:00–10:00 UTC GMT ───────────
+    def _is_london_killzone(self, t: datetime) -> bool:
         h = t.hour + t.minute / 60.0
         if self._session.is_london_dst(t):
-            return 7.0 <= h < 9.0    # BST (yaz): 07:00–09:00 UTC
-        return 8.0 <= h < 10.0       # GMT (kış): 08:00–10:00 UTC
+            return 6.0 <= h < 9.0    # BST (yaz): 06:00–09:00 UTC (Frankfurt dahil)
+        return 7.0 <= h < 10.0       # GMT (kış): 07:00–10:00 UTC
 
     def evaluate(self, idx: int,
                  C: np.ndarray, O: np.ndarray,
@@ -3481,14 +3493,14 @@ class LondonReversalBrain:
         ah = float(asian_high[idx])
         al = float(asian_low[idx])
         if np.isnan(ah) or np.isnan(al) or (ah - al) < 0.5:
+            self.stats['no_asian'] += 1
             self.last_skip_reason = 'no_asian'
             return None
 
-        # ── London seansı değilse pending'i de sıfırla (gün geçti) ──────────
-        in_london = (self._session.is_london_session(t)
-                     and not self._session.is_holiday(t))
-        if not in_london:
-            self.pending = {'bull': [], 'bear': []}
+        # ── London Killzone dışındaysa çık ──────────────────────────────────
+        in_killzone = (self._is_london_killzone(t)
+                       and not self._session.is_holiday(t))
+        if not in_killzone:
             self.last_skip_reason = 'no_session'
             return None
 
@@ -3498,93 +3510,84 @@ class LondonReversalBrain:
             self.last_skip_reason = 'no_bias'
             return None
 
-        # ── Minimum sweep derinliği ──────────────────────────────────────────
+        # ── Günlük işlem limiti: max 1 işlem per London seansı ──────────────
+        today = t.date()
+        if self._last_signal_date == today:
+            self.stats['daily_limit'] += 1
+            self.last_skip_reason = 'daily_limit'
+            return None
+
+        # ── ATR bazlı sweep derinliği sınırları ─────────────────────────────
         atr_val   = (float(ATR[idx]) if ATR is not None
                      and not np.isnan(float(ATR[idx])) else 2.0)
         min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
+        max_depth = atr_val * self.MAX_SWEEP_DIST_MULT   # fazla derin = gerçek breakout
 
         close_c = float(C[idx])
         low_c   = float(L[idx])
         high_c  = float(H[idx])
+        asian_mid = (ah + al) / 2.0   # Equilibrium = TP1 hedefi
 
-        # ── ADIM 1: Erken London'da sweep+rejection tespiti → pending ────────
-        if self._is_early_london(t):
-            for direction in ('bull', 'bear'):
-                if self.bias is not None and weekly_dir != direction:
-                    continue
-
-                if direction == 'bull':
-                    # Wick aşağı (L < asian_low) VE kapanış geri döndü (C > asian_low)
-                    swept = (low_c < al - min_depth) and (close_c > al)
-                    if swept:
-                        self.pending['bull'].append({
-                            'sweep_idx':  idx,
-                            'sweep_high': high_c,   # inline MSS: bu high kırılınca giriş
-                            'stop':       low_c,    # SL = wick ucu
-                            'tp':         ah,       # TP = Asya yüksek
-                            'age':        0,
-                        })
-                        self.stats['sweep_added'] += 1
-
-                else:  # bear
-                    swept = (high_c > ah + min_depth) and (close_c < ah)
-                    if swept:
-                        self.pending['bear'].append({
-                            'sweep_idx': idx,
-                            'sweep_low': low_c,    # inline MSS: bu low kırılınca giriş
-                            'stop':      high_c,   # SL = wick ucu
-                            'tp':        al,       # TP = Asya düşük
-                            'age':       0,
-                        })
-                        self.stats['sweep_added'] += 1
-
-        # ── ADIM 2: Pending sweep'lerden yapısal kırılma onayı bekle ─────────
+        # ── Sweep+rejection tespiti → direkt sinyal (pending yok) ────────────
+        # Giriş bar'ı kapandığında sinyal → sonraki bar'ın açılışında giriş (lookahead yok)
         signal_candidate: Optional[TradeSignal] = None
 
         for direction in ('bull', 'bear'):
             if self.bias is not None and weekly_dir != direction:
-                self.pending[direction] = []
                 continue
 
-            still_pending = []
-            for p in self.pending[direction]:
-                p['age'] += 1
-
-                if p['age'] > self.MAX_PENDING_AGE:
-                    self.stats['expired'] += 1
-                    continue   # süre doldu, at
-
-                if idx <= p['sweep_idx']:
-                    still_pending.append(p)
+            if direction == 'bull':
+                # Wick aşağı (L < al) VE kapanış geri döndü (C > al) = rejection
+                sweep_depth = al - low_c
+                swept = (sweep_depth > min_depth) and (close_c > al)
+                if not swept:
                     continue
+                if sweep_depth > max_depth:
+                    self.stats['too_deep'] += 1
+                    continue   # Çok derin → gerçek breakout, atla
+                self.stats['sweep_added'] += 1
+                sig = TradeSignal(
+                    entry_time        = TM[idx],
+                    direction         = 'bull',
+                    trigger_fvg       = None,
+                    confirmation_type = 'LONDON-REV',
+                    confidence        = 75.0,
+                    msb_type          = 'london_sweep',
+                    confluence_count  = 1,
+                    stop_price        = low_c,      # SL = wick ucu (lookahead yok)
+                    risk_fraction     = 0.005,
+                    tp_hint           = ah,         # TP2 = Asya yüksek (opposite)
+                    tp_mid_hint       = asian_mid,  # TP1 = Equilibrium
+                )
 
-                # Inline yapısal kırılma: sweep barı high/low aşıldı mı?
-                if direction == 'bull':
-                    broke = high_c > p['sweep_high']
-                else:
-                    broke = low_c < p['sweep_low']
+            else:  # bear
+                # Wick yukarı (H > ah) VE kapanış geri döndü (C < ah) = rejection
+                sweep_depth = high_c - ah
+                swept = (sweep_depth > min_depth) and (close_c < ah)
+                if not swept:
+                    continue
+                if sweep_depth > max_depth:
+                    self.stats['too_deep'] += 1
+                    continue
+                self.stats['sweep_added'] += 1
+                sig = TradeSignal(
+                    entry_time        = TM[idx],
+                    direction         = 'bear',
+                    trigger_fvg       = None,
+                    confirmation_type = 'LONDON-REV',
+                    confidence        = 75.0,
+                    msb_type          = 'london_sweep',
+                    confluence_count  = 1,
+                    stop_price        = high_c,     # SL = wick ucu
+                    risk_fraction     = 0.005,
+                    tp_hint           = al,         # TP2 = Asya düşük (opposite)
+                    tp_mid_hint       = asian_mid,  # TP1 = Equilibrium
+                )
 
-                if broke:
-                    sig = TradeSignal(
-                        entry_time        = TM[idx],
-                        direction         = direction,
-                        trigger_fvg       = None,
-                        confirmation_type = 'LONDON-REV',
-                        confidence        = 75.0,
-                        msb_type          = 'london_sweep',
-                        confluence_count  = 1,
-                        stop_price        = p['stop'],
-                        risk_fraction     = 0.005,
-                        tp_hint           = p['tp'],
-                    )
-                    if signal_candidate is None:
-                        signal_candidate = sig
-                        self.stats['signal'] += 1
-                    # pending'e geri koyma (tüketildi)
-                else:
-                    still_pending.append(p)
-
-            self.pending[direction] = still_pending
+            if signal_candidate is None:
+                signal_candidate = sig
+                self.stats['signal'] += 1
+                self._last_signal_date = today   # günlük limit güncelle
 
         if signal_candidate is None:
             self.last_skip_reason = 'no_signal'
@@ -3632,14 +3635,28 @@ class LondonBacktestEngine(BacktestEngine):
             sl_raw   = signal.stop_price * (1.0 + buf)
             risk_per = max(sl_raw - entry, 0.01)
 
+        # TP priority: asian_opposite (≥2R) > asian_mid/equilibrium (≥1.5R) > 1:2 RR
         tp_override = None
-        asian_tp = signal.tp_hint
-        if direction == 'bull' and asian_tp > entry:
-            rr = (asian_tp - entry) / risk_per
-            tp_override = asian_tp if rr >= 2.0 else entry + 2.0 * risk_per
-        elif direction == 'bear' and asian_tp < entry:
-            rr = (entry - asian_tp) / risk_per
-            tp_override = asian_tp if rr >= 2.0 else entry - 2.0 * risk_per
+        asian_opp = signal.tp_hint      # TP2: Asya range karşı tarafı
+        asian_mid = signal.tp_mid_hint  # TP1: Equilibrium (orta nokta)
+        if direction == 'bull':
+            rr_opp = (asian_opp - entry) / risk_per if asian_opp > entry else 0.0
+            rr_mid = (asian_mid - entry) / risk_per if asian_mid > entry else 0.0
+            if rr_opp >= 2.0:
+                tp_override = asian_opp
+            elif rr_mid >= 1.5:
+                tp_override = asian_mid
+            else:
+                tp_override = entry + 2.0 * risk_per
+        elif direction == 'bear':
+            rr_opp = (entry - asian_opp) / risk_per if asian_opp < entry else 0.0
+            rr_mid = (entry - asian_mid) / risk_per if asian_mid < entry else 0.0
+            if rr_opp >= 2.0:
+                tp_override = asian_opp
+            elif rr_mid >= 1.5:
+                tp_override = asian_mid
+            else:
+                tp_override = entry - 2.0 * risk_per
 
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
                               signal.risk_fraction, tp_override=tp_override)
