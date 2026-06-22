@@ -1,938 +1,744 @@
+#!/usr/bin/env python3
 """
-gui.py — XAUUSD FVG Trading System v10  Modern Kontrol Paneli
-=============================================================
+gui.py — XAUUSD FVG Trading System v10  |  Rich TUI Kontrol Paneli
+===================================================================
 Çalıştır: python3 gui.py
-Gereksinim: Python 3.9+  (tkinter standart kütüphane)
+Gereksinim: Python 3.9+  |  rich (pip install rich)
 """
 
 from __future__ import annotations
 
 import contextlib
 import io
-import json
 import os
-import subprocess
 import sys
 import threading
 import time
-import tkinter as tk
+from datetime import datetime
 from pathlib import Path
-from tkinter import filedialog, messagebox, scrolledtext, ttk
 from typing import Any, Optional
 
-# ── Proje kök dizininden çalıştığımızdan emin ol ─────────────────────────────
+# ── Proje kök dizini ─────────────────────────────────────────────────────────
 ROOT = Path(__file__).parent
 sys.path.insert(0, str(ROOT))
 os.chdir(ROOT)
 
+from rich.align import Align
+from rich.box import ROUNDED, HEAVY_HEAD, SIMPLE_HEAVY, MINIMAL_DOUBLE_HEAD
+from rich.columns import Columns
+from rich.console import Console
+from rich.layout import Layout
+from rich.live import Live
+from rich.panel import Panel
+from rich.prompt import Confirm, FloatPrompt, IntPrompt, Prompt
+from rich.rule import Rule
+from rich.spinner import Spinner
+from rich.style import Style
+from rich.table import Table
+from rich.text import Text
+from rich import box as rich_box
+
+# ── Config ───────────────────────────────────────────────────────────────────
 from config import Config, get_config
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# TEMA & STİL
-# ═══════════════════════════════════════════════════════════════════════════════
+# ── Renk paleti (Catppuccin Mocha) ───────────────────────────────────────────
+C_BG    = "#1e1e2e"
+C_BG2   = "#181825"
+C_FG    = "#cdd6f4"
+C_FG2   = "#a6adc8"
+C_BLUE  = "#89b4fa"
+C_MAUVE = "#cba6f7"
+C_GREEN = "#a6e3a1"
+C_RED   = "#f38ba8"
+C_YEL   = "#f9e2af"
+C_TEAL  = "#94e2d5"
+C_PINK  = "#f5c2e7"
 
-BG       = "#1e1e2e"   # zemin
-BG2      = "#181825"   # ikincil zemin
-BG3      = "#313244"   # panel / kart
-FG       = "#cdd6f4"   # ana yazı
-FG2      = "#a6adc8"   # ikincil yazı
-ACC      = "#89b4fa"   # vurgu mavi
-ACC2     = "#cba6f7"   # vurgu mor
-OK       = "#a6e3a1"   # yeşil / başarı
-WRN      = "#f38ba8"   # kırmızı / uyarı
-WARN2    = "#fab387"   # turuncu / uyarı2
-SEL_BG   = "#45475a"   # seçim arka planı
-BORDER   = "#6c7086"   # kenarlık
-
-FONT_MONO = ("Consolas", 10)
-FONT_UI   = ("Segoe UI", 10)
-FONT_H1   = ("Segoe UI", 14, "bold")
-FONT_H2   = ("Segoe UI", 11, "bold")
-FONT_SMALL= ("Segoe UI", 9)
-
-
-def _apply_theme(root: tk.Tk) -> None:
-    style = ttk.Style(root)
-    # clam en iyi özelleştirilebilir temel temadır
-    style.theme_use("clam")
-
-    style.configure(".",
-        background=BG, foreground=FG,
-        fieldbackground=BG3, selectbackground=SEL_BG,
-        selectforeground=FG, font=FONT_UI,
-        bordercolor=BORDER, darkcolor=BG2, lightcolor=BG3,
-        troughcolor=BG2, arrowcolor=FG2,
-    )
-    style.configure("TFrame",  background=BG)
-    style.configure("TLabel",  background=BG, foreground=FG)
-    style.configure("Card.TFrame", background=BG3, relief="flat")
-
-    style.configure("TNotebook",
-        background=BG2, tabmargins=[2, 4, 0, 0],
-    )
-    style.configure("TNotebook.Tab",
-        background=BG3, foreground=FG2, padding=[14, 6],
-        font=FONT_UI,
-    )
-    style.map("TNotebook.Tab",
-        background=[("selected", BG)],
-        foreground=[("selected", ACC)],
-    )
-
-    style.configure("TButton",
-        background=BG3, foreground=FG, padding=[10, 6],
-        relief="flat", borderwidth=0,
-    )
-    style.map("TButton",
-        background=[("active", SEL_BG), ("pressed", ACC)],
-        foreground=[("active", FG)],
-    )
-    style.configure("Accent.TButton",
-        background=ACC, foreground=BG, font=("Segoe UI", 10, "bold"),
-        padding=[12, 7],
-    )
-    style.map("Accent.TButton",
-        background=[("active", ACC2), ("pressed", BG3)],
-    )
-    style.configure("Danger.TButton",
-        background=WRN, foreground=BG, font=("Segoe UI", 10, "bold"),
-        padding=[10, 7],
-    )
-    style.map("Danger.TButton",
-        background=[("active", "#eba0ac"), ("pressed", BG3)],
-    )
-
-    style.configure("TRadiobutton",
-        background=BG, foreground=FG, font=FONT_UI,
-        indicatorcolor=BG3, indicatorrelief="flat",
-    )
-    style.map("TRadiobutton",
-        indicatorcolor=[("selected", ACC), ("active", ACC2)],
-    )
-    style.configure("TCheckbutton",
-        background=BG, foreground=FG, font=FONT_UI,
-        indicatorcolor=BG3,
-    )
-    style.map("TCheckbutton",
-        indicatorcolor=[("selected", ACC), ("active", ACC2)],
-    )
-    style.configure("TCombobox",
-        fieldbackground=BG3, selectbackground=SEL_BG, foreground=FG,
-        background=BG3, arrowcolor=FG2,
-    )
-    style.map("TCombobox", fieldbackground=[("readonly", BG3)])
-    style.configure("TEntry",
-        fieldbackground=BG3, foreground=FG, insertcolor=FG,
-    )
-    style.configure("TScale", background=BG, troughcolor=BG3)
-    style.configure("Horizontal.TSeparator", background=BORDER)
-    style.configure("TScrollbar",
-        background=BG3, troughcolor=BG2, arrowcolor=FG2,
-        bordercolor=BG3,
-    )
-    root.configure(bg=BG)
+console = Console()
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# ANA PENCERE
+# YARDIMCI FONKSIYONLAR
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class TradingGUI(tk.Tk):
+def _header() -> Panel:
+    now = datetime.now().strftime("%Y-%m-%d  %H:%M")
+    cfg = get_config()
+    capital = cfg.get("backtest", "initial_capital", default=10_000)
+    title = Text("✦  XAUUSD FVG TRADING SYSTEM  v10  ✦", style=f"bold {C_BLUE}")
+    sub   = Text(f"Tarih: {now}   |   Sermaye: ${capital:,.0f}   |   Engine: xauusd_fvg_engine_v10.py",
+                 style=C_FG2)
+    body  = Align.center(Text.assemble(title, "\n", sub))
+    return Panel(body, style=f"{C_BLUE} on {C_BG2}", box=HEAVY_HEAD, padding=(0, 2))
 
-    def __init__(self) -> None:
-        super().__init__()
-        self.cfg = get_config()
-        self._stop_event = threading.Event()
-        self._worker: Optional[threading.Thread] = None
 
-        w = self.cfg.get("gui", "window_width",  default=1100)
-        h = self.cfg.get("gui", "window_height", default=720)
-        self.title("XAUUSD FVG Trading System  v10")
-        self.geometry(f"{w}x{h}")
-        self.minsize(900, 600)
-        self.configure(bg=BG)
+def _divider(text: str = "") -> Rule:
+    return Rule(text, style=C_BLUE)
 
-        _apply_theme(self)
-        self._build_ui()
-        self.protocol("WM_DELETE_WINDOW", self._on_close)
 
-    # ── UI İnşaatı ────────────────────────────────────────────────────────────
+def _print_header() -> None:
+    console.print()
+    console.print(_header())
+    console.print()
 
-    def _build_ui(self) -> None:
-        self._build_header()
-        nb = ttk.Notebook(self)
-        nb.pack(fill="both", expand=True, padx=8, pady=(0, 8))
 
-        self.tab_bt  = BacktestTab(nb, self)
-        self.tab_lt  = LiveTab(nb, self)
-        self.tab_cfg = SettingsTab(nb, self)
+def _ok(msg: str) -> None:
+    console.print(f"  [bold {C_GREEN}]✓[/]  {msg}")
 
-        nb.add(self.tab_bt,  text="  📊  Backtest  ")
-        nb.add(self.tab_lt,  text="  ⚡  Canlı Trader  ")
-        nb.add(self.tab_cfg, text="  ⚙  Ayarlar  ")
 
-        self._status_var = tk.StringVar(value="Hazır.")
-        bar = tk.Label(self, textvariable=self._status_var,
-                       bg=BG2, fg=FG2, font=FONT_SMALL,
-                       anchor="w", padx=10, pady=4)
-        bar.pack(side="bottom", fill="x")
+def _err(msg: str) -> None:
+    console.print(f"  [bold {C_RED}]✗[/]  {msg}")
 
-    def _build_header(self) -> None:
-        hdr = tk.Frame(self, bg=BG2, pady=10)
-        hdr.pack(fill="x", padx=0)
-        tk.Label(hdr, text="XAUUSD  FVG  Trading  System",
-                 bg=BG2, fg=ACC, font=("Segoe UI", 15, "bold")).pack(side="left", padx=16)
-        tk.Label(hdr, text="v10.0  │  Smart Money ICT",
-                 bg=BG2, fg=FG2, font=FONT_SMALL).pack(side="left")
-        tk.Label(hdr, text="Gold  (XAU/USD)",
-                 bg=BG2, fg=WARN2, font=FONT_UI).pack(side="right", padx=16)
 
-    # ── Durum çubuğu ──────────────────────────────────────────────────────────
+def _info(msg: str) -> None:
+    console.print(f"  [bold {C_BLUE}]→[/]  {msg}")
 
-    def set_status(self, msg: str, color: str = FG2) -> None:
-        self._status_var.set(f"  {msg}")
 
-    # ── Thread yönetimi ───────────────────────────────────────────────────────
+def _pick(prompt: str, choices: list[str], default: str = "") -> str:
+    choices_str = " / ".join(f"[bold {C_YEL}]{c}[/]" for c in choices)
+    console.print(f"\n  {prompt}  ({choices_str})")
+    default_display = f"  [dim]varsayılan: {default}[/]" if default else ""
+    if default_display:
+        console.print(default_display)
+    while True:
+        val = Prompt.ask("  ›", default=default, console=console).strip().lower()
+        if val in choices:
+            return val
+        _err(f"Geçersiz seçim — şunlardan biri olmalı: {', '.join(choices)}")
 
-    def run_task(self, fn, *args, on_done=None) -> None:
-        if self._worker and self._worker.is_alive():
-            self.set_status("⚠  Zaten çalışan bir görev var.", WRN)
-            return
-        self._stop_event.clear()
-        def _wrapper():
+
+def _confirm(msg: str, default: bool = True) -> bool:
+    return Confirm.ask(f"  {msg}", default=default, console=console)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# BACKTEST ÇALIŞTIRICI
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def _load_data() -> tuple:
+    """Veri yükle (sessiz)."""
+    from xauusd_fvg_engine_v10 import DataEngine
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        df_1h, df_5m, bt_start = DataEngine.download(verbose=False)
+    return df_1h, df_5m, bt_start
+
+
+def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
+                  emf: bool, capital: float) -> list[dict]:
+    """Seçilen parametrelerle backtest çalıştır, satır listesi döndür."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    from xauusd_fvg_engine_v10 import (
+        DataEngine, MarketBrain, RiskManager, BacktestEngine,
+        PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
+        PrivateBiasProvider, ThreeVolBrain,
+        LondonReversalBrain, LondonBacktestEngine,
+    )
+    from config import get_config
+
+    cfg = get_config()
+
+    # RR / BE decode
+    rr_map = {"1:1": (1.0, None), "1:2be": (2.0, 1.0), "1:2fix": (2.0, None)}
+    rr, be = rr_map.get(rr_label, (2.0, None))
+
+    # TBE decode (5M bar cinsinden)
+    tbe_map = {"yok": None, "2h": 24, "4h": 48, "8h": 96}
+    tbe = tbe_map.get(tbe_label, None)
+
+    # Bias modes
+    bias_modes = ["weekly", "daily", "none", "private"] if bias == "hepsi" else [bias]
+
+    # Strategy modes
+    if strategy == "hepsi":
+        strategies = ["fvg", "threevol", "london"]
+    else:
+        strategies = [strategy]
+
+    results = []
+
+    # Veri yükle
+    df_1h, df_5m, bt_start = _load_data()
+
+    def make_bias(mode):
+        if mode == "none":    return None
+        if mode == "daily":
+            from pathlib import Path
+            if not Path(cfg.daily_bias_path).exists():
+                DailyBiasProvider.build_from_1h(df_1h, cfg.daily_bias_path)
+            return DailyBiasProvider(cfg.daily_bias_path)
+        if mode == "private": return PrivateBiasProvider(df_1h)
+        return WeeklyBiasProvider(cfg.weekly_bias_path)
+
+    for strat in strategies:
+        for bmode in bias_modes:
+            buf = io.StringIO()
             try:
-                fn(*args)
-            finally:
-                if on_done:
-                    self.after(0, on_done)
-        self._worker = threading.Thread(target=_wrapper, daemon=True)
-        self._worker.start()
+                with contextlib.redirect_stdout(buf):
+                    bp = make_bias(bmode)
 
-    def stop_task(self) -> None:
-        self._stop_event.set()
-        self.set_status("Durduruluyor…")
+                    if strat == "london":
+                        brain  = LondonReversalBrain(bias_provider=bp)
+                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
+                        engine = LondonBacktestEngine(
+                            brain, risk,
+                            initial_capital=capital,
+                            breakeven_at_R=be,
+                            time_exit_bars=tbe,
+                            ema_macd_filter=emf,
+                        )
+                    else:
+                        poi = "three_vol" if strat == "threevol" else "all"
+                        brain  = MarketBrain(bias_provider=bp, poi_mode=poi)
+                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
+                        engine = BacktestEngine(
+                            brain, risk,
+                            initial_capital=capital,
+                            breakeven_at_R=be,
+                            time_exit_bars=tbe,
+                            ema_macd_filter=emf,
+                        )
 
-    def _on_close(self) -> None:
-        self._stop_event.set()
-        self.destroy()
+                    trades  = engine.run(df_1h, df_5m, bt_start)
+                    metrics = PerformanceAnalytics(trades, capital).compute()
+
+                if metrics is None or metrics["total"] == 0:
+                    results.append({
+                        "strategy": strat, "bias": bmode, "rr": rr_label,
+                        "total": 0, "wins": 0, "losses": 0, "wr": 0.0,
+                        "pnl": 0.0, "pf": 0.0, "sharpe": 0.0, "maxdd": 0.0, "ret": 0.0,
+                    })
+                else:
+                    results.append({
+                        "strategy": strat, "bias": bmode, "rr": rr_label,
+                        "total":  metrics["total"],
+                        "wins":   metrics["wins"],
+                        "losses": metrics["losses"],
+                        "wr":     metrics["win_rate"] * 100,
+                        "pnl":    metrics["net_pnl"],
+                        "pf":     metrics["profit_factor"],
+                        "sharpe": metrics["sharpe"],
+                        "maxdd":  metrics["max_dd"],
+                        "ret":    metrics["ret_pct"],
+                    })
+            except Exception as exc:
+                results.append({
+                    "strategy": strat, "bias": bmode, "rr": rr_label,
+                    "total": 0, "wins": 0, "losses": 0, "wr": 0.0,
+                    "pnl": 0.0, "pf": 0.0, "sharpe": 0.0, "maxdd": 0.0, "ret": 0.0,
+                    "_error": str(exc),
+                })
+
+    return results
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# BACKTEST SEKMESİ
-# ═══════════════════════════════════════════════════════════════════════════════
+def _results_table(rows: list[dict], title: str = "Backtest Sonuçları") -> Table:
+    t = Table(
+        title=title,
+        box=MINIMAL_DOUBLE_HEAD,
+        border_style=C_BLUE,
+        header_style=f"bold {C_MAUVE}",
+        show_footer=False,
+        padding=(0, 1),
+    )
+    t.add_column("Strateji", style=C_FG2, no_wrap=True)
+    t.add_column("Bias",     style=C_BLUE)
+    t.add_column("RR",       style=C_FG2)
+    t.add_column("İşlem",    justify="right")
+    t.add_column("W/L",      justify="right")
+    t.add_column("WR %",     justify="right")
+    t.add_column("NetPnL $", justify="right")
+    t.add_column("Ret %",    justify="right")
+    t.add_column("PF",       justify="right")
+    t.add_column("Sharpe",   justify="right")
+    t.add_column("MaxDD %",  justify="right")
 
-class BacktestTab(ttk.Frame):
+    for r in rows:
+        if r.get("_error"):
+            t.add_row(r["strategy"], r["bias"], r["rr"],
+                      "—", "—", "—", "—", "—", "—", "—",
+                      f"[{C_RED}]HATA[/]")
+            continue
 
-    def __init__(self, parent, app: TradingGUI) -> None:
-        super().__init__(parent)
-        self.app = app
-        self.cfg = app.cfg
+        wr_color = C_GREEN if r["wr"] >= 50 else (C_YEL if r["wr"] >= 40 else C_RED)
+        pnl_color = C_GREEN if r["pnl"] >= 0 else C_RED
+        pf_color  = C_GREEN if r["pf"] >= 1.5 else (C_YEL if r["pf"] >= 1.0 else C_RED)
 
-        # ── Değişkenler ──────────────────────────────────────────────────────
-        self.v_strategy   = tk.StringVar(value="fvg")
-        self.v_bias       = tk.StringVar(value=self.cfg.get("backtest","default_bias",default="weekly"))
-        self.v_rr         = tk.StringVar(value="1:2 fix")
-        self.v_tbe        = tk.StringVar(value="8h (96 bar)")
-        self.v_emf        = tk.BooleanVar(value=False)
-        self.v_wfa        = tk.BooleanVar(value=False)
-        self.v_monte      = tk.BooleanVar(value=True)
-        self.v_capital    = tk.StringVar(value=str(int(self.cfg.initial_capital)))
-        self.v_risk_pct   = tk.DoubleVar(value=self.cfg.risk_fraction * 100)
-
-        self._build()
-
-    def _build(self) -> None:
-        # Sol panel + sağ çıktı yan yana
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(0, weight=1)
-
-        left = ttk.Frame(self, style="Card.TFrame")
-        left.grid(row=0, column=0, sticky="nsew", padx=(8,4), pady=8)
-        left.configure(width=300)
-
-        right = ttk.Frame(self)
-        right.grid(row=0, column=1, sticky="nsew", padx=(4,8), pady=8)
-        right.rowconfigure(0, weight=1)
-        right.columnconfigure(0, weight=1)
-
-        self._build_left(left)
-        self._build_right(right)
-
-    # ── Sol Kontrol Paneli ────────────────────────────────────────────────────
-
-    def _build_left(self, f: ttk.Frame) -> None:
-        pad = {"padx": 12, "pady": 3}
-
-        # Strateji
-        _section(f, "STRATEJİ")
-        strategies = [
-            ("FVG v10  (Ana Strateji)",      "fvg"),
-            ("ThreeVol Directional",          "threevol"),
-            ("Harmonik PRZ Only",             "prz"),
-            ("London Reversal  (ICT)",        "london"),
-            ("Tam Matrix  (A+C+G+H+W)",       "full"),
-        ]
-        for lbl, val in strategies:
-            ttk.Radiobutton(f, text=lbl, variable=self.v_strategy, value=val,
-                            command=self._on_strategy_change).pack(anchor="w", **pad)
-
-        ttk.Separator(f, orient="horizontal").pack(fill="x", pady=6, padx=8)
-
-        # Parametreler
-        _section(f, "PARAMETRELER")
-        _combo_row(f, "Bias:", self.v_bias,
-                   ["weekly", "daily", "none", "private"], pad)
-        _combo_row(f, "RR:", self.v_rr,
-                   ["1:1", "1:2 BE@1R", "1:2 fix"], pad)
-        self._tbe_row_frame = _combo_row(f, "TBE:", self.v_tbe,
-                   ["Yok", "2h (24 bar)", "4h (48 bar)", "8h (96 bar)"], pad)
-
-        ttk.Checkbutton(f, text="EMA-MACD Filtresi",
-                        variable=self.v_emf).pack(anchor="w", **pad)
-        ttk.Checkbutton(f, text="Walk-Forward Analizi",
-                        variable=self.v_wfa).pack(anchor="w", **pad)
-        ttk.Checkbutton(f, text="Monte Carlo (10k sim)",
-                        variable=self.v_monte).pack(anchor="w", **pad)
-
-        ttk.Separator(f, orient="horizontal").pack(fill="x", pady=6, padx=8)
-
-        # Sermaye & Risk
-        _section(f, "SERMAYE & RİSK")
-        _entry_row(f, "Başlangıç ($):", self.v_capital, pad)
-
-        risk_f = ttk.Frame(f)
-        risk_f.pack(fill="x", **pad)
-        tk.Label(risk_f, text="Risk %:", width=13, anchor="w",
-                 bg=BG3, fg=FG2, font=FONT_UI).pack(side="left")
-        self._risk_label = tk.Label(risk_f, text=f"{self.v_risk_pct.get():.2f}%",
-                                    width=6, bg=BG3, fg=ACC, font=FONT_UI)
-        self._risk_label.pack(side="right")
-        s = ttk.Scale(f, orient="horizontal", from_=0.1, to=2.0,
-                      variable=self.v_risk_pct,
-                      command=lambda _: self._risk_label.config(
-                          text=f"{self.v_risk_pct.get():.2f}%"))
-        s.pack(fill="x", padx=12, pady=2)
-
-        ttk.Separator(f, orient="horizontal").pack(fill="x", pady=6, padx=8)
-
-        # Butonlar
-        ttk.Button(f, text="▶  BACKTEST ÇALIŞTIR", style="Accent.TButton",
-                   command=self._run).pack(fill="x", padx=12, pady=4)
-        ttk.Button(f, text="■  Durdur",
-                   command=self.app.stop_task).pack(fill="x", padx=12, pady=2)
-        ttk.Button(f, text="⬇  Veriyi Güncelle",
-                   command=self._download_data).pack(fill="x", padx=12, pady=2)
-
-    # ── Sağ Çıktı Alanı ──────────────────────────────────────────────────────
-
-    def _build_right(self, f: ttk.Frame) -> None:
-        # Araç çubuğu
-        tb = ttk.Frame(f)
-        tb.grid(row=0, column=0, sticky="ew", pady=(0, 4))
-        ttk.Button(tb, text="💾  Kaydet", command=self._save_output).pack(side="left", padx=2)
-        ttk.Button(tb, text="🗑  Temizle", command=self._clear_output).pack(side="left", padx=2)
-        self._progress_var = tk.StringVar(value="")
-        tk.Label(tb, textvariable=self._progress_var,
-                 bg=BG, fg=ACC, font=FONT_SMALL).pack(side="right", padx=8)
-
-        # Konsol
-        self._out = scrolledtext.ScrolledText(
-            f, wrap="word", state="disabled",
-            bg=BG2, fg=FG, font=FONT_MONO,
-            insertbackground=FG, relief="flat",
-            borderwidth=0, highlightthickness=1,
-            highlightbackground=BORDER,
-            selectbackground=SEL_BG,
+        t.add_row(
+            r["strategy"].upper(),
+            r["bias"],
+            r["rr"],
+            str(r["total"]) if r["total"] else "[dim]—[/]",
+            f"{r['wins']}/{r['losses']}" if r["total"] else "[dim]—[/]",
+            f"[{wr_color}]{r['wr']:.1f}[/]" if r["total"] else "[dim]—[/]",
+            f"[{pnl_color}]{r['pnl']:+,.2f}[/]" if r["total"] else "[dim]—[/]",
+            f"{r['ret']:+.2f}" if r["total"] else "[dim]—[/]",
+            f"[{pf_color}]{r['pf']:.2f}[/]" if r["total"] else "[dim]—[/]",
+            f"{r['sharpe']:.2f}"  if r["total"] else "[dim]—[/]",
+            f"[{C_YEL}]{r['maxdd']:.2f}[/]" if r["total"] else "[dim]—[/]",
         )
-        self._out.grid(row=1, column=0, sticky="nsew")
-        f.rowconfigure(1, weight=1)
+    return t
 
-        # Renk etiketleri
-        self._out.tag_configure("ok",   foreground=OK)
-        self._out.tag_configure("warn", foreground=WRN)
-        self._out.tag_configure("acc",  foreground=ACC)
-        self._out.tag_configure("hdr",  foreground=ACC2, font=(*FONT_MONO[:2], "bold"))
-        self._out.tag_configure("dim",  foreground=FG2)
 
-    # ── Event Handler'lar ────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════════
+# MENÜ: BACKTEST
+# ═══════════════════════════════════════════════════════════════════════════════
 
-    def _on_strategy_change(self) -> None:
-        s = self.v_strategy.get()
-        # London için TBE mantıklı değil
-        if s == "london":
-            self.v_tbe.set("Yok")
-        elif s in ("fvg", "full"):
-            self.v_tbe.set("8h (96 bar)")
+def backtest_menu() -> None:
+    console.clear()
+    _print_header()
+    console.print(Panel("[bold]BACKTEST[/]  — Strateji & Parametre Seçimi",
+                        style=C_MAUVE, box=ROUNDED, padding=(0, 2)))
+    console.print()
 
-    def _run(self) -> None:
-        self.app.run_task(self._backtest_task,
-                          on_done=lambda: self.app.set_status("Tamamlandı."))
-        self.app.set_status("Çalışıyor…")
+    cfg = get_config()
 
-    def _backtest_task(self) -> None:
-        strategy  = self.v_strategy.get()
-        bias      = self.v_bias.get()
-        rr_str    = self.v_rr.get()
-        tbe_str   = self.v_tbe.get()
-        emf       = self.v_emf.get()
-        do_wfa    = self.v_wfa.get()
-        capital   = _safe_float(self.v_capital.get(), 10_000)
-        risk_frac = self.v_risk_pct.get() / 100.0
+    # Strateji
+    strat_table = Table(box=SIMPLE_HEAVY, show_header=False,
+                        border_style=C_BLUE, padding=(0, 2))
+    strat_table.add_column(); strat_table.add_column()
+    strat_table.add_row(f"[bold {C_YEL}]fvg[/]",     "FVG v10  (Fair Value Gap)")
+    strat_table.add_row(f"[bold {C_YEL}]threevol[/]", "Three Vol Directional")
+    strat_table.add_row(f"[bold {C_YEL}]london[/]",   "London Reversal  (ICT Judas Swing)")
+    strat_table.add_row(f"[bold {C_YEL}]hepsi[/]",    "Hepsi  (fvg + threevol + london)")
+    console.print(strat_table)
+    strategy = _pick("Strateji seç", ["fvg","threevol","london","hepsi"], "fvg")
 
-        rr_map = {"1:1": (1.0, None), "1:2 BE@1R": (2.0, 1.0), "1:2 fix": (2.0, None)}
-        tbe_map = {"Yok": None, "2h (24 bar)": 24, "4h (48 bar)": 48, "8h (96 bar)": 96}
-        rr, be  = rr_map.get(rr_str, (2.0, None))
-        tbe     = tbe_map.get(tbe_str)
+    # Bias
+    console.print()
+    bias_table = Table(box=SIMPLE_HEAVY, show_header=False,
+                       border_style=C_BLUE, padding=(0, 2))
+    bias_table.add_column(); bias_table.add_column()
+    bias_table.add_row(f"[{C_YEL}]weekly[/]",  "Manuel haftalık yön (weekly_bias.json)")
+    bias_table.add_row(f"[{C_YEL}]daily[/]",   "Günlük yön (daily_bias.json)")
+    bias_table.add_row(f"[{C_YEL}]none[/]",    "Bias yok  (EMA-MACD filtresi devreye girer)")
+    bias_table.add_row(f"[{C_YEL}]private[/]", "Otomatik GARCH rejim tespiti")
+    bias_table.add_row(f"[{C_YEL}]hepsi[/]",   "Tüm bias modları")
+    console.print(bias_table)
+    bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
+                 cfg.get("backtest", "default_bias", default="weekly"))
 
-        self._log_clear()
-        self._log(f"═══ BACKTEST  │  {strategy.upper()}  │  bias={bias}  │  RR={rr_str}  │  TBE={tbe_str} ═══\n",
-                  tag="hdr")
+    # RR
+    console.print()
+    rr = _pick("Risk/Ödül seç", ["1:1","1:2be","1:2fix"], "1:2fix")
 
+    # TBE
+    console.print()
+    tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"], "8h")
+
+    # EMA-MACD filtre
+    console.print()
+    emf = _confirm("EMA-MACD filtresi uygulansın mı?", default=False)
+
+    # Sermaye
+    console.print()
+    capital_default = int(cfg.initial_capital)
+    capital = IntPrompt.ask(
+        f"  Başlangıç sermayesi [$]  [dim](varsayılan: {capital_default:,})[/]",
+        default=capital_default,
+        console=console,
+    )
+
+    # Onay
+    console.print()
+    summary = Table(box=SIMPLE_HEAVY, show_header=False,
+                    border_style=C_TEAL, padding=(0, 2))
+    summary.add_column("Parametre", style=C_FG2)
+    summary.add_column("Değer",     style=f"bold {C_BLUE}")
+    summary.add_row("Strateji", strategy.upper())
+    summary.add_row("Bias",     bias)
+    summary.add_row("RR",       rr)
+    summary.add_row("TBE",      tbe)
+    summary.add_row("EMA-MACD", "Evet" if emf else "Hayır")
+    summary.add_row("Sermaye",  f"${capital:,}")
+    console.print(Panel(summary, title="[bold]Özet[/]", style=C_TEAL, box=ROUNDED))
+
+    if not _confirm("Backtesti başlat?"):
+        return
+
+    # Çalıştır
+    console.print()
+    console.print(Rule(f"[bold {C_GREEN}]Backtest çalışıyor…[/]", style=C_GREEN))
+
+    rows: list[dict] = []
+    done = threading.Event()
+    error_box: list[str] = []
+
+    def worker():
         try:
-            from xauusd_fvg_engine_v10 import (
-                DataEngine, MarketBrain, RiskManager,
-                BacktestEngine, PerformanceAnalytics,
-                WeeklyBiasProvider, DailyBiasProvider,
-                PrivateBiasProvider,
-                ThreeVolBrain, LondonReversalBrain, LondonBacktestEngine,
-                to_naive,
-            )
-        except ImportError as e:
-            self._log(f"Import hatası: {e}\n", tag="warn")
-            return
+            r = _run_strategy(strategy, bias, rr, tbe, emf, float(capital))
+            rows.extend(r)
+        except Exception as e:
+            error_box.append(str(e))
+        finally:
+            done.set()
 
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            df_1h, df_5m, bt_start = DataEngine.download(verbose=False)
-        self._log(f"Veri yüklendi  │  5M: {len(df_5m)} bar  │  1H: {len(df_1h)} bar\n", tag="dim")
+    t = threading.Thread(target=worker, daemon=True)
+    t.start()
 
-        if self.app._stop_event.is_set():
-            return
+    # Spinner ile bekle
+    with Live(Spinner("dots", text=f"[{C_BLUE}] Hesaplanıyor…"), console=console,
+              refresh_per_second=10, transient=True):
+        done.wait()
 
-        def make_bias(mode):
-            if mode == "none":    return None
-            if mode == "daily":   return DailyBiasProvider(self.cfg.daily_bias_path)
-            if mode == "private": return PrivateBiasProvider(df_1h)
-            return WeeklyBiasProvider(self.cfg.weekly_bias_path)
+    if error_box:
+        _err(f"Backtest hatası: {error_box[0]}")
+    else:
+        console.print()
+        console.print(_results_table(rows, title=f"Backtest Sonuçları  [{strategy.upper()} | {bias} | {rr}]"))
 
-        def run_one(bias_mode, _rr=rr, _be=be, _tbe=tbe, _emf=emf, poi="all"):
-            bp = make_bias(bias_mode)
-            brain = MarketBrain(bias_provider=bp, poi_mode=poi)
-            risk  = RiskManager(rr=_rr, sl_buffer=self.cfg.sl_buffer)
-            eng   = BacktestEngine(brain, risk,
-                                   initial_capital=capital,
-                                   breakeven_at_R=_be,
-                                   time_exit_bars=_tbe,
-                                   ema_macd_filter=_emf)
-            buf2 = io.StringIO()
-            with contextlib.redirect_stdout(buf2):
-                trades = eng.run(df_1h, df_5m, bt_start)
-            return trades, PerformanceAnalytics(trades, capital).compute()
+    console.print()
+    Prompt.ask(f"  [dim]Devam için Enter'a bas[/]", default="", show_default=False,
+               console=console)
 
-        def run_london(bias_mode):
-            bp    = make_bias(bias_mode)
-            brain = LondonReversalBrain(bias_provider=bp)
-            risk  = RiskManager(rr=2.0, sl_buffer=self.cfg.sl_buffer)
-            eng   = LondonBacktestEngine(brain, risk,
-                                         initial_capital=capital,
-                                         breakeven_at_R=None)
-            buf2 = io.StringIO()
-            with contextlib.redirect_stdout(buf2):
-                trades = eng.run(df_1h, df_5m, bt_start)
-            return trades, PerformanceAnalytics(trades, capital).compute()
 
-        BIASES = ["weekly", "daily", "none", "private"]
+# ═══════════════════════════════════════════════════════════════════════════════
+# MENÜ: WALK-FORWARD ANALİZİ
+# ═══════════════════════════════════════════════════════════════════════════════
 
-        # ── Tek strateji ────────────────────────────────────────────────────
-        if strategy in ("fvg", "threevol", "prz"):
-            poi_map = {"fvg": "all", "threevol": "threevol", "prz": "prz"}
-            poi = poi_map[strategy]
+def wfa_menu() -> None:
+    console.clear()
+    _print_header()
+    console.print(Panel(
+        "[bold]WALK-FORWARD ANALİZİ[/]  — In-Sample Optimize → Out-of-Sample Kör Test",
+        style=C_MAUVE, box=ROUNDED, padding=(0, 2)))
+    console.print()
 
-            if self.app._stop_event.is_set(): return
-            trades, m = run_one(bias, poi=poi)
-            self._print_metrics(m, bias, rr_str, tbe_str)
-            if self.v_monte.get() and m:
-                pa = PerformanceAnalytics(trades, capital)
-                mc = pa.monte_carlo()
-                if mc:
-                    self._log_mc(mc)
+    in_months  = IntPrompt.ask("  IS (in-sample) ay sayısı", default=3, console=console)
+    out_months = IntPrompt.ask("  OOS (out-of-sample) ay sayısı", default=1, console=console)
+    n_windows  = IntPrompt.ask("  Pencere sayısı", default=4, console=console)
+    capital    = IntPrompt.ask("  Başlangıç sermayesi [$]",
+                               default=int(get_config().initial_capital), console=console)
 
-        elif strategy == "london":
-            if self.app._stop_event.is_set(): return
-            trades, m = run_london(bias)
-            self._print_metrics(m, bias, "adaptive", "Yok")
-            if self.v_monte.get() and m:
-                pa = PerformanceAnalytics(trades, capital)
-                mc = pa.monte_carlo()
-                if mc:
-                    self._log_mc(mc)
+    if not _confirm(f"WFA başlat?  ({n_windows} pencere, IS:{in_months}ay, OOS:{out_months}ay)"):
+        return
 
-        # ── Tam Matrix ──────────────────────────────────────────────────────
-        elif strategy == "full":
-            for strat_name, poi in [("FVG v10","all"),("ThreeVol","threevol"),("PRZ","prz")]:
-                if self.app._stop_event.is_set(): return
-                self._log(f"\n── {strat_name} ──────────────────────────────────\n", tag="acc")
-                self._log(f"  {'Bias':<10} {'İşl':>5} {'WR%':>7} {'PnL$':>11} {'Sharpe':>8} {'MaxDD%':>8}\n", tag="dim")
-                for bm in BIASES:
-                    if self.app._stop_event.is_set(): return
-                    _, m = run_one(bm, poi=poi)
-                    self._log_row(bm, m)
+    console.print()
+    console.print(Rule(f"[bold {C_GREEN}]WFA çalışıyor…[/]", style=C_GREEN))
 
-            self._log(f"\n── London Reversal ───────────────────────────────\n", tag="acc")
-            self._log(f"  {'Bias':<10} {'İşl':>5} {'WR%':>7} {'PnL$':>11} {'Sharpe':>8} {'MaxDD%':>8}\n", tag="dim")
-            for bm in BIASES:
-                if self.app._stop_event.is_set(): return
-                _, m = run_london(bm)
-                self._log_row(bm, m)
+    results: list[dict] = []
+    done = threading.Event()
+    error_box: list[str] = []
 
-            if do_wfa:
-                self._run_wfa(df_1h, df_5m, bt_start, capital, run_one)
+    def worker():
+        try:
+            sys.path.insert(0, str(ROOT / "scripts"))
+            from scripts.run_test_matrix import run_wfa, run_one
+            from xauusd_fvg_engine_v10 import DataEngine
+            df_1h, df_5m, bt_start = _load_data()
+            r = run_wfa(df_1h, df_5m, bt_start,
+                        in_months=in_months, out_months=out_months, n_windows=n_windows)
+            results.extend(r)
+        except Exception as e:
+            error_box.append(str(e))
+        finally:
+            done.set()
 
-        if do_wfa and strategy != "full":
-            self._run_wfa(df_1h, df_5m, bt_start, capital, run_one)
+    threading.Thread(target=worker, daemon=True).start()
 
-        self._log("\n✔  Backtest tamamlandı.\n", tag="ok")
+    with Live(Spinner("dots", text=f"[{C_BLUE}] Optimizasyon yapılıyor…"), console=console,
+              refresh_per_second=10, transient=True):
+        done.wait()
 
-    def _run_wfa(self, df_1h, df_5m, bt_start, capital, run_one_fn) -> None:
-        from xauusd_fvg_engine_v10 import PerformanceAnalytics, to_naive
-        import pandas as pd
-
-        self._log("\n── Walk-Forward Analizi (IS:3ay → OOS:1ay) ──────────\n", tag="acc")
-        bt_ts = to_naive(pd.Timestamp(bt_start, tz="UTC"))
-
-        bias_list  = ["weekly", "daily", "none", "private"]
-        rr_configs = [(1.0, None), (2.0, 1.0), (2.0, None)]
-        in_m, out_m, n_win = 3, 1, 4
-
-        def _filt(trades, s, e):
-            return [t for t in trades
-                    if s <= to_naive(t.signal.entry_time) < e]
+    if error_box:
+        _err(f"WFA hatası: {error_box[0]}")
+    else:
+        # Tablo
+        t = Table(title="Walk-Forward Analiz Sonuçları",
+                  box=MINIMAL_DOUBLE_HEAD, border_style=C_BLUE,
+                  header_style=f"bold {C_MAUVE}", padding=(0, 1))
+        t.add_column("#",         justify="center")
+        t.add_column("IS Dönemi",  style=C_FG2)
+        t.add_column("OOS Dönemi", style=C_FG2)
+        t.add_column("En İyi IS",  style=C_BLUE)
+        t.add_column("OOS İşl",    justify="right")
+        t.add_column("OOS WR%",    justify="right")
+        t.add_column("OOS PnL$",   justify="right")
 
         cum_pnl = 0.0
-        for w in range(n_win):
-            if self.app._stop_event.is_set(): return
-            is_s  = bt_ts + pd.DateOffset(months=w * out_m)
-            is_e  = bt_ts + pd.DateOffset(months=w * out_m + in_m)
-            oos_e = bt_ts + pd.DateOffset(months=w * out_m + in_m + out_m)
-            if oos_e > to_naive(df_5m.index[-1]):
-                break
-
-            best_score, best_cfg = -1e9, None
-            for bm in bias_list:
-                for (_rr, _be) in rr_configs:
-                    if self.app._stop_event.is_set(): return
-                    try:
-                        all_tr, _ = run_one_fn(bm, _rr=_rr, _be=_be, _tbe=None, _emf=False)
-                        is_tr = _filt(all_tr, is_s, is_e)
-                        if len(is_tr) < 3: continue
-                        m = PerformanceAnalytics(is_tr, capital).compute()
-                        if m is None: continue
-                        score = m["sharpe"] * (1.0 - m["max_dd"] / 100.0)
-                        if score > best_score:
-                            best_score, best_cfg = score, (bm, _rr, _be)
-                    except Exception:
-                        continue
-            if best_cfg is None:
-                continue
-            bm, _rr, _be = best_cfg
-            cfg_lbl = f"{bm}/{_rr:.0f}:{'BE' if _be else 'fix'}"
-            try:
-                oos_all, _ = run_one_fn(bm, _rr=_rr, _be=_be, _tbe=None, _emf=False)
-                oos_tr = _filt(oos_all, is_e, oos_e)
-                m_oos  = PerformanceAnalytics(oos_tr, capital).compute() if oos_tr else None
-            except Exception:
-                m_oos = None
-
-            is_lbl  = f"{is_s.strftime('%Y-%m')}→{is_e.strftime('%Y-%m')}"
-            oos_lbl = f"{is_e.strftime('%Y-%m')}→{oos_e.strftime('%Y-%m')}"
-            if m_oos and m_oos["total"] > 0:
-                cum_pnl += m_oos["net_pnl"]
-                wr_pct = m_oos["win_rate"] * 100
-                self._log(
-                    f"  Pencere {w+1}  IS:{is_lbl}  OOS:{oos_lbl}  "
-                    f"cfg={cfg_lbl:<16} işl={m_oos['total']:>3}  "
-                    f"WR={wr_pct:.1f}%  PnL={m_oos['net_pnl']:>+9.2f}\n"
+        wr_list = []
+        for r in results:
+            m = r.get("oos_m")
+            is_lbl  = f"{r['is_s'].strftime('%Y-%m')}→{r['is_e'].strftime('%Y-%m')}"
+            oos_lbl = f"{r['is_e'].strftime('%Y-%m')}→{r['oos_e'].strftime('%Y-%m')}"
+            if m and m["total"] > 0:
+                cum_pnl += m["net_pnl"]
+                wr_list.append(m["win_rate"] * 100)
+                wr_col = C_GREEN if m["win_rate"] >= 0.5 else C_YEL
+                pnl_col = C_GREEN if m["net_pnl"] >= 0 else C_RED
+                t.add_row(
+                    str(r["window"]),
+                    is_lbl, oos_lbl, r["cfg"],
+                    str(m["total"]),
+                    f"[{wr_col}]{m['win_rate']*100:.1f}[/]",
+                    f"[{pnl_col}]{m['net_pnl']:+,.2f}[/]",
                 )
             else:
-                self._log(f"  Pencere {w+1}  OOS:{oos_lbl}  cfg={cfg_lbl}  işlem yok\n", tag="dim")
+                t.add_row(str(r["window"]), is_lbl, oos_lbl, r["cfg"],
+                          "—", "—", "—")
 
-        self._log(f"  OOS Kümülatif PnL: ${cum_pnl:>+9.2f}\n", tag="ok")
-
-    # ── Metrik yazdırma ───────────────────────────────────────────────────────
-
-    def _print_metrics(self, m, bias, rr_str, tbe_str) -> None:
-        if m is None or m["total"] == 0:
-            self._log("  → İşlem bulunamadı.\n", tag="warn")
-            return
-        wr = m["win_rate"] * 100
-        tag = "ok" if m["net_pnl"] > 0 else "warn"
-        self._log(f"\n  Bias={bias}  │  RR={rr_str}  │  TBE={tbe_str}\n", tag="acc")
-        self._log(f"  İşlem : {m['total']}  │  Win: {m['wins']}  │  Loss: {m['losses']}\n")
-        self._log(f"  WR    : {wr:.1f}%\n")
-        self._log(f"  NetPnL: ${m['net_pnl']:>+10.2f}\n", tag=tag)
-        self._log(f"  Getiri: %{m['ret_pct']:>+.2f}\n")
-        self._log(f"  Sharpe: {m['sharpe']:.3f}  │  MaxDD: {m['max_dd']:.2f}%  │  PF: {m['profit_factor']:.2f}\n")
-
-    def _log_mc(self, mc: dict) -> None:
-        self._log(f"\n  Monte Carlo ({mc['n_sim']:,} sim │ {mc['n_trades']} işlem)\n", tag="acc")
-        self._log(f"  Medyan MaxDD: %{mc['p50_maxdd']:.2f}  │  P95: %{mc['p95_maxdd']:.2f}"
-                  f"  │  P99: %{mc['p99_maxdd']:.2f}\n")
-        ruin_tag = "warn" if mc["ruin_pct"] > 5 else "dim"
-        self._log(f"  Çöküş ihtimali: %{mc['ruin_pct']:.1f}\n", tag=ruin_tag)
-
-    def _log_row(self, bias: str, m) -> None:
-        if m is None or m["total"] == 0:
-            self._log(f"  {bias:<10} {'—':>5}\n", tag="dim")
-            return
-        wr = m["win_rate"] * 100
-        tag = "ok" if m["net_pnl"] > 0 else "warn"
-        self._log(f"  {bias:<10} {m['total']:>5} {wr:>6.1f}% "
-                  f"{m['net_pnl']:>+11.2f} {m['sharpe']:>8.2f} {m['max_dd']:>8.2f}%\n",
-                  tag=tag)
-
-    # ── Konsol işlemleri ──────────────────────────────────────────────────────
-
-    def _log(self, text: str, tag: str = "") -> None:
-        def _do():
-            self._out.configure(state="normal")
-            if tag:
-                self._out.insert("end", text, tag)
-            else:
-                self._out.insert("end", text)
-            self._out.see("end")
-            self._out.configure(state="disabled")
-        self.app.after(0, _do)
-
-    def _log_clear(self) -> None:
-        def _do():
-            self._out.configure(state="normal")
-            self._out.delete("1.0", "end")
-            self._out.configure(state="disabled")
-        self.app.after(0, _do)
-
-    def _clear_output(self) -> None:
-        self._log_clear()
-
-    def _save_output(self) -> None:
-        content = self._out.get("1.0", "end")
-        path = filedialog.asksaveasfilename(
-            defaultextension=".txt",
-            filetypes=[("Text files","*.txt"),("All files","*.*")],
-            initialfile="backtest_sonuc.txt",
+        console.print(t)
+        avg_wr = sum(wr_list) / len(wr_list) if wr_list else 0
+        pnl_col = C_GREEN if cum_pnl >= 0 else C_RED
+        console.print(
+            f"\n  OOS Kümülatif PnL: [{pnl_col}]${cum_pnl:+,.2f}[/]   "
+            f"│   Ort OOS WR: [bold]{avg_wr:.1f}%[/]"
         )
-        if path:
-            Path(path).write_text(content, encoding="utf-8")
-            self.app.set_status(f"Kaydedildi: {path}")
 
-    def _download_data(self) -> None:
-        def task():
-            self._log("Veri indiriliyor…\n", tag="acc")
-            try:
-                result = subprocess.run(
-                    [sys.executable, str(ROOT / "download_data.py"), "--yahoo-1h"],
-                    capture_output=True, text=True, cwd=str(ROOT),
-                )
-                self._log(result.stdout or "Tamamlandı.\n", tag="ok")
-                if result.returncode != 0:
-                    self._log(result.stderr, tag="warn")
-            except Exception as e:
-                self._log(f"Hata: {e}\n", tag="warn")
-        self.app.run_task(task)
+    console.print()
+    Prompt.ask("  [dim]Devam için Enter[/]", default="", show_default=False, console=console)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# CANLI TRADER SEKMESİ
+# MENÜ: TAM MATRİS (BÖLÜM A+C+G+H)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class LiveTab(ttk.Frame):
+def full_matrix_menu() -> None:
+    console.clear()
+    _print_header()
+    console.print(Panel(
+        "[bold]TAM TEST MATRİSİ[/]  — run_test_matrix.py  (BÖLÜM T+A+C+G+H+W)",
+        style=C_MAUVE, box=ROUNDED, padding=(0, 2)))
+    console.print()
+    _info("Bu bölüm scripts/run_test_matrix.py'yi tam olarak çalıştırır.")
+    _info("Tamamlanması 5-15 dakika sürebilir.")
+    console.print()
 
-    def __init__(self, parent, app: TradingGUI) -> None:
-        super().__init__(parent)
-        self.app = app
-        self.cfg = app.cfg
+    if not _confirm("Tam matris testini başlat?"):
+        return
 
-        self.v_bias    = tk.StringVar(value="weekly")
-        self.v_dry     = tk.BooleanVar(value=True)
-        self.v_lev     = tk.StringVar(value=str(self.cfg.get("live","leverage",default=10)))
-        self.v_risk    = tk.StringVar(value=str(self.cfg.get("live","risk_pct",default=1.0)))
-        self.v_symbol  = tk.StringVar(value=self.cfg.get("live","symbol",default="NCCGOLD2USD-USDT"))
-        self._proc: Optional[subprocess.Popen] = None
+    console.print(Rule(f"[bold {C_GREEN}]Tam Matris çalışıyor…[/]", style=C_GREEN))
 
-        self._build()
+    output_lines: list[str] = []
+    done = threading.Event()
+    error_box: list[str] = []
 
-    def _build(self) -> None:
-        self.columnconfigure(1, weight=1)
-        self.rowconfigure(0, weight=1)
-
-        left = ttk.Frame(self, style="Card.TFrame")
-        left.grid(row=0, column=0, sticky="nsew", padx=(8,4), pady=8)
-
-        right = ttk.Frame(self)
-        right.grid(row=0, column=1, sticky="nsew", padx=(4,8), pady=8)
-        right.rowconfigure(1, weight=1)
-        right.columnconfigure(0, weight=1)
-
-        self._build_left(left)
-        self._build_right(right)
-
-    def _build_left(self, f: ttk.Frame) -> None:
-        pad = {"padx": 12, "pady": 4}
-        _section(f, "CANLI TRADER AYARLARI")
-
-        _combo_row(f, "Bias:", self.v_bias, ["weekly","daily","none"], pad)
-        _entry_row(f, "Kaldıraç:", self.v_lev, pad)
-        _entry_row(f, "Risk %:", self.v_risk, pad)
-        _entry_row(f, "Sembol:", self.v_symbol, pad)
-        ttk.Checkbutton(f, text="Kağıt Trade (Dry-Run)",
-                        variable=self.v_dry).pack(anchor="w", **pad)
-
-        ttk.Separator(f, orient="horizontal").pack(fill="x", pady=8, padx=8)
-
-        ttk.Button(f, text="▶  Trader'ı Başlat", style="Accent.TButton",
-                   command=self._start).pack(fill="x", padx=12, pady=4)
-        ttk.Button(f, text="■  Durdur",
-                   command=self._stop).pack(fill="x", padx=12, pady=2)
-        ttk.Button(f, text="⚠  Tüm Pozisyonları Kapat", style="Danger.TButton",
-                   command=self._close_all).pack(fill="x", padx=12, pady=4)
-
-        ttk.Separator(f, orient="horizontal").pack(fill="x", pady=8, padx=8)
-
-        info = (
-            "BingX API anahtarları\n"
-            "live_config.json içinde\n"
-            "saklanmalıdır.\n\n"
-            "Kağıt trade modunda\n"
-            "gerçek emir açılmaz."
-        )
-        tk.Label(f, text=info, bg=BG3, fg=FG2, font=FONT_SMALL,
-                 justify="left", wraplength=220).pack(padx=12, pady=4, anchor="w")
-
-    def _build_right(self, f: ttk.Frame) -> None:
-        tk.Label(f, text="Canlı Trader Logu", bg=BG, fg=ACC,
-                 font=FONT_H2).grid(row=0, column=0, sticky="w", pady=(4,2))
-        self._log_box = scrolledtext.ScrolledText(
-            f, wrap="word", state="disabled",
-            bg=BG2, fg=FG, font=FONT_MONO,
-            relief="flat", borderwidth=0,
-            highlightthickness=1, highlightbackground=BORDER,
-        )
-        self._log_box.grid(row=1, column=0, sticky="nsew")
-        self._log_box.tag_configure("ok",  foreground=OK)
-        self._log_box.tag_configure("err", foreground=WRN)
-
-    def _log(self, text: str, tag: str = "") -> None:
-        def _do():
-            self._log_box.configure(state="normal")
-            self._log_box.insert("end", text, tag)
-            self._log_box.see("end")
-            self._log_box.configure(state="disabled")
-        self.app.after(0, _do)
-
-    def _start(self) -> None:
-        if self._proc and self._proc.poll() is None:
-            messagebox.showwarning("Uyarı", "Trader zaten çalışıyor!")
-            return
-        args = [
-            sys.executable, str(ROOT / "xauusd_live_trader.py"),
-            "--bias", self.v_bias.get(),
-            "--leverage", self.v_lev.get(),
-            "--risk-pct", self.v_risk.get(),
-            "--symbol", self.v_symbol.get(),
-        ]
-        if self.v_dry.get():
-            args.append("--dry-run")
+    def worker():
         try:
-            self._proc = subprocess.Popen(
-                args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, cwd=str(ROOT), bufsize=1,
-            )
-            self._log("Trader başlatıldı…\n", tag="ok")
-            threading.Thread(target=self._stream_log, daemon=True).start()
+            buf = io.StringIO()
+            with contextlib.redirect_stdout(buf):
+                sys.path.insert(0, str(ROOT / "scripts"))
+                import importlib, scripts.run_test_matrix as rtm
+                importlib.reload(rtm)
+                rtm.main()
+            output_lines.extend(buf.getvalue().splitlines())
         except Exception as e:
-            self._log(f"Başlatma hatası: {e}\n", tag="err")
+            error_box.append(str(e))
+        finally:
+            done.set()
 
-    def _stream_log(self) -> None:
-        for line in iter(self._proc.stdout.readline, ""):
-            self._log(line)
-        self._log("\n[Trader durdu]\n", tag="err")
+    threading.Thread(target=worker, daemon=True).start()
 
-    def _stop(self) -> None:
-        if self._proc and self._proc.poll() is None:
-            self._proc.terminate()
-            self._log("Trader durduruldu.\n", tag="err")
+    with Live(Spinner("dots", text=f"[{C_BLUE}] Matris hesaplanıyor… (uzun sürebilir)"),
+              console=console, refresh_per_second=5, transient=True):
+        done.wait()
 
-    def _close_all(self) -> None:
-        if not messagebox.askyesno("Onay", "Tüm açık pozisyonlar kapatılacak. Emin misiniz?"):
-            return
-        try:
-            subprocess.run(
-                [sys.executable, str(ROOT / "xauusd_live_trader.py"), "--close"],
-                cwd=str(ROOT),
-            )
-            self._log("Tüm pozisyonlar kapatıldı.\n", tag="ok")
-        except Exception as e:
-            self._log(f"Hata: {e}\n", tag="err")
+    if error_box:
+        _err(f"Matris hatası: {error_box[0]}")
+    else:
+        for line in output_lines:
+            console.print(line)
+
+    console.print()
+    Prompt.ask("  [dim]Devam için Enter[/]", default="", show_default=False, console=console)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# AYARLAR SEKMESİ
+# MENÜ: VERİ İNDİR
 # ═══════════════════════════════════════════════════════════════════════════════
 
-class SettingsTab(ttk.Frame):
+def download_menu() -> None:
+    console.clear()
+    _print_header()
+    console.print(Panel(
+        "[bold]VERİ İNDİR / GÜNCELLE[/]  — XAUUSD OHLCV",
+        style=C_MAUVE, box=ROUNDED, padding=(0, 2)))
+    console.print()
 
-    def __init__(self, parent, app: TradingGUI) -> None:
-        super().__init__(parent)
-        self.app = app
-        self.cfg = app.cfg
-        self._vars: dict[str, tk.StringVar] = {}
-        self._build()
+    cfg = get_config()
+    f5m = cfg.csv_5m
+    f1h = cfg.csv_1h
+    _info(f"5M dosyası : {f5m}")
+    _info(f"1H dosyası : {f1h}")
+    console.print()
 
-    def _build(self) -> None:
-        canvas = tk.Canvas(self, bg=BG, highlightthickness=0)
-        vsb = ttk.Scrollbar(self, orient="vertical", command=canvas.yview)
-        canvas.configure(yscrollcommand=vsb.set)
-        vsb.pack(side="right", fill="y")
-        canvas.pack(side="left", fill="both", expand=True)
+    mode = _pick("Kaynak seç",
+                 ["yfinance", "bingx", "kontrol"],
+                 "yfinance")
 
-        inner = ttk.Frame(canvas)
-        canvas.create_window((0, 0), window=inner, anchor="nw")
-        inner.bind("<Configure>", lambda e: canvas.configure(
-            scrollregion=canvas.bbox("all")))
+    if mode == "kontrol":
+        from xauusd_fvg_engine_v10 import DataEngine
+        df_1h, df_5m, bt_start = _load_data()
+        console.print()
+        _ok(f"5M: {len(df_5m):,} mum  |  Son: {df_5m.index[-1]}")
+        _ok(f"1H: {len(df_1h):,} mum  |  Son: {df_1h.index[-1]}")
+        _ok(f"Backtest başlangıcı: {bt_start}")
+    else:
+        _info("download_data.py çalıştırılıyor…")
+        import subprocess
+        args = ["python3", str(ROOT / "download_data.py")]
+        if mode == "bingx":
+            args.append("--bingx")
+        result = subprocess.run(args, capture_output=False)
+        if result.returncode == 0:
+            _ok("İndirme tamamlandı.")
+        else:
+            _err("İndirme sırasında hata oluştu.")
 
-        pad = {"padx": 16, "pady": 4}
+    console.print()
+    Prompt.ask("  [dim]Devam için Enter[/]", default="", show_default=False, console=console)
 
-        sections = [
-            ("backtest", "BACKTEST", [
-                ("initial_capital",  "Başlangıç Sermayesi ($)"),
-                ("default_rr",       "Varsayılan RR"),
-                ("default_tbe_bars", "Varsayılan TBE (bar)"),
-                ("warmup_days",      "Isınma Günleri"),
-            ]),
-            ("risk", "RİSK YÖNETİMİ", [
-                ("risk_fraction",   "Risk Fraksiyonu (ör: 0.005 = 0.5%)"),
-                ("sl_buffer",       "SL Buffer"),
-                ("min_risk_dollar", "Min Risk $"),
-                ("max_risk_dollar", "Max Risk $"),
-            ]),
-            ("private_bias", "PRİVATE BIAS (EWMA/EMA)", [
-                ("vol_lambda", "EWMA Lambda (λ)"),
-                ("vol_mult",   "Volatilite Çarpanı"),
-                ("ema_fast",   "Hızlı EMA Periyodu"),
-                ("ema_slow",   "Yavaş EMA Periyodu"),
-            ]),
-            ("live", "CANLI TRADER", [
-                ("leverage",    "Kaldıraç"),
-                ("risk_pct",    "Risk % / işlem"),
-                ("tbe_minutes", "TBE (dakika)"),
-                ("symbol",      "BingX Sembol"),
-            ]),
-            ("paths", "DOSYA YOLLARI", [
-                ("csv_5m",      "5M CSV Dosyası"),
-                ("csv_1h",      "1H CSV Dosyası"),
-                ("weekly_bias", "Weekly Bias JSON"),
-                ("daily_bias",  "Daily Bias JSON"),
-            ]),
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MENÜ: AYARLAR
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def settings_menu() -> None:
+    console.clear()
+    _print_header()
+    console.print(Panel("[bold]AYARLAR[/]  — config/default.json",
+                        style=C_MAUVE, box=ROUNDED, padding=(0, 2)))
+    console.print()
+
+    cfg = get_config()
+
+    def _show_current() -> None:
+        t = Table(box=SIMPLE_HEAVY, show_header=True,
+                  border_style=C_BLUE, header_style=f"bold {C_MAUVE}",
+                  padding=(0, 2))
+        t.add_column("Parametre",    style=C_FG2)
+        t.add_column("Mevcut Değer", style=f"bold {C_BLUE}")
+        t.add_column("Açıklama",     style=C_FG2)
+
+        rows = [
+            ("backtest.initial_capital", f"${cfg.initial_capital:,.0f}", "Başlangıç sermayesi"),
+            ("risk.risk_fraction",       f"{cfg.risk_fraction*100:.2f}%", "İşlem başına risk"),
+            ("risk.sl_buffer",           f"{cfg.sl_buffer*100:.3f}%", "SL buffer"),
+            ("risk.max_risk_dollar",     f"${cfg.get('risk','max_risk_dollar',default=150)}", "Max risk $"),
+            ("live.leverage",            str(cfg.get("live","leverage",default=10)), "Kaldıraç"),
+            ("live.risk_pct",            f"{cfg.get('live','risk_pct',default=1.0)}%", "Canlı risk%"),
+            ("live.dry_run",             str(cfg.get("live","dry_run",default=True)), "Kağıt trade?"),
+            ("private_bias.vol_lambda",  str(cfg.get("private_bias","vol_lambda",default=0.94)), "EWMA λ"),
+            ("private_bias.vol_mult",    str(cfg.get("private_bias","vol_mult",default=1.20)), "Trending eşiği"),
+            ("private_bias.ema_fast",    str(cfg.get("private_bias","ema_fast",default=21)), "EMA hızlı"),
+            ("private_bias.ema_slow",    str(cfg.get("private_bias","ema_slow",default=55)), "EMA yavaş"),
         ]
+        for k, v, d in rows:
+            t.add_row(k, v, d)
+        console.print(t)
 
-        for section_key, section_lbl, fields in sections:
-            _section(inner, section_lbl)
-            for field_key, field_lbl in fields:
-                var_key = f"{section_key}.{field_key}"
-                val = self.cfg.get(section_key, field_key, default="")
-                var = tk.StringVar(value=str(val))
-                self._vars[var_key] = var
-                row = ttk.Frame(inner)
-                row.pack(fill="x", **pad)
-                tk.Label(row, text=field_lbl + ":", width=34, anchor="w",
-                         bg=BG, fg=FG2, font=FONT_SMALL).pack(side="left")
-                ttk.Entry(row, textvariable=var, width=28).pack(side="left")
-            ttk.Separator(inner, orient="horizontal").pack(fill="x", padx=16, pady=6)
+    _show_current()
+    console.print()
 
-        btn_row = ttk.Frame(inner)
-        btn_row.pack(fill="x", padx=16, pady=8)
-        ttk.Button(btn_row, text="💾  Kaydet ve Uygula", style="Accent.TButton",
-                   command=self._save).pack(side="left", padx=4)
-        ttk.Button(btn_row, text="↺  Varsayılanlara Dön",
-                   command=self._reset).pack(side="left", padx=4)
-        ttk.Button(btn_row, text="📂  JSON'ı Düzenleyicide Aç",
-                   command=self._open_json).pack(side="right", padx=4)
+    # Hangi ayarı değiştir
+    options = {
+        "1": ("backtest", "initial_capital"),
+        "2": ("risk", "risk_fraction"),
+        "3": ("risk", "sl_buffer"),
+        "4": ("live", "leverage"),
+        "5": ("live", "risk_pct"),
+        "6": ("live", "dry_run"),
+        "7": ("private_bias", "vol_lambda"),
+        "8": ("private_bias", "vol_mult"),
+        "9": ("private_bias", "ema_fast"),
+        "10": ("private_bias", "ema_slow"),
+        "g": ("geri", ""),
+    }
 
-    def _save(self) -> None:
-        for var_key, var in self._vars.items():
-            section, field = var_key.split(".", 1)
-            raw = var.get().strip()
-            # int / float dönüşümü
-            try:
-                val: Any = int(raw)
-            except ValueError:
-                try:
-                    val = float(raw)
-                except ValueError:
-                    val = raw
-            self.cfg.set(section, field, val)
-        self.cfg.save()
-        self.app.set_status("Ayarlar kaydedildi.")
-        messagebox.showinfo("Kaydedildi", "Ayarlar config/default.json'a yazıldı.")
+    choice_list = [str(i) for i in range(1, 11)] + ["g"]
+    for k, (sec, param) in options.items():
+        if sec == "geri":
+            console.print(f"  [{C_YEL}]{k}[/] → Geri")
+        else:
+            console.print(f"  [{C_YEL}]{k}[/] → {sec}.{param}")
 
-    def _reset(self) -> None:
-        from config import _BUILTIN_DEFAULTS, _deep_copy
-        self.cfg._data = _deep_copy(_BUILTIN_DEFAULTS)
-        self.cfg.save()
-        # Alanları güncelle
-        for var_key, var in self._vars.items():
-            section, field = var_key.split(".", 1)
-            var.set(str(self.cfg.get(section, field, default="")))
-        self.app.set_status("Varsayılanlara döndürüldü.")
+    console.print()
+    sel = _pick("Değiştirilecek parametre", choice_list, "g")
+    if sel == "g":
+        return
 
-    def _open_json(self) -> None:
-        path = str(ROOT / "config" / "default.json")
-        try:
-            os.startfile(path)
-        except AttributeError:
-            subprocess.Popen(["xdg-open", path])
+    sec, param = options[sel]
+    current = cfg.get(sec, param)
+
+    if isinstance(current, bool):
+        new_val = _confirm(f"{sec}.{param} (E/H)", default=current)
+        cfg.set(sec, param, new_val)
+    elif isinstance(current, float):
+        new_val = FloatPrompt.ask(
+            f"  Yeni değer [{sec}.{param}]  [dim](mevcut: {current})[/]",
+            default=current, console=console)
+        cfg.set(sec, param, new_val)
+    elif isinstance(current, int):
+        new_val = IntPrompt.ask(
+            f"  Yeni değer [{sec}.{param}]  [dim](mevcut: {current})[/]",
+            default=current, console=console)
+        cfg.set(sec, param, new_val)
+
+    cfg.save()
+    _ok(f"{sec}.{param} → {new_val}  |  config/default.json kaydedildi.")
+    console.print()
+    Prompt.ask("  [dim]Devam için Enter[/]", default="", show_default=False, console=console)
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# YARDIMCI FONKSİYONLAR
+# ANA MENÜ
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def _section(parent: tk.Widget, title: str) -> None:
-    tk.Label(parent, text=title, bg=parent.cget("bg"),
-             fg=ACC, font=FONT_H2).pack(anchor="w", padx=12, pady=(10, 2))
+def _main_menu_panel() -> Panel:
+    t = Table(box=SIMPLE_HEAVY, show_header=False,
+              border_style=C_BLUE, padding=(0, 3))
+    t.add_column("Tuş",  style=f"bold {C_YEL}", no_wrap=True)
+    t.add_column("İşlev", style=C_FG)
+    t.add_row("1", "Backtest Çalıştır")
+    t.add_row("2", "Walk-Forward Analizi  (IS optimize → OOS kör test)")
+    t.add_row("3", "Tam Test Matrisi  (BÖLÜM A+C+G+H+W — uzun sürer)")
+    t.add_row("4", "Veri İndir / Güncelle")
+    t.add_row("5", "Ayarlar  (config/default.json)")
+    t.add_row("q", f"[{C_RED}]Çıkış[/]")
+    return Panel(t, title="[bold]ANA MENÜ[/]", style=C_BLUE,
+                 box=ROUNDED, padding=(1, 2))
 
 
-def _combo_row(parent: tk.Widget, label: str, var: tk.StringVar,
-               values: list, pad: dict) -> ttk.Frame:
-    row = ttk.Frame(parent)
-    row.pack(fill="x", **pad)
-    tk.Label(row, text=label, width=13, anchor="w",
-             bg=row.cget("bg"), fg=FG2, font=FONT_UI).pack(side="left")
-    cb = ttk.Combobox(row, textvariable=var, values=values,
-                      state="readonly", width=18)
-    cb.pack(side="left")
-    return row
+def main() -> None:
+    MENU = {
+        "1": backtest_menu,
+        "2": wfa_menu,
+        "3": full_matrix_menu,
+        "4": download_menu,
+        "5": settings_menu,
+    }
+
+    while True:
+        console.clear()
+        _print_header()
+        console.print(_main_menu_panel())
+        console.print()
+
+        choice = Prompt.ask(
+            f"  [{C_YEL}]Seçim[/]",
+            choices=["1", "2", "3", "4", "5", "q"],
+            default="1",
+            console=console,
+        )
+
+        if choice == "q":
+            console.print()
+            console.print(Panel(
+                f"[bold {C_GREEN}]İyi tradeler![/]  XAUUSD FVG System v10",
+                style=C_GREEN, box=ROUNDED, padding=(0, 4)))
+            console.print()
+            sys.exit(0)
+
+        fn = MENU.get(choice)
+        if fn:
+            fn()
 
 
-def _entry_row(parent: tk.Widget, label: str, var: tk.StringVar,
-               pad: dict) -> None:
-    row = ttk.Frame(parent)
-    row.pack(fill="x", **pad)
-    tk.Label(row, text=label, width=13, anchor="w",
-             bg=row.cget("bg"), fg=FG2, font=FONT_UI).pack(side="left")
-    ttk.Entry(row, textvariable=var, width=18).pack(side="left")
-
-
-def _safe_float(s: str, default: float) -> float:
-    try:
-        return float(s.replace(",", "").replace("$", "").strip())
-    except ValueError:
-        return default
-
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# GİRİŞ NOKTASI
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    app = TradingGUI()
-    app.mainloop()
+    try:
+        main()
+    except KeyboardInterrupt:
+        console.print(f"\n  [{C_RED}]Kullanıcı tarafından durduruldu.[/]")
+        sys.exit(0)
