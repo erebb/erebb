@@ -3652,6 +3652,9 @@ class LondonReversalBrain:
     MAX_CISD_BARS       = 6      # süpürme → CISD için max bekleme
     MAX_ENTRY_BARS      = 12     # CISD → FVG geri çekilme girişi için max bekleme
     FVG_MIN_GAP         = 0.20   # displacement FVG min boşluk ($)
+    REJECTION_CLOSE_PCT = 0.60   # sweep barı kendi aralığının uzak %40'ında kapanmalı
+                                 # (güçlü reddediş; zayıf mikro-stop gürültüsünü eler) 0=kapalı
+                                 # 0.60: bias modlarında regresyon yok + none gürültüsü azalır
 
     def __init__(self, bias_provider=None):
         self.bias             = bias_provider
@@ -3675,13 +3678,14 @@ class LondonReversalBrain:
         self.MAX_CISD_BARS       = int(lc.get('max_cisd_bars',  self.MAX_CISD_BARS))
         self.MAX_ENTRY_BARS      = int(lc.get('max_entry_bars', self.MAX_ENTRY_BARS))
         self.FVG_MIN_GAP         = float(lc.get('fvg_min_gap',  self.FVG_MIN_GAP))
+        self.REJECTION_CLOSE_PCT = float(lc.get('rejection_close_pct', self.REJECTION_CLOSE_PCT))
         # Geriye dönük uyum: eski require_mss bayrağı → cisd_break
         if lc.get('require_mss') and self.ENTRY_MODE == 'immediate':
             self.ENTRY_MODE = 'cisd_break'
 
         self.stats = dict(no_session=0, no_asian=0, swept=0,
                           cisd=0, signal=0, expired=0,
-                          too_deep=0, daily_limit=0,
+                          too_deep=0, weak_reject=0, daily_limit=0,
                           step1_fail=0, step2_fail=0, step3_fail=0)
 
     # ── London Killzone: 06:00–09:00 UTC BST / 07:00–10:00 UTC GMT ───────────
@@ -3788,6 +3792,11 @@ class LondonReversalBrain:
             min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
             max_depth = atr_val * self.MAX_SWEEP_DIST_MULT
             allowed   = (['bull', 'bear'] if self.bias is None else [weekly_dir])
+            bar_rng   = max(high_c - low_c, 1e-9)
+            # Reddediş kalitesi: sweep barı kendi aralığının uzak ucunda kapanmalı.
+            #   bull → kapanış üst %(1-pct)'te | bear → alt %(1-pct)'te.
+            rej_bull = (close_c - low_c) / bar_rng >= self.REJECTION_CLOSE_PCT
+            rej_bear = (high_c - close_c) / bar_rng >= self.REJECTION_CLOSE_PCT
 
             for direction in allowed:
                 if direction == 'bull':
@@ -3800,6 +3809,9 @@ class LondonReversalBrain:
                             if depth > max_depth:
                                 self.stats['too_deep'] += 1
                                 self.stats['step2_fail'] += 1
+                                continue
+                            if not rej_bull:                       # zayıf reddediş → ele
+                                self.stats['weak_reject'] += 1
                                 continue
                             self.stats['swept'] += 1
                             if self.ENTRY_MODE == 'immediate':
@@ -3819,6 +3831,9 @@ class LondonReversalBrain:
                             if depth > max_depth:
                                 self.stats['too_deep'] += 1
                                 self.stats['step2_fail'] += 1
+                                continue
+                            if not rej_bear:                       # zayıf reddediş → ele
+                                self.stats['weak_reject'] += 1
                                 continue
                             self.stats['swept'] += 1
                             if self.ENTRY_MODE == 'immediate':

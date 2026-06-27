@@ -37,6 +37,7 @@
     "max_cisd_bars": 6,
     "max_entry_bars": 12,
     "fvg_min_gap": 0.20,
+    "rejection_close_pct": 0.60,
     "min_sweep_mult": 0.05,
     "min_sweep_pts": 0.30,
     "max_sweep_mult": 1.5
