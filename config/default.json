@@ -27,6 +27,15 @@
     "ema_fast": 21,
     "ema_slow": 55
   },
+  "london_reversal": {
+    "require_mss": false,
+    "min_rr": 1.5,
+    "tp1_fraction": 0.5,
+    "max_mss_bars": 12,
+    "min_sweep_mult": 0.05,
+    "min_sweep_pts": 0.30,
+    "max_sweep_mult": 1.5
+  },
   "paths": {
     "csv_5m": "xauusd_5m.csv",
     "csv_1h": "xauusd_1h.csv",

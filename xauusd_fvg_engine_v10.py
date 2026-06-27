@@ -139,7 +139,8 @@ class TradeSignal:
     fvg5_quality      : float = 0.0
     ema_distance_pct  : float = 0.0
     fib_level         : float = 0.0   # FibRetestBrain: 0.618 retest giriş seviyesi
-    tp_hint           : float = 0.0   # LondonReversalBrain: Asya range karşı taraf TP (tek hedef)
+    tp_hint           : float = 0.0   # LondonReversalBrain: Asya range karşı taraf TP (TP2 = runner)
+    tp1_hint          : float = 0.0   # LondonReversalBrain: Asya equilibrium %50 (TP1 = kısmi kâr)
 
 
 @dataclass
@@ -161,6 +162,11 @@ class Trade:
     pnl_dollar   : float = 0.0
     equity_after : float = 0.0
     entry_bar_idx: int   = -1        # zaman bazlı çıkış için giriş bar indeksi
+    # ── Kısmi çıkış (opt-in; tp1 None → klasik tek-TP davranışı, regresyon yok) ──
+    tp1          : Optional[float] = None   # kısmi TP seviyesi (equilibrium)
+    tp1_fraction : float = 0.5              # tp1'de kapatılan pozisyon oranı
+    tp1_done     : bool  = False            # tp1 vuruldu mu (BE'ye taşındı)
+    realized_pnl : float = 0.0              # tp1'den realize edilen kâr ($)
 
 
 @dataclass
@@ -2123,10 +2129,31 @@ class BacktestEngine:
 
         # ── Tek işlem çıkış mantığı (iki slot için ortak) ────────────────
         def _process_exit(t: Trade) -> Tuple[bool, float]:
-            """(çıktı_mı, equity_delta). t alanları güncellenir (in-place)."""
+            """(çıktı_mı, equity_delta). t alanları güncellenir (in-place).
+
+            Kısmi TP1 (opt-in): t.tp1 set ise, TP1 vurulduğunda pozisyonun
+            t.tp1_fraction kadarı kapanır, kalan SL breakeven'a taşınır ve işlem
+            AÇIK kalır. tp1=None → klasik tek-TP davranışı (regresyon yok).
+            Sonuç sınıfı toplam PnL'e göre belirlenir (kısmi + kalan)."""
             d      = t.signal.direction
             R      = t.risk
             entry  = t.entry_price
+            partial = 0.0
+
+            # ── Kısmi TP1 — tek TP/SL kontrolünden ÖNCE ──────────────────
+            if t.tp1 is not None and not t.tp1_done:
+                hit_tp1 = (H[idx] >= t.tp1) if d == 'bull' else (L[idx] <= t.tp1)
+                hit_sl0 = (L[idx] <= t.sl)  if d == 'bull' else (H[idx] >= t.sl)
+                if hit_tp1 and not hit_sl0:   # aynı barda SL varsa muhafazakar: TP1 atla
+                    mult1   = ((t.tp1 - entry) if d == 'bull'
+                               else (entry - t.tp1)) / (R + 1e-10)
+                    partial = mult1 * t.risk_dollar * t.tp1_fraction
+                    t.realized_pnl += partial
+                    t.tp1_done = True
+                    t.sl = round(entry, 2)    # kalan pozisyon → breakeven
+
+            rem_frac = (1.0 - t.tp1_fraction) if t.tp1_done else 1.0
+
             hit_tp = (H[idx] >= t.tp) if d == 'bull' else (L[idx] <= t.tp)
             hit_sl = (L[idx] <= t.sl) if d == 'bull' else (H[idx] >= t.sl)
             if hit_sl and hit_tp:
@@ -2134,12 +2161,13 @@ class BacktestEngine:
             if hit_tp or hit_sl:
                 ep   = t.tp if hit_tp else t.sl
                 mult = ((ep - entry) if d == 'bull' else (entry - ep)) / (R + 1e-10)
-                dlr  = mult * t.risk_dollar
+                dlr  = mult * t.risk_dollar * rem_frac
+                total = t.realized_pnl + dlr
                 t.exit_price = ep; t.exit_time = TM[idx]
-                t.result     = ('WIN' if mult > 0.01 else
-                                ('BE' if abs(mult) <= 0.01 else 'LOSS'))
-                t.pnl_dollar = round(dlr, 2)
-                return True, dlr
+                t.result     = ('WIN' if total > 0.01 else
+                                ('BE' if abs(total) <= 0.01 else 'LOSS'))
+                t.pnl_dollar = round(total, 2)
+                return True, partial + dlr
             if self.breakeven_at_R is not None and t.sl != entry:
                 be_lvl  = (entry + self.breakeven_at_R * R if d == 'bull'
                            else entry - self.breakeven_at_R * R)
@@ -2148,10 +2176,13 @@ class BacktestEngine:
                     t.sl = round(entry, 2)
                     be_hit = (L[idx] <= t.sl) if d == 'bull' else (H[idx] >= t.sl)
                     if be_hit:
+                        total = t.realized_pnl   # kalan BE'de → 0
                         t.exit_price = t.sl; t.exit_time = TM[idx]
-                        t.result = 'BE'; t.pnl_dollar = 0.0
-                        return True, 0.0
-            return False, 0.0
+                        t.result = ('WIN' if total > 0.01 else
+                                    ('BE' if abs(total) <= 0.01 else 'LOSS'))
+                        t.pnl_dollar = round(total, 2)
+                        return True, partial
+            return False, partial
 
         for idx in bt_idx:
             if idx + 1 >= len(df5):
@@ -2163,22 +2194,25 @@ class BacktestEngine:
                 if t is None:
                     continue
                 exited, delta = _process_exit(t)
+                equity += delta   # kısmi kâr ve/veya final çıkış (yoksa 0 → regresyon yok)
                 if not exited and self.time_exit_bars is not None:
                     bars_open = idx - t.entry_bar_idx
                     if bars_open >= self.time_exit_bars:
                         close_price = float(C[idx])
                         d = t.signal.direction
+                        rem_frac = (1.0 - t.tp1_fraction) if t.tp1_done else 1.0
                         mult = ((close_price - t.entry_price) if d == 'bull'
                                 else (t.entry_price - close_price)) / (t.risk + 1e-10)
-                        delta = mult * t.risk_dollar
+                        tdelta = mult * t.risk_dollar * rem_frac
+                        equity += tdelta
+                        total  = t.realized_pnl + tdelta
                         t.exit_price = round(close_price, 2)
                         t.exit_time  = TM[idx]
-                        t.result     = ('WIN' if mult > 0.01 else
-                                        ('BE' if abs(mult) <= 0.01 else 'LOSS'))
-                        t.pnl_dollar = round(delta, 2)
+                        t.result     = ('WIN' if total > 0.01 else
+                                        ('BE' if abs(total) <= 0.01 else 'LOSS'))
+                        t.pnl_dollar = round(total, 2)
                         exited = True
                 if exited:
-                    equity         += delta
                     t.equity_after  = round(equity, 2)
                     trades.append(t)
                     if slot_key == 'fvg':
@@ -2278,6 +2312,7 @@ class BacktestEngine:
                 t.exit_price   = float(C[-1])
                 t.exit_time    = TM[-1]
                 t.result       = 'OPEN'
+                t.pnl_dollar   = round(t.realized_pnl, 2)  # kısmi kâr realize edildiyse yansıt
                 t.equity_after = round(equity, 2)
                 trades.append(t)
 
@@ -3552,20 +3587,28 @@ class LondonReversalBrain:
     """
     ICT Judas Swing — London Killzone'da Asya likidite süpürmesi + dönüş.
 
-    Giriş kuralları (kullanıcı belgesine göre):
-      • London Killzone (06:00–09:00 UTC BST / 07:00–10:00 UTC GMT) içinde
-      • Fiyat Asya seansının H/L'ini aşar VE aynı barda geri döner (rejection close)
-      • Sweep derinliği: min_depth < depth < max_depth (gerçek breakout elenir)
-      • Günde max 1 işlem (aynı London seansında çoklu işlem yok)
-      • Sinyal bar'ın kapanışında üretilir → O[idx+1]'de giriş (lookahead yok)
-      • SL = sweep wick ucu | TP = Equilibrium (≥1.5R) veya Opposite (≥2R) veya 1:2 RR
+    SÜPÜRME (rejection): London Killzone içinde fiyat Asya H/L'ini wick'le aşar VE
+    içeri kapanır. Sweep derinliği min < depth < max (gerçek breakout elenir).
 
-    Asya seansı: 23:00–05:59 UTC (gece yarısını aşar, AsianRangeCalculator lookahead-safe)
+    GİRİŞ — iki mod (require_mss):
+      • require_mss = False (VARSAYILAN): süpürme+reddediş barında anında giriş
+        (O[idx+1]). SL = reddediş wick ucu. Backtest'te en iyi sonucu veren mod —
+        equilibrium kısmi TP ile WR ve MaxDD belirgin iyileşir.
+      • require_mss = True (opsiyonel): süpürmeden sonra ≤ MAX_MSS_BARS bar içinde
+        bir 5M bar reddediş barının zıt ucunu kapanışla kırarsa (market-structure
+        shift) giriş onaylanır. SL = Judas ekstremi. ICT açısından daha katı ama
+        mevcut ~4 aylık veride geç giriş + geniş stop nedeniyle daha kötü; daha çok
+        veri ile yeniden değerlendirilmek üzere config'ten açılabilir.
+
+    TP1 = Asya equilibrium (%50) — kısmi kâr + SL→BE.  TP2 = Asya karşı taraf — runner.
+    Günde max 1 işlem. Asya seansı: 23:00–05:59 UTC (AsianRangeCalculator lookahead-safe).
     """
 
     MIN_SWEEP_MULT      = 0.05   # ATR × bu oran = min sweep derinliği
     MIN_SWEEP_PTS       = 0.30   # mutlak minimum ($)
     MAX_SWEEP_DIST_MULT = 1.5    # ATR × bu orandan derin = gerçek breakout → atla
+    MAX_MSS_BARS        = 12     # süpürme sonrası MSS için max bekleme (12×5dk = 1s)
+    REQUIRE_MSS         = False  # MSS onayı şart mı (varsayılan: anında giriş)
 
     def __init__(self, bias_provider=None):
         self.bias             = bias_provider
@@ -3573,8 +3616,22 @@ class LondonReversalBrain:
         self.used_fvg_ids: set = set()   # arayüz uyumu
         self._session         = SessionFilter()
         self._last_signal_date: Optional[object] = None   # günlük işlem limiti
-        self.stats = dict(no_session=0, no_asian=0, sweep_added=0,
-                          no_msb=0, signal=0, expired=0,
+        self._sweep: Optional[dict] = None                # aktif süpürme (MSS bekliyor)
+
+        # Config'ten oku (yoksa sınıf sabitleri) — hardcoded olmaktan çıkar
+        try:
+            from config import get_config
+            lc = get_config().section('london_reversal')
+        except Exception:
+            lc = {}
+        self.MIN_SWEEP_MULT      = float(lc.get('min_sweep_mult', self.MIN_SWEEP_MULT))
+        self.MIN_SWEEP_PTS       = float(lc.get('min_sweep_pts',  self.MIN_SWEEP_PTS))
+        self.MAX_SWEEP_DIST_MULT = float(lc.get('max_sweep_mult', self.MAX_SWEEP_DIST_MULT))
+        self.MAX_MSS_BARS        = int(lc.get('max_mss_bars',     self.MAX_MSS_BARS))
+        self.REQUIRE_MSS         = bool(lc.get('require_mss',     self.REQUIRE_MSS))
+
+        self.stats = dict(no_session=0, no_asian=0, swept=0,
+                          mss_confirmed=0, mss_timeout=0, signal=0,
                           too_deep=0, daily_limit=0,
                           step1_fail=0, step2_fail=0, step3_fail=0)
 
@@ -3584,6 +3641,30 @@ class LondonReversalBrain:
         if self._session.is_london_dst(t):
             return 6.0 <= h < 9.0    # BST (yaz): 06:00–09:00 UTC (Frankfurt dahil)
         return 7.0 <= h < 10.0       # GMT (kış): 07:00–10:00 UTC
+
+    def _make_signal(self, idx, TM, direction, extreme, ah, al) -> TradeSignal:
+        """Giriş sinyali. TP2 = karşı taraf (runner), TP1 = equilibrium (kısmi)."""
+        eq = (ah + al) / 2.0
+        return TradeSignal(
+            entry_time        = TM[idx],
+            direction         = direction,
+            trigger_fvg       = None,
+            confirmation_type = 'LONDON-REV',
+            confidence        = 80.0,
+            msb_type          = ('london_mss' if self.REQUIRE_MSS else 'london_sweep'),
+            confluence_count  = 1,
+            stop_price        = extreme,                 # SL = wick/Judas ekstremi (lookahead yok)
+            risk_fraction     = 0.005,
+            tp_hint           = (ah if direction == 'bull' else al),  # TP2 = karşı taraf
+            tp1_hint          = eq,                      # TP1 = equilibrium (%50)
+        )
+
+    def _fire(self, idx, TM, direction, extreme, ah, al, today) -> TradeSignal:
+        sig = self._make_signal(idx, TM, direction, extreme, ah, al)
+        self.stats['signal'] += 1
+        self._last_signal_date = today
+        self._sweep = None
+        return sig
 
     def evaluate(self, idx: int,
                  C: np.ndarray, O: np.ndarray,
@@ -3612,10 +3693,14 @@ class LondonReversalBrain:
             self.last_skip_reason = 'no_asian'
             return None
 
-        # ── London Killzone dışındaysa çık ──────────────────────────────────
+        # ── London Killzone dışındaysa çık (bekleyen süpürme iptal) ─────────
         in_killzone = (self._is_london_killzone(t)
                        and not self._session.is_holiday(t))
         if not in_killzone:
+            if self._sweep is not None:
+                self.stats['mss_timeout'] += 1
+                self.stats['step1_fail'] += 1
+                self._sweep = None
             self.last_skip_reason = 'no_session'
             return None
 
@@ -3628,94 +3713,97 @@ class LondonReversalBrain:
         # ── Günlük işlem limiti: max 1 işlem per London seansı ──────────────
         today = t.date()
         if self._last_signal_date == today:
+            self._sweep = None
             self.stats['daily_limit'] += 1
             self.last_skip_reason = 'daily_limit'
             return None
 
-        # ── ATR bazlı sweep derinliği sınırları ─────────────────────────────
-        atr_val   = (float(ATR[idx]) if ATR is not None
-                     and not np.isnan(float(ATR[idx])) else 2.0)
-        min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
-        max_depth = atr_val * self.MAX_SWEEP_DIST_MULT   # fazla derin = gerçek breakout
+        # Önceki güne ait bekleyen süpürmeyi temizle
+        if self._sweep is not None and self._sweep['date'] != today:
+            self._sweep = None
 
         close_c = float(C[idx])
         low_c   = float(L[idx])
         high_c  = float(H[idx])
 
-        # ── Sweep+rejection tespiti → direkt sinyal (pending yok) ────────────
-        # Giriş bar'ı kapandığında sinyal → sonraki bar'ın açılışında giriş (lookahead yok)
-        signal_candidate: Optional[TradeSignal] = None
+        # ── 1) MSS modunda: aktif süpürme varsa onay kontrol et ──────────────
+        s = self._sweep
+        if self.REQUIRE_MSS and s is not None:
+            if (idx - s['sweep_idx']) > self.MAX_MSS_BARS:
+                self.stats['mss_timeout'] += 1
+                self.stats['step1_fail'] += 1
+                self._sweep = None
+            elif s['direction'] == 'bull':
+                s['extreme'] = min(s['extreme'], low_c)       # Judas dip (SL)
+                if close_c > s['mss_ref']:                    # yukarı MSS onayı
+                    self.stats['mss_confirmed'] += 1
+                    return self._fire(idx, TM, 'bull', s['extreme'], ah, al, today)
+            else:
+                s['extreme'] = max(s['extreme'], high_c)      # Judas tepe (SL)
+                if close_c < s['mss_ref']:                    # aşağı MSS onayı
+                    self.stats['mss_confirmed'] += 1
+                    return self._fire(idx, TM, 'bear', s['extreme'], ah, al, today)
 
-        for direction in ('bull', 'bear'):
-            if self.bias is not None and weekly_dir != direction:
-                continue
+        # ── 2) Bu barda süpürme + reddediş tespiti ───────────────────────────
+        atr_val   = (float(ATR[idx]) if ATR is not None
+                     and not np.isnan(float(ATR[idx])) else 2.0)
+        min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
+        max_depth = atr_val * self.MAX_SWEEP_DIST_MULT
 
+        allowed = (['bull', 'bear'] if self.bias is None else [weekly_dir])
+        for direction in allowed:
             if direction == 'bull':
-                # Wick aşağı (L < al) VE kapanış geri döndü (C > al) = rejection
-                sweep_depth = al - low_c
-                swept = (sweep_depth > min_depth) and (close_c > al)
-                if not swept:
-                    continue
-                if sweep_depth > max_depth:
-                    self.stats['too_deep'] += 1
-                    continue   # Çok derin → gerçek breakout, atla
-                self.stats['sweep_added'] += 1
-                sig = TradeSignal(
-                    entry_time        = TM[idx],
-                    direction         = 'bull',
-                    trigger_fvg       = None,
-                    confirmation_type = 'LONDON-REV',
-                    confidence        = 75.0,
-                    msb_type          = 'london_sweep',
-                    confluence_count  = 1,
-                    stop_price        = low_c,   # SL = wick ucu (lookahead yok)
-                    risk_fraction     = 0.005,
-                    tp_hint           = ah,      # TP = Asya yüksek (tek hedef, min 2R zorunlu)
-                )
+                depth = al - low_c
+                if depth > min_depth and close_c > al:        # aşağı süpürme + içeri kapanış
+                    if depth > max_depth:
+                        self.stats['too_deep'] += 1
+                        self.stats['step2_fail'] += 1
+                        continue
+                    self.stats['swept'] += 1
+                    if not self.REQUIRE_MSS:                   # anında giriş (varsayılan)
+                        return self._fire(idx, TM, 'bull', low_c, ah, al, today)
+                    self._sweep = dict(direction='bull', sweep_idx=idx,
+                                       mss_ref=high_c, extreme=low_c, date=today)
+                    break
+            else:
+                depth = high_c - ah
+                if depth > min_depth and close_c < ah:        # yukarı süpürme + içeri kapanış
+                    if depth > max_depth:
+                        self.stats['too_deep'] += 1
+                        self.stats['step2_fail'] += 1
+                        continue
+                    self.stats['swept'] += 1
+                    if not self.REQUIRE_MSS:
+                        return self._fire(idx, TM, 'bear', high_c, ah, al, today)
+                    self._sweep = dict(direction='bear', sweep_idx=idx,
+                                       mss_ref=low_c, extreme=high_c, date=today)
+                    break
 
-            else:  # bear
-                # Wick yukarı (H > ah) VE kapanış geri döndü (C < ah) = rejection
-                sweep_depth = high_c - ah
-                swept = (sweep_depth > min_depth) and (close_c < ah)
-                if not swept:
-                    continue
-                if sweep_depth > max_depth:
-                    self.stats['too_deep'] += 1
-                    continue
-                self.stats['sweep_added'] += 1
-                sig = TradeSignal(
-                    entry_time        = TM[idx],
-                    direction         = 'bear',
-                    trigger_fvg       = None,
-                    confirmation_type = 'LONDON-REV',
-                    confidence        = 75.0,
-                    msb_type          = 'london_sweep',
-                    confluence_count  = 1,
-                    stop_price        = high_c,  # SL = wick ucu
-                    risk_fraction     = 0.005,
-                    tp_hint           = al,      # TP = Asya düşük (tek hedef, min 2R zorunlu)
-                )
-
-            if signal_candidate is None:
-                signal_candidate = sig
-                self.stats['signal'] += 1
-                self._last_signal_date = today   # günlük limit güncelle
-
-        if signal_candidate is None:
-            self.last_skip_reason = 'no_signal'
-        return signal_candidate
+        self.last_skip_reason = 'no_signal'
+        return None
 
 
 class LondonBacktestEngine(BacktestEngine):
     """
     LondonReversalBrain için özel engine.
     Asya range dizilerini hesaplar → brain.evaluate()'a iletir.
-    TP = Asya range karşı tarafı (tek hedef). RR < 2.0 → işlem reddedilir.
+    TP1 = Asya equilibrium (%50, kısmi kâr) | TP2 = Asya karşı taraf (runner).
+    TP2'ye göre RR < MIN_RR → işlem reddedilir.
     """
+
+    MIN_RR       = 1.5    # TP2'ye min RR (kısmi banking expectancy'yi düzeltir)
+    TP1_FRACTION = 0.5    # equilibrium'da kapatılan oran
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.rr_reject_count = 0   # yetersiz RR nedeniyle reddedilen işlem sayısı
+        try:
+            from config import get_config
+            lc = get_config().section('london_reversal')
+        except Exception:
+            lc = {}
+        self.MIN_RR       = float(lc.get('min_rr',       self.MIN_RR))
+        self.TP1_FRACTION = float(lc.get('tp1_fraction', self.TP1_FRACTION))
 
     def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
             backtest_start: datetime) -> List[Trade]:
@@ -3745,25 +3833,30 @@ class LondonBacktestEngine(BacktestEngine):
         buf       = self.risk.sl_buffer
 
         # ICT Judas Swing TP kuralı:
-        #   TP = Asya range karşı sınırı (tek ve değişmez hedef)
-        #   RR < 2.0 → işlemi tamamen reddet (fallback yok)
-        tp = signal.tp_hint   # bull: Asya yüksek; bear: Asya düşük
+        #   TP2 = Asya range karşı sınırı (runner, değişmez likidite hedefi)
+        #   TP1 = Asya equilibrium (%50) — geçerliyse kısmi kâr + SL → BE
+        #   RR(TP2) < MIN_RR → işlemi reddet
+        tp2 = signal.tp_hint    # bull: Asya yüksek; bear: Asya düşük
+        eq  = signal.tp1_hint   # equilibrium (%50)
 
         if direction == 'bull':
             sl_raw    = signal.stop_price * (1.0 - buf)
             risk_per  = max(entry - sl_raw, 0.01)
-            actual_rr = (tp - entry) / risk_per
+            actual_rr = (tp2 - entry) / risk_per
+            # TP1 yalnızca giriş equilibrium'un altındaysa (önünde) geçerli
+            tp1 = eq if (eq > entry and eq < tp2) else None
         else:
             sl_raw    = signal.stop_price * (1.0 + buf)
             risk_per  = max(sl_raw - entry, 0.01)
-            actual_rr = (entry - tp) / risk_per
+            actual_rr = (entry - tp2) / risk_per
+            tp1 = eq if (eq < entry and eq > tp2) else None
 
-        if actual_rr < 2.0:
+        if actual_rr < self.MIN_RR:
             self.rr_reject_count += 1
-            return None   # Asya hedefi yetersiz RR → işlem açılmaz
+            return None   # TP2 yetersiz RR → işlem açılmaz
 
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
-                              signal.risk_fraction, tp_override=tp)
+                              signal.risk_fraction, tp_override=tp2)
         if r is None:
             return None
         return Trade(
@@ -3778,6 +3871,8 @@ class LondonBacktestEngine(BacktestEngine):
             rr            = actual_rr,
             risk_fraction = r['risk_fraction'],
             entry_bar_idx = idx,
+            tp1           = (round(tp1, 2) if tp1 is not None else None),
+            tp1_fraction  = self.TP1_FRACTION,
         )
 
 
