@@ -28,10 +28,15 @@
     "ema_slow": 55
   },
   "london_reversal": {
-    "require_mss": false,
+    "entry_mode": "immediate",
+    "use_pdh_pdl": true,
+    "asian_start_utc": 23,
+    "asian_end_utc": 6,
     "min_rr": 1.5,
     "tp1_fraction": 0.5,
-    "max_mss_bars": 12,
+    "max_cisd_bars": 6,
+    "max_entry_bars": 12,
+    "fvg_min_gap": 0.20,
     "min_sweep_mult": 0.05,
     "min_sweep_pts": 0.30,
     "max_sweep_mult": 1.5

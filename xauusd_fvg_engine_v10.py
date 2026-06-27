@@ -3531,7 +3531,14 @@ class AsianRangeCalculator:
     """
 
     @staticmethod
-    def compute(df_5m: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+    def compute(df_5m: pd.DataFrame,
+                start_utc: int = 23, end_utc: int = 6) -> Tuple[np.ndarray, np.ndarray]:
+        """Her 5M bara karşı en son TAMAMLANMIŞ Asya seansı H/L (lookahead-safe).
+
+        Pencere parametrik:
+          • start_utc > end_utc → gece yarısını aşan pencere (örn. 23→06, varsayılan).
+          • start_utc < end_utc → aynı gün penceresi (örn. 00→05, kanonik ICT).
+        """
         idx = df_5m.index
         if hasattr(idx, 'tz') and idx.tz is not None:
             idx = idx.tz_convert('UTC').tz_localize(None)
@@ -3539,26 +3546,25 @@ class AsianRangeCalculator:
         H   = df_5m['High'].values.astype(float)
         L   = df_5m['Low'].values.astype(float)
         n   = len(df_5m)
+        one_day = pd.Timedelta(days=1)
+        crossing = start_utc > end_utc
 
-        # Asya seansı 23:00–05:59 UTC (gece yarısını aşar)
-        asian_mask = (dt.hour < 6) | (dt.hour >= 23)
+        if crossing:
+            asian_mask = (dt.hour < end_utc) | (dt.hour >= start_utc)
+        else:
+            asian_mask = (dt.hour >= start_utc) & (dt.hour < end_utc)
 
-        # Seans tarihi = o seansın ait olduğu London günü (06:00'da kapanır)
-        # 23:xx barlar → ertesi günün London seansına ait
-        # 00:xx–05:xx barlar → aynı günün London seansına ait
+        # Seans tarihi = o seansın ait olduğu London günü (end_utc'de kapanır)
         daily_h: dict = {}
         daily_l: dict = {}
-        one_day = pd.Timedelta(days=1)
         for i in range(n):
             if not asian_mask[i]:
                 continue
-            if dt[i].hour >= 23:
-                # Bu bar ertesi günün Asya seansına ait
-                key = (dt[i] + one_day).strftime('%Y-%m-%d')
+            if crossing and dt[i].hour >= start_utc:
+                key = (dt[i] + one_day).strftime('%Y-%m-%d')   # ertesi günün seansı
             else:
                 key = dt[i].strftime('%Y-%m-%d')
-            h_val = float(H[i])
-            l_val = float(L[i])
+            h_val = float(H[i]); l_val = float(L[i])
             if key not in daily_h or h_val > daily_h[key]:
                 daily_h[key] = h_val
             if key not in daily_l or l_val < daily_l[key]:
@@ -3567,48 +3573,85 @@ class AsianRangeCalculator:
         ASIAN_H = np.full(n, np.nan)
         ASIAN_L = np.full(n, np.nan)
         for i in range(n):
-            if asian_mask[i]:
-                # Seans devam ediyor → önceki tamamlanmış seans key'i (lookahead yok)
-                if dt[i].hour >= 23:
-                    key = dt[i].strftime('%Y-%m-%d')        # bugün = önceki seans
+            if crossing:
+                if asian_mask[i]:
+                    # Seans devam ediyor → önceki tamamlanmış seans (lookahead yok)
+                    key = (dt[i] if dt[i].hour >= start_utc
+                           else (dt[i] - one_day)).strftime('%Y-%m-%d')
                 else:
-                    key = (dt[i] - one_day).strftime('%Y-%m-%d')  # dün = önceki seans
+                    key = dt[i].strftime('%Y-%m-%d')   # tamamlandı → mevcut seans
             else:
-                # Seans tamamlandı (06:00–22:59) → mevcut seansı kullan
-                key = dt[i].strftime('%Y-%m-%d')
+                # Aynı-gün penceresi: end_utc'den önce seans tamamlanmadı → dün
+                if dt[i].hour >= end_utc:
+                    key = dt[i].strftime('%Y-%m-%d')
+                else:
+                    key = (dt[i] - one_day).strftime('%Y-%m-%d')
             if key in daily_h:
                 ASIAN_H[i] = daily_h[key]
                 ASIAN_L[i] = daily_l[key]
 
         return ASIAN_H, ASIAN_L
 
+    @staticmethod
+    def compute_pdhl(df_5m: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
+        """Her 5M bara karşı önceki TAMAMLANMIŞ UTC takvim gününün High/Low
+        (PDH/PDL likidite havuzları, lookahead-safe)."""
+        idx = df_5m.index
+        if hasattr(idx, 'tz') and idx.tz is not None:
+            idx = idx.tz_convert('UTC').tz_localize(None)
+        dt  = pd.DatetimeIndex(idx)
+        H   = df_5m['High'].values.astype(float)
+        L   = df_5m['Low'].values.astype(float)
+        n   = len(df_5m)
+        one_day = pd.Timedelta(days=1)
+
+        daily_h: dict = {}
+        daily_l: dict = {}
+        for i in range(n):
+            key = dt[i].strftime('%Y-%m-%d')
+            daily_h[key] = max(daily_h.get(key, -1e18), float(H[i]))
+            daily_l[key] = min(daily_l.get(key,  1e18), float(L[i]))
+
+        PDH = np.full(n, np.nan)
+        PDL = np.full(n, np.nan)
+        for i in range(n):
+            key = (dt[i] - one_day).strftime('%Y-%m-%d')   # önceki gün (kapalı)
+            if key in daily_h:
+                PDH[i] = daily_h[key]
+                PDL[i] = daily_l[key]
+        return PDH, PDL
+
 
 class LondonReversalBrain:
     """
-    ICT Judas Swing — London Killzone'da Asya likidite süpürmesi + dönüş.
+    ICT London Reversal (Judas Swing) — London Killzone'da likidite süpürmesi + dönüş.
 
-    SÜPÜRME (rejection): London Killzone içinde fiyat Asya H/L'ini wick'le aşar VE
-    içeri kapanır. Sweep derinliği min < depth < max (gerçek breakout elenir).
+    SÜPÜRME: London Killzone içinde fiyat bir likidite havuzunu (Asya H/L ve
+    opsiyonel olarak önceki gün H/L = PDH/PDL) wick'le aşar VE içeri kapanır
+    (rejection). Süpürme bias'ın TERSİ yöndedir (manipülasyon), dönüş bias yönünde.
+    Sweep derinliği min < depth < max (gerçek breakout elenir).
 
-    GİRİŞ — iki mod (require_mss):
-      • require_mss = False (VARSAYILAN): süpürme+reddediş barında anında giriş
-        (O[idx+1]). SL = reddediş wick ucu. Backtest'te en iyi sonucu veren mod —
-        equilibrium kısmi TP ile WR ve MaxDD belirgin iyileşir.
-      • require_mss = True (opsiyonel): süpürmeden sonra ≤ MAX_MSS_BARS bar içinde
-        bir 5M bar reddediş barının zıt ucunu kapanışla kırarsa (market-structure
-        shift) giriş onaylanır. SL = Judas ekstremi. ICT açısından daha katı ama
-        mevcut ~4 aylık veride geç giriş + geniş stop nedeniyle daha kötü; daha çok
-        veri ile yeniden değerlendirilmek üzere config'ten açılabilir.
+    GİRİŞ — entry_mode (config):
+      • 'immediate' (VARSAYILAN): süpürme+reddediş barında anında giriş (O[idx+1]).
+        SL = reddediş wick ucu. Backtest'te en iyi sonucu veren mod.
+      • 'cisd_break': süpürme sonrası ≤ max_cisd_bars içinde bir bar reddediş barının
+        zıt ucunu kapanışla kırarsa (CISD/MSS) giriş. SL = Judas ekstremi.
+      • 'fvg_ote': CISD displacement'i bir 5M FVG bırakır; fiyat FVG'ye geri çekilince
+        giriş (Optimal Trade Entry). En katı ICT modeli; mevcut ~4 aylık veride çok
+        az işlem ürettiği için varsayılan değil, daha çok veriyle değerlendirilmek üzere.
 
     TP1 = Asya equilibrium (%50) — kısmi kâr + SL→BE.  TP2 = Asya karşı taraf — runner.
-    Günde max 1 işlem. Asya seansı: 23:00–05:59 UTC (AsianRangeCalculator lookahead-safe).
+    Günde max 1 işlem. Likidite havuzları AsianRangeCalculator ile lookahead-safe.
     """
 
     MIN_SWEEP_MULT      = 0.05   # ATR × bu oran = min sweep derinliği
     MIN_SWEEP_PTS       = 0.30   # mutlak minimum ($)
     MAX_SWEEP_DIST_MULT = 1.5    # ATR × bu orandan derin = gerçek breakout → atla
-    MAX_MSS_BARS        = 12     # süpürme sonrası MSS için max bekleme (12×5dk = 1s)
-    REQUIRE_MSS         = False  # MSS onayı şart mı (varsayılan: anında giriş)
+    ENTRY_MODE          = 'immediate'  # 'immediate' | 'cisd_break' | 'fvg_ote'
+    USE_PDH_PDL         = True   # önceki gün H/L'sini de likidite havuzu say
+    MAX_CISD_BARS       = 6      # süpürme → CISD için max bekleme
+    MAX_ENTRY_BARS      = 12     # CISD → FVG geri çekilme girişi için max bekleme
+    FVG_MIN_GAP         = 0.20   # displacement FVG min boşluk ($)
 
     def __init__(self, bias_provider=None):
         self.bias             = bias_provider
@@ -3616,7 +3659,7 @@ class LondonReversalBrain:
         self.used_fvg_ids: set = set()   # arayüz uyumu
         self._session         = SessionFilter()
         self._last_signal_date: Optional[object] = None   # günlük işlem limiti
-        self._sweep: Optional[dict] = None                # aktif süpürme (MSS bekliyor)
+        self._st: Optional[dict] = None                   # aktif setup durumu
 
         # Config'ten oku (yoksa sınıf sabitleri) — hardcoded olmaktan çıkar
         try:
@@ -3627,11 +3670,17 @@ class LondonReversalBrain:
         self.MIN_SWEEP_MULT      = float(lc.get('min_sweep_mult', self.MIN_SWEEP_MULT))
         self.MIN_SWEEP_PTS       = float(lc.get('min_sweep_pts',  self.MIN_SWEEP_PTS))
         self.MAX_SWEEP_DIST_MULT = float(lc.get('max_sweep_mult', self.MAX_SWEEP_DIST_MULT))
-        self.MAX_MSS_BARS        = int(lc.get('max_mss_bars',     self.MAX_MSS_BARS))
-        self.REQUIRE_MSS         = bool(lc.get('require_mss',     self.REQUIRE_MSS))
+        self.ENTRY_MODE          = str(lc.get('entry_mode',  self.ENTRY_MODE))
+        self.USE_PDH_PDL         = bool(lc.get('use_pdh_pdl', self.USE_PDH_PDL))
+        self.MAX_CISD_BARS       = int(lc.get('max_cisd_bars',  self.MAX_CISD_BARS))
+        self.MAX_ENTRY_BARS      = int(lc.get('max_entry_bars', self.MAX_ENTRY_BARS))
+        self.FVG_MIN_GAP         = float(lc.get('fvg_min_gap',  self.FVG_MIN_GAP))
+        # Geriye dönük uyum: eski require_mss bayrağı → cisd_break
+        if lc.get('require_mss') and self.ENTRY_MODE == 'immediate':
+            self.ENTRY_MODE = 'cisd_break'
 
         self.stats = dict(no_session=0, no_asian=0, swept=0,
-                          mss_confirmed=0, mss_timeout=0, signal=0,
+                          cisd=0, signal=0, expired=0,
                           too_deep=0, daily_limit=0,
                           step1_fail=0, step2_fail=0, step3_fail=0)
 
@@ -3651,7 +3700,7 @@ class LondonReversalBrain:
             trigger_fvg       = None,
             confirmation_type = 'LONDON-REV',
             confidence        = 80.0,
-            msb_type          = ('london_mss' if self.REQUIRE_MSS else 'london_sweep'),
+            msb_type          = 'london_' + self.ENTRY_MODE,
             confluence_count  = 1,
             stop_price        = extreme,                 # SL = wick/Judas ekstremi (lookahead yok)
             risk_fraction     = 0.005,
@@ -3663,7 +3712,7 @@ class LondonReversalBrain:
         sig = self._make_signal(idx, TM, direction, extreme, ah, al)
         self.stats['signal'] += 1
         self._last_signal_date = today
-        self._sweep = None
+        self._st = None
         return sig
 
     def evaluate(self, idx: int,
@@ -3677,6 +3726,8 @@ class LondonReversalBrain:
                  asian_low:  Optional[np.ndarray] = None,
                  ATR: Optional[np.ndarray] = None,
                  RSI: Optional[np.ndarray] = None,
+                 pdh: Optional[np.ndarray] = None,
+                 pdl: Optional[np.ndarray] = None,
                  **_) -> Optional[TradeSignal]:
 
         self.last_skip_reason = None
@@ -3693,14 +3744,13 @@ class LondonReversalBrain:
             self.last_skip_reason = 'no_asian'
             return None
 
-        # ── London Killzone dışındaysa çık (bekleyen süpürme iptal) ─────────
+        # ── London Killzone dışındaysa çık (bekleyen setup iptal) ───────────
         in_killzone = (self._is_london_killzone(t)
                        and not self._session.is_holiday(t))
         if not in_killzone:
-            if self._sweep is not None:
-                self.stats['mss_timeout'] += 1
-                self.stats['step1_fail'] += 1
-                self._sweep = None
+            if self._st is not None:
+                self.stats['expired'] += 1
+                self._st = None
             self.last_skip_reason = 'no_session'
             return None
 
@@ -3713,73 +3763,124 @@ class LondonReversalBrain:
         # ── Günlük işlem limiti: max 1 işlem per London seansı ──────────────
         today = t.date()
         if self._last_signal_date == today:
-            self._sweep = None
+            self._st = None
             self.stats['daily_limit'] += 1
             self.last_skip_reason = 'daily_limit'
             return None
 
-        # Önceki güne ait bekleyen süpürmeyi temizle
-        if self._sweep is not None and self._sweep['date'] != today:
-            self._sweep = None
+        if self._st is not None and self._st['date'] != today:
+            self._st = None
 
         close_c = float(C[idx])
         low_c   = float(L[idx])
         high_c  = float(H[idx])
 
-        # ── 1) MSS modunda: aktif süpürme varsa onay kontrol et ──────────────
-        s = self._sweep
-        if self.REQUIRE_MSS and s is not None:
-            if (idx - s['sweep_idx']) > self.MAX_MSS_BARS:
-                self.stats['mss_timeout'] += 1
-                self.stats['step1_fail'] += 1
-                self._sweep = None
-            elif s['direction'] == 'bull':
-                s['extreme'] = min(s['extreme'], low_c)       # Judas dip (SL)
-                if close_c > s['mss_ref']:                    # yukarı MSS onayı
-                    self.stats['mss_confirmed'] += 1
-                    return self._fire(idx, TM, 'bull', s['extreme'], ah, al, today)
-            else:
-                s['extreme'] = max(s['extreme'], high_c)      # Judas tepe (SL)
-                if close_c < s['mss_ref']:                    # aşağı MSS onayı
-                    self.stats['mss_confirmed'] += 1
-                    return self._fire(idx, TM, 'bear', s['extreme'], ah, al, today)
+        # ── 1) Stateful modlar: aktif setup'ı ilerlet (cisd_break / fvg_ote) ─
+        if self.ENTRY_MODE in ('cisd_break', 'fvg_ote') and self._st is not None:
+            sig = self._progress_setup(idx, TM, H, L, close_c, low_c, high_c, ah, al, today)
+            if sig is not None:
+                return sig
 
-        # ── 2) Bu barda süpürme + reddediş tespiti ───────────────────────────
-        atr_val   = (float(ATR[idx]) if ATR is not None
-                     and not np.isnan(float(ATR[idx])) else 2.0)
-        min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
-        max_depth = atr_val * self.MAX_SWEEP_DIST_MULT
+        # ── 2) Yeni süpürme tespiti (state A) ────────────────────────────────
+        if self._st is None:
+            atr_val   = (float(ATR[idx]) if ATR is not None
+                         and not np.isnan(float(ATR[idx])) else 2.0)
+            min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
+            max_depth = atr_val * self.MAX_SWEEP_DIST_MULT
+            allowed   = (['bull', 'bear'] if self.bias is None else [weekly_dir])
 
-        allowed = (['bull', 'bear'] if self.bias is None else [weekly_dir])
-        for direction in allowed:
-            if direction == 'bull':
-                depth = al - low_c
-                if depth > min_depth and close_c > al:        # aşağı süpürme + içeri kapanış
-                    if depth > max_depth:
-                        self.stats['too_deep'] += 1
-                        self.stats['step2_fail'] += 1
-                        continue
-                    self.stats['swept'] += 1
-                    if not self.REQUIRE_MSS:                   # anında giriş (varsayılan)
-                        return self._fire(idx, TM, 'bull', low_c, ah, al, today)
-                    self._sweep = dict(direction='bull', sweep_idx=idx,
-                                       mss_ref=high_c, extreme=low_c, date=today)
-                    break
-            else:
-                depth = high_c - ah
-                if depth > min_depth and close_c < ah:        # yukarı süpürme + içeri kapanış
-                    if depth > max_depth:
-                        self.stats['too_deep'] += 1
-                        self.stats['step2_fail'] += 1
-                        continue
-                    self.stats['swept'] += 1
-                    if not self.REQUIRE_MSS:
-                        return self._fire(idx, TM, 'bear', high_c, ah, al, today)
-                    self._sweep = dict(direction='bear', sweep_idx=idx,
-                                       mss_ref=low_c, extreme=high_c, date=today)
-                    break
+            for direction in allowed:
+                if direction == 'bull':
+                    levels = [al]
+                    if self.USE_PDH_PDL and pdl is not None and not np.isnan(float(pdl[idx])):
+                        levels.append(float(pdl[idx]))
+                    for lv in levels:
+                        depth = lv - low_c
+                        if depth > min_depth and close_c > lv:     # aşağı süpürme + içeri kapanış
+                            if depth > max_depth:
+                                self.stats['too_deep'] += 1
+                                self.stats['step2_fail'] += 1
+                                continue
+                            self.stats['swept'] += 1
+                            if self.ENTRY_MODE == 'immediate':
+                                return self._fire(idx, TM, 'bull', low_c, ah, al, today)
+                            self._st = dict(dir='bull', sweep_idx=idx, ref=high_c,
+                                            judas=low_c, phase='swept', date=today)
+                            break
+                    if self._st is not None:
+                        break
+                else:
+                    levels = [ah]
+                    if self.USE_PDH_PDL and pdh is not None and not np.isnan(float(pdh[idx])):
+                        levels.append(float(pdh[idx]))
+                    for lv in levels:
+                        depth = high_c - lv
+                        if depth > min_depth and close_c < lv:     # yukarı süpürme + içeri kapanış
+                            if depth > max_depth:
+                                self.stats['too_deep'] += 1
+                                self.stats['step2_fail'] += 1
+                                continue
+                            self.stats['swept'] += 1
+                            if self.ENTRY_MODE == 'immediate':
+                                return self._fire(idx, TM, 'bear', high_c, ah, al, today)
+                            self._st = dict(dir='bear', sweep_idx=idx, ref=low_c,
+                                            judas=high_c, phase='swept', date=today)
+                            break
+                    if self._st is not None:
+                        break
 
         self.last_skip_reason = 'no_signal'
+        return None
+
+    def _progress_setup(self, idx, TM, H, L, close_c, low_c, high_c, ah, al, today):
+        """cisd_break / fvg_ote modları için aktif setup state machine'i."""
+        s = self._st
+        d = s['dir']
+        # toplam zaman aşımı
+        if (idx - s['sweep_idx']) > (self.MAX_CISD_BARS + self.MAX_ENTRY_BARS):
+            self.stats['expired'] += 1
+            self._st = None
+            return None
+        # Judas ekstremini güncelle (SL)
+        if d == 'bull':
+            s['judas'] = min(s['judas'], low_c)
+        else:
+            s['judas'] = max(s['judas'], high_c)
+
+        if s['phase'] == 'swept':
+            if (idx - s['sweep_idx']) > self.MAX_CISD_BARS:
+                self.stats['expired'] += 1
+                self._st = None
+                return None
+            broke = (close_c > s['ref']) if d == 'bull' else (close_c < s['ref'])
+            if broke:
+                self.stats['cisd'] += 1
+                if self.ENTRY_MODE == 'cisd_break':
+                    return self._fire(idx, TM, d, s['judas'], ah, al, today)
+                # fvg_ote: CISD displacement bir 5M FVG bıraktı mı?
+                #   bull FVG: L[idx] > H[idx-2] → geri çekilme kenarı = L[idx]
+                #   bear FVG: H[idx] < L[idx-2] → geri çekilme kenarı = H[idx]
+                if idx >= 2:
+                    if d == 'bull':
+                        gap = low_c - float(H[idx - 2])
+                        if gap > self.FVG_MIN_GAP:
+                            s['fvg_edge'] = low_c
+                            s['phase'] = 'cisd'; s['cisd_idx'] = idx
+                    else:
+                        gap = float(L[idx - 2]) - high_c
+                        if gap > self.FVG_MIN_GAP:
+                            s['fvg_edge'] = high_c
+                            s['phase'] = 'cisd'; s['cisd_idx'] = idx
+            return None
+        elif s['phase'] == 'cisd':
+            if (idx - s['cisd_idx']) > self.MAX_ENTRY_BARS:
+                self.stats['expired'] += 1
+                self._st = None
+                return None
+            if d == 'bull' and low_c <= s['fvg_edge']:
+                return self._fire(idx, TM, 'bull', s['judas'], ah, al, today)
+            if d == 'bear' and high_c >= s['fvg_edge']:
+                return self._fire(idx, TM, 'bear', s['judas'], ah, al, today)
         return None
 
 
@@ -3802,13 +3903,21 @@ class LondonBacktestEngine(BacktestEngine):
             lc = get_config().section('london_reversal')
         except Exception:
             lc = {}
-        self.MIN_RR       = float(lc.get('min_rr',       self.MIN_RR))
-        self.TP1_FRACTION = float(lc.get('tp1_fraction', self.TP1_FRACTION))
+        self.MIN_RR        = float(lc.get('min_rr',        self.MIN_RR))
+        self.TP1_FRACTION  = float(lc.get('tp1_fraction',  self.TP1_FRACTION))
+        self.ASIAN_START   = int(lc.get('asian_start_utc', 23))
+        self.ASIAN_END     = int(lc.get('asian_end_utc',   6))
+        self.USE_PDH_PDL   = bool(lc.get('use_pdh_pdl',    True))
 
     def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
             backtest_start: datetime) -> List[Trade]:
-        ASIAN_H, ASIAN_L = AsianRangeCalculator.compute(df_5m)
-        self._extra_brain_kwargs = {'asian_high': ASIAN_H, 'asian_low': ASIAN_L}
+        ASIAN_H, ASIAN_L = AsianRangeCalculator.compute(
+            df_5m, self.ASIAN_START, self.ASIAN_END)
+        kw = {'asian_high': ASIAN_H, 'asian_low': ASIAN_L}
+        if self.USE_PDH_PDL:
+            PDH, PDL = AsianRangeCalculator.compute_pdhl(df_5m)
+            kw['pdh'] = PDH; kw['pdl'] = PDL
+        self._extra_brain_kwargs = kw
         result = super().run(df_1h, df_5m, backtest_start)
         self._extra_brain_kwargs = {}
         return result
