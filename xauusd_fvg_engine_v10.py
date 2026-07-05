@@ -3637,8 +3637,18 @@ class LondonReversalBrain:
       • 'cisd_break': süpürme sonrası ≤ max_cisd_bars içinde bir bar reddediş barının
         zıt ucunu kapanışla kırarsa (CISD/MSS) giriş. SL = Judas ekstremi.
       • 'fvg_ote': CISD displacement'i bir 5M FVG bırakır; fiyat FVG'ye geri çekilince
-        giriş (Optimal Trade Entry). En katı ICT modeli; mevcut ~4 aylık veride çok
-        az işlem ürettiği için varsayılan değil, daha çok veriyle değerlendirilmek üzere.
+        giriş. SL = Judas ekstremi.
+      • 'retest': süpürme sonrası fiyat süpürülen seviyeye geri dönünce giriş
+        (limit-retest yaklaşımı, dar stop). SL = Judas ekstremi.
+      • 'ote': CISD kırılımı sonrası dönüş bacağının %62–79 fib geri çekilmesine
+        (Optimal Trade Entry, optimal 0.705) fiyat girince giriş. SL = Judas ekstremi
+        (fib 1.0) ötesi — ICT'nin klasik giriş tekniği.
+
+    FİLTRE BORU HATTI (hepsi config, 0/None = kapalı):
+      hafta sonu/tatil → killzone → bias → günlük limit → Asya range geçerli →
+      Asya range boyutu (min/max × ATR) → [sweep anı] derinlik min/max ×ATR →
+      reddediş kalitesi (close-pos) → killzone alt-penceresi (erken sweep) →
+      displacement (tetik barı gövdesi ≥ X × ATR).
 
     TP1 = Asya equilibrium (%50) — kısmi kâr + SL→BE.  TP2 = Asya karşı taraf — runner.
     Günde max 1 işlem. Likidite havuzları AsianRangeCalculator ile lookahead-safe.
@@ -3647,16 +3657,28 @@ class LondonReversalBrain:
     MIN_SWEEP_MULT      = 0.05   # ATR × bu oran = min sweep derinliği
     MIN_SWEEP_PTS       = 0.30   # mutlak minimum ($)
     MAX_SWEEP_DIST_MULT = 1.5    # ATR × bu orandan derin = gerçek breakout → atla
-    ENTRY_MODE          = 'immediate'  # 'immediate' | 'cisd_break' | 'fvg_ote'
+    ENTRY_MODE          = 'immediate'  # bkz. VALID_ENTRY_MODES
+    VALID_ENTRY_MODES   = ('immediate', 'cisd_break', 'fvg_ote', 'retest', 'ote')
     USE_PDH_PDL         = True   # önceki gün H/L'sini de likidite havuzu say
     MAX_CISD_BARS       = 6      # süpürme → CISD için max bekleme
-    MAX_ENTRY_BARS      = 12     # CISD → FVG geri çekilme girişi için max bekleme
+    MAX_ENTRY_BARS      = 12     # CISD→FVG/OTE girişi veya seviye retest'i için max bekleme
     FVG_MIN_GAP         = 0.20   # displacement FVG min boşluk ($)
     REJECTION_CLOSE_PCT = 0.60   # sweep barı kendi aralığının uzak %40'ında kapanmalı
                                  # (güçlü reddediş; zayıf mikro-stop gürültüsünü eler) 0=kapalı
                                  # 0.60: bias modlarında regresyon yok + none gürültüsü azalır
     WEEKEND_FILTER      = True   # Cumartesi/Pazar girişleri engelle (7/24 kripto-altın
                                  # verisinde hafta sonu "London killzone" gerçek değildir)
+    ASIAN_RANGE_MIN_ATR = 0.0    # Asya range < X×ATR → gün atla: dar range'in likiditesi
+                                 # anlamsız (0=kapalı)
+    ASIAN_RANGE_MAX_ATR = 0.0    # Asya range > X×ATR → gün atla: volatil gece, hedefler
+                                 # aşırı uzak (0=kapalı)
+    SWEEP_WINDOW_BARS   = 0      # sweep killzone'un ilk N barında olmalı; geç süpürme
+                                 # daha az güvenilir (0=tüm killzone)
+    DISPLACEMENT_MIN_ATR = 0.0   # tetik barının gücü ≥ X×ATR (0=kapalı):
+                                 #   immediate/retest → reddediş mesafesi (bull: C-L)
+                                 #   cisd/fvg_ote/ote → kırılım barı gövdesi |C-O|
+    OTE_MIN             = 0.62   # OTE bölgesi alt fib (retracement başlangıcı)
+    OTE_MAX             = 0.79   # OTE bölgesi üst fib (SL fib 1.0 = Judas ekstremi)
 
     def __init__(self, bias_provider=None):
         self.bias             = bias_provider
@@ -3682,16 +3704,23 @@ class LondonReversalBrain:
         self.FVG_MIN_GAP         = float(lc.get('fvg_min_gap',  self.FVG_MIN_GAP))
         self.REJECTION_CLOSE_PCT = float(lc.get('rejection_close_pct', self.REJECTION_CLOSE_PCT))
         self.WEEKEND_FILTER      = bool(lc.get('weekend_filter', self.WEEKEND_FILTER))
+        self.ASIAN_RANGE_MIN_ATR  = float(lc.get('asian_range_min_atr',  self.ASIAN_RANGE_MIN_ATR))
+        self.ASIAN_RANGE_MAX_ATR  = float(lc.get('asian_range_max_atr',  self.ASIAN_RANGE_MAX_ATR))
+        self.SWEEP_WINDOW_BARS    = int(lc.get('sweep_window_bars',      self.SWEEP_WINDOW_BARS))
+        self.DISPLACEMENT_MIN_ATR = float(lc.get('displacement_min_atr', self.DISPLACEMENT_MIN_ATR))
+        self.OTE_MIN              = float(lc.get('ote_min', self.OTE_MIN))
+        self.OTE_MAX              = float(lc.get('ote_max', self.OTE_MAX))
         # Geriye dönük uyum: eski require_mss bayrağı → cisd_break
         if lc.get('require_mss') and self.ENTRY_MODE == 'immediate':
             self.ENTRY_MODE = 'cisd_break'
         # Geçersiz entry_mode (config typo) → sessizce 0 işlem üretmesin
-        if self.ENTRY_MODE not in ('immediate', 'cisd_break', 'fvg_ote'):
+        if self.ENTRY_MODE not in self.VALID_ENTRY_MODES:
             self.ENTRY_MODE = 'immediate'
 
         self.stats = dict(no_session=0, no_asian=0, swept=0,
                           cisd=0, signal=0, expired=0,
                           too_deep=0, weak_reject=0, daily_limit=0,
+                          range_small=0, range_wide=0, late_sweep=0, weak_disp=0,
                           step1_fail=0, step2_fail=0, step3_fail=0)
 
     # ── London Killzone: 06:00–09:00 UTC BST / 07:00–10:00 UTC GMT ───────────
@@ -3745,58 +3774,53 @@ class LondonReversalBrain:
         self.last_skip_reason = None
         t = to_naive(TM[idx])
 
-        # ── Asya range gerekli ───────────────────────────────────────────────
+        # ── Filtre boru hattı: sweep öncesi gün/bar kapıları ─────────────────
         if asian_high is None or asian_low is None:
             self.last_skip_reason = 'no_asian'
             return None
         ah = float(asian_high[idx])
         al = float(asian_low[idx])
-        if np.isnan(ah) or np.isnan(al) or (ah - al) < 0.5:
-            self.stats['no_asian'] += 1
-            self.last_skip_reason = 'no_asian'
-            return None
+        atr_val = (float(ATR[idx]) if ATR is not None
+                   and not np.isnan(float(ATR[idx])) else 2.0)
 
-        # ── London Killzone dışındaysa çık (bekleyen setup iptal) ───────────
-        in_killzone = (self._is_london_killzone(t)
-                       and not self._session.is_holiday(t))
-        if not in_killzone:
-            if self._st is not None:
-                self.stats['expired'] += 1
+        skip = self._pass_filters(t, ah, al, atr_val)
+        if skip is not None:
+            if skip == 'no_session' and self._st is not None:
+                self.stats['expired'] += 1     # killzone bitti → bekleyen setup iptal
                 self._st = None
-            self.last_skip_reason = 'no_session'
+            self.last_skip_reason = skip
             return None
 
-        # ── Bias ─────────────────────────────────────────────────────────────
         weekly_dir = self.bias.get(t) if self.bias is not None else None
-        if self.bias is not None and weekly_dir is None:
-            self.last_skip_reason = 'no_bias'
-            return None
 
-        # ── Günlük işlem limiti: max 1 işlem per London seansı ──────────────
         today = t.date()
-        if self._last_signal_date == today:
-            self._st = None
-            self.stats['daily_limit'] += 1
-            self.last_skip_reason = 'daily_limit'
-            return None
-
         if self._st is not None and self._st['date'] != today:
             self._st = None
 
+        open_c  = float(O[idx])
         close_c = float(C[idx])
         low_c   = float(L[idx])
         high_c  = float(H[idx])
 
-        # ── 1) Stateful modlar: aktif setup'ı ilerlet (cisd_break / fvg_ote) ─
-        if self.ENTRY_MODE in ('cisd_break', 'fvg_ote') and self._st is not None:
-            sig = self._progress_setup(idx, TM, H, L, close_c, low_c, high_c, ah, al, today)
+        # ── 1) Stateful modlar: aktif setup'ı ilerlet ────────────────────────
+        if self.ENTRY_MODE != 'immediate' and self._st is not None:
+            sig = self._progress_setup(idx, TM, H, L, open_c, close_c, low_c,
+                                       high_c, ah, al, atr_val, today)
             if sig is not None:
                 return sig
 
         # ── 2) Yeni süpürme tespiti (state A) ────────────────────────────────
         if self._st is None:
-            atr_val   = (float(ATR[idx]) if ATR is not None
-                         and not np.isnan(float(ATR[idx])) else 2.0)
+            # Killzone alt-penceresi: Judas tipik olarak açılışın ilk saatlerinde
+            # gelir; geç süpürmeler daha az güvenilir → ele.
+            if self.SWEEP_WINDOW_BARS > 0:
+                kz_start = 6.0 if self._session.is_london_dst(t) else 7.0
+                bars_in  = int(((t.hour + t.minute / 60.0) - kz_start) * 12 + 0.5)
+                if bars_in >= self.SWEEP_WINDOW_BARS:
+                    self.stats['late_sweep'] += 1
+                    self.last_skip_reason = 'late_sweep'
+                    return None
+
             min_depth = max(self.MIN_SWEEP_PTS, atr_val * self.MIN_SWEEP_MULT)
             max_depth = atr_val * self.MAX_SWEEP_DIST_MULT
             allowed   = (['bull', 'bear'] if self.bias is None else [weekly_dir])
@@ -3805,6 +3829,12 @@ class LondonReversalBrain:
             #   bull → kapanış üst %(1-pct)'te | bear → alt %(1-pct)'te.
             rej_bull = (close_c - low_c) / bar_rng >= self.REJECTION_CLOSE_PCT
             rej_bear = (high_c - close_c) / bar_rng >= self.REJECTION_CLOSE_PCT
+            # Displacement (immediate/retest): reddediş mesafesi ≥ X×ATR.
+            # (CISD modlarında displacement kırılım barında ölçülür.)
+            dm = self.DISPLACEMENT_MIN_ATR
+            need_disp = dm > 0 and self.ENTRY_MODE in ('immediate', 'retest')
+            disp_bull = (not need_disp) or (close_c - low_c)  >= dm * atr_val
+            disp_bear = (not need_disp) or (high_c - close_c) >= dm * atr_val
 
             for direction in allowed:
                 if direction == 'bull':
@@ -3821,11 +3851,15 @@ class LondonReversalBrain:
                             if not rej_bull:                       # zayıf reddediş → ele
                                 self.stats['weak_reject'] += 1
                                 continue
+                            if not disp_bull:                      # cılız reddediş barı → ele
+                                self.stats['weak_disp'] += 1
+                                continue
                             self.stats['swept'] += 1
                             if self.ENTRY_MODE == 'immediate':
                                 return self._fire(idx, TM, 'bull', low_c, ah, al, today)
                             self._st = dict(dir='bull', sweep_idx=idx, ref=high_c,
-                                            judas=low_c, phase='swept', date=today)
+                                            judas=low_c, lv=lv, max_d=max_depth,
+                                            phase='swept', date=today)
                             break
                     if self._st is not None:
                         break
@@ -3843,11 +3877,15 @@ class LondonReversalBrain:
                             if not rej_bear:                       # zayıf reddediş → ele
                                 self.stats['weak_reject'] += 1
                                 continue
+                            if not disp_bear:                      # cılız reddediş barı → ele
+                                self.stats['weak_disp'] += 1
+                                continue
                             self.stats['swept'] += 1
                             if self.ENTRY_MODE == 'immediate':
                                 return self._fire(idx, TM, 'bear', high_c, ah, al, today)
                             self._st = dict(dir='bear', sweep_idx=idx, ref=low_c,
-                                            judas=high_c, phase='swept', date=today)
+                                            judas=high_c, lv=lv, max_d=max_depth,
+                                            phase='swept', date=today)
                             break
                     if self._st is not None:
                         break
@@ -3855,8 +3893,40 @@ class LondonReversalBrain:
         self.last_skip_reason = 'no_signal'
         return None
 
-    def _progress_setup(self, idx, TM, H, L, close_c, low_c, high_c, ah, al, today):
-        """cisd_break / fvg_ote modları için aktif setup state machine'i."""
+    def _pass_filters(self, t: datetime, ah: float, al: float,
+                      atr_val: float) -> Optional[str]:
+        """Sweep öncesi filtre boru hattı. Geçmeyen ilk filtrenin adını döner
+        (None = tüm filtreler geçti). Sıra:
+        killzone (hafta sonu dahil) + tatil → Asya range geçerli →
+        Asya range boyutu (ATR-göreli) → bias mevcut → günlük limit."""
+        if not self._is_london_killzone(t) or self._session.is_holiday(t):
+            return 'no_session'
+        if np.isnan(ah) or np.isnan(al) or (ah - al) < 0.5:
+            self.stats['no_asian'] += 1
+            return 'no_asian'
+        # Asya range boyutu yalnızca yeni setup ararken uygulanır (ATR bar bar
+        # oynadığı için sınırda bir gün aktif setup'ı iptal ettirmesin).
+        if self._st is None:
+            rng_atr = (ah - al) / max(atr_val, 1e-9)
+            if self.ASIAN_RANGE_MIN_ATR > 0 and rng_atr < self.ASIAN_RANGE_MIN_ATR:
+                self.stats['range_small'] += 1
+                return 'range_small'
+            if self.ASIAN_RANGE_MAX_ATR > 0 and rng_atr > self.ASIAN_RANGE_MAX_ATR:
+                self.stats['range_wide'] += 1
+                return 'range_wide'
+        if self.bias is not None and self.bias.get(t) is None:
+            return 'no_bias'
+        if self._last_signal_date == t.date():
+            self._st = None
+            self.stats['daily_limit'] += 1
+            return 'daily_limit'
+        return None
+
+    def _progress_setup(self, idx, TM, H, L, open_c, close_c, low_c, high_c,
+                        ah, al, atr_val, today):
+        """Stateful giriş modlarının (cisd_break / fvg_ote / retest / ote)
+        state machine'i. Tüm tetikler bar KAPANIŞINDA değerlendirilir; giriş
+        O[idx+1] → lookahead yok."""
         s = self._st
         d = s['dir']
         # toplam zaman aşımı
@@ -3864,42 +3934,97 @@ class LondonReversalBrain:
             self.stats['expired'] += 1
             self._st = None
             return None
-        # Judas ekstremini güncelle (SL)
+        # Judas ekstremini güncelle (SL). Derinleşme max_d'yi aşarsa süpürme
+        # değil gerçek breakout'tur → setup iptal.
         if d == 'bull':
             s['judas'] = min(s['judas'], low_c)
+            if (s['lv'] - s['judas']) > s['max_d']:
+                self.stats['too_deep'] += 1
+                self._st = None
+                return None
         else:
             s['judas'] = max(s['judas'], high_c)
+            if (s['judas'] - s['lv']) > s['max_d']:
+                self.stats['too_deep'] += 1
+                self._st = None
+                return None
 
+        # ── retest: süpürülen seviyeye dönüş (limit-retest yaklaşımı) ────────
+        if self.ENTRY_MODE == 'retest':
+            if (idx - s['sweep_idx']) > self.MAX_ENTRY_BARS:
+                self.stats['expired'] += 1
+                self._st = None
+                return None
+            touch = (low_c <= s['lv']) if d == 'bull' else (high_c >= s['lv'])
+            held  = (close_c > s['lv']) if d == 'bull' else (close_c < s['lv'])
+            if touch and held:     # seviyeye değdi ve seviyenin doğru tarafında tuttu
+                return self._fire(idx, TM, d, s['judas'], ah, al, today)
+            return None
+
+        # ── swept → CISD kırılımı (cisd_break / fvg_ote / ote ortak) ─────────
         if s['phase'] == 'swept':
             if (idx - s['sweep_idx']) > self.MAX_CISD_BARS:
                 self.stats['expired'] += 1
                 self._st = None
                 return None
             broke = (close_c > s['ref']) if d == 'bull' else (close_c < s['ref'])
-            if broke:
-                self.stats['cisd'] += 1
-                if self.ENTRY_MODE == 'cisd_break':
-                    return self._fire(idx, TM, d, s['judas'], ah, al, today)
-                # fvg_ote: CISD displacement bir 5M FVG bıraktı mı?
-                #   bull FVG: L[idx] > H[idx-2] → geri çekilme kenarı = L[idx]
-                #   bear FVG: H[idx] < L[idx-2] → geri çekilme kenarı = H[idx]
-                if idx >= 2:
-                    if d == 'bull':
-                        gap = low_c - float(H[idx - 2])
-                        if gap > self.FVG_MIN_GAP:
-                            s['fvg_edge'] = low_c
-                            s['phase'] = 'cisd'; s['cisd_idx'] = idx
-                    else:
-                        gap = float(L[idx - 2]) - high_c
-                        if gap > self.FVG_MIN_GAP:
-                            s['fvg_edge'] = high_c
-                            s['phase'] = 'cisd'; s['cisd_idx'] = idx
+            if not broke:
+                return None
+            # Displacement: kırılım barı gövdesi ≥ X×ATR (enerjik dönüş şartı);
+            # cılızsa setup 'swept'te kalır, daha güçlü kırılım beklenir.
+            if self.DISPLACEMENT_MIN_ATR > 0 and \
+                    abs(close_c - open_c) < self.DISPLACEMENT_MIN_ATR * atr_val:
+                self.stats['weak_disp'] += 1
+                return None
+            self.stats['cisd'] += 1
+            if self.ENTRY_MODE == 'cisd_break':
+                return self._fire(idx, TM, d, s['judas'], ah, al, today)
+            if self.ENTRY_MODE == 'ote':
+                # Dönüş bacağı başlangıcı: Judas ekstremi → kırılım barı ekstremi
+                s['leg_ext'] = high_c if d == 'bull' else low_c
+                s['phase'] = 'cisd'; s['cisd_idx'] = idx
+                return None
+            # fvg_ote: CISD displacement bir 5M FVG bıraktı mı?
+            #   bull FVG: L[idx] > H[idx-2] → geri çekilme kenarı = L[idx]
+            #   bear FVG: H[idx] < L[idx-2] → geri çekilme kenarı = H[idx]
+            if idx >= 2:
+                if d == 'bull':
+                    gap = low_c - float(H[idx - 2])
+                    if gap > self.FVG_MIN_GAP:
+                        s['fvg_edge'] = low_c
+                        s['phase'] = 'cisd'; s['cisd_idx'] = idx
+                else:
+                    gap = float(L[idx - 2]) - high_c
+                    if gap > self.FVG_MIN_GAP:
+                        s['fvg_edge'] = high_c
+                        s['phase'] = 'cisd'; s['cisd_idx'] = idx
             return None
-        elif s['phase'] == 'cisd':
+
+        # ── cisd → giriş tetiği (fvg_ote: FVG kenarı | ote: %62–79 fib) ─────
+        if s['phase'] == 'cisd':
             if (idx - s['cisd_idx']) > self.MAX_ENTRY_BARS:
                 self.stats['expired'] += 1
                 self._st = None
                 return None
+            if self.ENTRY_MODE == 'ote':
+                # OTE: dönüş bacağının %62–79 geri çekilme bölgesi. Bacak ucu
+                # geri çekilme başlayana dek güncellenir (fib canlı çizilir).
+                if d == 'bull':
+                    s['leg_ext'] = max(s['leg_ext'], high_c)
+                    leg  = s['leg_ext'] - s['judas']
+                    z62  = s['leg_ext'] - self.OTE_MIN * leg
+                    z79  = s['leg_ext'] - self.OTE_MAX * leg
+                    if leg > 0 and low_c <= z62 and close_c >= z79:
+                        return self._fire(idx, TM, 'bull', s['judas'], ah, al, today)
+                else:
+                    s['leg_ext'] = min(s['leg_ext'], low_c)
+                    leg  = s['judas'] - s['leg_ext']
+                    z62  = s['leg_ext'] + self.OTE_MIN * leg
+                    z79  = s['leg_ext'] + self.OTE_MAX * leg
+                    if leg > 0 and high_c >= z62 and close_c <= z79:
+                        return self._fire(idx, TM, 'bear', s['judas'], ah, al, today)
+                return None
+            # fvg_ote: FVG proksimal kenarına geri çekilme
             if d == 'bull' and low_c <= s['fvg_edge']:
                 return self._fire(idx, TM, 'bull', s['judas'], ah, al, today)
             if d == 'bear' and high_c >= s['fvg_edge']:
