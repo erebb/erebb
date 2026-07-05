@@ -170,8 +170,14 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
         if mode == "private": return PrivateBiasProvider(df_1h)
         return WeeklyBiasProvider(cfg.weekly_bias_path)
 
+    # London Reversal SABİT bias'la koşar (config: london_reversal.bias);
+    # kullanıcının bias seçimi yalnızca fvg/threevol'a uygulanır.
+    london_bias = cfg.get("london_reversal", "bias", default="private")
+
     for strat in strategies:
-        for bmode in bias_modes:
+        strat_bias_modes = [london_bias] if strat == "london" else bias_modes
+        for bmode in strat_bias_modes:
+            bias_label = f"{bmode} (sabit)" if strat == "london" else bmode
             buf = io.StringIO()
             try:
                 with contextlib.redirect_stdout(buf):
@@ -204,13 +210,13 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
 
                 if metrics is None or metrics["total"] == 0:
                     results.append({
-                        "strategy": strat, "bias": bmode, "rr": rr_label,
+                        "strategy": strat, "bias": bias_label, "rr": rr_label,
                         "total": 0, "wins": 0, "losses": 0, "wr": 0.0,
                         "pnl": 0.0, "pf": 0.0, "sharpe": 0.0, "maxdd": 0.0, "ret": 0.0,
                     })
                 else:
                     results.append({
-                        "strategy": strat, "bias": bmode, "rr": rr_label,
+                        "strategy": strat, "bias": bias_label, "rr": rr_label,
                         "total":  metrics["total"],
                         "wins":   metrics["wins"],
                         "losses": metrics["losses"],
@@ -223,7 +229,7 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
                     })
             except Exception as exc:
                 results.append({
-                    "strategy": strat, "bias": bmode, "rr": rr_label,
+                    "strategy": strat, "bias": bias_label, "rr": rr_label,
                     "total": 0, "wins": 0, "losses": 0, "wr": 0.0,
                     "pnl": 0.0, "pf": 0.0, "sharpe": 0.0, "maxdd": 0.0, "ret": 0.0,
                     "_error": str(exc),
@@ -304,26 +310,29 @@ def backtest_menu() -> None:
     console.print(strat_table)
     strategy = _pick("Strateji seç", ["fvg","threevol","london","hepsi"], "fvg")
 
-    # Bias
+    # Bias — London Reversal sabit bias'la koşar (config: london_reversal.bias),
+    # seçim yalnızca diğer stratejiler için sorulur.
     console.print()
-    bias_table = Table(box=SIMPLE_HEAVY, show_header=False,
-                       border_style=C_BLUE, padding=(0, 2))
-    bias_table.add_column(); bias_table.add_column()
-    bias_table.add_row(f"[{C_YEL}]weekly[/]",  "Manuel haftalık yön (weekly_bias.json)")
-    bias_table.add_row(f"[{C_YEL}]daily[/]",   "Günlük yön (daily_bias.json)")
-    bias_table.add_row(f"[{C_YEL}]none[/]",    "Bias yok  (EMA-MACD filtresi devreye girer)")
-    bias_table.add_row(f"[{C_YEL}]private[/]", "Otomatik GARCH rejim tespiti")
-    bias_table.add_row(f"[{C_YEL}]hepsi[/]",   "Tüm bias modları")
-    console.print(bias_table)
-    # London'ın kendi varsayılan bias'ı var (config: london_reversal.bias)
+    london_bias = cfg.get("london_reversal", "bias", default="private")
     if strategy == "london":
-        bias_default = cfg.get("london_reversal", "bias",
-                               default=cfg.get("backtest", "default_bias",
-                                               default="weekly"))
+        bias = london_bias
+        _info(f"London Reversal bias sabit: [bold {C_YEL}]{bias}[/]  "
+              f"[dim](config: london_reversal.bias)[/]")
     else:
-        bias_default = cfg.get("backtest", "default_bias", default="weekly")
-    bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
-                 bias_default)
+        bias_table = Table(box=SIMPLE_HEAVY, show_header=False,
+                           border_style=C_BLUE, padding=(0, 2))
+        bias_table.add_column(); bias_table.add_column()
+        bias_table.add_row(f"[{C_YEL}]weekly[/]",  "Manuel haftalık yön (weekly_bias.json)")
+        bias_table.add_row(f"[{C_YEL}]daily[/]",   "Günlük yön (daily_bias.json)")
+        bias_table.add_row(f"[{C_YEL}]none[/]",    "Bias yok  (EMA-MACD filtresi devreye girer)")
+        bias_table.add_row(f"[{C_YEL}]private[/]", "Otomatik GARCH rejim tespiti")
+        bias_table.add_row(f"[{C_YEL}]hepsi[/]",   "Tüm bias modları")
+        console.print(bias_table)
+        if strategy == "hepsi":
+            _info(f"Not: London Reversal bu seçimden etkilenmez, "
+                  f"sabit [bold {C_YEL}]{london_bias}[/] bias'ıyla koşar.")
+        bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
+                     cfg.get("backtest", "default_bias", default="weekly"))
 
     # RR
     console.print()
@@ -353,7 +362,7 @@ def backtest_menu() -> None:
     summary.add_column("Parametre", style=C_FG2)
     summary.add_column("Değer",     style=f"bold {C_BLUE}")
     summary.add_row("Strateji", strategy.upper())
-    summary.add_row("Bias",     bias)
+    summary.add_row("Bias",     f"{bias} (sabit)" if strategy == "london" else bias)
     summary.add_row("RR",       rr)
     summary.add_row("TBE",      tbe)
     summary.add_row("EMA-MACD", "Evet" if emf else "Hayır")
