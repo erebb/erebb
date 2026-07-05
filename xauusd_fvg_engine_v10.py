@@ -3632,14 +3632,16 @@ class LondonReversalBrain:
     Sweep derinliği min < depth < max (gerçek breakout elenir).
 
     GİRİŞ — entry_mode (config):
-      • 'immediate' (VARSAYILAN): süpürme+reddediş barında anında giriş (O[idx+1]).
-        SL = reddediş wick ucu. Backtest'te en iyi sonucu veren mod.
+      • 'retest' (CONFIG VARSAYILANI): süpürme sonrası fiyat süpürülen seviyeye
+        geri dönünce giriş (limit-retest yaklaşımı, dar stop). SL = Judas ekstremi.
+        Varsayılan preset: retest + sweep_window_bars=12 + private bias — grid
+        backtest'te dört bias modunda da pozitif tek kombinasyon.
+      • 'immediate': süpürme+reddediş barında anında giriş (O[idx+1]).
+        SL = reddediş wick ucu. En çok işlem üreten mod (kod fallback'i).
       • 'cisd_break': süpürme sonrası ≤ max_cisd_bars içinde bir bar reddediş barının
         zıt ucunu kapanışla kırarsa (CISD/MSS) giriş. SL = Judas ekstremi.
       • 'fvg_ote': CISD displacement'i bir 5M FVG bırakır; fiyat FVG'ye geri çekilince
         giriş. SL = Judas ekstremi.
-      • 'retest': süpürme sonrası fiyat süpürülen seviyeye geri dönünce giriş
-        (limit-retest yaklaşımı, dar stop). SL = Judas ekstremi.
       • 'ote': CISD kırılımı sonrası dönüş bacağının %62–79 fib geri çekilmesine
         (Optimal Trade Entry, optimal 0.705) fiyat girince giriş. SL = Judas ekstremi
         (fib 1.0) ötesi — ICT'nin klasik giriş tekniği.

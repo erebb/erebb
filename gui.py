@@ -315,8 +315,15 @@ def backtest_menu() -> None:
     bias_table.add_row(f"[{C_YEL}]private[/]", "Otomatik GARCH rejim tespiti")
     bias_table.add_row(f"[{C_YEL}]hepsi[/]",   "Tüm bias modları")
     console.print(bias_table)
+    # London'ın kendi varsayılan bias'ı var (config: london_reversal.bias)
+    if strategy == "london":
+        bias_default = cfg.get("london_reversal", "bias",
+                               default=cfg.get("backtest", "default_bias",
+                                               default="weekly"))
+    else:
+        bias_default = cfg.get("backtest", "default_bias", default="weekly")
     bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
-                 cfg.get("backtest", "default_bias", default="weekly"))
+                 bias_default)
 
     # RR
     console.print()
