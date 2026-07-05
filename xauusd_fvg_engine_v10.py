@@ -3655,6 +3655,8 @@ class LondonReversalBrain:
     REJECTION_CLOSE_PCT = 0.60   # sweep barı kendi aralığının uzak %40'ında kapanmalı
                                  # (güçlü reddediş; zayıf mikro-stop gürültüsünü eler) 0=kapalı
                                  # 0.60: bias modlarında regresyon yok + none gürültüsü azalır
+    WEEKEND_FILTER      = True   # Cumartesi/Pazar girişleri engelle (7/24 kripto-altın
+                                 # verisinde hafta sonu "London killzone" gerçek değildir)
 
     def __init__(self, bias_provider=None):
         self.bias             = bias_provider
@@ -3679,9 +3681,13 @@ class LondonReversalBrain:
         self.MAX_ENTRY_BARS      = int(lc.get('max_entry_bars', self.MAX_ENTRY_BARS))
         self.FVG_MIN_GAP         = float(lc.get('fvg_min_gap',  self.FVG_MIN_GAP))
         self.REJECTION_CLOSE_PCT = float(lc.get('rejection_close_pct', self.REJECTION_CLOSE_PCT))
+        self.WEEKEND_FILTER      = bool(lc.get('weekend_filter', self.WEEKEND_FILTER))
         # Geriye dönük uyum: eski require_mss bayrağı → cisd_break
         if lc.get('require_mss') and self.ENTRY_MODE == 'immediate':
             self.ENTRY_MODE = 'cisd_break'
+        # Geçersiz entry_mode (config typo) → sessizce 0 işlem üretmesin
+        if self.ENTRY_MODE not in ('immediate', 'cisd_break', 'fvg_ote'):
+            self.ENTRY_MODE = 'immediate'
 
         self.stats = dict(no_session=0, no_asian=0, swept=0,
                           cisd=0, signal=0, expired=0,
@@ -3690,6 +3696,8 @@ class LondonReversalBrain:
 
     # ── London Killzone: 06:00–09:00 UTC BST / 07:00–10:00 UTC GMT ───────────
     def _is_london_killzone(self, t: datetime) -> bool:
+        if self.WEEKEND_FILTER and t.weekday() >= 5:   # Cmt/Paz: gerçek London seansı yok
+            return False
         h = t.hour + t.minute / 60.0
         if self._session.is_london_dst(t):
             return 6.0 <= h < 9.0    # BST (yaz): 06:00–09:00 UTC (Frankfurt dahil)
@@ -3977,6 +3985,10 @@ class LondonBacktestEngine(BacktestEngine):
 
         if actual_rr < self.MIN_RR:
             self.rr_reject_count += 1
+            # Gün limitini geri ver: sinyal işleme dönüşmedi, aynı gün yeni
+            # bir sweep/setup tekrar değerlendirilebilsin.
+            if hasattr(self.brain, '_last_signal_date'):
+                self.brain._last_signal_date = None
             return None   # TP2 yetersiz RR → işlem açılmaz
 
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
