@@ -4432,6 +4432,8 @@ class QweBrain:
         self._active: List[dict] = []
         self._date_count: Dict[object, int] = {}
         self._last_today = None
+        self.last_setup_key: Optional[tuple] = None   # son sinyalin setup kimliği
+        self._used_keys: set = set()                  # dışarıdan işaretlenen setup'lar
         self.stats = dict(setups_seen=0, touched=0, weak_reject=0, high_vol=0,
                           no_liq=0, wrong_4h=0, wrong_bias=0, invalidated=0,
                           expired=0, daily_limit=0, signal=0,
@@ -4441,6 +4443,21 @@ class QweBrain:
         """MIN_RR reddi gün limitini tüketmesin (sinyal işleme dönüşmedi)."""
         if self._last_today is not None and self._date_count.get(self._last_today, 0) > 0:
             self._date_count[self._last_today] -= 1
+
+    @staticmethod
+    def setup_key(s: dict) -> tuple:
+        """Setup'ın kalıcı kimliği (canlı state persistence için)."""
+        return (s['dir'], round(float(s['lo']), 2),
+                round(float(s['hi']), 2), int(s['avail_ts']))
+
+    def mark_used(self, keys) -> None:
+        """Canlı trader: tick'ler/yeniden başlatmalar arası çifte-giriş koruması.
+        Verilen anahtarlarla eşleşen setup'lar (aktif veya ileride aktive
+        olacak) kullanılmış sayılır."""
+        self._used_keys.update(tuple(k) for k in keys)
+        for s in self._active:
+            if self.setup_key(s) in self._used_keys:
+                s['used'] = True
 
     def evaluate(self, idx: int,
                  C: np.ndarray, O: np.ndarray,
@@ -4476,7 +4493,10 @@ class QweBrain:
         # ── Yeni doğrulanan setup'ları aktive et (avail_ts = yapı barının
         #    kapanış anı; ondan önceki hiçbir bar setup'ı göremez) ───────────
         while self._ptr < len(qwe_setups) and qwe_setups[self._ptr]['avail_ts'] <= now:
-            self._active.append(dict(qwe_setups[self._ptr]))
+            s_new = dict(qwe_setups[self._ptr])
+            if self._used_keys and self.setup_key(s_new) in self._used_keys:
+                s_new['used'] = True     # daha önce işlem görmüş (canlı state)
+            self._active.append(s_new)
             self._ptr += 1
             self.stats['setups_seen'] += 1
 
@@ -4566,6 +4586,7 @@ class QweBrain:
 
             # ── SİNYAL ───────────────────────────────────────────────────────
             s['used'] = True
+            self.last_setup_key = self.setup_key(s)
             self._date_count[today] = self._date_count.get(today, 0) + 1
             self._last_today = today
             self.stats['signal'] += 1
@@ -4630,10 +4651,17 @@ class QweBacktestEngine(BacktestEngine):
             ts = ts.tz_localize(None)
         return ts.values.astype('datetime64[ns]').astype(np.int64)
 
-    def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
-            backtest_start: datetime) -> List[Trade]:
+    @classmethod
+    def prepare_kwargs(cls, df_1h: pd.DataFrame, df_5m: pd.DataFrame, *,
+                       structure_tf: str = '1h', swing_k: int = 2,
+                       min_leg_atr: float = 1.5, max_setup_age: int = 48,
+                       ema_fast: int = 20, ema_slow: int = 50,
+                       confirm_tf_min: int = 15,
+                       vol_med_window: int = 48) -> dict:
+        """QweBrain.evaluate() bağlam dizilerini üretir. Backtest ve CANLI
+        trader AYNI fonksiyonu kullanır → tek implementasyon, drift yok."""
         # ── Yapı TF'i: 1H (intraday-swing) veya 4H (haftalık swing) ─────────
-        if self.STRUCTURE_TF == '4h':
+        if str(structure_tf).lower() == '4h':
             ts1 = pd.to_datetime(df_1h.index)
             if ts1.tz is not None:
                 ts1 = ts1.tz_localize(None)
@@ -4644,14 +4672,13 @@ class QweBacktestEngine(BacktestEngine):
             df_struct = df_1h
             bar_minutes = 60
         setups = QweSwingEngine.detect_setups(
-            df_struct, k=self.SWING_K, min_leg_atr=self.MIN_LEG_ATR,
-            max_age=self.MAX_SETUP_AGE, bar_minutes=bar_minutes)
+            df_struct, k=swing_k, min_leg_atr=min_leg_atr,
+            max_age=max_setup_age, bar_minutes=bar_minutes)
 
         blk_starts, dir4, liq = QweSwingEngine.compute_4h_context(
-            df_1h, ema_fast=self.EMA4H_FAST, ema_slow=self.EMA4H_SLOW,
-            k=self.SWING_K)
+            df_1h, ema_fast=ema_fast, ema_slow=ema_slow, k=swing_k)
 
-        t5 = self._naive_i8(df_5m.index)
+        t5 = cls._naive_i8(df_5m.index)
         q_block = np.searchsorted(blk_starts, t5, side='right') - 1
 
         # ── Onay TF mumu (varsayılan 15M): blok içi kümülatif OHLCV —
@@ -4659,7 +4686,7 @@ class QweBacktestEngine(BacktestEngine):
         ts5 = pd.to_datetime(df_5m.index)
         if ts5.tz is not None:
             ts5 = ts5.tz_localize(None)
-        blk15 = ts5.floor(f'{self.CONFIRM_TF_MIN}min')
+        blk15 = ts5.floor(f'{confirm_tf_min}min')
         b15 = blk15.values.astype('datetime64[ns]').astype(np.int64)
         q15_close = np.r_[b15[1:] != b15[:-1], True]
         vol5 = (df_5m['Volume'].values.astype(float)
@@ -4674,16 +4701,26 @@ class QweBacktestEngine(BacktestEngine):
         q15_V = g['V'].cumsum().values
         # 15M blok hacim medyanı: önceki `vol_med_window` TAMAMLANMIŞ blok
         v15 = g['V'].sum()
-        med15 = VolumeEngine.rolling_median_prior(v15.values, self.VOL_MED_WINDOW)
+        med15 = VolumeEngine.rolling_median_prior(v15.values, vol_med_window)
         blkpos = np.searchsorted(
             v15.index.values.astype('datetime64[ns]').astype(np.int64), b15)
         q15_volmed = med15[blkpos]
 
-        self._extra_brain_kwargs = dict(
+        return dict(
             qwe_setups=setups, q_t5=t5, q_block=q_block,
             q_dir4=dir4, q_liq=liq,
             q15_close=q15_close, q15_O=q15_O, q15_H=q15_H, q15_L=q15_L,
             q15_V=q15_V, q15_volmed=q15_volmed)
+
+    def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
+            backtest_start: datetime) -> List[Trade]:
+        self._extra_brain_kwargs = self.prepare_kwargs(
+            df_1h, df_5m,
+            structure_tf=self.STRUCTURE_TF, swing_k=self.SWING_K,
+            min_leg_atr=self.MIN_LEG_ATR, max_setup_age=self.MAX_SETUP_AGE,
+            ema_fast=self.EMA4H_FAST, ema_slow=self.EMA4H_SLOW,
+            confirm_tf_min=self.CONFIRM_TF_MIN,
+            vol_med_window=self.VOL_MED_WINDOW)
         try:
             return super().run(df_1h, df_5m, backtest_start)
         finally:

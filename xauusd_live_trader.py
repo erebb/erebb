@@ -32,6 +32,7 @@ from xauusd_fvg_engine_v10 import (
     FVG, MSBEvent, TradeSignal, HarmonicSignal,
     FVGEngine, MSB5MEngine, HarmonicEngine,
     MarketBrain, RiskManager,
+    QweBrain, QweBacktestEngine,
     EMAEngine, RSIEngine, IndicatorEngine, MACDEngine,
     detect_order_blocks_1h,
     _build_poi_mit_map, to_naive,
@@ -399,6 +400,11 @@ class StateManager:
         self.signal_type = ''
         self.open_time: Optional[str] = None    # TBE: giriş zamanı (ISO UTC)
         self.tbe_minutes: Optional[int] = None  # TBE: maksimum açık kalma süresi
+        # QWE kısmi-TP alanları (geriye uyumlu: eski kayıtlarda yoklar)
+        self.orders: list = []                  # [{'order_id','tp','qty'}, ...]
+        self.tp1_filled  = False
+        self.setup_key: Optional[list] = None   # işlemin QWE setup kimliği
+        self.qwe_used: list = []                # işlem görmüş setup anahtarları
         self._load()
 
     def _load(self) -> None:
@@ -416,6 +422,10 @@ class StateManager:
             self.signal_type = d.get('signal_type', '')
             self.open_time   = d.get('open_time')
             self.tbe_minutes = d.get('tbe_minutes')
+            self.orders      = d.get('orders', [])
+            self.tp1_filled  = bool(d.get('tp1_filled', False))
+            self.setup_key   = d.get('setup_key')
+            self.qwe_used    = d.get('qwe_used', [])
             if self.active:
                 tbe_str = f"  TBE: {self.tbe_minutes}dk" if self.tbe_minutes else ""
                 print(f"  Önceki pozisyon bulundu: "
@@ -426,7 +436,9 @@ class StateManager:
 
     def save(self, order_id: Any, direction: str, entry: float,
              sl: float, tp: float, qty: float, signal_type: str,
-             tbe_minutes: Optional[int] = None) -> None:
+             tbe_minutes: Optional[int] = None,
+             orders: Optional[list] = None,
+             setup_key: Optional[list] = None) -> None:
         self.active      = True
         self.order_id    = order_id
         self.direction   = direction
@@ -437,12 +449,30 @@ class StateManager:
         self.signal_type = signal_type
         self.open_time   = datetime.utcnow().isoformat()
         self.tbe_minutes = tbe_minutes
+        self.orders      = orders or []
+        self.tp1_filled  = False
+        self.setup_key   = list(setup_key) if setup_key is not None else None
+        if setup_key is not None:
+            self.mark_setup_used(setup_key, write=False)
         self._write()
+
+    def mark_setup_used(self, key, write: bool = True) -> None:
+        """QWE: bu setup bir kez işlem gördü → yeniden başlatma/tick'ler arası
+        çifte-giriş koruması (son 100 anahtar saklanır)."""
+        k = list(key)
+        if k not in self.qwe_used:
+            self.qwe_used.append(k)
+            self.qwe_used = self.qwe_used[-100:]
+        if write:
+            self._write()
 
     def clear(self) -> None:
         self.active      = False
         self.open_time   = None
         self.tbe_minutes = None
+        self.orders      = []
+        self.tp1_filled  = False
+        self.setup_key   = None
         self._write()
 
     def _write(self) -> None:
@@ -457,6 +487,10 @@ class StateManager:
             'signal_type': self.signal_type,
             'open_time':   self.open_time,
             'tbe_minutes': self.tbe_minutes,
+            'orders':      self.orders,
+            'tp1_filled':  self.tp1_filled,
+            'setup_key':   self.setup_key,
+            'qwe_used':    self.qwe_used,
         }, indent=2))
 
 
@@ -480,6 +514,10 @@ class LiveTrader:
     #   daily  → None (kapalı) — backtest'te daily bias'a zarar verdi
     _DEFAULT_TBE: dict = {'weekly': 480, 'none': 480, 'daily': None}
 
+    # QWE: 15M onaylı swing — pencere 1 gün (aktivasyon avail_ts catch-up
+    # ile pencereden bağımsız; pencere yalnız gün-içi used/limit state'ini kurar)
+    LOOKBACK_QWE = 288
+
     def __init__(self,
                  client:        BingXClient,
                  bias_provider,                # InteractiveBiasProvider | None
@@ -488,8 +526,15 @@ class LiveTrader:
                  risk_pct:      float = 1.0,   # % (örn. 1.0 = %1)
                  capital:       float = 0.0,   # $ kasa (0 = API'den oku)
                  dry_run:       bool  = False,
-                 tbe_minutes:   Optional[int] = -1):  # -1 = bias'a göre otomatik
+                 tbe_minutes:   Optional[int] = -1,   # -1 = bias'a göre otomatik
+                 strategy:      str   = 'qwe'):       # 'qwe' | 'fvg'
         self.client        = client
+        self.strategy      = strategy if strategy in ('qwe', 'fvg') else 'qwe'
+        # QWE: bias KOD SEVİYESİNDE ZORUNLU None (swing işlemlerde gün/hafta
+        # bias kapısı anlamsız — config/CLI ne derse desin uygulanmaz).
+        if self.strategy == 'qwe':
+            bias_provider = None
+            bias_mode     = 'none'
         self.bias_provider = bias_provider
         self.leverage      = leverage
         self.risk_pct      = risk_pct / 100.0  # 1.0 → 0.01
@@ -497,11 +542,19 @@ class LiveTrader:
         self.dry_run       = dry_run
         self.state         = StateManager()
         self.risk_mgr      = RiskManager(rr=2.0)
-        # TBE: -1 → bias moduna göre varsayılanı kullan
-        if tbe_minutes == -1:
-            self.tbe_minutes: Optional[int] = self._DEFAULT_TBE.get(bias_mode)
+        # TBE: -1 → bias moduna göre varsayılan; QWE'de swing → TBE YOK
+        if self.strategy == 'qwe':
+            self.tbe_minutes: Optional[int] = None
+        elif tbe_minutes == -1:
+            self.tbe_minutes = self._DEFAULT_TBE.get(bias_mode)
         else:
             self.tbe_minutes = tbe_minutes
+        # QWE config parametreleri (engine config modülünden)
+        try:
+            from config import get_config
+            self._qcfg = get_config().section('qwe')
+        except Exception:
+            self._qcfg = {}
 
     # ── 5M bar kapanışına senkronize ─────────────────────────────────────────
     def _wait_for_bar_close(self) -> None:
@@ -708,6 +761,165 @@ class LiveTrader:
             return None
         return sig
 
+    # ── QWE sinyal yolu ──────────────────────────────────────────────────────
+    def _find_signal_qwe(self, df_5m: pd.DataFrame,
+                         df_1h: pd.DataFrame) -> Optional[TradeSignal]:
+        """
+        QWE (fib pullback swing) sinyali. Bağlam dizileri backtest'le AYNI
+        fonksiyondan gelir (QweBacktestEngine.prepare_kwargs → drift yok).
+        Brain her tick taze kurulur; işlem görmüş setup'lar state'ten
+        mark_used ile işaretlenir. Yalnız SON kapanan barın sinyali kullanılır.
+        """
+        qc = self._qcfg
+        kw = QweBacktestEngine.prepare_kwargs(
+            df_1h, df_5m,
+            structure_tf   = str(qc.get('structure_tf', '1h')),
+            swing_k        = int(qc.get('swing_k', 2)),
+            min_leg_atr    = float(qc.get('min_leg_atr', 1.5)),
+            max_setup_age  = int(qc.get('max_setup_age', 48)),
+            ema_fast       = int(qc.get('ema4h_fast', 20)),
+            ema_slow       = int(qc.get('ema4h_slow', 50)),
+            confirm_tf_min = int(qc.get('confirm_tf_min', 15)),
+            vol_med_window = int(qc.get('vol_med_window', 48)),
+        )
+        df5 = df_5m.copy()
+        df5['atr'] = IndicatorEngine.atr(df5, 14)
+        C   = df5['Close'].values.astype(float)
+        O   = df5['Open'].values.astype(float)
+        H   = df5['High'].values.astype(float)
+        L   = df5['Low'].values.astype(float)
+        ATR = df5['atr'].values.astype(float)
+        TM  = df5.index
+        Z   = np.zeros(len(C))   # E100/E200 QWE'de kullanılmaz (imza uyumu)
+
+        brain = QweBrain(bias_provider=None)   # ZORUNLU none
+        if self.state.qwe_used:
+            brain.mark_used(self.state.qwe_used)
+        self._qwe_brain = brain                # log/teşhis için
+
+        n     = len(C)
+        start = max(0, n - self.LOOKBACK_QWE - 1)
+        end   = n - 1
+        last_signal: Optional[TradeSignal] = None
+        for idx in range(start, end + 1):
+            sig = brain.evaluate(
+                idx=idx, C=C, O=O, H=H, L=L, E100=Z, E200=Z, TM=TM,
+                msb_events_bull=[], msb_events_bear=[], ATR=ATR, **kw)
+            if idx == end:
+                last_signal = sig
+        return last_signal
+
+    def _enter_trade_qwe(self, signal: TradeSignal,
+                         equity: float, last_close: float) -> None:
+        """
+        QWE girişi: İKİ yarım market emri — yarım TP1 (HH, kısmi kâr),
+        yarım TP2 (uzantı, runner); ikisinde de borsa-taraflı SL.
+        Backtest'teki TP1-sonrası BE, canlıda YAZILIMSAL yaklaşıklıkla
+        sağlanır (_check_position: TP1 dolunca fiyat girişe sararsa kalan
+        yarım market'ten kapatılır; borsa SL'i felaket-stopu olarak kalır).
+        """
+        entry = last_close
+        tp2   = signal.tp_hint
+        tp1v  = signal.tp1_hint
+        r = self.risk_mgr.compute(signal.direction, entry, signal.stop_price,
+                                  equity, signal.risk_fraction, tp_override=tp2)
+        if r is None:
+            print("  Risk hesabı geçersiz — işlem atlandı")
+            return
+        sl = r['sl']
+        # MIN_RR kapısı (backtest ile tutarlı)
+        min_rr = float(self._qcfg.get('min_rr', 1.5))
+        risk_per = abs(entry - sl)
+        if risk_per < 0.01 or abs(tp2 - entry) / max(risk_per, 0.01) < min_rr:
+            print(f"  RR < {min_rr} — işlem atlandı")
+            return
+        # TP1 geçerliliği (giriş HH'in gerisinde olmalı)
+        if signal.direction == 'bull':
+            tp1 = tp1v if (tp1v > entry and tp1v < tp2) else None
+        else:
+            tp1 = tp1v if (tp1v < entry and tp1v > tp2) else None
+
+        actual_risk = equity * self.risk_pct * (signal.risk_fraction / 0.01)
+        qty  = compute_lot(entry, sl, actual_risk)
+        half = round(qty / 2, 3)
+        two_legs = tp1 is not None and half >= 0.001
+        if qty < 0.001:
+            print(f"  Lot çok küçük ({qty:.4f}) — işlem atlandı")
+            return
+        side = 'BUY' if signal.direction == 'bull' else 'SELL'
+
+        print(f"\n  ┌── QWE SİNYAL: {signal.direction.upper()} ─────────────")
+        print(f"  │  Tip   : {signal.confirmation_type} ({signal.msb_type})")
+        print(f"  │  Entry : ~{entry:.2f}   SL: {sl:.2f}")
+        if two_legs:
+            print(f"  │  TP1   : {tp1:.2f}  (yarım {half} oz — kısmi kâr)")
+            print(f"  │  TP2   : {tp2:.2f}  (yarım {half} oz — runner)")
+            print(f"  │  BE    : TP1 dolunca yazılımsal breakeven aktif")
+        else:
+            print(f"  │  TP    : {tp2:.2f}  (tek emir {qty} oz)")
+        print(f"  │  Risk  : ${actual_risk:.2f}  |  Kasa: ${equity:.2f}")
+        print(f"  │  TBE   : kapalı (swing)")
+        print(f"  └{'─'*40}")
+
+        legs = ([(half, tp1), (half, tp2)] if two_legs else [(qty, tp2)])
+        skey = getattr(self._qwe_brain, 'last_setup_key', None)
+
+        if self.dry_run:
+            for q, tp in legs:
+                print(f"  [DRY-RUN] {side} {q} oz  SL={sl:.2f} TP={tp:.2f}")
+            print()
+            self.state.save(order_id='DRY-RUN', direction=signal.direction,
+                            entry=entry, sl=sl, tp=tp2, qty=qty,
+                            signal_type='QWE', tbe_minutes=None,
+                            orders=[{'order_id': 'DRY-RUN', 'tp': tp, 'qty': q}
+                                    for q, tp in legs],
+                            setup_key=skey)
+            return
+        try:
+            placed = []
+            for q, tp in legs:
+                res = self.client.place_order(side, q, sl, tp)
+                placed.append({'order_id': res.get('orderId', 'N/A'),
+                               'tp': tp, 'qty': q})
+                print(f"  ✓  Order: #{placed[-1]['order_id']} "
+                      f"{q} oz TP={tp:.2f}")
+            print()
+            self.state.save(order_id=placed[0]['order_id'],
+                            direction=signal.direction, entry=entry, sl=sl,
+                            tp=tp2, qty=qty, signal_type='QWE',
+                            tbe_minutes=None, orders=placed, setup_key=skey)
+        except Exception as e:
+            print(f"  ✗  ORDER HATASI: {e}\n")
+
+    def _check_qwe_partial(self) -> None:
+        """QWE canlı: TP1 dolumu tespiti + yazılımsal breakeven."""
+        if self.dry_run or self.state.signal_type != 'QWE' \
+                or len(self.state.orders) < 2:
+            return
+        try:
+            pos = self.client.get_position()
+            if not pos:
+                return   # tam kapanış _check_position'da ele alınır
+            amt   = abs(float(pos.get('positionAmt', 0)))
+            half  = float(self.state.orders[0]['qty'])
+            if not self.state.tp1_filled and amt <= half * 1.05:
+                self.state.tp1_filled = True
+                self.state._write()
+                print("  QWE: TP1 doldu → yazılımsal BE aktif (kalan runner)")
+            if self.state.tp1_filled:
+                mark = float(pos.get('markPrice') or pos.get('avgPrice') or 0)
+                if mark > 0:
+                    against = (mark <= self.state.entry
+                               if self.state.direction == 'bull'
+                               else mark >= self.state.entry)
+                    if against:
+                        print("  QWE: BE — fiyat girişe sardı, runner kapatılıyor")
+                        self.client.close_position()
+                        self.client.cancel_all_orders()
+                        self.state.clear()
+        except Exception as e:
+            print(f"  QWE kısmi kontrol hatası: {e}")
+
     # ── İşlem aç ─────────────────────────────────────────────────────────────
     def _enter_trade(self, signal: TradeSignal,
                      equity: float, last_close: float) -> None:
@@ -847,6 +1059,9 @@ class LiveTrader:
         print("═" * 58)
         print("  BingX XAUUSD Live Trader")
         print(f"  Motor  : xauusd_fvg_engine_v10")
+        strat_desc = ('QWE — fib pullback swing (618 Golden Zone, 15M onay)'
+                      if self.strategy == 'qwe' else 'FVG/OB/PRZ intraday')
+        print(f"  Strateji: {strat_desc}")
         print(f"  Sembol : {self.client.symbol}")
         print(f"  Risk   : {self.risk_pct*100:.1f}%  |  "
               f"Kaldıraç: {self.leverage}x")
@@ -854,7 +1069,9 @@ class LiveTrader:
                     else "API bakiyesi")
         print(f"  Kasa   : {kasa_str}")
         print(f"  Mod    : {'DRY-RUN  ⚠️' if self.dry_run else 'CANLI  ✓'}")
-        if self.bias_provider is not None:
+        if self.strategy == 'qwe':
+            print("  Bias   : NONE — ZORUNLU (QWE swing: bias kapısı yok)")
+        elif self.bias_provider is not None:
             print(f"  Bias   : {self.bias_provider.mode.upper()} (terminal prompt)")
         else:
             print("  Bias   : NONE (EMA zorunlu, bias yok)")
@@ -893,18 +1110,33 @@ class LiveTrader:
                 if self.bias_provider is not None:
                     current_bias = self.bias_provider.get(now)
 
-                # ── Pozisyon kapandı mı? ──────────────────────────────────────
+                # ── Pozisyon kapandı mı? (+ QWE kısmi-TP / yazılımsal BE) ────
+                self._check_qwe_partial()
                 self._check_position()
 
-                # ── Veri çek ─────────────────────────────────────────────────
+                # ── Veri çek (QWE: 4H EMA50 ısınması için ~37 gün 1H) ────────
                 df_5m = LiveDataEngine.fetch(self.client, '5m', 900)
-                df_1h = LiveDataEngine.fetch(self.client, '1h', 200)
+                df_1h = LiveDataEngine.fetch(
+                    self.client, '1h', 900 if self.strategy == 'qwe' else 200)
 
                 last_close = float(df_5m['Close'].iloc[-1])
                 self._log_bar(now, last_close, current_bias)
 
                 # ── Sinyal yalnız açık pozisyon yokken ───────────────────────
                 if not self.state.active:
+                    if self.strategy == 'qwe':
+                        signal = self._find_signal_qwe(df_5m, df_1h)
+                        if signal is not None:
+                            equity = (self.capital if self.capital > 0 else
+                                      (self.client.get_balance()
+                                       if not self.dry_run else 10_000.0))
+                            self._enter_trade_qwe(signal, equity, last_close)
+                        else:
+                            reason = (self._qwe_brain.last_skip_reason
+                                      if hasattr(self, '_qwe_brain') else '—')
+                            print(f"  Sinyal: yok  ({reason or '—'})")
+                        continue
+
                     ctx = self._run_all_detections(df_5m, df_1h)
 
                     # Her tickte pending'i sıfırla; LOOKBACK ile yeniden kur
@@ -982,8 +1214,14 @@ def main() -> None:
         """,
     )
     parser.add_argument(
+        '--strategy', choices=['qwe', 'fvg'], default=None,
+        help="Strateji: qwe (varsayılan; fib pullback swing, bias ZORUNLU none) "
+             "| fvg (FVG/OB/PRZ intraday)",
+    )
+    parser.add_argument(
         '--bias', choices=['weekly', 'daily', 'none'], default='weekly',
-        help='Bias modu: weekly=haftalık, daily=günlük, none=filtre yok',
+        help='Bias modu (yalnız fvg): weekly=haftalık, daily=günlük, none=yok. '
+             'QWE stratejisinde YOK SAYILIR (zorunlu none).',
     )
     parser.add_argument('--leverage', type=int,   default=None,
                         help='Kaldıraç (config varsayılanını geçersiz kılar)')
@@ -1033,8 +1271,22 @@ def main() -> None:
         print("Tamamlandı.")
         return
 
-    # Bias provider
-    if args.bias == 'none':
+    # Strateji: CLI > live_config.json > config/default.json (live.strategy) > qwe
+    strategy = args.strategy or cfg.get('strategy')
+    if not strategy:
+        try:
+            from config import get_config
+            strategy = get_config().get('live', 'strategy', default='qwe')
+        except Exception:
+            strategy = 'qwe'
+
+    # Bias provider — QWE: ZORUNLU none (prompt hiç kurulmaz)
+    if strategy == 'qwe':
+        if args.bias != 'weekly':   # kullanıcı açıkça bias istediyse uyar
+            print("  Not: QWE stratejisinde bias ZORUNLU none — "
+                  f"--bias {args.bias} yok sayıldı.")
+        bias_provider = None
+    elif args.bias == 'none':
         bias_provider = None
     else:
         bias_provider = InteractiveBiasProvider(args.bias)
@@ -1053,6 +1305,7 @@ def main() -> None:
         capital       = capital,
         dry_run       = args.dry_run,
         tbe_minutes   = tbe_minutes,
+        strategy      = strategy,
     )
     trader.run()
 
