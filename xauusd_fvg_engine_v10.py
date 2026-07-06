@@ -4139,5 +4139,621 @@ class LondonBacktestEngine(BacktestEngine):
         )
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# BÖLÜM 14: QWE — Fib Retracement Pullback (BOS + HH + Golden Zone + Hacim onayı)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class FibonacciEngine:
+    """
+    Fibonacci retracement / extension motoru — bacak bazlı, yön farkındalıklı.
+
+    Konvansiyon: bacak (lo, hi) mutlak fiyattır. 'bull' bacak yukarı hareketi
+    temsil eder (dip lo → tepe hi); retracement TEPEDEN geriye ölçülür:
+        R(f) = hi − f·(hi−lo)   (bull)   |   R(f) = lo + f·(hi−lo)   (bear)
+    Extension hedefi hareketin ötesidir:
+        E(f) = hi + f·(hi−lo)   (bull)   |   E(f) = lo − f·(hi−lo)   (bear)
+
+    GOLDEN_ZONE = (0.618, 0.786): "dengeli geri çekilme" bölgesi (OTE eşdeğeri).
+    Salt aritmetik → durum yok, lookahead riski yok. Tüm stratejilerce
+    yeniden kullanılabilir.
+    """
+
+    RETRACEMENTS = (0.236, 0.382, 0.5, 0.618, 0.705, 0.786, 0.886, 1.0, 1.13)
+    EXTENSIONS   = (0.272, 0.618, 1.0, 1.618)
+    GOLDEN_ZONE  = (0.618, 0.786)
+
+    @staticmethod
+    def retracement(lo: float, hi: float, ratio: float,
+                    direction: str = 'bull') -> float:
+        leg = hi - lo
+        return hi - ratio * leg if direction == 'bull' else lo + ratio * leg
+
+    @staticmethod
+    def extension(lo: float, hi: float, ratio: float,
+                  direction: str = 'bull') -> float:
+        leg = hi - lo
+        return hi + ratio * leg if direction == 'bull' else lo - ratio * leg
+
+    @staticmethod
+    def levels(lo: float, hi: float, direction: str = 'bull',
+               ratios: Optional[tuple] = None) -> Dict[float, float]:
+        """Oran → fiyat sözlüğü (varsayılan: standart retracement seti)."""
+        rs = ratios if ratios is not None else FibonacciEngine.RETRACEMENTS
+        return {r: FibonacciEngine.retracement(lo, hi, r, direction) for r in rs}
+
+    @staticmethod
+    def zone(lo: float, hi: float, direction: str = 'bull',
+             z: Optional[tuple] = None) -> tuple:
+        """(alt, üst) fiyat bandı — varsayılan Golden Zone (0.618–0.786)."""
+        z0, z1 = z if z is not None else FibonacciEngine.GOLDEN_ZONE
+        a = FibonacciEngine.retracement(lo, hi, z0, direction)
+        b = FibonacciEngine.retracement(lo, hi, z1, direction)
+        return (min(a, b), max(a, b))
+
+    @staticmethod
+    def position(price: float, lo: float, hi: float,
+                 direction: str = 'bull') -> float:
+        """Fiyatın bacak içindeki retracement oranı (0 = hareket ucu, 1 = başlangıç)."""
+        leg = max(hi - lo, 1e-9)
+        return (hi - price) / leg if direction == 'bull' else (price - lo) / leg
+
+
+class VolumeEngine:
+    """
+    Hacim analitiği motoru — lookahead-safe.
+
+    Tüm referans ölçüleri YALNIZCA önceki barların hacmini kullanır (shift 1).
+    Medyan bazlı RVOL tercih edilir: haber spike'ları ortalamayı bozar,
+    medyanı bozamaz.
+
+      • rolling_median_prior : önceki `window` barın medyan hacmi
+      • rel_volume           : v / medyan  (RVOL; NaN-güvenli)
+      • is_low_volume        : düşük hacimli retest onayı (v ≤ ratio × medyan)
+      • is_high_volume       : yüksek hacimli base/kırılım tespiti
+      • block_sum            : 5M hacmi zaman bloklarına toplar (üst TF mumu)
+    """
+
+    @staticmethod
+    def rolling_median_prior(vol: np.ndarray, window: int = 48) -> np.ndarray:
+        return pd.Series(vol).rolling(window).median().shift(1).values
+
+    @staticmethod
+    def rel_volume(vol: np.ndarray, window: int = 48) -> np.ndarray:
+        med = VolumeEngine.rolling_median_prior(vol, window)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            rv = np.where(np.nan_to_num(med) > 0, vol / med, np.nan)
+        return rv
+
+    @staticmethod
+    def is_low_volume(v: float, med: float, ratio: float) -> bool:
+        """True → hacim referansın ratio katının ALTINDA (zayıf karşı baskı)."""
+        return (not np.isnan(med)) and med > 0 and v <= ratio * med
+
+    @staticmethod
+    def is_high_volume(v: float, med: float, ratio: float = 1.5) -> bool:
+        return (not np.isnan(med)) and med > 0 and v >= ratio * med
+
+
+class QweSwingEngine:
+    """
+    QWE için 1H/4H yapı tespiti. TÜM tespitler doğrulama-gecikmeli:
+    bir swing/blok ancak gelecekteki k bar / blok kapandıktan sonra "bilinir"
+    (confirm index) → lookahead yok.
+    """
+
+    @staticmethod
+    def find_swings(H: np.ndarray, L: np.ndarray, k: int = 2) -> List[tuple]:
+        """Fractal swing noktaları: (bar, fiyat, 'H'|'L', confirm_bar).
+        H[i] ±k penceresinin TEK maksimumu ise swing high (low ayna);
+        confirm_bar = i + k (bu bar kapanmadan swing bilinemez)."""
+        n = len(H)
+        out = []
+        for i in range(k, n - k):
+            wh = H[i - k:i + k + 1]
+            if H[i] >= wh.max() and (wh == H[i]).sum() == 1:
+                out.append((i, float(H[i]), 'H', i + k))
+            wl = L[i - k:i + k + 1]
+            if L[i] <= wl.min() and (wl == L[i]).sum() == 1:
+                out.append((i, float(L[i]), 'L', i + k))
+        return out
+
+    @staticmethod
+    def detect_setups(df: pd.DataFrame, k: int = 2,
+                      min_leg_atr: float = 1.5, max_age: int = 48,
+                      bar_minutes: int = 60) -> List[dict]:
+        """
+        Impulsive Move setup'ları (bull; bear ayna) — TF-bağımsız (1H/4H yapı):
+          yapı → BOS (kapanış son doğrulanmış swing high'ı aşar) →
+          BOS sonrası tepe swing high (HH) doğrulanır → bacak = dip → HH.
+        "Impulsive" şartı: bacak ≥ min_leg_atr × ATR14 (aynı TF).
+        Dönen setup: dict(dir, lo, hi, avail_ts, expire_ts) — avail_ts = HH'i
+        doğrulayan barın KAPANIŞ zamanı (ns epoch); o andan önce setup hiçbir
+        alt-TF bara görünmez (lookahead koruması zaman damgasıyla).
+        """
+        H = df['High'].values.astype(float)
+        L = df['Low'].values.astype(float)
+        C = df['Close'].values.astype(float)
+        n = len(C)
+        ts = pd.to_datetime(df.index)
+        if ts.tz is not None:
+            ts = ts.tz_localize(None)
+        t_i8 = ts.values.astype('datetime64[ns]').astype(np.int64)
+        BAR_NS = bar_minutes * 60 * 1_000_000_000
+        tr = np.maximum(H[1:] - L[1:],
+                        np.maximum(np.abs(H[1:] - C[:-1]), np.abs(L[1:] - C[:-1])))
+        atr = pd.Series(np.r_[np.nan, tr]).rolling(14).mean().shift(1).values
+
+        by_confirm = sorted(QweSwingEngine.find_swings(H, L, k),
+                            key=lambda s: (s[3], s[0]))
+        ptr = 0
+        last_sh = None    # (bar, fiyat) — son DOĞRULANMIŞ yapı swing high'ı
+        last_sl = None
+        pend_bull = None  # BOS oldu, HH swing onayı bekleniyor
+        pend_bear = None
+        setups: List[dict] = []
+
+        for i in range(n):
+            # bar i kapandı → bu barla doğrulanan swingleri işle
+            while ptr < len(by_confirm) and by_confirm[ptr][3] <= i:
+                b, px, typ, cf = by_confirm[ptr]; ptr += 1
+                if typ == 'H':
+                    if (pend_bull is not None and b > pend_bull['bos_from']
+                            and px > pend_bull['broken']):
+                        lo_px = float(L[pend_bull['lo_bar']:b + 1].min())
+                        leg = px - lo_px
+                        a = atr[cf] if cf < n else np.nan
+                        if not np.isnan(a) and leg >= min_leg_atr * a:
+                            av = t_i8[cf] + BAR_NS      # onay barının kapanış anı
+                            setups.append(dict(dir='bull', lo=lo_px, hi=px,
+                                               avail_ts=av,
+                                               expire_ts=av + max_age * BAR_NS))
+                        pend_bull = None
+                    last_sh = (b, px)
+                else:
+                    if (pend_bear is not None and b > pend_bear['bos_from']
+                            and px < pend_bear['broken']):
+                        hi_px = float(H[pend_bear['hi_bar']:b + 1].max())
+                        leg = hi_px - px
+                        a = atr[cf] if cf < n else np.nan
+                        if not np.isnan(a) and leg >= min_leg_atr * a:
+                            av = t_i8[cf] + BAR_NS
+                            setups.append(dict(dir='bear', lo=px, hi=hi_px,
+                                               avail_ts=av,
+                                               expire_ts=av + max_age * BAR_NS))
+                        pend_bear = None
+                    last_sl = (b, px)
+
+            # bar i kapanışında BOS kontrolü (yalnızca doğrulanmış yapıya karşı)
+            if pend_bull is None:
+                if last_sh is not None and last_sl is not None and C[i] > last_sh[1]:
+                    pend_bull = dict(bos_from=i, broken=last_sh[1],
+                                     lo_bar=last_sl[0], lo_px=last_sl[1])
+            elif C[i] < pend_bull['lo_px']:
+                pend_bull = None            # yapı çöktü → BOS geçersiz
+            if pend_bear is None:
+                if last_sh is not None and last_sl is not None and C[i] < last_sl[1]:
+                    pend_bear = dict(bos_from=i, broken=last_sl[1],
+                                     hi_bar=last_sh[0], hi_px=last_sh[1])
+            elif C[i] > pend_bear['hi_px']:
+                pend_bear = None
+
+        setups.sort(key=lambda s: s['avail_ts'])
+        return setups
+
+    @staticmethod
+    def compute_4h_context(df_1h: pd.DataFrame, ema_fast: int = 20,
+                           ema_slow: int = 50, k: int = 2):
+        """
+        4H bağlam (görsel: 4H = Direction + Key Levels).
+        Dönen: (block_starts[int64], dir_by_block, liq_levels)
+          dir_by_block[j] = j. blok İÇİNDEKİ kararlar için yön — yalnızca j-1'e
+          kadar KAPANMIŞ blokların EMA'sından ('bull'|'bear'|'none').
+          liq_levels = [(fiyat, avail_block)] — 4H fractal swing seviyeleri;
+          avail_block'tan önceki bloklarda görünmez.
+        """
+        ts = pd.to_datetime(df_1h.index)
+        if ts.tz is not None:
+            ts = ts.tz_localize(None)
+        blocks = ts.floor('4h')
+        g = df_1h.groupby(blocks.values).agg(
+            H=('High', 'max'), L=('Low', 'min'), Cl=('Close', 'last'))
+        bh = g['H'].values.astype(float)
+        bl = g['L'].values.astype(float)
+        bc = g['Cl'].values.astype(float)
+        m = len(bc)
+        ef = pd.Series(bc).ewm(span=ema_fast, adjust=False).mean().values
+        es = pd.Series(bc).ewm(span=ema_slow, adjust=False).mean().values
+        dirb = np.array(['none'] * m, dtype=object)
+        for j in range(1, m):
+            if j >= ema_slow:               # ısınma bitmeden yön verme
+                dirb[j] = 'bull' if ef[j - 1] > es[j - 1] else 'bear'
+        liq = [(px, cf + 1) for (b, px, typ, cf)
+               in QweSwingEngine.find_swings(bh, bl, k)]
+        block_starts = pd.DatetimeIndex(g.index).asi8
+        return block_starts, dirb, liq
+
+
+class QweBrain:
+    """
+    QWE — paylaşılan işlem mantığı: Impulsive Move (BOS+HH) → fib geri çekilme
+    kademesine düşük hacimli, güçlü reddedişli onay mumu → giriş.
+
+    Kademeler (config entry_level):
+      '382' Impulsive Move  → SL 61.8%   | '618' Golden Zone      → SL 88.6%
+      '786' Institutional   → SL 113%    | '886' Stop Hunt LVL    → SL 113%
+
+    Onay katmanları (görsel 5-6): **15M onay mumu** (trader'ın küçük-TF onayı) —
+    reddediş close-pos + kapanış giriş seviyesinin doğru tarafında ("zone held")
+    + opsiyonel düşük-hacim retest'i (VolumeEngine, 15M blok hacmi) + opsiyonel
+    4H yön ve 4H likidite çakışması. Fib matematiği FibonacciEngine'dendir.
+    TP1 = HH (kısmi + BE), TP2 = bacağın -%27.2 uzantısı (runner).
+
+    Lookahead: setup HH doğrulama 1H barı kapanmadan görünmez; onay yalnızca
+    bir 15M bloğu KAPATAN 5M barın kapanışında değerlendirilir (15M mumu o anda
+    tamamlanmıştır); giriş bir sonraki 5M barın açılışında (= 15M kapanış anı).
+    """
+
+    FIB_ENTRY = {'382': 0.382, '618': 0.618, '786': 0.786, '886': 0.886}
+    FIB_SL    = {'382': 0.618, '618': 0.886, '786': 1.13,  '886': 1.13}
+
+    ENTRY_LEVEL          = '618'
+    TP_EXT               = 0.272
+    REJECTION_CLOSE_PCT  = 0.60
+    MAX_RETEST_VOL_RATIO = 0.0    # bar hacmi ≤ X × rolling-medyan (0=kapalı)
+    REQUIRE_4H_LIQ       = False  # giriş seviyesi bir 4H swing seviyesine yakın olmalı
+    USE_4H_DIR           = True   # setup yönü 4H EMA yönüyle aynı olmalı
+    LIQ_TOL_ATR          = 3.0    # 4H LIQ yakınlık toleransı (× 5M ATR)
+    DAILY_LIMIT          = 2
+    WEEKEND_FILTER       = True
+
+    def __init__(self, bias_provider=None):
+        self.bias = bias_provider
+        self.last_skip_reason: Optional[str] = None
+        self.used_fvg_ids: set = set()                       # arayüz uyumu
+        self.pending: Dict[str, List[dict]] = {'bull': [], 'bear': []}
+        try:
+            from config import get_config
+            qc = get_config().section('qwe')
+        except Exception:
+            qc = {}
+        self.ENTRY_LEVEL          = str(qc.get('entry_level', self.ENTRY_LEVEL))
+        if self.ENTRY_LEVEL not in self.FIB_ENTRY:
+            self.ENTRY_LEVEL = '618'
+        self.TP_EXT               = float(qc.get('tp_ext', self.TP_EXT))
+        self.REJECTION_CLOSE_PCT  = float(qc.get('rejection_close_pct', self.REJECTION_CLOSE_PCT))
+        self.MAX_RETEST_VOL_RATIO = float(qc.get('max_retest_vol_ratio', self.MAX_RETEST_VOL_RATIO))
+        self.REQUIRE_4H_LIQ       = bool(qc.get('require_4h_liq', self.REQUIRE_4H_LIQ))
+        self.USE_4H_DIR           = bool(qc.get('use_4h_dir', self.USE_4H_DIR))
+        self.LIQ_TOL_ATR          = float(qc.get('liq_tol_atr', self.LIQ_TOL_ATR))
+        self.DAILY_LIMIT          = int(qc.get('daily_limit', self.DAILY_LIMIT))
+        self.WEEKEND_FILTER       = bool(qc.get('weekend_filter', self.WEEKEND_FILTER))
+
+        self._ptr = 0                     # sıradaki aktive edilecek setup
+        self._active: List[dict] = []
+        self._date_count: Dict[object, int] = {}
+        self._last_today = None
+        self.stats = dict(setups_seen=0, touched=0, weak_reject=0, high_vol=0,
+                          no_liq=0, wrong_4h=0, wrong_bias=0, invalidated=0,
+                          expired=0, daily_limit=0, signal=0,
+                          step1_fail=0, step2_fail=0, step3_fail=0)
+
+    def _refund_daily(self):
+        """MIN_RR reddi gün limitini tüketmesin (sinyal işleme dönüşmedi)."""
+        if self._last_today is not None and self._date_count.get(self._last_today, 0) > 0:
+            self._date_count[self._last_today] -= 1
+
+    def evaluate(self, idx: int,
+                 C: np.ndarray, O: np.ndarray,
+                 H: np.ndarray, L: np.ndarray,
+                 E100: np.ndarray, E200: np.ndarray,
+                 TM: pd.Index,
+                 msb_events_bull: List[MSBEvent],
+                 msb_events_bear: List[MSBEvent],
+                 ATR: Optional[np.ndarray] = None,
+                 qwe_setups: Optional[List[dict]] = None,
+                 q_t5: Optional[np.ndarray] = None,
+                 q_block: Optional[np.ndarray] = None,
+                 q_dir4=None, q_liq=None,
+                 q15_close: Optional[np.ndarray] = None,
+                 q15_O: Optional[np.ndarray] = None,
+                 q15_H: Optional[np.ndarray] = None,
+                 q15_L: Optional[np.ndarray] = None,
+                 q15_V: Optional[np.ndarray] = None,
+                 q15_volmed: Optional[np.ndarray] = None,
+                 **_) -> Optional[TradeSignal]:
+
+        self.last_skip_reason = None
+        if qwe_setups is None or q_t5 is None or q15_close is None:
+            self.last_skip_reason = 'no_signal'
+            return None
+        # Onay TF'i: yalnızca bir 15M bloğu kapatan 5M barında karar verilir
+        if not q15_close[idx]:
+            self.last_skip_reason = 'no_signal'
+            return None
+        t   = to_naive(TM[idx])
+        now = int(q_t5[idx])              # bu 5M barın BAŞLANGIÇ anı (ns epoch)
+
+        # ── Yeni doğrulanan setup'ları aktive et (avail_ts = yapı barının
+        #    kapanış anı; ondan önceki hiçbir bar setup'ı göremez) ───────────
+        while self._ptr < len(qwe_setups) and qwe_setups[self._ptr]['avail_ts'] <= now:
+            self._active.append(dict(qwe_setups[self._ptr]))
+            self._ptr += 1
+            self.stats['setups_seen'] += 1
+
+        # Tamamlanmış 15M onay mumu (blok içi kümülatif diziler bu barda tam mumdur)
+        close_c = float(C[idx])
+        low_c   = float(q15_L[idx])
+        high_c  = float(q15_H[idx])
+        fe = self.FIB_ENTRY[self.ENTRY_LEVEL]
+        fs = self.FIB_SL[self.ENTRY_LEVEL]
+
+        # ── Bakım: süre dolumu + SL seviyesinin kapanışla ihlali ────────────
+        keep = []
+        for s in self._active:
+            if s['expire_ts'] <= now:
+                self.stats['expired'] += 1
+                continue
+            slp = FibonacciEngine.retracement(s['lo'], s['hi'], fs, s['dir'])
+            if (s['dir'] == 'bull' and close_c < slp) or \
+               (s['dir'] == 'bear' and close_c > slp):
+                self.stats['invalidated'] += 1
+                continue
+            keep.append(s)
+        self._active = keep
+        if not self._active:
+            self.last_skip_reason = 'no_signal'
+            return None
+
+        # ── Filtre boru hattı ────────────────────────────────────────────────
+        if self.WEEKEND_FILTER and t.weekday() >= 5:
+            self.last_skip_reason = 'no_session'
+            return None
+        today = t.date()
+        if self._date_count.get(today, 0) >= self.DAILY_LIMIT:
+            self.stats['daily_limit'] += 1
+            self.last_skip_reason = 'daily_limit'
+            return None
+        wdir = self.bias.get(t) if self.bias is not None else None
+        if self.bias is not None and wdir is None:
+            self.last_skip_reason = 'no_bias'
+            return None
+        atr_val = (float(ATR[idx]) if ATR is not None
+                   and not np.isnan(float(ATR[idx])) else 2.0)
+        blk = int(q_block[idx]) if q_block is not None else -1
+        bar_rng = max(high_c - low_c, 1e-9)
+
+        # ── Giriş tetiği: kademe seviyesine dokunuş + onay mumu ─────────────
+        for s in self._active:
+            if s.get('used'):
+                continue
+            d   = s['dir']
+            lvl = FibonacciEngine.retracement(s['lo'], s['hi'], fe, d)
+            slp = FibonacciEngine.retracement(s['lo'], s['hi'], fs, d)
+            if d == 'bull':
+                touched = low_c <= lvl
+                rej  = (close_c - low_c) / bar_rng >= self.REJECTION_CLOSE_PCT
+                held = close_c > lvl              # bölge tuttu: kapanış seviyenin üstünde
+            else:
+                touched = high_c >= lvl
+                rej  = (high_c - close_c) / bar_rng >= self.REJECTION_CLOSE_PCT
+                held = close_c < lvl
+            if not touched:
+                continue
+            self.stats['touched'] += 1
+            if wdir is not None and d != wdir:
+                self.stats['wrong_bias'] += 1
+                continue
+            if self.USE_4H_DIR and q_dir4 is not None and blk >= 0 \
+                    and q_dir4[blk] != d:
+                self.stats['wrong_4h'] += 1
+                continue
+            if not (rej and held):                # onay mumu yok
+                self.stats['weak_reject'] += 1
+                continue
+            if self.MAX_RETEST_VOL_RATIO > 0 and q15_V is not None \
+                    and q15_volmed is not None:
+                if not VolumeEngine.is_low_volume(float(q15_V[idx]),
+                                                  float(q15_volmed[idx]),
+                                                  self.MAX_RETEST_VOL_RATIO):
+                    self.stats['high_vol'] += 1   # yüksek hacimli retest → karşı baskı
+                    continue
+            if self.REQUIRE_4H_LIQ and q_liq:
+                tol = self.LIQ_TOL_ATR * atr_val
+                if not any(abs(lvl - px) <= tol
+                           for (px, ab) in q_liq if ab <= blk):
+                    self.stats['no_liq'] += 1
+                    continue
+
+            # ── SİNYAL ───────────────────────────────────────────────────────
+            s['used'] = True
+            self._date_count[today] = self._date_count.get(today, 0) + 1
+            self._last_today = today
+            self.stats['signal'] += 1
+            tp2 = FibonacciEngine.extension(s['lo'], s['hi'], self.TP_EXT, d)
+            tp1 = s['hi'] if d == 'bull' else s['lo']   # HH/LL (fib 0.0)
+            return TradeSignal(
+                entry_time        = TM[idx],
+                direction         = d,
+                trigger_fvg       = None,
+                confirmation_type = 'QWE',
+                confidence        = 75.0,
+                msb_type          = 'qwe_' + self.ENTRY_LEVEL,
+                confluence_count  = 1,
+                stop_price        = slp,          # kademenin fib SL seviyesi
+                risk_fraction     = 0.005,
+                tp_hint           = tp2,          # TP2 = -%27.2 uzantı (runner)
+                tp1_hint          = tp1,          # TP1 = HH (kısmi kâr + BE)
+            )
+
+        self.last_skip_reason = 'no_signal'
+        return None
+
+
+class QweBacktestEngine(BacktestEngine):
+    """
+    QweBrain için engine: 1H setup'ları, 4H bağlamı ve 5M hacim dizilerini
+    hesaplayıp brain'e iletir. TP1 (HH, kısmi) + TP2 (uzantı, runner) ve
+    MIN_RR kapısı LondonBacktestEngine ile aynı desendedir.
+    """
+
+    MIN_RR       = 1.5
+    TP1_FRACTION = 0.5
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.rr_reject_count = 0
+        try:
+            from config import get_config
+            qc = get_config().section('qwe')
+        except Exception:
+            qc = {}
+        self.MIN_RR         = float(qc.get('min_rr',        self.MIN_RR))
+        self.TP1_FRACTION   = float(qc.get('tp1_fraction',  self.TP1_FRACTION))
+        self.SWING_K        = int(qc.get('swing_k',         2))
+        self.MIN_LEG_ATR    = float(qc.get('min_leg_atr',   1.5))
+        self.MAX_SETUP_AGE  = int(qc.get('max_setup_age',   48))
+        self.EMA4H_FAST     = int(qc.get('ema4h_fast',      20))
+        self.EMA4H_SLOW     = int(qc.get('ema4h_slow',      50))
+        self.STRUCTURE_TF   = str(qc.get('structure_tf',    '1h')).lower()
+        if self.STRUCTURE_TF not in ('1h', '4h'):
+            self.STRUCTURE_TF = '1h'
+        self.CONFIRM_TF_MIN = int(qc.get('confirm_tf_min',  15))
+        self.VOL_MED_WINDOW = int(qc.get('vol_med_window',  48))
+
+    @staticmethod
+    def _naive_i8(index) -> np.ndarray:
+        """Index'i tz'siz ns-epoch int64'e çevirir. Birim normalize edilir:
+        pandas 2.x saniye-çözünürlüklü index'lerde asi8 saniye döndürür ve
+        farklı kaynaklı index'ler karışırsa searchsorted sessizce bozulur."""
+        ts = pd.to_datetime(index)
+        if ts.tz is not None:
+            ts = ts.tz_localize(None)
+        return ts.values.astype('datetime64[ns]').astype(np.int64)
+
+    def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
+            backtest_start: datetime) -> List[Trade]:
+        # ── Yapı TF'i: 1H (intraday-swing) veya 4H (haftalık swing) ─────────
+        if self.STRUCTURE_TF == '4h':
+            ts1 = pd.to_datetime(df_1h.index)
+            if ts1.tz is not None:
+                ts1 = ts1.tz_localize(None)
+            df_struct = df_1h.groupby(ts1.floor('4h')).agg(
+                {'Open': 'first', 'High': 'max', 'Low': 'min', 'Close': 'last'})
+            bar_minutes = 240
+        else:
+            df_struct = df_1h
+            bar_minutes = 60
+        setups = QweSwingEngine.detect_setups(
+            df_struct, k=self.SWING_K, min_leg_atr=self.MIN_LEG_ATR,
+            max_age=self.MAX_SETUP_AGE, bar_minutes=bar_minutes)
+
+        blk_starts, dir4, liq = QweSwingEngine.compute_4h_context(
+            df_1h, ema_fast=self.EMA4H_FAST, ema_slow=self.EMA4H_SLOW,
+            k=self.SWING_K)
+
+        t5 = self._naive_i8(df_5m.index)
+        q_block = np.searchsorted(blk_starts, t5, side='right') - 1
+
+        # ── Onay TF mumu (varsayılan 15M): blok içi kümülatif OHLCV —
+        #    bloğu KAPATAN 5M barında diziler tamamlanmış onay mumunu verir ──
+        ts5 = pd.to_datetime(df_5m.index)
+        if ts5.tz is not None:
+            ts5 = ts5.tz_localize(None)
+        blk15 = ts5.floor(f'{self.CONFIRM_TF_MIN}min')
+        b15 = blk15.values.astype('datetime64[ns]').astype(np.int64)
+        q15_close = np.r_[b15[1:] != b15[:-1], True]
+        vol5 = (df_5m['Volume'].values.astype(float)
+                if 'Volume' in df_5m.columns else np.zeros(len(df_5m)))
+        g = pd.DataFrame({'O': df_5m['Open'].values.astype(float),
+                          'H': df_5m['High'].values.astype(float),
+                          'L': df_5m['Low'].values.astype(float),
+                          'V': vol5}, index=blk15).groupby(level=0)
+        q15_O = g['O'].transform('first').values
+        q15_H = g['H'].cummax().values
+        q15_L = g['L'].cummin().values
+        q15_V = g['V'].cumsum().values
+        # 15M blok hacim medyanı: önceki `vol_med_window` TAMAMLANMIŞ blok
+        v15 = g['V'].sum()
+        med15 = VolumeEngine.rolling_median_prior(v15.values, self.VOL_MED_WINDOW)
+        blkpos = np.searchsorted(
+            v15.index.values.astype('datetime64[ns]').astype(np.int64), b15)
+        q15_volmed = med15[blkpos]
+
+        self._extra_brain_kwargs = dict(
+            qwe_setups=setups, q_t5=t5, q_block=q_block,
+            q_dir4=dir4, q_liq=liq,
+            q15_close=q15_close, q15_O=q15_O, q15_H=q15_H, q15_L=q15_L,
+            q15_V=q15_V, q15_volmed=q15_volmed)
+        try:
+            return super().run(df_1h, df_5m, backtest_start)
+        finally:
+            self._extra_brain_kwargs = {}
+
+    def _make_entry_trade(self, signal: TradeSignal, idx: int,
+                          O: np.ndarray, equity: float, trade_id: int,
+                          fvg1_bull=None, fvg1_bear=None,
+                          mit1_bull=None, mit1_bear=None,
+                          fvg1_eng=None,
+                          H1=None, L1=None, ATR1=None,
+                          T1: Optional[np.ndarray] = None) -> Optional[Trade]:
+        if signal.tp_hint == 0.0:
+            return super()._make_entry_trade(
+                signal, idx, O, equity, trade_id,
+                fvg1_bull=fvg1_bull, fvg1_bear=fvg1_bear,
+                mit1_bull=mit1_bull, mit1_bear=mit1_bear,
+                fvg1_eng=fvg1_eng, H1=H1, L1=L1, ATR1=ATR1, T1=T1,
+            )
+
+        entry     = float(O[idx + 1])
+        direction = signal.direction
+        buf       = self.risk.sl_buffer
+        tp2       = signal.tp_hint        # bacak uzantısı (runner)
+        hh        = signal.tp1_hint       # HH/LL (kısmi kâr)
+
+        if direction == 'bull':
+            sl_raw    = signal.stop_price * (1.0 - buf)
+            risk_per  = max(entry - sl_raw, 0.01)
+            actual_rr = (tp2 - entry) / risk_per
+            tp1 = hh if (hh > entry and hh < tp2) else None
+            geom_ok = entry > sl_raw + 0.01     # giriş SL'nin sağ tarafında olmalı
+        else:
+            sl_raw    = signal.stop_price * (1.0 + buf)
+            risk_per  = max(sl_raw - entry, 0.01)
+            actual_rr = (entry - tp2) / risk_per
+            tp1 = hh if (hh < entry and hh > tp2) else None
+            geom_ok = entry < sl_raw - 0.01
+
+        if not geom_ok:                          # açılış SL'ye gap'lendi → geçersiz
+            if hasattr(self.brain, '_refund_daily'):
+                self.brain._refund_daily()
+            return None
+
+        if actual_rr < self.MIN_RR:
+            self.rr_reject_count += 1
+            if hasattr(self.brain, '_refund_daily'):
+                self.brain._refund_daily()   # gün limitini geri ver
+            return None
+
+        r = self.risk.compute(direction, entry, signal.stop_price, equity,
+                              signal.risk_fraction, tp_override=tp2)
+        if r is None:
+            return None
+        return Trade(
+            trade_id      = trade_id,
+            signal        = signal,
+            entry_price   = round(entry, 2),
+            sl            = r['sl'],
+            tp            = r['tp'],
+            risk          = r['risk'],
+            risk_pct      = r['risk_pct'],
+            risk_dollar   = r['risk_dollar'],
+            rr            = actual_rr,
+            risk_fraction = r['risk_fraction'],
+            entry_bar_idx = idx,
+            tp1           = (round(tp1, 2) if tp1 is not None else None),
+            tp1_fraction  = self.TP1_FRACTION,
+        )
+
+
 if __name__ == '__main__':
     main()

@@ -133,6 +133,7 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
         PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
         PrivateBiasProvider, ThreeVolBrain,
         LondonReversalBrain, LondonBacktestEngine,
+        QweBrain, QweBacktestEngine,
     )
     from config import get_config
 
@@ -151,7 +152,7 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
 
     # Strategy modes
     if strategy == "hepsi":
-        strategies = ["fvg", "threevol", "london"]
+        strategies = ["fvg", "threevol", "london", "qwe"]
     else:
         strategies = [strategy]
 
@@ -170,14 +171,17 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
         if mode == "private": return PrivateBiasProvider(df_1h)
         return WeeklyBiasProvider(cfg.weekly_bias_path)
 
-    # London Reversal SABİT bias'la koşar (config: london_reversal.bias);
+    # London ve QWE SABİT bias'la koşar (config: <strateji>.bias);
     # kullanıcının bias seçimi yalnızca fvg/threevol'a uygulanır.
-    london_bias = cfg.get("london_reversal", "bias", default="private")
+    fixed_bias = {
+        "london": cfg.get("london_reversal", "bias", default="private"),
+        "qwe":    cfg.get("qwe", "bias", default="none"),
+    }
 
     for strat in strategies:
-        strat_bias_modes = [london_bias] if strat == "london" else bias_modes
+        strat_bias_modes = [fixed_bias[strat]] if strat in fixed_bias else bias_modes
         for bmode in strat_bias_modes:
-            bias_label = f"{bmode} (sabit)" if strat == "london" else bmode
+            bias_label = f"{bmode} (sabit)" if strat in fixed_bias else bmode
             buf = io.StringIO()
             try:
                 with contextlib.redirect_stdout(buf):
@@ -187,6 +191,16 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
                         brain  = LondonReversalBrain(bias_provider=bp)
                         risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
                         engine = LondonBacktestEngine(
+                            brain, risk,
+                            initial_capital=capital,
+                            breakeven_at_R=be,
+                            time_exit_bars=tbe,
+                            ema_macd_filter=emf,
+                        )
+                    elif strat == "qwe":
+                        brain  = QweBrain(bias_provider=bp)
+                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
+                        engine = QweBacktestEngine(
                             brain, risk,
                             initial_capital=capital,
                             breakeven_at_R=be,
@@ -306,18 +320,23 @@ def backtest_menu() -> None:
     strat_table.add_row(f"[bold {C_YEL}]fvg[/]",     "FVG v10  (Fair Value Gap)")
     strat_table.add_row(f"[bold {C_YEL}]threevol[/]", "Three Vol Directional")
     strat_table.add_row(f"[bold {C_YEL}]london[/]",   "London Reversal  (ICT Judas Swing)")
-    strat_table.add_row(f"[bold {C_YEL}]hepsi[/]",    "Hepsi  (fvg + threevol + london)")
+    strat_table.add_row(f"[bold {C_YEL}]qwe[/]",      "QWE  (Fib Pullback: BOS+HH + hacim onayı)")
+    strat_table.add_row(f"[bold {C_YEL}]hepsi[/]",    "Hepsi  (fvg + threevol + london + qwe)")
     console.print(strat_table)
-    strategy = _pick("Strateji seç", ["fvg","threevol","london","hepsi"], "fvg")
+    strategy = _pick("Strateji seç", ["fvg","threevol","london","qwe","hepsi"], "fvg")
 
-    # Bias — London Reversal sabit bias'la koşar (config: london_reversal.bias),
-    # seçim yalnızca diğer stratejiler için sorulur.
+    # Bias — London ve QWE sabit bias'la koşar (config: <strateji>.bias);
+    # seçim yalnızca fvg/threevol için sorulur. (QWE swing stratejisidir:
+    # haftalarca süren işlemlerde günlük/haftalık bias kapısı anlamsız.)
     console.print()
-    london_bias = cfg.get("london_reversal", "bias", default="private")
-    if strategy == "london":
-        bias = london_bias
-        _info(f"London Reversal bias sabit: [bold {C_YEL}]{bias}[/]  "
-              f"[dim](config: london_reversal.bias)[/]")
+    fixed_bias = {
+        "london": cfg.get("london_reversal", "bias", default="private"),
+        "qwe":    cfg.get("qwe", "bias", default="none"),
+    }
+    if strategy in fixed_bias:
+        bias = fixed_bias[strategy]
+        _info(f"{strategy.upper()} bias sabit: [bold {C_YEL}]{bias}[/]  "
+              f"[dim](config)[/]")
     else:
         bias_table = Table(box=SIMPLE_HEAVY, show_header=False,
                            border_style=C_BLUE, padding=(0, 2))
@@ -329,8 +348,9 @@ def backtest_menu() -> None:
         bias_table.add_row(f"[{C_YEL}]hepsi[/]",   "Tüm bias modları")
         console.print(bias_table)
         if strategy == "hepsi":
-            _info(f"Not: London Reversal bu seçimden etkilenmez, "
-                  f"sabit [bold {C_YEL}]{london_bias}[/] bias'ıyla koşar.")
+            _info(f"Not: London (sabit [bold {C_YEL}]{fixed_bias['london']}[/]) ve "
+                  f"QWE (sabit [bold {C_YEL}]{fixed_bias['qwe']}[/]) bu seçimden "
+                  f"etkilenmez.")
         bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
                      cfg.get("backtest", "default_bias", default="weekly"))
 
@@ -338,9 +358,10 @@ def backtest_menu() -> None:
     console.print()
     rr = _pick("Risk/Ödül seç", ["1:1","1:2be","1:2fix"], "1:2fix")
 
-    # TBE
+    # TBE — QWE swing stratejisi: zaman çıkışı önerilmez (işlemler günler sürer)
     console.print()
-    tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"], "8h")
+    tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"],
+                "yok" if strategy == "qwe" else "8h")
 
     # EMA-MACD filtre
     console.print()
@@ -362,7 +383,7 @@ def backtest_menu() -> None:
     summary.add_column("Parametre", style=C_FG2)
     summary.add_column("Değer",     style=f"bold {C_BLUE}")
     summary.add_row("Strateji", strategy.upper())
-    summary.add_row("Bias",     f"{bias} (sabit)" if strategy == "london" else bias)
+    summary.add_row("Bias",     f"{bias} (sabit)" if strategy in fixed_bias else bias)
     summary.add_row("RR",       rr)
     summary.add_row("TBE",      tbe)
     summary.add_row("EMA-MACD", "Evet" if emf else "Hayır")

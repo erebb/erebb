@@ -50,6 +50,28 @@
     "ote_min": 0.62,
     "ote_max": 0.79
   },
+  "qwe": {
+    "entry_level": "618",
+    "bias": "none",
+    "structure_tf": "1h",
+    "confirm_tf_min": 15,
+    "vol_med_window": 48,
+    "swing_k": 2,
+    "min_leg_atr": 1.5,
+    "max_setup_age": 48,
+    "rejection_close_pct": 0.60,
+    "max_retest_vol_ratio": 0.0,
+    "require_4h_liq": false,
+    "use_4h_dir": true,
+    "liq_tol_atr": 3.0,
+    "min_rr": 1.5,
+    "tp1_fraction": 0.5,
+    "tp_ext": 0.272,
+    "daily_limit": 2,
+    "weekend_filter": true,
+    "ema4h_fast": 20,
+    "ema4h_slow": 50
+  },
   "paths": {
     "csv_5m": "xauusd_5m.csv",
     "csv_1h": "xauusd_1h.csv",
