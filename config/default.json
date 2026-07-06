@@ -15,7 +15,7 @@
     "max_risk_pct": 2.0
   },
   "live": {
-    "strategy": "qwe",
+    "strategy": "fvg",
     "leverage": 10,
     "risk_pct": 1.0,
     "dry_run": true,

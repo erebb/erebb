@@ -1,9 +1,18 @@
 """
 XAUUSD Veri İndirici — MetaTrader 5 (MT5)
 =========================================
-MT5 terminali üzerinden copy_rates_range ile OHLCV indirir; engine ile uyumlu
-CSV'lere yazar (xauusd_5m.csv, xauusd_15m.csv, xauusd_1h.csv, xauusd_4h.csv)
-ve istenirse Excel'e (.xlsx) çevirir.
+MT5 terminalinden OHLCV indirir; engine ile uyumlu CSV'lere yazar
+(xauusd_5m.csv, xauusd_15m.csv, xauusd_1h.csv, xauusd_4h.csv) ve istenirse
+Excel'e (.xlsx) çevirir.
+
+NEDEN copy_rates_range DEĞİL copy_rates_from_pos?
+  copy_rates_range yalnızca terminalin YEREL önbelleğindeki tarihçeyi döndürür
+  — M5 için tipik olarak son ~2 ay. Bu yüzden bu modül EN YENİDEN GERİYE
+  pozisyon bazlı sayfalama yapar (copy_rates_from_pos): bu istekler terminali
+  broker'dan daha derin tarihçe indirmeye zorlar. İndirme asenkron olduğundan
+  ilerlemeyen sayfada bekleyip yeniden dener. İndirme yine de kısa kalırsa
+  MT5 → Araçlar → Seçenekler → Grafikler → 'Max bars in chart' = Unlimited
+  yapın ve modülü TEKRAR çalıştırın (kaldığı yere ekler).
 
 GEREKSİNİMLER (yalnızca Windows):
   • MetaTrader 5 terminali kurulu ve AÇIK olmalı (veya --terminal ile yol verin)
@@ -29,6 +38,7 @@ from __future__ import annotations
 
 import argparse
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 
 import pandas as pd
@@ -49,9 +59,11 @@ SYMBOL_CANDIDATES = [
     "XAUUSD.c", "XAUUSD.i", "GOLD", "GOLD.a", "GOLDmicro",
 ]
 
-# MT5 sayfa penceresi: copy_rates_range terminaldeki "Max bars in chart"
-# ayarıyla sınırlıdır → geniş aralığı AY AY çekmek en güvenlisidir.
-CHUNK_DAYS = 30
+# Geriye sayfalama parametreleri
+PAGE_BARS         = 5000   # sayfa başına bar ("Max bars in chart" sınırına güvenli)
+PAGE_OVERLAP      = 50     # canlı barlar pozisyonları kaydırabilir → küçük bindirme
+MAX_STALL_RETRIES = 5      # ilerlemeyen sayfada bekle-yeniden-dene sayısı
+MAX_PAGES         = 500    # emniyet sınırı (5m × 500 × 5000 ≈ 23 yıl)
 
 
 def _get_mt5():
@@ -154,33 +166,68 @@ def rates_to_df(rates, utc_offset_hours: float) -> pd.DataFrame:
 def download_interval(mt5, symbol: str, interval: str,
                       start: datetime, end: datetime,
                       utc_offset_hours: float) -> pd.DataFrame:
-    """[start, end] aralığını AY AY (CHUNK_DAYS) sayfalayarak indirir.
+    """[start, end] aralığını copy_rates_from_pos ile EN YENİDEN GERİYE
+    sayfalayarak indirir.
 
-    copy_rates_range tek çağrıda 'Max bars in chart' sınırına takılabilir;
-    dar pencerelerle tüm aralık güvenle toplanır."""
+    copy_rates_range yalnız yerel önbelleği döndürdüğü için KULLANILMAZ
+    (M5'te ~2 ay ile sınırlı kalır). Pozisyon bazlı istekler terminali
+    broker'dan derin tarihçe indirmeye zorlar; indirme asenkron olduğundan
+    ilerlemeyen sayfa MAX_STALL_RETRIES kez beklenip yeniden denenir.
+    Sonunda kapsama raporu basılır — kısmi indirme SESSİZ geçilmez."""
     tf = _timeframe_map(mt5)[interval]
+    target = pd.Timestamp(start)
     frames = []
-    cursor = start
+    pos = 0
+    oldest_seen = None
+    stall = 0
     page = 0
-    while cursor < end:
+
+    while page < MAX_PAGES:
         page += 1
-        win_end = min(cursor + timedelta(days=CHUNK_DAYS), end)
-        print(f"  [sayfa {page}] {cursor.date()} → {win_end.date()} ...",
-              end=" ", flush=True)
-        rates = mt5.copy_rates_range(
-            symbol, tf,
-            cursor.replace(tzinfo=timezone.utc),
-            win_end.replace(tzinfo=timezone.utc),
-        )
+        rates = mt5.copy_rates_from_pos(symbol, tf, pos, PAGE_BARS)
+        if rates is None or len(rates) == 0:
+            stall += 1
+            if stall > MAX_STALL_RETRIES:
+                print("  Daha eski tarihçe gelmiyor — terminal/broker sınırı.")
+                break
+            print(f"  [sayfa {page}] boş — tarihçe indiriliyor olabilir, "
+                  f"bekleniyor ({stall}/{MAX_STALL_RETRIES})")
+            time.sleep(1.5)
+            continue
         df = rates_to_df(rates, utc_offset_hours)
-        print(f"{len(df)} mum")
-        if not df.empty:
-            frames.append(df)
-        cursor = win_end
+        frames.append(df)
+        new_oldest = df.index[0]
+        print(f"  [sayfa {page}] {len(df):>5} mum  (en eski: {new_oldest})")
+        if new_oldest <= target:
+            break                                    # istenen tarihe ulaşıldı
+        if oldest_seen is None or new_oldest < oldest_seen:
+            oldest_seen = new_oldest
+            stall = 0
+        # Her durumda DAHA DERİN pozisyonu iste: derin istek, terminalin
+        # broker'dan tarihçe indirmesini tetikler. (Boş yanıt yukarıda
+        # bekle-yeniden-dene ile ele alınır; asenkron indirme orada tamamlanır.)
+        n = len(rates)
+        pos += (n - PAGE_OVERLAP) if n > PAGE_OVERLAP else n
+
     if not frames:
         return pd.DataFrame()
     out = pd.concat(frames)
-    return out[~out.index.duplicated(keep="last")].sort_index()
+    out = out[~out.index.duplicated(keep="last")].sort_index()
+    # istenen aralığa kırp
+    out = out[(out.index >= pd.Timestamp(start)) & (out.index <= pd.Timestamp(end))]
+    if out.empty:
+        return out
+
+    # ── Kapsama raporu ───────────────────────────────────────────────────────
+    want_days = max((end - start).days, 1)
+    got_days  = max((out.index.max() - out.index.min()).days, 0)
+    print(f"  Kapsama: istenen {want_days} gün — gelen {got_days} gün  "
+          f"({out.index.min()} → {out.index.max()})")
+    if out.index.min() > pd.Timestamp(start) + pd.Timedelta(days=3):
+        print(f"  ⚠ UYARI: Veri istenen başlangıçtan ({start.date()}) sonra "
+              f"başlıyor — broker/terminal tarihçe sınırı.")
+        print("           'Max bars in chart' = Unlimited + tekrar çalıştırmayı deneyin.")
+    return out
 
 
 def merge_save(new_df: pd.DataFrame, filepath: str, label: str,

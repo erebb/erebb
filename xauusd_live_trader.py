@@ -527,9 +527,9 @@ class LiveTrader:
                  capital:       float = 0.0,   # $ kasa (0 = API'den oku)
                  dry_run:       bool  = False,
                  tbe_minutes:   Optional[int] = -1,   # -1 = bias'a göre otomatik
-                 strategy:      str   = 'qwe'):       # 'qwe' | 'fvg'
+                 strategy:      str   = 'fvg'):       # 'fvg' (varsayılan) | 'qwe'
         self.client        = client
-        self.strategy      = strategy if strategy in ('qwe', 'fvg') else 'qwe'
+        self.strategy      = strategy if strategy in ('qwe', 'fvg') else 'fvg'
         # QWE: bias KOD SEVİYESİNDE ZORUNLU None (swing işlemlerde gün/hafta
         # bias kapısı anlamsız — config/CLI ne derse desin uygulanmaz).
         if self.strategy == 'qwe':
@@ -1214,9 +1214,9 @@ def main() -> None:
         """,
     )
     parser.add_argument(
-        '--strategy', choices=['qwe', 'fvg'], default=None,
-        help="Strateji: qwe (varsayılan; fib pullback swing, bias ZORUNLU none) "
-             "| fvg (FVG/OB/PRZ intraday)",
+        '--strategy', choices=['fvg', 'qwe'], default=None,
+        help="Strateji: fvg (varsayılan; FVG/OB/PRZ intraday) | "
+             "qwe (fib pullback swing — seçilirse bias ZORUNLU none)",
     )
     parser.add_argument(
         '--bias', choices=['weekly', 'daily', 'none'], default='weekly',
@@ -1271,14 +1271,14 @@ def main() -> None:
         print("Tamamlandı.")
         return
 
-    # Strateji: CLI > live_config.json > config/default.json (live.strategy) > qwe
+    # Strateji: CLI > live_config.json > config/default.json (live.strategy) > fvg
     strategy = args.strategy or cfg.get('strategy')
     if not strategy:
         try:
             from config import get_config
-            strategy = get_config().get('live', 'strategy', default='qwe')
+            strategy = get_config().get('live', 'strategy', default='fvg')
         except Exception:
-            strategy = 'qwe'
+            strategy = 'fvg'
 
     # Bias provider — QWE: ZORUNLU none (prompt hiç kurulmaz)
     if strategy == 'qwe':
