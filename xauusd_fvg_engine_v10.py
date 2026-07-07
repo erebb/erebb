@@ -4104,11 +4104,18 @@ class LondonBacktestEngine(BacktestEngine):
             actual_rr = (tp2 - entry) / risk_per
             # TP1 yalnızca giriş equilibrium'un altındaysa (önünde) geçerli
             tp1 = eq if (eq > entry and eq < tp2) else None
+            geom_ok = entry > sl_raw + 0.01     # giriş SL'nin doğru tarafında olmalı
         else:
             sl_raw    = signal.stop_price * (1.0 + buf)
             risk_per  = max(sl_raw - entry, 0.01)
             actual_rr = (entry - tp2) / risk_per
             tp1 = eq if (eq < entry and eq > tp2) else None
+            geom_ok = entry < sl_raw - 0.01
+
+        if not geom_ok:                          # açılış SL'ye gap'lendi → geçersiz
+            if hasattr(self.brain, '_last_signal_date'):
+                self.brain._last_signal_date = None   # gün limitini geri ver
+            return None
 
         if actual_rr < self.MIN_RR:
             self.rr_reject_count += 1

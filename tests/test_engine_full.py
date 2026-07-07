@@ -26,7 +26,6 @@ from xauusd_fvg_engine_v10 import (
     MSBEngine,
     MSB5MEngine,
     HarmonicEngine,
-    BreakerEngine,
     MarketBrain,
     BacktestEngine,
     PerformanceAnalytics,
@@ -40,7 +39,6 @@ from xauusd_fvg_engine_v10 import (
     IndicatorEngine,
     to_naive,
     detect_order_blocks_1h,
-    detect_horseshoe_1h,
     _build_poi_mit_map,
     DataEngine,
     DailyBiasProvider,
@@ -377,57 +375,6 @@ class TestHarmonicEngine:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# GROUP 5: BreakerEngine
-# ─────────────────────────────────────────────────────────────────────────────
-
-class TestBreakerEngine:
-    def test_detect_returns_list(self):
-        df = _make_df(50, freq="1h")
-        atr = IndicatorEngine.atr(df)
-        eng = BreakerEngine()
-        result = eng.detect(df, "bull", atr)
-        assert isinstance(result, list)
-
-    def test_bull_breaker_on_bos(self):
-        df = _swing_high_df(30, freq="1h")
-        atr = IndicatorEngine.atr(df)
-        eng = BreakerEngine()
-        blocks = eng.detect(df, "bull", atr)
-        assert len(blocks) >= 1
-
-    def test_bear_breaker_on_bos(self):
-        df = _swing_low_df(30, freq="1h")
-        atr = IndicatorEngine.atr(df)
-        eng = BreakerEngine()
-        blocks = eng.detect(df, "bear", atr)
-        assert len(blocks) >= 1
-
-    def test_detect_time_after_break(self):
-        """detect_time = break_time + 1h (lookahead koruması)."""
-        df = _swing_high_df(30, freq="1h")
-        atr = IndicatorEngine.atr(df)
-        eng = BreakerEngine()
-        blocks = eng.detect(df, "bull", atr)
-        for b in blocks:
-            assert to_naive(b.detect_time) > to_naive(b.break_time)
-
-    def test_quality_in_range(self):
-        df = _swing_high_df(30, freq="1h")
-        atr = IndicatorEngine.atr(df)
-        eng = BreakerEngine()
-        blocks = eng.detect(df, "bull", atr)
-        for b in blocks:
-            assert 0.0 <= b.quality_score <= 100.0
-
-    def test_no_blocks_flat_market(self):
-        df = _make_df(50, step=0.0, freq="1h")
-        atr = IndicatorEngine.atr(df)
-        eng = BreakerEngine()
-        assert len(eng.detect(df, "bull", atr)) == 0
-        assert len(eng.detect(df, "bear", atr)) == 0
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # GROUP 6: detect_order_blocks_1h
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -502,87 +449,6 @@ class TestDetectOrderBlocks1H:
         O = df["Open"].values; C = df["Close"].values
         T = df.index; atr = IndicatorEngine.atr(df).values
         result = detect_order_blocks_1h(H, L, O, C, T, atr, "bull")
-        assert len(result) == 0
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# GROUP 7: detect_horseshoe_1h
-# ─────────────────────────────────────────────────────────────────────────────
-
-class TestDetectHorseshoe1H:
-    def _bull_hs_df(self, n=20):
-        """
-        Bull horseshoe: bar i-3 büyük, i-2/i-1 küçük, i büyük bull.
-        Bar i = wicks below min(L[i-3..i-1]) ve bullish close.
-        """
-        idx = pd.date_range("2026-01-01", periods=n, freq="1h")
-        o = np.full(n, 2000.0)
-        c = np.full(n, 2001.0)
-        h = np.full(n, 2002.0)
-        l = np.full(n, 1999.0)
-
-        # 4 bar pattern @ bars 10-13
-        # Bar 10: büyük bear gövde
-        o[10] = 2010; c[10] = 1995; h[10] = 2012; l[10] = 1994
-        # Bar 11: küçük iç bar
-        o[11] = 1996; c[11] = 1997; h[11] = 1998; l[11] = 1995
-        # Bar 12: küçük iç bar
-        o[12] = 1997; c[12] = 1996; h[12] = 1999; l[12] = 1995
-        # Bar 13: büyük bull, wicks below prior 3 lows (min=1994), bullish close
-        prior_min = min(l[10], l[11], l[12])   # = 1994
-        o[13] = 1993; c[13] = 2005; h[13] = 2006; l[13] = prior_min - 0.5  # 1993.5 < 1994
-        return pd.DataFrame({"Open": o, "High": h, "Low": l, "Close": c}, index=idx)
-
-    def test_returns_list(self):
-        df = _make_df(20, freq="1h")
-        H = df["High"].values; L = df["Low"].values
-        O = df["Open"].values; C = df["Close"].values
-        T = df.index
-        result = detect_horseshoe_1h(H, L, O, C, T, "bull")
-        assert isinstance(result, list)
-
-    def test_bull_horseshoe_detected(self):
-        df = self._bull_hs_df()
-        H = df["High"].values; L = df["Low"].values
-        O = df["Open"].values; C = df["Close"].values
-        T = df.index
-        result = detect_horseshoe_1h(H, L, O, C, T, "bull")
-        assert len(result) >= 1
-
-    def test_horseshoe_timeframe_label(self):
-        df = self._bull_hs_df()
-        H = df["High"].values; L = df["Low"].values
-        O = df["Open"].values; C = df["Close"].values
-        T = df.index
-        result = detect_horseshoe_1h(H, L, O, C, T, "bull")
-        for hs in result:
-            assert hs.timeframe == "1h_hs"
-
-    def test_detect_time_after_pattern(self):
-        """detect_time = T[i] + 1h (lookahead koruması)."""
-        df = self._bull_hs_df()
-        H = df["High"].values; L = df["Low"].values
-        O = df["Open"].values; C = df["Close"].values
-        T = df.index
-        result = detect_horseshoe_1h(H, L, O, C, T, "bull")
-        for hs in result:
-            assert to_naive(hs.detect_time) > to_naive(hs.index)
-
-    def test_quality_in_range(self):
-        df = self._bull_hs_df()
-        H = df["High"].values; L = df["Low"].values
-        O = df["Open"].values; C = df["Close"].values
-        T = df.index
-        result = detect_horseshoe_1h(H, L, O, C, T, "bull")
-        for hs in result:
-            assert 0.0 <= hs.quality_score <= 100.0
-
-    def test_no_horseshoe_flat_market(self):
-        df = _make_df(20, step=0.0, freq="1h")
-        H = df["High"].values; L = df["Low"].values
-        O = df["Open"].values; C = df["Close"].values
-        T = df.index
-        result = detect_horseshoe_1h(H, L, O, C, T, "bull")
         assert len(result) == 0
 
 
@@ -812,16 +678,6 @@ class TestFullPipelineIntegration:
         df1["atr"] = IndicatorEngine.atr(df1, 14)
         result = MSBEngine.compute(df1, df1["atr"])
         assert result["msc_bull"].any() or result["msc_bear"].any()
-
-    def test_breaker_engine_on_real_1h(self, market_data):
-        df_1h, _, _ = market_data
-        df1 = df_1h.copy()
-        df1["atr"] = IndicatorEngine.atr(df1, 14)
-        eng = BreakerEngine()
-        bull_bb = eng.detect(df1, "bull", df1["atr"])
-        bear_bb = eng.detect(df1, "bear", df1["atr"])
-        assert isinstance(bull_bb, list)
-        assert isinstance(bear_bb, list)
 
     def test_detect_ob_on_real_1h(self, market_data):
         df_1h, _, _ = market_data

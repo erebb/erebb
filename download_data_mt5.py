@@ -305,7 +305,8 @@ def main() -> None:
         sys.exit(1)
 
     end_dt = (datetime.strptime(args.end, "%Y-%m-%d")
-              if args.end else datetime.utcnow())
+              if args.end else
+              datetime.now(timezone.utc).replace(tzinfo=None))
     if args.start:
         start_dt = datetime.strptime(args.start, "%Y-%m-%d")
     else:

@@ -4,10 +4,11 @@ BingX XAUUSD Canlı Trading Botu
 Motor: xauusd_fvg_engine_v10.py (FVG/OB/HS/PRZ + EMA/RSI/MSB)
 
 Kullanım:
-  python3 xauusd_live_trader.py --bias weekly    # her hafta başı terminal prompt
-  python3 xauusd_live_trader.py --bias daily     # her gün başı terminal prompt
-  python3 xauusd_live_trader.py --bias none      # bias filtresi yok
-  python3 xauusd_live_trader.py --bias weekly --dry-run  # kağıt işlem
+  python3 xauusd_live_trader.py                          # fvg (varsayılan), weekly bias
+  python3 xauusd_live_trader.py --bias daily             # fvg, günlük bias prompt
+  python3 xauusd_live_trader.py --strategy qwe           # QWE swing (bias ZORUNLU none)
+  python3 xauusd_live_trader.py --strategy qwe --dry-run # QWE kağıt işlem
+  python3 xauusd_live_trader.py --bias weekly --dry-run  # fvg kağıt işlem
 """
 
 import argparse
@@ -1094,8 +1095,10 @@ class LiveTrader:
             except Exception as e:
                 print(f"  Kaldıraç ayar hatası: {e}")
 
-        # MarketBrain — bias_provider='none' ise None geçilir
-        brain = MarketBrain(bias_provider=self.bias_provider)
+        # MarketBrain yalnız fvg yolunda gerekir (qwe kendi brain'ini tick
+        # başına taze kurar)
+        brain = (MarketBrain(bias_provider=self.bias_provider)
+                 if self.strategy == 'fvg' else None)
         current_bias: Optional[str] = None
 
         print("\n  5M bar kapanışı bekleniyor...\n")

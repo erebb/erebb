@@ -187,6 +187,7 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
                 with contextlib.redirect_stdout(buf):
                     bp = make_bias(bmode)
 
+                    # london/qwe: doğrulanmış preset TBE'siz — seçim yok sayılır
                     if strat == "london":
                         brain  = LondonReversalBrain(bias_provider=bp)
                         risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
@@ -194,7 +195,7 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
                             brain, risk,
                             initial_capital=capital,
                             breakeven_at_R=be,
-                            time_exit_bars=tbe,
+                            time_exit_bars=None,
                             ema_macd_filter=emf,
                         )
                     elif strat == "qwe":
@@ -204,7 +205,7 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
                             brain, risk,
                             initial_capital=capital,
                             breakeven_at_R=be,
-                            time_exit_bars=tbe,
+                            time_exit_bars=None,
                             ema_macd_filter=emf,
                         )
                     else:
@@ -358,10 +359,14 @@ def backtest_menu() -> None:
     console.print()
     rr = _pick("Risk/Ödül seç", ["1:1","1:2be","1:2fix"], "1:2fix")
 
-    # TBE — QWE swing stratejisi: zaman çıkışı önerilmez (işlemler günler sürer)
+    # TBE — sabit-preset stratejiler (london/qwe) TBE'siz doğrulandı;
+    # bu ikisinde seçim yok sayılır (aşağıda None zorlanır).
     console.print()
-    tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"],
-                "yok" if strategy == "qwe" else "8h")
+    if strategy in fixed_bias:
+        tbe = "yok"
+        _info(f"{strategy.upper()} sabit preset TBE'siz koşar (zaman çıkışı yok).")
+    else:
+        tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"], "8h")
 
     # EMA-MACD filtre
     console.print()
