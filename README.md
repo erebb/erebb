@@ -25,9 +25,13 @@ ve GUI'de bias/TBE seçimi bunlara uygulanmaz.
   [--strategy fvg|qwe] [--dry-run]`. QWE seçilirse bias zorunlu none, kısmi TP
   iki yarım emirle + yazılımsal breakeven.
 - `download_data.py` — BingX/Yahoo veri indirici (7/24 kripto-altın).
-- `download_data_mt5.py` — MetaTrader 5 indirici (Windows + açık MT5 terminali):
-  `python download_data_mt5.py --years 1` → 5m/15m/1h/4h CSV (+`--excel`).
+- `download_data_mt5.py` — MetaTrader 5 indirici (**yalnız Windows** + açık MT5
+  terminali): `python download_data_mt5.py --years 1` → 5m/15m/1h/4h CSV (+`--excel`).
   **Broker saati EET ise `--utc-offset 2` (kış) / `3` (yaz) şart** — motor UTC varsayar.
+- `download_data_dukascopy.py` — **macOS/Linux/Windows** indirici (hesap gerekmez):
+  Dukascopy 1M mumlarından 5m/15m/1h/4h üretir, zaman damgaları doğal UTC:
+  `python3 download_data_dukascopy.py --years 1 [--excel]`. **Mac kullanıcısı için
+  önerilen yol budur** (MetaTrader5 paketi macOS'ta çalışmaz).
 - `config/default.json` — tüm strateji/risk/canlı parametreleri (`config.py` yükler).
 - `scripts/run_test_matrix.py`, `scripts/test_london_only.py` — hazır backtest matrisleri.
 - `tests/` — pytest paketi (179 test): `python3 -m pytest tests -q`

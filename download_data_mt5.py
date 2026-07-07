@@ -18,6 +18,10 @@ GEREKSİNİMLER (yalnızca Windows):
   • MetaTrader 5 terminali kurulu ve AÇIK olmalı (veya --terminal ile yol verin)
   • pip install MetaTrader5 pandas openpyxl
 
+macOS / Linux KULLANICISI MISINIZ? MetaTrader5 paketi bu platformlarda
+ÇALIŞMAZ — bunun yerine download_data_dukascopy.py kullanın (hesap gerekmez,
+zaman damgaları doğal UTC).
+
 SAAT DİLİMİ UYARISI (önemli):
   Motorun seans/killzone mantığı UTC varsayar. MT5 broker saati genelde
   EET'tir (UTC+2 kış / UTC+3 yaz). Broker'ınız EET ise:
