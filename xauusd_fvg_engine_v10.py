@@ -4376,7 +4376,11 @@ class QweSwingEngine:
                 dirb[j] = 'bull' if ef[j - 1] > es[j - 1] else 'bear'
         liq = [(px, cf + 1) for (b, px, typ, cf)
                in QweSwingEngine.find_swings(bh, bl, k)]
-        block_starts = pd.DatetimeIndex(g.index).asi8
+        # KRİTİK: ns'e normalize et. asi8 saniye-çözünürlüklü index'te saniye
+        # döndürür; q_t5 (ns) ile searchsorted karşılaştırması bozulur ve her
+        # bar SON bloğa eşlenirdi → 4H yön filtresi geleceği görürdü.
+        block_starts = (pd.DatetimeIndex(g.index).values
+                        .astype('datetime64[ns]').astype(np.int64))
         return block_starts, dirb, liq
 
 

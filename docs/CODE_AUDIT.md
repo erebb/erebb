@@ -1,4 +1,44 @@
-# Kod Denetim Raporu — 2026-07-06
+# Kod Denetim Raporu — 2026-07-06 (güncelleme: 2026-07-08 lookahead denetimi)
+
+## EK — 2026-07-08: Lookahead denetimi + 1 yıllık veri bulguları
+
+Kullanıcının "işlemleri önceden görüp alıyorsa WR şişer" şüphesi üzerine
+**kesme-değişmezliği testi** yazıldı (`scripts/lookahead_check.py`): her strateji
+tam veri ve %70'te kesilmiş veriyle koşulur; kesme öncesi işlemler birebir aynı
+olmak zorundadır (geleceğe bakan bir hesap varsa geçmiş işlemler değişir).
+
+**Sonuçlar:**
+- FVG, ThreeVol, London: **TEMİZ** (kesme-değişmez).
+- Çıkış mantığı muhafazakâr doğrulandı: aynı barda TP+SL → **SL sayılır**;
+  TP1 ile SL aynı barda → TP1 atlanır. Bu yönden WR şişmesi yok (hafif kötümser).
+- **QWE: LOOKAHEAD BUG BULUNDU ve DÜZELTİLDİ.** `compute_4h_context` blok
+  başlangıçlarını `asi8` ile (saniye) döndürüyor, 5M zaman damgaları ns idi;
+  `searchsorted` bozulup her barı SON 4H bloğuna eşliyordu → 4H yön filtresi
+  tüm geçmişe veri setinin EN SON rejimini uyguluyordu (geleceği görme).
+  Düzeltme: ns normalizasyonu. Canlı trader etkilenmemişti (canlıda "son blok"
+  zaten doğru blok). Düzeltme sonrası QWE kesme testi TEMİZ (69==69).
+
+**GUI ThreeVol hatası:** GUI 'threevol' seçiminde `ThreeVolBrain` yerine
+`MarketBrain(poi_mode='three_vol')` (farklı bir varyant) kuruyordu — yeni ince
+hacimli veride 0 işlem üretip stratejiyi bozuk gösterdi. Düzeltildi; artık
+benchmark'lardaki gerçek ThreeVolBrain koşuyor (1 yıllık veride daily +2994).
+
+**1 yıllık gerçek veriyle dürüst QWE yeniden-grid'i** (bug düzeltmesi sonrası,
+bias=none): kazanan `618 + use_4h_dir + max_retest_vol_ratio=1.0` → 59 işlem,
+WR %45.8, +661$, PF 1.39, Sharpe 1.05, MaxDD %2.5. Hacim onayı gerçek hacim
+verisinde tutarlı katkı sağlıyor (kripto verisinde etkisizdi) → config
+varsayılanı `max_retest_vol_ratio: 1.0` yapıldı. Eski kripto-veri preset
+sayıları (ör. QWE +594) artık geçersizdir; referans bu rapordur.
+
+**Veri notu:** Yüklenen 1 yıllık set 7/24 kesintisiz ve UTC damgalı (hacim
+zirvesi 13-16 UTC = NY seansı ✓); Cumartesi dahil bar var → `weekend_filter`
+hâlâ gerekli. Kullanıcının plan.txt'teki tablosu eski/kısmi bir koşudan
+geliyordu; güncel kodla 1 yıllık tablo: FVG none 180/−161, ThreeVol daily
+69/+2994, London private 6/+363, QWE none (yeni varsayılan) 59/+661.
+
+---
+
+(İlk denetim raporu aşağıda.)
 
 Kapsam: `xauusd_fvg_engine_v10.py` (motor + 5 strateji), `xauusd_live_trader.py`,
 `gui.py`, `config.py` + `config/default.json`, `download_data.py`,

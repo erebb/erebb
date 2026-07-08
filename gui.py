@@ -208,9 +208,21 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
                             time_exit_bars=None,
                             ema_macd_filter=emf,
                         )
+                    elif strat == "threevol":
+                        # Three Vol Directional = ThreeVolBrain (doğrudan momentum);
+                        # MarketBrain(poi_mode='three_vol') FARKLI bir varyanttır
+                        # ve benchmark'larla eşleşmez.
+                        brain  = ThreeVolBrain(bias_provider=bp)
+                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
+                        engine = BacktestEngine(
+                            brain, risk,
+                            initial_capital=capital,
+                            breakeven_at_R=be,
+                            time_exit_bars=tbe,
+                            ema_macd_filter=emf,
+                        )
                     else:
-                        poi = "three_vol" if strat == "threevol" else "all"
-                        brain  = MarketBrain(bias_provider=bp, poi_mode=poi)
+                        brain  = MarketBrain(bias_provider=bp, poi_mode="all")
                         risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
                         engine = BacktestEngine(
                             brain, risk,

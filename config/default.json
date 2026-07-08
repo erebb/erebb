@@ -61,7 +61,7 @@
     "min_leg_atr": 1.5,
     "max_setup_age": 48,
     "rejection_close_pct": 0.60,
-    "max_retest_vol_ratio": 0.0,
+    "max_retest_vol_ratio": 1.0,
     "require_4h_liq": false,
     "use_4h_dir": true,
     "liq_tol_atr": 3.0,
