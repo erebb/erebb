@@ -306,8 +306,16 @@ class DailyBiasProvider:
             print(f"  UYARI: {self.filepath} bulunamadı — günlük bias devre dışı")
 
     def get(self, dt: Any) -> Optional[str]:
+        """Gün D'nin bias'ı = en son TAMAMLANMIŞ günün gerçekleşen yönü
+        (dünün momentumu). LOOKAHEAD KORUMASI: aynı günün yönünü döndürmek,
+        günün kapanışını gün içinde önceden bilmek olurdu — tarihsel 'daily'
+        sonuçlarını şişiren hata buydu."""
         t = to_naive(dt)
-        return self._data.get(t.strftime('%Y-%m-%d'))
+        for back in range(1, 5):          # hafta sonu/tatil boşlukları için geriye tara
+            key = (t - timedelta(days=back)).strftime('%Y-%m-%d')
+            if key in self._data:
+                return self._data[key]
+        return None
 
     @staticmethod
     def build_from_1h(df_1h: pd.DataFrame, filepath: str = 'daily_bias.json',

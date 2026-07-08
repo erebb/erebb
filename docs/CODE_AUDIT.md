@@ -1,5 +1,36 @@
 # Kod Denetim Raporu — 2026-07-06 (güncelleme: 2026-07-08 lookahead denetimi)
 
+## EK-2 — 2026-07-08: DAILY BIAS LOOKAHEAD'İ (majör, düzeltildi)
+
+London'ın "yılda 5-6 işlem çok az" incelemesi sırasında projenin en eski ve en
+büyük lookahead'i bulundu: `DailyBiasProvider` gün D'nin bias'ı olarak **gün
+D'nin KENDİ gerçekleşen yönünü** (open→close) döndürüyordu — strateji sabah
+06:00'da günün nasıl kapanacağını "biliyordu". Tarihteki TÜM daily-bias
+sonuçları (ör. FVG daily %76 WR, ThreeVol daily +2049/+2994) bu nedenle
+ŞİŞİKTİ. Kesme-değişmezliği testi bunu yakalayamaz (bias dosyası fiyat
+kesmesinden bağımsız statik girdi).
+
+Düzeltme: `DailyBiasProvider.get()` artık **en son TAMAMLANMIŞ günün** yönünü
+döndürür (dünün momentumu; hafta sonu boşlukları için 4 güne kadar geriye
+tarama). `build_from_1h` değişmedi (dürüst tarihsel kayıt). Düzeltme sonrası
+dürüst daily sonuçları bu ekin altındaki tabloda ve commit mesajındadır —
+önceki daily satırlarıyla karşılaştırılamaz.
+
+Not: `PrivateBiasProvider` zaten nedenseldi (London-öncesi son 1H bar);
+`weekly_bias.json` kullanıcının manuel/ileriye dönük çağrıları olduğundan
+kapsam dışıdır.
+
+**Dürüst daily ile 1 yıllık yeniden ölçüm** (eski şişik değerlerle
+karşılaştırma): FVG daily 114/+417 (PF 1.11), ThreeVol daily 124/+697
+(PF 1.09) — eski "+2994" düzeyleri lookahead ürünüydü.
+
+**London preset güncellemesi** (kullanıcı isteği: yılda 5-6 işlem çok az):
+1 yıllık dürüst grid kazananı `immediate + tüm killzone + daily bias` →
+**67 işlem/yıl, WR %40.3, +1313$, PF 1.61, Sharpe 1.16, MaxDD %3.7**
+(eski preset: retest+w12+private, 6/+363). Config varsayılanı buna çekildi;
+retest/w12/private seçenek olarak duruyor. İkinci en iyi (bias'sız istenirse):
+retest+w12+none → 50/+954, PF 1.53, DD %2.9.
+
 ## EK — 2026-07-08: Lookahead denetimi + 1 yıllık veri bulguları
 
 Kullanıcının "işlemleri önceden görüp alıyorsa WR şişer" şüphesi üzerine
