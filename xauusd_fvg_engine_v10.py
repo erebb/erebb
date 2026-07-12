@@ -167,6 +167,10 @@ class Trade:
     tp1_fraction : float = 0.5              # tp1'de kapatılan pozisyon oranı
     tp1_done     : bool  = False            # tp1 vuruldu mu (BE'ye taşındı)
     realized_pnl : float = 0.0              # tp1'den realize edilen kâr ($)
+    # ── Çıkış adli-analizi (teşhis; işlem mantığını ETKİLEMEZ) ───────────────
+    mfe_r        : float = 0.0              # açıkken lehte en uç gidiş (R çarpanı)
+    mae_r        : float = 0.0              # açıkken aleyhte en uç gidiş (R çarpanı)
+    exit_reason  : str   = ''               # tp|sl|be|tp1+tp|tp1+be|time|open
 
 
 @dataclass
@@ -1973,11 +1977,19 @@ class BacktestEngine:
                  initial_capital: float = 10_000,
                  breakeven_at_R: Optional[float] = None,
                  time_exit_bars: Optional[int] = None,
-                 ema_macd_filter: bool = False):
+                 ema_macd_filter: bool = False,
+                 partial_tp_r: Optional[float] = None,
+                 partial_tp_fraction: float = 0.5):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
         self.breakeven_at_R = breakeven_at_R
+        # partial_tp_r: +X R'de pozisyonun partial_tp_fraction kadarını kapat,
+        # kalan SL'i breakeven'a taşı (mevcut tp1 altyapısı; None = kapalı).
+        # Gerekçe (çıkış adli-analizi): kaybedenlerin önemli bölümü stop
+        # olmadan önce ≥1R kâr görüyor — kilitlenmeyen kâr geri veriliyor.
+        self.partial_tp_r        = partial_tp_r
+        self.partial_tp_fraction = partial_tp_fraction
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -2004,6 +2016,11 @@ class BacktestEngine:
                               signal.stop_price, equity, signal.risk_fraction)
         if r is None:
             return None
+        # Genel kısmi-TP (opt-in): +partial_tp_r R'de kısmi kâr + SL→BE
+        tp1 = None
+        if self.partial_tp_r is not None and self.partial_tp_r > 0:
+            tp1 = round(entry + self.partial_tp_r * r['risk']
+                        * (1 if signal.direction == 'bull' else -1), 2)
         return Trade(
             trade_id      = trade_id,
             signal        = signal,
@@ -2016,6 +2033,8 @@ class BacktestEngine:
             rr            = self.risk.rr,
             risk_fraction = r['risk_fraction'],
             entry_bar_idx = idx,
+            tp1           = tp1,
+            tp1_fraction  = self.partial_tp_fraction,
         )
 
     def run(self, df_1h: pd.DataFrame, df_5m: pd.DataFrame,
@@ -2175,6 +2194,10 @@ class BacktestEngine:
                 t.result     = ('WIN' if total > 0.01 else
                                 ('BE' if abs(total) <= 0.01 else 'LOSS'))
                 t.pnl_dollar = round(total, 2)
+                t.exit_reason = ('tp' if hit_tp else
+                                 ('be' if abs(ep - entry) < 0.011 else 'sl'))
+                if t.tp1_done:
+                    t.exit_reason = 'tp1+' + t.exit_reason
                 return True, partial + dlr
             if self.breakeven_at_R is not None and t.sl != entry:
                 be_lvl  = (entry + self.breakeven_at_R * R if d == 'bull'
@@ -2189,6 +2212,7 @@ class BacktestEngine:
                         t.result = ('WIN' if total > 0.01 else
                                     ('BE' if abs(total) <= 0.01 else 'LOSS'))
                         t.pnl_dollar = round(total, 2)
+                        t.exit_reason = 'be'
                         return True, partial
             return False, partial
 
@@ -2201,6 +2225,15 @@ class BacktestEngine:
                 t = active_fvg if slot_key == 'fvg' else active_prz
                 if t is None:
                     continue
+                # ── MFE/MAE teşhis takibi (R cinsinden; mantığı etkilemez) ──
+                _d = t.signal.direction
+                _R = t.risk + 1e-10
+                if _d == 'bull':
+                    t.mfe_r = max(t.mfe_r, (float(H[idx]) - t.entry_price) / _R)
+                    t.mae_r = max(t.mae_r, (t.entry_price - float(L[idx])) / _R)
+                else:
+                    t.mfe_r = max(t.mfe_r, (t.entry_price - float(L[idx])) / _R)
+                    t.mae_r = max(t.mae_r, (float(H[idx]) - t.entry_price) / _R)
                 exited, delta = _process_exit(t)
                 equity += delta   # kısmi kâr ve/veya final çıkış (yoksa 0 → regresyon yok)
                 if not exited and self.time_exit_bars is not None:
@@ -2219,6 +2252,7 @@ class BacktestEngine:
                         t.result     = ('WIN' if total > 0.01 else
                                         ('BE' if abs(total) <= 0.01 else 'LOSS'))
                         t.pnl_dollar = round(total, 2)
+                        t.exit_reason = ('tp1+time' if t.tp1_done else 'time')
                         exited = True
                 if exited:
                     t.equity_after  = round(equity, 2)
@@ -2322,6 +2356,7 @@ class BacktestEngine:
                 t.result       = 'OPEN'
                 t.pnl_dollar   = round(t.realized_pnl, 2)  # kısmi kâr realize edildiyse yansıt
                 t.equity_after = round(equity, 2)
+                t.exit_reason  = 'open'
                 trades.append(t)
 
         st = self.brain.stats

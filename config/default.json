@@ -40,7 +40,7 @@
   },
   "london_reversal": {
     "entry_mode": "immediate",
-    "bias": "none",
+    "bias": "private",
     "use_pdh_pdl": true,
     "asian_start_utc": 23,
     "asian_end_utc": 6,
@@ -56,7 +56,7 @@
     "max_sweep_mult": 1.5,
     "asian_range_min_atr": 0.0,
     "asian_range_max_atr": 0.0,
-    "sweep_window_bars": 0,
+    "sweep_window_bars": 12,
     "displacement_min_atr": 0.5,
     "ote_min": 0.62,
     "ote_max": 0.79
