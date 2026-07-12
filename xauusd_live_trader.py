@@ -34,6 +34,8 @@ from xauusd_fvg_engine_v10 import (
     FVGEngine, MSB5MEngine, HarmonicEngine,
     MarketBrain, RiskManager,
     QweBrain, QweBacktestEngine,
+    ThreeVolBrain, LondonReversalBrain,
+    AsianRangeCalculator, PrivateBiasProvider,
     EMAEngine, RSIEngine, IndicatorEngine, MACDEngine,
     detect_order_blocks_1h,
     _build_poi_mit_map, to_naive,
@@ -406,6 +408,9 @@ class StateManager:
         self.tp1_filled  = False
         self.setup_key: Optional[list] = None   # işlemin QWE setup kimliği
         self.qwe_used: list = []                # işlem görmüş setup anahtarları
+        # ThreeVol yazılımsal BE@1R durumu
+        self.be_arm_price: Optional[float] = None
+        self.be_armed = False
         self._load()
 
     def _load(self) -> None:
@@ -427,6 +432,8 @@ class StateManager:
             self.tp1_filled  = bool(d.get('tp1_filled', False))
             self.setup_key   = d.get('setup_key')
             self.qwe_used    = d.get('qwe_used', [])
+            self.be_arm_price = d.get('be_arm_price')
+            self.be_armed     = bool(d.get('be_armed', False))
             if self.active:
                 tbe_str = f"  TBE: {self.tbe_minutes}dk" if self.tbe_minutes else ""
                 print(f"  Önceki pozisyon bulundu: "
@@ -474,6 +481,8 @@ class StateManager:
         self.orders      = []
         self.tp1_filled  = False
         self.setup_key   = None
+        self.be_arm_price = None
+        self.be_armed     = False
         self._write()
 
     def _write(self) -> None:
@@ -492,6 +501,8 @@ class StateManager:
             'tp1_filled':  self.tp1_filled,
             'setup_key':   self.setup_key,
             'qwe_used':    self.qwe_used,
+            'be_arm_price': self.be_arm_price,
+            'be_armed':     self.be_armed,
         }, indent=2))
 
 
@@ -530,20 +541,24 @@ class LiveTrader:
                  tbe_minutes:   Optional[int] = -1,   # -1 = bias'a göre otomatik
                  strategy:      str   = 'fvg'):       # 'fvg' (varsayılan) | 'qwe'
         self.client        = client
-        self.strategy      = strategy if strategy in ('qwe', 'fvg') else 'fvg'
+        self.strategy      = (strategy if strategy in
+                              ('fvg', 'qwe', 'threevol', 'london') else 'fvg')
         # SABİT PRESET'ler (backtest ile birebir):
-        #   qwe: bias ZORUNLU none (swing) | fvg: bias ZORUNLU none + EMA-MACD
-        #   (none yolunda otomatik uygulanır) + blackout 09-11 UTC.
-        if self.strategy in ('qwe', 'fvg'):
-            bias_provider = None
+        #   fvg      : bias none + EMA-MACD + blackout 09-11
+        #   threevol : bias none + EMA-MACD + blackout 09-11 + BE@1R (yazılımsal)
+        #   london   : bias PRIVATE (GARCH, otomatik — prompt yok), w6, kısmi TP
+        #   qwe      : bias none (swing), kısmi TP
+        if self.strategy in ('qwe', 'fvg', 'threevol', 'london'):
+            bias_provider = None          # london kendi private'ını tick'te kurar
             bias_mode     = 'none'
-        # fvg giriş karartma saatleri (config: fvg.blackout_hours)
+        # Giriş karartma saatleri (config: <strateji>.blackout_hours)
         try:
             from config import get_config
-            self._fvg_blackout = set(
-                get_config().get('fvg', 'blackout_hours', default=[]) or [])
+            self._blackout = set(
+                get_config().get(self.strategy, 'blackout_hours',
+                                 default=[]) or [])
         except Exception:
-            self._fvg_blackout = set()
+            self._blackout = set()
         self.bias_provider = bias_provider
         self.leverage      = leverage
         self.risk_pct      = risk_pct / 100.0  # 1.0 → 0.01
@@ -551,11 +566,10 @@ class LiveTrader:
         self.dry_run       = dry_run
         self.state         = StateManager()
         self.risk_mgr      = RiskManager(rr=2.0)
-        # TBE: -1 → bias moduna göre varsayılan; QWE'de swing → TBE YOK
-        if self.strategy == 'qwe':
+        # TBE: tüm sabit preset'ler TBE'siz doğrulandı → otomatikte kapalı
+        # (kullanıcı --tbe ile açıkça isterse uygulanır)
+        if tbe_minutes == -1 or tbe_minutes is None:
             self.tbe_minutes: Optional[int] = None
-        elif tbe_minutes == -1:
-            self.tbe_minutes = self._DEFAULT_TBE.get(bias_mode)
         else:
             self.tbe_minutes = tbe_minutes
         # QWE config parametreleri (engine config modülünden)
@@ -818,11 +832,86 @@ class LiveTrader:
                 last_signal = sig
         return last_signal
 
-    def _enter_trade_qwe(self, signal: TradeSignal,
-                         equity: float, last_close: float) -> None:
+    def _find_signal_london(self, df_5m: pd.DataFrame,
+                            df_1h: pd.DataFrame) -> Optional[TradeSignal]:
+        """London Reversal canlı sinyali. Bias = PRIVATE (GARCH, 1H'den
+        otomatik — prompt YOK). Bağlam (Asya range + PDH/PDL) backtest ile
+        aynı hesaplayıcıdan. Pencere 288 bar: gün içi daily-limit state'i
+        yeniden kurulur; yalnız SON kapanan barın sinyali kullanılır."""
+        from config import get_config
+        lc = get_config().section('london_reversal')
+        ASIAN_H, ASIAN_L = AsianRangeCalculator.compute(
+            df_5m, int(lc.get('asian_start_utc', 23)),
+            int(lc.get('asian_end_utc', 6)))
+        kw = {'asian_high': ASIAN_H, 'asian_low': ASIAN_L}
+        if bool(lc.get('use_pdh_pdl', True)):
+            PDH, PDL = AsianRangeCalculator.compute_pdhl(df_5m)
+            kw['pdh'] = PDH; kw['pdl'] = PDL
+        df5 = df_5m.copy()
+        df5['atr'] = IndicatorEngine.atr(df5, 14)
+        C = df5['Close'].values.astype(float)
+        O = df5['Open'].values.astype(float)
+        H = df5['High'].values.astype(float)
+        L = df5['Low'].values.astype(float)
+        ATR = df5['atr'].values.astype(float)
+        TM  = df5.index
+        Z   = np.zeros(len(C))
+        brain = LondonReversalBrain(
+            bias_provider=PrivateBiasProvider(df_1h))
+        self._london_brain = brain
+        n = len(C); start = max(0, n - 288 - 1); end = n - 1
+        last = None
+        for idx in range(start, end + 1):
+            sig = brain.evaluate(idx=idx, C=C, O=O, H=H, L=L,
+                                 E100=Z, E200=Z, TM=TM,
+                                 msb_events_bull=[], msb_events_bear=[],
+                                 ATR=ATR, **kw)
+            if idx == end:
+                last = sig
+        return last
+
+    def _check_3v_be(self) -> None:
+        """ThreeVol yazılımsal BE@1R: fiyat +1R'a değince silahlanır;
+        sonra girişe sararsa pozisyon market'ten kapatılır. Borsa SL'i
+        felaket-stopu olarak yerinde kalır. (5dk örnekleme — bar içi
+        spike'ları kaçırabilir; backtest'teki anlık BE'nin yaklaşığıdır.)"""
+        if (self.dry_run or not self.state.active
+                or self.state.signal_type != 'EMA+3VOL'
+                or self.state.be_arm_price is None):
+            return
+        try:
+            pos = self.client.get_position()
+            if not pos:
+                return
+            mark = float(pos.get('markPrice') or pos.get('avgPrice') or 0)
+            if mark <= 0:
+                return
+            d = self.state.direction
+            if not self.state.be_armed:
+                reached = (mark >= self.state.be_arm_price if d == 'bull'
+                           else mark <= self.state.be_arm_price)
+                if reached:
+                    self.state.be_armed = True
+                    self.state._write()
+                    print("  3VOL: +1R görüldü → yazılımsal BE aktif")
+            if self.state.be_armed:
+                against = (mark <= self.state.entry if d == 'bull'
+                           else mark >= self.state.entry)
+                if against:
+                    print("  3VOL: BE — fiyat girişe sardı, pozisyon kapatılıyor")
+                    self.client.close_position()
+                    self.client.cancel_all_orders()
+                    self.state.clear()
+        except Exception as e:
+            print(f"  3VOL BE kontrol hatası: {e}")
+
+    def _enter_trade_partial(self, signal: TradeSignal,
+                             equity: float, last_close: float,
+                             min_rr: float, label: str,
+                             setup_key=None) -> None:
         """
-        QWE girişi: İKİ yarım market emri — yarım TP1 (HH, kısmi kâr),
-        yarım TP2 (uzantı, runner); ikisinde de borsa-taraflı SL.
+        Kısmi-TP girişi (QWE ve LONDON): İKİ yarım market emri — yarım TP1
+        (kısmi kâr), yarım TP2 (runner); ikisinde de borsa-taraflı SL.
         Backtest'teki TP1-sonrası BE, canlıda YAZILIMSAL yaklaşıklıkla
         sağlanır (_check_position: TP1 dolunca fiyat girişe sararsa kalan
         yarım market'ten kapatılır; borsa SL'i felaket-stopu olarak kalır).
@@ -837,7 +926,6 @@ class LiveTrader:
             return
         sl = r['sl']
         # MIN_RR kapısı (backtest ile tutarlı)
-        min_rr = float(self._qcfg.get('min_rr', 1.5))
         risk_per = abs(entry - sl)
         if risk_per < 0.01 or abs(tp2 - entry) / max(risk_per, 0.01) < min_rr:
             print(f"  RR < {min_rr} — işlem atlandı")
@@ -858,7 +946,7 @@ class LiveTrader:
             return
         side = 'BUY' if signal.direction == 'bull' else 'SELL'
 
-        print(f"\n  ┌── QWE SİNYAL: {signal.direction.upper()} ─────────────")
+        print(f"\n  ┌── {label} SİNYAL: {signal.direction.upper()} ─────────────")
         print(f"  │  Tip   : {signal.confirmation_type} ({signal.msb_type})")
         print(f"  │  Entry : ~{entry:.2f}   SL: {sl:.2f}")
         if two_legs:
@@ -872,7 +960,7 @@ class LiveTrader:
         print(f"  └{'─'*40}")
 
         legs = ([(half, tp1), (half, tp2)] if two_legs else [(qty, tp2)])
-        skey = getattr(self._qwe_brain, 'last_setup_key', None)
+        skey = setup_key
 
         if self.dry_run:
             for q, tp in legs:
@@ -880,7 +968,7 @@ class LiveTrader:
             print()
             self.state.save(order_id='DRY-RUN', direction=signal.direction,
                             entry=entry, sl=sl, tp=tp2, qty=qty,
-                            signal_type='QWE', tbe_minutes=None,
+                            signal_type=label, tbe_minutes=None,
                             orders=[{'order_id': 'DRY-RUN', 'tp': tp, 'qty': q}
                                     for q, tp in legs],
                             setup_key=skey)
@@ -896,14 +984,14 @@ class LiveTrader:
             print()
             self.state.save(order_id=placed[0]['order_id'],
                             direction=signal.direction, entry=entry, sl=sl,
-                            tp=tp2, qty=qty, signal_type='QWE',
+                            tp=tp2, qty=qty, signal_type=label,
                             tbe_minutes=None, orders=placed, setup_key=skey)
         except Exception as e:
             print(f"  ✗  ORDER HATASI: {e}\n")
 
     def _check_qwe_partial(self) -> None:
         """QWE canlı: TP1 dolumu tespiti + yazılımsal breakeven."""
-        if self.dry_run or self.state.signal_type != 'QWE' \
+        if self.dry_run or self.state.signal_type not in ('QWE', 'LONDON-REV') \
                 or len(self.state.orders) < 2:
             return
         try:
@@ -1070,8 +1158,12 @@ class LiveTrader:
         print("═" * 58)
         print("  BingX XAUUSD Live Trader")
         print(f"  Motor  : xauusd_fvg_engine_v10")
-        strat_desc = ('QWE — fib pullback swing (618 Golden Zone, 15M onay)'
-                      if self.strategy == 'qwe' else 'FVG/OB/PRZ intraday')
+        strat_desc = {
+            'qwe':      'QWE — fib pullback swing (618, 15M onay) [none sabit]',
+            'fvg':      'FVG intraday [none+EMA+blackout 09-11 sabit]',
+            'threevol': 'ThreeVol momentum [none+EMA+blackout+BE@1R sabit]',
+            'london':   'London Reversal [private(GARCH)+w6 sabit, kısmi TP]',
+        }[self.strategy]
         print(f"  Strateji: {strat_desc}")
         print(f"  Sembol : {self.client.symbol}")
         print(f"  Risk   : {self.risk_pct*100:.1f}%  |  "
@@ -1125,6 +1217,7 @@ class LiveTrader:
 
                 # ── Pozisyon kapandı mı? (+ QWE kısmi-TP / yazılımsal BE) ────
                 self._check_qwe_partial()
+                self._check_3v_be()
                 self._check_position()
 
                 # ── Veri çek (QWE: 4H EMA50 ısınması için ~37 gün 1H) ────────
@@ -1137,17 +1230,64 @@ class LiveTrader:
 
                 # ── Sinyal yalnız açık pozisyon yokken ───────────────────────
                 if not self.state.active:
+                    def _equity():
+                        return (self.capital if self.capital > 0 else
+                                (self.client.get_balance()
+                                 if not self.dry_run else 10_000.0))
+
                     if self.strategy == 'qwe':
                         signal = self._find_signal_qwe(df_5m, df_1h)
                         if signal is not None:
-                            equity = (self.capital if self.capital > 0 else
-                                      (self.client.get_balance()
-                                       if not self.dry_run else 10_000.0))
-                            self._enter_trade_qwe(signal, equity, last_close)
+                            self._enter_trade_partial(
+                                signal, _equity(), last_close,
+                                min_rr=float(self._qcfg.get('min_rr', 1.5)),
+                                label='QWE',
+                                setup_key=getattr(self._qwe_brain,
+                                                  'last_setup_key', None))
                         else:
                             reason = (self._qwe_brain.last_skip_reason
                                       if hasattr(self, '_qwe_brain') else '—')
                             print(f"  Sinyal: yok  ({reason or '—'})")
+                        continue
+
+                    if self.strategy == 'london':
+                        signal = self._find_signal_london(df_5m, df_1h)
+                        if signal is not None:
+                            from config import get_config
+                            lmin = float(get_config().get(
+                                'london_reversal', 'min_rr', default=1.5))
+                            self._enter_trade_partial(
+                                signal, _equity(), last_close,
+                                min_rr=lmin, label='LONDON-REV')
+                        else:
+                            reason = (self._london_brain.last_skip_reason
+                                      if hasattr(self, '_london_brain') else '—')
+                            print(f"  Sinyal: yok  ({reason or '—'})")
+                        continue
+
+                    if self.strategy == 'threevol':
+                        ctx = self._run_all_detections(df_5m, df_1h)
+                        brain3 = ThreeVolBrain(bias_provider=None)
+                        signal = self._find_signal(ctx, brain3)
+                        if (signal is not None and self._blackout
+                                and now.hour in self._blackout):
+                            print(f"  Sinyal blackout saatinde "
+                                  f"({now.hour}:xx UTC) — atlandı")
+                            signal = None
+                        if signal is not None:
+                            self._enter_trade(signal, _equity(), last_close)
+                            # Yazılımsal BE@1R kolu (preset: 1:2be)
+                            if self.state.active:
+                                dist = abs(self.state.entry - self.state.sl)
+                                self.state.be_arm_price = (
+                                    self.state.entry + dist
+                                    if self.state.direction == 'bull'
+                                    else self.state.entry - dist)
+                                self.state.be_armed = False
+                                self.state._write()
+                        else:
+                            print(f"  Sinyal: yok  "
+                                  f"({brain3.last_skip_reason or '—'})")
                         continue
 
                     ctx = self._run_all_detections(df_5m, df_1h)
@@ -1159,8 +1299,8 @@ class LiveTrader:
                     signal = self._find_signal(ctx, brain)
 
                     # Preset: fvg blackout saatlerinde giriş yok (09-11 UTC)
-                    if (signal is not None and self._fvg_blackout
-                            and now.hour in self._fvg_blackout):
+                    if (signal is not None and self._blackout
+                            and now.hour in self._blackout):
                         print(f"  Sinyal blackout saatinde ({now.hour}:xx UTC) — atlandı")
                         signal = None
 
@@ -1233,9 +1373,10 @@ def main() -> None:
         """,
     )
     parser.add_argument(
-        '--strategy', choices=['fvg', 'qwe'], default=None,
-        help="Strateji: fvg (varsayılan; FVG/OB/PRZ intraday) | "
-             "qwe (fib pullback swing — seçilirse bias ZORUNLU none)",
+        '--strategy', choices=['fvg', 'qwe', 'threevol', 'london'], default=None,
+        help="Strateji (hepsi SABİT preset): fvg (none+EMA+blackout) | "
+             "qwe (none, swing) | threevol (none+EMA+blackout+BE@1R) | "
+             "london (private/GARCH otomatik, kısmi TP)",
     )
     parser.add_argument(
         '--bias', choices=['weekly', 'daily', 'none'], default='weekly',
@@ -1299,9 +1440,9 @@ def main() -> None:
         except Exception:
             strategy = 'fvg'
 
-    # Bias provider — SABİT PRESET'ler: fvg ve qwe bias ZORUNLU none
-    # (backtest preset'iyle birebir; prompt hiç kurulmaz)
-    if strategy in ('qwe', 'fvg'):
+    # Bias provider — SABİT PRESET'ler: bias prompt'u HİÇ kurulmaz
+    # (fvg/threevol/qwe: none; london: private/GARCH otomatik)
+    if strategy in ('qwe', 'fvg', 'threevol', 'london'):
         if args.bias != 'weekly':   # kullanıcı açıkça bias istediyse uyar
             print(f"  Not: {strategy.upper()} sabit preset — "
                   f"--bias {args.bias} yok sayıldı (bias=none).")

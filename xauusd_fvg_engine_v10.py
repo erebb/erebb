@@ -1984,7 +1984,8 @@ class BacktestEngine:
                  sl_tighten: Optional[float] = None,
                  cost_spread_usd: float = 0.0,
                  cost_slippage_usd: float = 0.0,
-                 cost_commission_pct: float = 0.0):
+                 cost_commission_pct: float = 0.0,
+                 uniform_risk_fraction: Optional[float] = None):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
@@ -2007,6 +2008,9 @@ class BacktestEngine:
         self.cost_spread_usd     = cost_spread_usd
         self.cost_slippage_usd   = cost_slippage_usd
         self.cost_commission_pct = cost_commission_pct
+        # uniform_risk_fraction: set edilirse HER işlem sinyalin kendi
+        # risk_fraction'ı yerine bu oranı riskler (örn. 0.01 = her işlem %1).
+        self.uniform_risk_fraction = uniform_risk_fraction
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -2052,7 +2056,7 @@ class BacktestEngine:
             tp_override = entry + sgn * self.risk.rr * dist
             rr_eff      = self.risk.rr / self.sl_tighten
         r = self.risk.compute(signal.direction, entry,
-                              stop_price, equity, signal.risk_fraction,
+                              stop_price, equity, (self.uniform_risk_fraction or signal.risk_fraction),
                               tp_override=tp_override)
         if r is None:
             return None
@@ -3521,7 +3525,7 @@ class FibBacktestEngine(BacktestEngine):
 
         r = self.risk.compute(signal.direction, entry,
                               signal.stop_price, equity,
-                              signal.risk_fraction,
+                              (self.uniform_risk_fraction or signal.risk_fraction),
                               tp_override=tp_override)
         if r is None:
             return None
@@ -4223,7 +4227,7 @@ class LondonBacktestEngine(BacktestEngine):
             return None   # TP2 yetersiz RR → işlem açılmaz
 
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
-                              signal.risk_fraction, tp_override=tp2)
+                              (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2)
         if r is None:
             return None
         return Trade(
@@ -4880,7 +4884,7 @@ class QweBacktestEngine(BacktestEngine):
             return None
 
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
-                              signal.risk_fraction, tp_override=tp2)
+                              (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2)
         if r is None:
             return None
         return Trade(

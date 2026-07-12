@@ -105,3 +105,28 @@ bedava), genel `partial_tp_r` motor özelliği (config-kapılı, kapalı),
 Enstrümantasyon regresyonu: 4 preset, 1 yıl → fvg 91/+747.73,
 threevol 112/+640.20, london 16/+418.64, qwe 59/+660.99 — enstrümantasyon
 öncesiyle birebir (teşhis alanları davranışı değiştirmiyor).
+
+## EK — %1 risk + aylık kârlılık × piyasa bağlamı (2026-07)
+
+**Her işlem %1 risk** (uniform_risk_fraction=0.01, config risk.risk_fraction):
+fvg +2202 (DD %6.8) | threevol +2247 (%5.0) | london +1542 (%1.0) |
+qwe +1333 (%5.0) → **TOPLAM +7324/yıl (~%73)**.
+
+**Aylık analiz** (grafik: reports/exit_analysis/7_monthly_pnl_context.png):
+13 ayın 11'i pozitif. Korelasyonlar (n=13, gösterge niteliğinde): PnL↔günlük
+vol +0.23, PnL↔trend-verimliliği −0.19, PnL↔yön ~0 → sistem yön-agnostik,
+volatilite sever, tek yönlü verimli trendden çok İKİ YÖNLÜ geniş salınımda
+kazanıyor. Örnekler: en iyi ay 2026-04 (+2563; altın yatay −%1.5 ama salınımlı,
+verimlilik 0.05 — sweep/pullback cenneti); 2026-01 (+1087; +%13 trend + rekor
+vol — momentum kazandı); 2026-06 (+1361; −%12 çöküş — short taraf çalıştı).
+En kötü: 2026-03 (−270; −%11 çöküşte fvg/threevol long sinyalleri kesildi,
+qwe +66 ile dengeledi) ve sakin yaz ayları ≈ sıfır (2025-07/08, vol 0.65 —
+sinyal kıtlığı ama KAYIP YOK: sistem sakin piyasada kenarda duruyor).
+
+**Canlı entegrasyon tamamlandı:** threevol ve london canlı bota eklendi
+(--strategy threevol|london). london bias'ı canlıda PrivateBiasProvider ile
+otomatik (GARCH; terminal prompt'u yok), kısmi TP iki yarım emir + TP1 sonrası
+yazılımsal BE (qwe altyapısı genelleştirildi). threevol: none+EMA+blackout +
+yazılımsal BE@1R (be_arm_price state'te persist; 5dk örnekleme yaklaşımı).
+TBE tüm preset'lerde kapalı (backtest pariteesi). Stub simülasyonlarıyla
+doğrulandı (london 2-emir payload'u, threevol BE-kolu, %1 eşit risk).

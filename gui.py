@@ -196,6 +196,9 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         cost_spread_usd=float(cfg.get("costs", "spread_usd", default=0.0)),
         cost_slippage_usd=float(cfg.get("costs", "slippage_usd", default=0.0)),
         cost_commission_pct=float(cfg.get("costs", "commission_pct", default=0.0)),
+        # HER İŞLEM EŞİT RİSK (config risk.risk_fraction; 0.01 = %1)
+        uniform_risk_fraction=float(cfg.get("risk", "risk_fraction",
+                                            default=0.01)),
     )
 
     for strat in strategies:

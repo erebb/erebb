@@ -27,8 +27,10 @@ sormaz — strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
   backtest engine'leri, `FibonacciEngine`, `VolumeEngine`, risk yönetimi, analitik.
 - `gui.py` — Rich TUI kontrol paneli (backtest çalıştırma): `python3 gui.py`
 - `xauusd_live_trader.py` — BingX canlı bot: `python3 xauusd_live_trader.py
-  [--strategy fvg|qwe] [--dry-run]`. QWE seçilirse bias zorunlu none, kısmi TP
-  iki yarım emirle + yazılımsal breakeven.
+  [--strategy fvg|qwe|threevol|london] [--dry-run]`. DÖRT strateji de canlıda,
+  hepsi sabit preset'iyle: fvg/threevol (none+EMA+blackout, threevol'de
+  yazılımsal BE@1R), london (private/GARCH otomatik — prompt yok, kısmi TP),
+  qwe (none, kısmi TP). Her işlem eşit risk: kasa × risk_pct (%1).
 - `download_data.py` — BingX/Yahoo veri indirici (7/24 kripto-altın).
 - `download_data_mt5.py` — MetaTrader 5 indirici (**yalnız Windows** + açık MT5
   terminali): `python download_data_mt5.py --years 1` → 5m/15m/1h/4h CSV (+`--excel`).
