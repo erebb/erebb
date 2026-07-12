@@ -1,5 +1,44 @@
 # Çıkış Adli-Analizi — Stop/TP Anatomisi ve Mekanizma Testleri (2026-07)
 
+## EK — 2. tur: maliyet modeli + saat/pencere kuralları (KABUL edilenler)
+
+Kullanıcının bulgu listesi üzerine üç yeni motor yeteneği eklendi (maliyet
+modeli, blackout_hours, sl_tighten) ve 17 hücrelik eski-vs-yeni grid'i
+MALİYETLİ (spread 0.30$ + slippage 0.05$ + komisyon %0.05 taker) ve IS/OOS
+ayrımlı koşuldu. Karar kuralı (kullanıcı): OOS'ta çürüyen dışarı; kalanların
+en kârlısı preset olur.
+
+**KABUL (hem IS hem OOS'ta baseline'dan iyi):**
+- fvg `blackout_hours=[9,10,11]` → maliyetsiz +748→**+965** (PF 1.35)
+- threevol `blackout_hours=[9,10,11]` → +640→**+2247** (PF 1.60) — 09-11 UTC
+  tek başına −1393$'lık kara delikti
+- london `sweep_window_bars: 12→6` (yalnız ~06:00 girişleri; 07 saati −131$
+  veriyordu) → +419→**+756** (PF 8.3) — maliyetli dünyada bile kârlı tek konfig
+
+**RED:** be@1R (3. kez OOS'ta çürüdü), sl_tighten 0.75 (fvg/threevol'de IS'te
+çok kötü — dar stop maliyeti büyütür: R-maliyeti ∝ 1/stop-mesafesi),
+threevol be1.25 (OOS kötü). NOT: sl_tighten London/QWE motorlarında
+uygulanmadı (kendi _make_entry_trade'leri var) — test edilmedi, bilinçli.
+
+**Maliyet gerçeği (taker %0.05 + spread 0.30$):** fvg −1157, threevol −3979,
+london −96, qwe ±0. Dar-stoplu yüksek frekanslı stratejiler taker ücretine
+dayanmıyor; canlıda düşük ücretli hesap/maker girişleri şart, aksi halde
+yalnız london(w6) canlıya uygun. Maliyetler config `costs` bölümünden
+girilebilir (varsayılan 0).
+
+**Nihai preset tablosu (maliyetsiz, 1 yıl):**
+| Preset | N | WR | PnL | PF | Sh | DD |
+|---|---|---|---|---|---|---|
+| threevol none+EMA+1:2be+blackout | 94 | %44.4 | **+2247** | 1.60 | 1.42 | %5.0 |
+| fvg none+EMA+1:2fix+blackout | 87 | %41.4 | +965 | 1.35 | 1.11 | %3.5 |
+| london private, immediate, w6 | 6 | %66.7 | +756 | 8.29 | 1.61 | %0.5 |
+| qwe none (değişmedi) | 59 | %45.8 | +661 | 1.39 | 1.05 | %2.5 |
+| **toplam** | 246 | | **+4630/yıl (~%46)** | | | |
+
+(Önceki toplam +2468 → **+%88 iyileşme**, tamamı OOS-doğrulamalı kurallardan.)
+
+---
+
 Amaç: dört sabit preset'in HER stop ve HER TP'sini anlamak ("neden stop, neden
 TP"), öğrenilen desenlerden çıkış mekanizmaları türetmek ve yalnızca
 **out-of-sample doğrulamadan geçenleri** koda işlemek.

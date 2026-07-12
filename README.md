@@ -6,12 +6,16 @@ giriş bir sonraki barın açılışında yapılır.
 
 ## Stratejiler
 
-| Strateji | Tarz | Sabit preset (none) | 1 yıl dürüst sonuç |
+| Strateji | Tarz | Sabit preset | 1 yıl dürüst sonuç |
 |---|---|---|---|
-| `fvg` | Intraday | none + EMA-MACD + 1:2fix | 91 işlem, +748, PF 1.26 |
-| `threevol` | Intraday | none + EMA-MACD + 1:2be | 112 işlem, +640, PF 1.13 |
-| `london` | Intraday | none, immediate, tüm killzone | 136 işlem, +1326, PF 1.28 |
+| `fvg` | Intraday | none + EMA + 1:2fix + blackout 09-11 | 87 işlem, +965, PF 1.35 |
+| `threevol` | Intraday | none + EMA + 1:2be + blackout 09-11 | 94 işlem, +2247, PF 1.60 |
+| `london` | Intraday | private, immediate, w6 (~06:00) | 6 işlem, +756, PF 8.29 |
 | `qwe` | Swing | none, 618 Golden Zone, 15M onay | 59 işlem, +661, PF 1.39 |
+
+İşlem maliyeti modeli config `costs` bölümünden açılır (spread/slippage/komisyon;
+varsayılan 0). Uyarı: %0.05 taker + 0.30$ spread ile dar-stoplu fvg/threevol
+zarardadır — canlıda düşük ücretli hesap şarttır (bkz. docs/EXIT_ANALYSIS.md).
 
 **Tüm stratejiler SABİT preset'le koşar** (config'ten; en kârlı none
 konfigürasyonları, 1 yıllık lookahead'siz grid ile seçildi). GUI parametre

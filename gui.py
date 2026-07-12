@@ -132,14 +132,18 @@ def _strategy_presets(cfg) -> dict:
     return {
         "fvg":      dict(bias=cfg.get("fvg", "bias", default="none"),
                          rr=str(cfg.get("fvg", "rr", default="1:2fix")),
-                         emf=bool(cfg.get("fvg", "ema_filter", default=True))),
+                         emf=bool(cfg.get("fvg", "ema_filter", default=True)),
+                         blackout=list(cfg.get("fvg", "blackout_hours",
+                                               default=[]) or [])),
         "threevol": dict(bias=cfg.get("threevol", "bias", default="none"),
                          rr=str(cfg.get("threevol", "rr", default="1:2be")),
-                         emf=bool(cfg.get("threevol", "ema_filter", default=True))),
+                         emf=bool(cfg.get("threevol", "ema_filter", default=True)),
+                         blackout=list(cfg.get("threevol", "blackout_hours",
+                                               default=[]) or [])),
         "london":   dict(bias=cfg.get("london_reversal", "bias", default="none"),
-                         rr="1:2fix", emf=False),
+                         rr="1:2fix", emf=False, blackout=[]),
         "qwe":      dict(bias=cfg.get("qwe", "bias", default="none"),
-                         rr="1:2fix", emf=False),
+                         rr="1:2fix", emf=False, blackout=[]),
     }
 
 
@@ -187,10 +191,18 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
     # TÜM stratejiler SABİT preset'le koşar (en kârlı none konfigürasyonları)
     presets = _strategy_presets(cfg)
 
+    # Maliyet modeli (config: costs) — 0 = kapalı; gerçek ücretlerinizi girin
+    cost_kw = dict(
+        cost_spread_usd=float(cfg.get("costs", "spread_usd", default=0.0)),
+        cost_slippage_usd=float(cfg.get("costs", "slippage_usd", default=0.0)),
+        cost_commission_pct=float(cfg.get("costs", "commission_pct", default=0.0)),
+    )
+
     for strat in strategies:
         p = presets[strat]
         p_rr, p_be = rr_map.get(p["rr"], (2.0, None))
         rr_label   = p["rr"]
+        common_kw  = dict(blackout_hours=p.get("blackout") or None, **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"
             buf = io.StringIO()
@@ -203,23 +215,27 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                         engine = LondonBacktestEngine(
                             LondonReversalBrain(bias_provider=bp), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"])
+                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            **common_kw)
                     elif strat == "qwe":
                         engine = QweBacktestEngine(
                             QweBrain(bias_provider=bp), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"])
+                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            **common_kw)
                     elif strat == "threevol":
                         # Three Vol Directional = ThreeVolBrain (doğrudan momentum)
                         engine = BacktestEngine(
                             ThreeVolBrain(bias_provider=bp), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"])
+                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            **common_kw)
                     else:
                         engine = BacktestEngine(
                             MarketBrain(bias_provider=bp, poi_mode="all"), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"])
+                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            **common_kw)
 
                     trades  = engine.run(df_1h, df_5m, bt_start)
                     metrics = PerformanceAnalytics(trades, capital).compute()
