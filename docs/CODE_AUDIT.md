@@ -1,5 +1,21 @@
 # Kod Denetim Raporu — 2026-07-06 (güncelleme: 2026-07-08 lookahead denetimi)
 
+## EK-3 — Nihai karar: TÜM stratejiler en-kârlı-NONE sabit preset (kullanıcı)
+
+Kullanıcı kararıyla dört strateji de bias'sız (none) en kârlı konfigürasyonuna
+sabitlendi; GUI artık parametre sormaz, preset'leri işler (`_strategy_presets`).
+
+| Strateji | Preset | N | WR | PnL | PF | Sh | DD |
+|---|---|---|---|---|---|---|---|
+| london | none, immediate, tüm killzone | 136 | %36.0 | **+1326** | 1.28 | 0.79 | %9.3 |
+| fvg | none + EMA + 1:2fix | 91 | %39.6 | +748 | 1.26 | 0.87 | %3.5 |
+| qwe | none preset (618/15M/4H) | 59 | %45.8 | +661 | 1.39 | 1.05 | %2.5 |
+| threevol | none + EMA + 1:2be | 112 | %36.4 | +640 | 1.13 | 0.43 | %8.7 |
+| **toplam** | | 398 | | **+3375/yıl (~%34)** | | | |
+
+Alternatif (düşük-DD) london none'ı: retest+w12 → 50/+954, PF 1.53, DD %2.9
+(config'te `entry_mode: retest`, `sweep_window_bars: 12` ile seçilebilir).
+
 ## EK-2 — 2026-07-08: DAILY BIAS LOOKAHEAD'İ (majör, düzeltildi)
 
 London'ın "yılda 5-6 işlem çok az" incelemesi sırasında projenin en eski ve en

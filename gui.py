@@ -124,9 +124,31 @@ def _load_data() -> tuple:
     return df_1h, df_5m, bt_start
 
 
-def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
-                  emf: bool, capital: float) -> list[dict]:
-    """Seçilen parametrelerle backtest çalıştır, satır listesi döndür."""
+def _strategy_presets(cfg) -> dict:
+    """Her stratejinin SABİT preset'i (config'ten) — 1 yıllık dürüst grid'in
+    en kârlı none konfigürasyonları. GUI soru sormaz, bunları işler.
+    london/qwe motorları TP'yi kendi likidite hedeflerinden kurar → rr/emf
+    onlar için nominaldir."""
+    return {
+        "fvg":      dict(bias=cfg.get("fvg", "bias", default="none"),
+                         rr=str(cfg.get("fvg", "rr", default="1:2fix")),
+                         emf=bool(cfg.get("fvg", "ema_filter", default=True))),
+        "threevol": dict(bias=cfg.get("threevol", "bias", default="none"),
+                         rr=str(cfg.get("threevol", "rr", default="1:2be")),
+                         emf=bool(cfg.get("threevol", "ema_filter", default=True))),
+        "london":   dict(bias=cfg.get("london_reversal", "bias", default="none"),
+                         rr="1:2fix", emf=False),
+        "qwe":      dict(bias=cfg.get("qwe", "bias", default="none"),
+                         rr="1:2fix", emf=False),
+    }
+
+
+def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
+                  tbe_label: str = "", emf: bool = False,
+                  capital: float = 10_000.0) -> list[dict]:
+    """Backtest çalıştır, satır listesi döndür. TÜM stratejiler config'teki
+    SABİT preset'leriyle koşar — bias/rr/tbe/emf argümanları geriye uyum
+    için durur, YOK SAYILIR."""
     sys.path.insert(0, str(ROOT / "scripts"))
     from xauusd_fvg_engine_v10 import (
         DataEngine, MarketBrain, RiskManager, BacktestEngine,
@@ -139,16 +161,7 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
 
     cfg = get_config()
 
-    # RR / BE decode
     rr_map = {"1:1": (1.0, None), "1:2be": (2.0, 1.0), "1:2fix": (2.0, None)}
-    rr, be = rr_map.get(rr_label, (2.0, None))
-
-    # TBE decode (5M bar cinsinden)
-    tbe_map = {"yok": None, "2h": 24, "4h": 48, "8h": 96}
-    tbe = tbe_map.get(tbe_label, None)
-
-    # Bias modes
-    bias_modes = ["weekly", "daily", "none", "private"] if bias == "hepsi" else [bias]
 
     # Strategy modes
     if strategy == "hepsi":
@@ -171,66 +184,42 @@ def _run_strategy(strategy: str, bias: str, rr_label: str, tbe_label: str,
         if mode == "private": return PrivateBiasProvider(df_1h)
         return WeeklyBiasProvider(cfg.weekly_bias_path)
 
-    # London ve QWE SABİT bias'la koşar (config: <strateji>.bias);
-    # kullanıcının bias seçimi yalnızca fvg/threevol'a uygulanır.
-    fixed_bias = {
-        "london": cfg.get("london_reversal", "bias", default="private"),
-        "qwe":    cfg.get("qwe", "bias", default="none"),
-    }
+    # TÜM stratejiler SABİT preset'le koşar (en kârlı none konfigürasyonları)
+    presets = _strategy_presets(cfg)
 
     for strat in strategies:
-        strat_bias_modes = [fixed_bias[strat]] if strat in fixed_bias else bias_modes
-        for bmode in strat_bias_modes:
-            bias_label = f"{bmode} (sabit)" if strat in fixed_bias else bmode
+        p = presets[strat]
+        p_rr, p_be = rr_map.get(p["rr"], (2.0, None))
+        rr_label   = p["rr"]
+        for bmode in [p["bias"]]:
+            bias_label = f"{bmode} (sabit)"
             buf = io.StringIO()
             try:
                 with contextlib.redirect_stdout(buf):
-                    bp = make_bias(bmode)
+                    bp   = make_bias(bmode)
+                    risk = RiskManager(rr=p_rr, sl_buffer=cfg.sl_buffer)
 
-                    # london/qwe: doğrulanmış preset TBE'siz — seçim yok sayılır
                     if strat == "london":
-                        brain  = LondonReversalBrain(bias_provider=bp)
-                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
                         engine = LondonBacktestEngine(
-                            brain, risk,
-                            initial_capital=capital,
-                            breakeven_at_R=be,
-                            time_exit_bars=None,
-                            ema_macd_filter=emf,
-                        )
+                            LondonReversalBrain(bias_provider=bp), risk,
+                            initial_capital=capital, breakeven_at_R=p_be,
+                            time_exit_bars=None, ema_macd_filter=p["emf"])
                     elif strat == "qwe":
-                        brain  = QweBrain(bias_provider=bp)
-                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
                         engine = QweBacktestEngine(
-                            brain, risk,
-                            initial_capital=capital,
-                            breakeven_at_R=be,
-                            time_exit_bars=None,
-                            ema_macd_filter=emf,
-                        )
+                            QweBrain(bias_provider=bp), risk,
+                            initial_capital=capital, breakeven_at_R=p_be,
+                            time_exit_bars=None, ema_macd_filter=p["emf"])
                     elif strat == "threevol":
-                        # Three Vol Directional = ThreeVolBrain (doğrudan momentum);
-                        # MarketBrain(poi_mode='three_vol') FARKLI bir varyanttır
-                        # ve benchmark'larla eşleşmez.
-                        brain  = ThreeVolBrain(bias_provider=bp)
-                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
+                        # Three Vol Directional = ThreeVolBrain (doğrudan momentum)
                         engine = BacktestEngine(
-                            brain, risk,
-                            initial_capital=capital,
-                            breakeven_at_R=be,
-                            time_exit_bars=tbe,
-                            ema_macd_filter=emf,
-                        )
+                            ThreeVolBrain(bias_provider=bp), risk,
+                            initial_capital=capital, breakeven_at_R=p_be,
+                            time_exit_bars=None, ema_macd_filter=p["emf"])
                     else:
-                        brain  = MarketBrain(bias_provider=bp, poi_mode="all")
-                        risk   = RiskManager(rr=rr, sl_buffer=cfg.sl_buffer)
                         engine = BacktestEngine(
-                            brain, risk,
-                            initial_capital=capital,
-                            breakeven_at_R=be,
-                            time_exit_bars=tbe,
-                            ema_macd_filter=emf,
-                        )
+                            MarketBrain(bias_provider=bp, poi_mode="all"), risk,
+                            initial_capital=capital, breakeven_at_R=p_be,
+                            time_exit_bars=None, ema_macd_filter=p["emf"])
 
                     trades  = engine.run(df_1h, df_5m, bt_start)
                     metrics = PerformanceAnalytics(trades, capital).compute()
@@ -338,59 +327,21 @@ def backtest_menu() -> None:
     console.print(strat_table)
     strategy = _pick("Strateji seç", ["fvg","threevol","london","qwe","hepsi"], "fvg")
 
-    # Bias — London ve QWE sabit bias'la koşar (config: <strateji>.bias);
-    # seçim yalnızca fvg/threevol için sorulur. (QWE swing stratejisidir:
-    # haftalarca süren işlemlerde günlük/haftalık bias kapısı anlamsız.)
+    # ── SABİT PRESET'ler: soru yok — her strateji kendi doğrulanmış
+    #    en-kârlı-none konfigürasyonuyla koşar (config'ten) ────────────────
     console.print()
-    fixed_bias = {
-        "london": cfg.get("london_reversal", "bias", default="private"),
-        "qwe":    cfg.get("qwe", "bias", default="none"),
-    }
-    if strategy in fixed_bias:
-        bias = fixed_bias[strategy]
-        _info(f"{strategy.upper()} bias sabit: [bold {C_YEL}]{bias}[/]  "
-              f"[dim](config)[/]")
-    else:
-        bias_table = Table(box=SIMPLE_HEAVY, show_header=False,
-                           border_style=C_BLUE, padding=(0, 2))
-        bias_table.add_column(); bias_table.add_column()
-        bias_table.add_row(f"[{C_YEL}]weekly[/]",  "Manuel haftalık yön (weekly_bias.json)")
-        bias_table.add_row(f"[{C_YEL}]daily[/]",   "Günlük yön (daily_bias.json)")
-        bias_table.add_row(f"[{C_YEL}]none[/]",    "Bias yok  (EMA-MACD filtresi devreye girer)")
-        bias_table.add_row(f"[{C_YEL}]private[/]", "Otomatik GARCH rejim tespiti")
-        bias_table.add_row(f"[{C_YEL}]hepsi[/]",   "Tüm bias modları")
-        console.print(bias_table)
-        if strategy == "hepsi":
-            _info(f"Not: London (sabit [bold {C_YEL}]{fixed_bias['london']}[/]) ve "
-                  f"QWE (sabit [bold {C_YEL}]{fixed_bias['qwe']}[/]) bu seçimden "
-                  f"etkilenmez.")
-        # 1 yıllık dürüst grid kazananları öneri olarak sunulur (değiştirilebilir).
-        # threevol: kullanıcı tercihi none (en iyi none varyantı: EMA + 1:2be).
-        _grid_best_bias = {"fvg": "none", "threevol": "none"}
-        bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
-                     _grid_best_bias.get(
-                         strategy,
-                         cfg.get("backtest", "default_bias", default="daily")))
-
-    # RR — grid kazananı öneri: threevol=1:2be, diğerleri=1:2fix
-    console.print()
-    rr = _pick("Risk/Ödül seç", ["1:1","1:2be","1:2fix"],
-               "1:2be" if strategy == "threevol" else "1:2fix")
-
-    # TBE — sabit-preset stratejiler (london/qwe) TBE'siz doğrulandı;
-    # bu ikisinde seçim yok sayılır (aşağıda None zorlanır).
-    console.print()
-    if strategy in fixed_bias:
-        tbe = "yok"
-        _info(f"{strategy.upper()} sabit preset TBE'siz koşar (zaman çıkışı yok).")
-    else:
-        tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"], "8h")
-
-    # EMA-MACD filtre — fvg/threevol none önerisinin parçası:
-    # none bias'ı kârlı yapan bileşen bu filtre (EMA'sız none zararda)
-    console.print()
-    emf = _confirm("EMA-MACD filtresi uygulansın mı?",
-                   default=(strategy in ("fvg", "threevol")))
+    presets = _strategy_presets(cfg)
+    pt = Table(box=SIMPLE_HEAVY, border_style=C_TEAL, padding=(0, 2),
+               title=f"[bold {C_TEAL}]Sabit Preset'ler[/] [dim](1 yıllık dürüst grid)[/]")
+    pt.add_column("Strateji", style=f"bold {C_YEL}")
+    pt.add_column("Bias"); pt.add_column("RR"); pt.add_column("EMA-MACD")
+    shown = (["fvg", "threevol", "london", "qwe"] if strategy == "hepsi"
+             else [strategy])
+    for s in shown:
+        p = presets[s]
+        pt.add_row(s.upper(), f"{p['bias']} (sabit)", p["rr"],
+                   "açık" if p["emf"] else "kapalı")
+    console.print(pt)
 
     # Sermaye
     console.print()
@@ -408,10 +359,7 @@ def backtest_menu() -> None:
     summary.add_column("Parametre", style=C_FG2)
     summary.add_column("Değer",     style=f"bold {C_BLUE}")
     summary.add_row("Strateji", strategy.upper())
-    summary.add_row("Bias",     f"{bias} (sabit)" if strategy in fixed_bias else bias)
-    summary.add_row("RR",       rr)
-    summary.add_row("TBE",      tbe)
-    summary.add_row("EMA-MACD", "Evet" if emf else "Hayır")
+    summary.add_row("Ayarlar",  "sabit preset'ler (yukarıdaki tablo)")
     summary.add_row("Sermaye",  f"${capital:,}")
     console.print(Panel(summary, title="[bold]Özet[/]", style=C_TEAL, box=ROUNDED))
 
@@ -428,7 +376,7 @@ def backtest_menu() -> None:
 
     def worker():
         try:
-            r = _run_strategy(strategy, bias, rr, tbe, emf, float(capital))
+            r = _run_strategy(strategy, capital=float(capital))
             rows.extend(r)
         except Exception as e:
             error_box.append(str(e))
@@ -447,7 +395,8 @@ def backtest_menu() -> None:
         _err(f"Backtest hatası: {error_box[0]}")
     else:
         console.print()
-        console.print(_results_table(rows, title=f"Backtest Sonuçları  [{strategy.upper()} | {bias} | {rr}]"))
+        console.print(_results_table(
+            rows, title=f"Backtest Sonuçları  [{strategy.upper()} | sabit preset]"))
 
     console.print()
     Prompt.ask(f"  [dim]Devam için Enter'a bas[/]", default="", show_default=False,

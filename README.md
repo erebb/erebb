@@ -6,15 +6,16 @@ giriş bir sonraki barın açılışında yapılır.
 
 ## Stratejiler
 
-| Strateji | Tarz | Bias | Özet |
+| Strateji | Tarz | Sabit preset (none) | 1 yıl dürüst sonuç |
 |---|---|---|---|
-| `fvg` | Intraday | seçilir | 1H FVG + 5M MSB konfluensi (+OB/PRZ/harmonik) |
-| `threevol` | Intraday | seçilir | Three Vol Directional (hacimli MSB) |
-| `london` | Intraday | **private (sabit)** | ICT Judas Swing: Asya/PDH-PDL süpürme → retest girişi, kısmi TP |
-| `qwe` | Swing | **none (sabit)** | Fib pullback: 1H BOS+HH → %61.8 Golden Zone, 15M onay, 4H yön, kısmi TP |
+| `fvg` | Intraday | none + EMA-MACD + 1:2fix | 91 işlem, +748, PF 1.26 |
+| `threevol` | Intraday | none + EMA-MACD + 1:2be | 112 işlem, +640, PF 1.13 |
+| `london` | Intraday | none, immediate, tüm killzone | 136 işlem, +1326, PF 1.28 |
+| `qwe` | Swing | none, 618 Golden Zone, 15M onay | 59 işlem, +661, PF 1.39 |
 
-Sabit-bias stratejilerin (london/qwe) preset'leri grid backtest ile doğrulanmıştır
-ve GUI'de bias/TBE seçimi bunlara uygulanmaz.
+**Tüm stratejiler SABİT preset'le koşar** (config'ten; en kârlı none
+konfigürasyonları, 1 yıllık lookahead'siz grid ile seçildi). GUI parametre
+sormaz — strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
 
 ## Dosyalar
 
