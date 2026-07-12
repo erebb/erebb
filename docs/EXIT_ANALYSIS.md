@@ -1,0 +1,68 @@
+# Çıkış Adli-Analizi — Stop/TP Anatomisi ve Mekanizma Testleri (2026-07)
+
+Amaç: dört sabit preset'in HER stop ve HER TP'sini anlamak ("neden stop, neden
+TP"), öğrenilen desenlerden çıkış mekanizmaları türetmek ve yalnızca
+**out-of-sample doğrulamadan geçenleri** koda işlemek.
+
+## 1. Enstrümantasyon
+
+`Trade`'e eklendi (motor, teşhis amaçlı — işlem mantığını etkilemez):
+- `mfe_r` / `mae_r`: işlem açıkken lehte/aleyhte en uç gidiş (R çarpanı)
+- `exit_reason`: tp | sl | be | tp1+tp | tp1+be | time | open
+
+278 işlemlik defter (4 preset × 1 yıl) + 6 grafik: `reports/exit_analysis/`.
+
+## 2. Bulgular — stop'lar ve TP'ler NEDEN oluyor?
+
+| Preset | Kayıpların stop öncesi kârı (MFE) | Kazananın acısı (MAE med.) | TP kalitesi |
+|---|---|---|---|
+| fvg | med. 0.56R; %58'i ≥0.5R, %27'si ≥1R görmüş | 0.42R | MFE−TP ≈ +0.16R → TP doğru yerde |
+| threevol | med. 0.29R; ≥1R gören %0 (BE@1R yakalıyor) | 0.40R | +0.13R → doğru yerde |
+| london | med. 0.72R; %70'i ≥0.5R, %40'ı ≥1R görmüş | 0.17R | kazanan MFE med. 3.5R (likidite TP) |
+| qwe | med. 0.45R; %19'u ≥1R görmüş | 0.49R | kazanan MFE med. 2.4R |
+
+**Dersler:**
+1. Stop'ların ana anatomisi **"kâr geri verme"**: girişlerin çoğu başta doğru
+   yönde çalışıyor, kilitlenmeyen kâr geri veriliyor (en uç: London'da 5R görüp
+   stop olan işlem).
+2. Kazananlar **erken belli oluyor** (düşük MAE) — sweep/pullback girişleri
+   doğruysa fazla acı çektirmiyor.
+3. **TP'ler zaten doğru yerde** — kazananların MFE'si TP'yi medyan ~0.15R
+   aşıyor; TP uzatmak kazandırmaz.
+4. ThreeVol'ün BE@1R'ı görevini yapıyor (35 işlem 0'da kurtarılmış).
+
+## 3. Mekanizma adayları ve TEST SONUÇLARI (IS %70 → OOS %30)
+
+Bulgulardan türeyen adaylar: BE@0.75/1R, kısmi-TP@0.75/1R (yeni genel
+`partial_tp_r` motor özelliği ile).
+
+| Aday | IS (ilk %70) | OOS (son %30, hiç görülmemiş) | Hüküm |
+|---|---|---|---|
+| fvg be@1R / ptp@* | hepsi baseline'dan KÖTÜ (−58…−208 vs +287) | koşulmadı | **RED (IS'te elendi)** |
+| threevol ptp@1R | −53 → **+366** ✓ | +693 → +567 ✗ (baseline'dan kötü) | **RED (OOS tutmadı)** |
+| london be@1R | +157 → **+259**, PF 2.0 ✓ | +262 → **−51** ✗ (tek kazanan BE'yle kaçtı) | **RED (OOS çöktü)** |
+| qwe be@* | baseline'dan kötü (+565 vs +474/+359) | koşulmadı | **RED (IS'te elendi)** |
+
+## 4. Sonuç — makinenin öğrendiği
+
+**Hiçbir çıkış mekanizması OOS doğrulamasından geçemedi → dört preset'in
+mevcut stop/TP yapısı DEĞİŞTİRİLMEDİ.** Bu negatif sonuç değerli ve kesindir:
+
+- Kısmi-TP/BE, WR'ı görsel olarak güzelleştirir (%37→%64) ama bu stratejilerde
+  **beklentiyi düşürür**: kaybedenlerden kurtarılan yarım R'ler, kazananlardan
+  feda edilen tam R'leri karşılamıyor.
+- "Kâr geri verme" deseni gerçek, ama ondan para çıkarmaya çalışan her
+  mekanizma ya IS'te ya OOS'ta kaybetti — desen, sağ-kuyruk kazançların
+  bedeli; kuyruk kesilince kâr da kesiliyor.
+- IS/OOS disiplini olmasaydı `threevol ptp@1R` ve `london be@1R` preset'lere
+  girecekti — ikisi de canlıda para kaybettirirdi.
+
+**Kalıcı kazanımlar:** MFE/MAE + exit_reason enstrümantasyonu (gelecek analizler
+bedava), genel `partial_tp_r` motor özelliği (config-kapılı, kapalı),
+6 grafiklik adli-analiz seti ve bu rapor.
+
+## 5. Doğrulama
+
+Enstrümantasyon regresyonu: 4 preset, 1 yıl → fvg 91/+747.73,
+threevol 112/+640.20, london 16/+418.64, qwe 59/+660.99 — enstrümantasyon
+öncesiyle birebir (teşhis alanları davranışı değiştirmiyor).
