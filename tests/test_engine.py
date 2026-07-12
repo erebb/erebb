@@ -200,14 +200,24 @@ class TestDailyBiasProvider:
         return str(f)
 
     def test_bull_day(self, tmp_daily):
+        """LOOKAHEAD KORUMASI: gün D'nin bias'ı = en son TAMAMLANMIŞ günün
+        yönü (dünün momentumu). 03-03 günü işlem yaparken 03-02'nin bull'u
+        kullanılır — aynı günün kendi yönü ASLA dönmez."""
         with contextlib.redirect_stdout(io.StringIO()):
             prov = DailyBiasProvider(tmp_daily)
-        assert prov.get(datetime(2026, 3, 2, 10, 0)) == "bull"
+        assert prov.get(datetime(2026, 3, 3, 10, 0)) == "bull"
 
     def test_bear_day(self, tmp_daily):
         with contextlib.redirect_stdout(io.StringIO()):
             prov = DailyBiasProvider(tmp_daily)
-        assert prov.get(datetime(2026, 3, 3, 15, 0)) == "bear"
+        assert prov.get(datetime(2026, 3, 4, 15, 0)) == "bear"
+
+    def test_no_same_day_lookahead(self, tmp_daily):
+        """Gün D sabahı D'nin kendi yönü BİLİNEMEZ — 03-02'de bir önceki
+        gün kayıtlı olmadığından None dönmeli (bull dönerse lookahead var)."""
+        with contextlib.redirect_stdout(io.StringIO()):
+            prov = DailyBiasProvider(tmp_daily)
+        assert prov.get(datetime(2026, 3, 2, 10, 0)) is None
 
     def test_missing_day(self, tmp_daily):
         with contextlib.redirect_stdout(io.StringIO()):

@@ -531,11 +531,19 @@ class LiveTrader:
                  strategy:      str   = 'fvg'):       # 'fvg' (varsayılan) | 'qwe'
         self.client        = client
         self.strategy      = strategy if strategy in ('qwe', 'fvg') else 'fvg'
-        # QWE: bias KOD SEVİYESİNDE ZORUNLU None (swing işlemlerde gün/hafta
-        # bias kapısı anlamsız — config/CLI ne derse desin uygulanmaz).
-        if self.strategy == 'qwe':
+        # SABİT PRESET'ler (backtest ile birebir):
+        #   qwe: bias ZORUNLU none (swing) | fvg: bias ZORUNLU none + EMA-MACD
+        #   (none yolunda otomatik uygulanır) + blackout 09-11 UTC.
+        if self.strategy in ('qwe', 'fvg'):
             bias_provider = None
             bias_mode     = 'none'
+        # fvg giriş karartma saatleri (config: fvg.blackout_hours)
+        try:
+            from config import get_config
+            self._fvg_blackout = set(
+                get_config().get('fvg', 'blackout_hours', default=[]) or [])
+        except Exception:
+            self._fvg_blackout = set()
         self.bias_provider = bias_provider
         self.leverage      = leverage
         self.risk_pct      = risk_pct / 100.0  # 1.0 → 0.01
@@ -840,7 +848,8 @@ class LiveTrader:
         else:
             tp1 = tp1v if (tp1v < entry and tp1v > tp2) else None
 
-        actual_risk = equity * self.risk_pct * (signal.risk_fraction / 0.01)
+        # HER İŞLEM EŞİT 1R: risk = kasa × risk_pct (konfluens ölçeği YOK)
+        actual_risk = equity * self.risk_pct
         qty  = compute_lot(entry, sl, actual_risk)
         half = round(qty / 2, 3)
         two_legs = tp1 is not None and half >= 0.001
@@ -940,8 +949,9 @@ class LiveTrader:
         # Pozisyon büyüklüğü YALNIZCA stop riskine göre belirlenir:
         #   lot = (stop olursa kaybedilecek $) / |entry - sl|
         # Kaldıraç lot'u değiştirmez; sadece gereken marjini etkiler.
-        confluence_scale = signal.risk_fraction / 0.01   # 1.0 veya 0.5
-        actual_risk      = equity * self.risk_pct * confluence_scale
+        # HER İŞLEM EŞİT 1R: risk = kasa × risk_pct (konfluens ölçeği kaldırıldı;
+        # tüm stratejiler/sinyaller aynı dolar riskini taşır)
+        actual_risk      = equity * self.risk_pct
         qty              = compute_lot(entry, r['sl'], actual_risk)
 
         if qty < 0.001:
@@ -961,8 +971,8 @@ class LiveTrader:
         print(f"  │  SL    : {r['sl']:.2f}")
         print(f"  │  TP    : {r['tp']:.2f}")
         print(f"  │  Lot   : {qty} oz")
-        print(f"  │  Risk  : ${actual_risk:.2f} ({self.risk_pct*100:.1f}% × "
-              f"{confluence_scale:.1f}x)  [stop olursa kayıp]")
+        print(f"  │  Risk  : ${actual_risk:.2f} ({self.risk_pct*100:.1f}% — "
+              f"her işlem eşit 1R)  [stop olursa kayıp]")
         print(f"  │  Kasa  : ${equity:.2f}  |  Kaldıraç: {self.leverage}x")
         print(f"  │  Pozis.: ${notional:.2f} notional  |  Marjin: ${margin:.2f}")
         if margin > equity:
@@ -1148,6 +1158,12 @@ class LiveTrader:
 
                     signal = self._find_signal(ctx, brain)
 
+                    # Preset: fvg blackout saatlerinde giriş yok (09-11 UTC)
+                    if (signal is not None and self._fvg_blackout
+                            and now.hour in self._fvg_blackout):
+                        print(f"  Sinyal blackout saatinde ({now.hour}:xx UTC) — atlandı")
+                        signal = None
+
                     if signal is not None:
                         # Kasa önceliği: manuel capital > API bakiyesi > dry-run varsayılanı
                         if self.capital > 0:
@@ -1283,11 +1299,12 @@ def main() -> None:
         except Exception:
             strategy = 'fvg'
 
-    # Bias provider — QWE: ZORUNLU none (prompt hiç kurulmaz)
-    if strategy == 'qwe':
+    # Bias provider — SABİT PRESET'ler: fvg ve qwe bias ZORUNLU none
+    # (backtest preset'iyle birebir; prompt hiç kurulmaz)
+    if strategy in ('qwe', 'fvg'):
         if args.bias != 'weekly':   # kullanıcı açıkça bias istediyse uyar
-            print("  Not: QWE stratejisinde bias ZORUNLU none — "
-                  f"--bias {args.bias} yok sayıldı.")
+            print(f"  Not: {strategy.upper()} sabit preset — "
+                  f"--bias {args.bias} yok sayıldı (bias=none).")
         bias_provider = None
     elif args.bias == 'none':
         bias_provider = None
