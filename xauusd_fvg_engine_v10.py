@@ -1979,7 +1979,12 @@ class BacktestEngine:
                  time_exit_bars: Optional[int] = None,
                  ema_macd_filter: bool = False,
                  partial_tp_r: Optional[float] = None,
-                 partial_tp_fraction: float = 0.5):
+                 partial_tp_fraction: float = 0.5,
+                 blackout_hours: Optional[list] = None,
+                 sl_tighten: Optional[float] = None,
+                 cost_spread_usd: float = 0.0,
+                 cost_slippage_usd: float = 0.0,
+                 cost_commission_pct: float = 0.0):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
@@ -1990,6 +1995,18 @@ class BacktestEngine:
         # olmadan önce ≥1R kâr görüyor — kilitlenmeyen kâr geri veriliyor.
         self.partial_tp_r        = partial_tp_r
         self.partial_tp_fraction = partial_tp_fraction
+        # blackout_hours: bu UTC saatlerinde GİRİŞ yapılmaz (sinyal atlanır).
+        self.blackout_hours = set(blackout_hours or [])
+        # sl_tighten: yapısal stop mesafesi × bu katsayı (örn. 0.75 → %25 dar
+        # stop); TP FİYATI orijinal yapısal hedefte kalır (RR doğal yükselir).
+        # None/1.0 = kapalı.
+        self.sl_tighten = sl_tighten
+        # ── Maliyet modeli (gidiş-dönüş): pozisyon büyüklüğü üzerinden ──────
+        #   qty_oz = risk_dollar / risk;  maliyet = qty×(spread + 2×slippage)
+        #   + commission_pct/100 × qty × (giriş+çıkış fiyatı). 0 = kapalı.
+        self.cost_spread_usd     = cost_spread_usd
+        self.cost_slippage_usd   = cost_slippage_usd
+        self.cost_commission_pct = cost_commission_pct
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -1997,6 +2014,17 @@ class BacktestEngine:
         self.ema_macd_filter  = ema_macd_filter
         # Alt sınıflar brain.evaluate() çağrısına ek kwargs iletmek için kullanır.
         self._extra_brain_kwargs: dict = {}
+
+    def _trade_cost(self, t: 'Trade') -> float:
+        """Gidiş-dönüş işlem maliyeti ($). Kısmi çıkışlar dahil tam pozisyon
+        üzerinden bir kez uygulanır (muhafazakâr yaklaşım)."""
+        if not (self.cost_spread_usd or self.cost_slippage_usd
+                or self.cost_commission_pct):
+            return 0.0
+        qty = t.risk_dollar / max(t.risk, 1e-9)      # etkin oz büyüklüğü
+        ep  = t.exit_price if t.exit_price is not None else t.entry_price
+        return (qty * (self.cost_spread_usd + 2.0 * self.cost_slippage_usd)
+                + self.cost_commission_pct / 100.0 * qty * (t.entry_price + ep))
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
@@ -2012,8 +2040,20 @@ class BacktestEngine:
         T1: float timestamp array (np.array([t.timestamp() for t in df1.index])).
         """
         entry = float(O[idx + 1])
+        stop_price  = signal.stop_price
+        tp_override = None
+        rr_eff      = self.risk.rr
+        # SL sıkılaştırma (opt-in): stop mesafesi × faktör; TP FİYATI orijinal
+        # yapısal hedefte kalır → RR doğal olarak yükselir (rr/f).
+        if self.sl_tighten and 0.0 < self.sl_tighten < 1.0:
+            dist = abs(entry - stop_price)
+            sgn  = 1 if signal.direction == 'bull' else -1
+            stop_price  = entry - sgn * dist * self.sl_tighten
+            tp_override = entry + sgn * self.risk.rr * dist
+            rr_eff      = self.risk.rr / self.sl_tighten
         r = self.risk.compute(signal.direction, entry,
-                              signal.stop_price, equity, signal.risk_fraction)
+                              stop_price, equity, signal.risk_fraction,
+                              tp_override=tp_override)
         if r is None:
             return None
         # Genel kısmi-TP (opt-in): +partial_tp_r R'de kısmi kâr + SL→BE
@@ -2030,7 +2070,7 @@ class BacktestEngine:
             risk          = r['risk'],
             risk_pct      = r['risk_pct'],
             risk_dollar   = r['risk_dollar'],
-            rr            = self.risk.rr,
+            rr            = rr_eff,
             risk_fraction = r['risk_fraction'],
             entry_bar_idx = idx,
             tp1           = tp1,
@@ -2189,8 +2229,10 @@ class BacktestEngine:
                 ep   = t.tp if hit_tp else t.sl
                 mult = ((ep - entry) if d == 'bull' else (entry - ep)) / (R + 1e-10)
                 dlr  = mult * t.risk_dollar * rem_frac
+                t.exit_price = ep
+                dlr -= self._trade_cost(t)          # gidiş-dönüş maliyeti
                 total = t.realized_pnl + dlr
-                t.exit_price = ep; t.exit_time = TM[idx]
+                t.exit_time = TM[idx]
                 t.result     = ('WIN' if total > 0.01 else
                                 ('BE' if abs(total) <= 0.01 else 'LOSS'))
                 t.pnl_dollar = round(total, 2)
@@ -2207,13 +2249,15 @@ class BacktestEngine:
                     t.sl = round(entry, 2)
                     be_hit = (L[idx] <= t.sl) if d == 'bull' else (H[idx] >= t.sl)
                     if be_hit:
-                        total = t.realized_pnl   # kalan BE'de → 0
-                        t.exit_price = t.sl; t.exit_time = TM[idx]
+                        t.exit_price = t.sl
+                        cost  = self._trade_cost(t)
+                        total = t.realized_pnl - cost   # kalan BE'de → 0 − maliyet
+                        t.exit_time = TM[idx]
                         t.result = ('WIN' if total > 0.01 else
                                     ('BE' if abs(total) <= 0.01 else 'LOSS'))
                         t.pnl_dollar = round(total, 2)
                         t.exit_reason = 'be'
-                        return True, partial
+                        return True, partial - cost
             return False, partial
 
         for idx in bt_idx:
@@ -2245,6 +2289,8 @@ class BacktestEngine:
                         mult = ((close_price - t.entry_price) if d == 'bull'
                                 else (t.entry_price - close_price)) / (t.risk + 1e-10)
                         tdelta = mult * t.risk_dollar * rem_frac
+                        t.exit_price = round(close_price, 2)
+                        tdelta -= self._trade_cost(t)   # gidiş-dönüş maliyeti
                         equity += tdelta
                         total  = t.realized_pnl + tdelta
                         t.exit_price = round(close_price, 2)
@@ -2310,6 +2356,14 @@ class BacktestEngine:
                     if not ok:
                         dbg['no_signal'] += 1
                         continue
+
+            # ── Saat karartması (blackout): bu UTC saatlerinde giriş yok ────
+            if self.blackout_hours:
+                eh = to_naive(TM[idx + 1]).hour if idx + 1 < len(TM) \
+                     else to_naive(TM[idx]).hour
+                if eh in self.blackout_hours:
+                    dbg['no_signal'] += 1
+                    continue
 
             # Sinyali ilgili slota yönlendir; dolu slot için atla
             is_prz = 'PRZ' in signal.confirmation_type
