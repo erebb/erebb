@@ -1985,7 +1985,9 @@ class BacktestEngine:
                  cost_spread_usd: float = 0.0,
                  cost_slippage_usd: float = 0.0,
                  cost_commission_pct: float = 0.0,
-                 uniform_risk_fraction: Optional[float] = None):
+                 uniform_risk_fraction: Optional[float] = None,
+                 swing_stop_1h: bool = False,
+                 swing_stop_buf_atr: float = 0.25):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
@@ -2011,6 +2013,13 @@ class BacktestEngine:
         # uniform_risk_fraction: set edilirse HER işlem sinyalin kendi
         # risk_fraction'ı yerine bu oranı riskler (örn. 0.01 = her işlem %1).
         self.uniform_risk_fraction = uniform_risk_fraction
+        # swing_stop_1h: SL'i 5M mikro-yapı yerine SON ONAYLI 1H SWING
+        # dibine/tepesine (± swing_stop_buf_atr × ATR1H tampon) taşır.
+        # Yalnızca GENİŞLETİR (sinyal stopu zaten daha genişse dokunmaz).
+        # Gerekçe: mikro stop, risk-bazlı boyutlandırmada dev nominal →
+        # ücret/R patlaması; swing stop hem yapısal hem ücret-dostu.
+        self.swing_stop_1h      = swing_stop_1h
+        self.swing_stop_buf_atr = swing_stop_buf_atr
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -2018,6 +2027,38 @@ class BacktestEngine:
         self.ema_macd_filter  = ema_macd_filter
         # Alt sınıflar brain.evaluate() çağrısına ek kwargs iletmek için kullanır.
         self._extra_brain_kwargs: dict = {}
+
+    @staticmethod
+    def swing_stop_price(direction: str, entry: float, entry_ts: float,
+                         H1: np.ndarray, L1: np.ndarray, T1: np.ndarray,
+                         ATR1: np.ndarray, buf_atr: float = 0.25,
+                         k: int = 2, lookback: int = 60) -> Optional[float]:
+        """Son ONAYLI 1H fractal swing dibi (bull) / tepesi (bear) ± tampon.
+
+        Lookahead koruması: yalnız giriş anından önce KAPANMIŞ 1H barlar
+        (T1 bar-başlangıç + 1 saat ≤ entry_ts) kullanılır ve fractal, k bar
+        sonrasının da kapanmış olmasıyla onaylanır. Uygun swing yoksa None
+        (çağıran sinyal stopunu kullanır). Canlı trader AYNI fonksiyonu
+        çağırır — backtest/canlı tek implementasyon."""
+        n_done = int(np.searchsorted(T1, entry_ts - 3599.0, side='right'))
+        if n_done < k * 2 + 3:
+            return None
+        lo  = max(k, n_done - lookback)
+        j   = min(n_done - 1, len(ATR1) - 1)
+        atr = float(ATR1[j]) if not np.isnan(float(ATR1[j])) else 0.0
+        # en yeniden geriye: onaylı fractal (i + k < n_done)
+        for i in range(n_done - k - 1, lo - 1, -1):
+            if direction == 'bull':
+                w = L1[i - k:i + k + 1]
+                if L1[i] <= w.min() and (w == L1[i]).sum() == 1 \
+                        and float(L1[i]) < entry:
+                    return float(L1[i]) - buf_atr * atr
+            else:
+                w = H1[i - k:i + k + 1]
+                if H1[i] >= w.max() and (w == H1[i]).sum() == 1 \
+                        and float(H1[i]) > entry:
+                    return float(H1[i]) + buf_atr * atr
+        return None
 
     def _trade_cost(self, t: 'Trade') -> float:
         """Gidiş-dönüş işlem maliyeti ($). Kısmi çıkışlar dahil tam pozisyon
@@ -2047,6 +2088,19 @@ class BacktestEngine:
         stop_price  = signal.stop_price
         tp_override = None
         rr_eff      = self.risk.rr
+        # SWING STOP (opt-in): SL'i son onaylı 1H swing yapısına taşı —
+        # yalnızca sinyal stopundan GENİŞSE (mikro-stop koruması).
+        if self.swing_stop_1h and H1 is not None and L1 is not None \
+                and T1 is not None and ATR1 is not None:
+            ets = to_naive(signal.entry_time).timestamp()
+            sw = self.swing_stop_price(signal.direction, entry, ets,
+                                       H1, L1, T1, ATR1,
+                                       buf_atr=self.swing_stop_buf_atr)
+            if sw is not None:
+                wider = (sw < stop_price if signal.direction == 'bull'
+                         else sw > stop_price)
+                if wider:
+                    stop_price = sw
         # SL sıkılaştırma (opt-in): stop mesafesi × faktör; TP FİYATI orijinal
         # yapısal hedefte kalır → RR doğal olarak yükselir (rr/f).
         if self.sl_tighten and 0.0 < self.sl_tighten < 1.0:

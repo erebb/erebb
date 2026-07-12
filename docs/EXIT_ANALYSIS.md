@@ -130,3 +130,28 @@ yazılımsal BE (qwe altyapısı genelleştirildi). threevol: none+EMA+blackout 
 yazılımsal BE@1R (be_arm_price state'te persist; 5dk örnekleme yaklaşımı).
 TBE tüm preset'lerde kapalı (backtest pariteesi). Stub simülasyonlarıyla
 doğrulandı (london 2-emir payload'u, threevol BE-kolu, %1 eşit risk).
+
+## EK — SWING STOP düzeltmesi (2026-07, kullanıcı direktifi)
+
+Kullanıcı haklı bir tasarım eleştirisi yaptı: fvg/threevol stopları motorun
+ilk (intraday) tasarımından miras 5M mikro-yapı stoplarıydı (4-13$ =
+fiyatın %0.2-0.3'ü) — swing temeliyle çelişir ve ücret/R'ı patlatır.
+
+**Yeni motor yeteneği `swing_stop_1h`:** SL, son ONAYLI 1H fractal swing
+dibine/tepesine (+0.25×ATR1H tampon) taşınır; yalnızca genişletir; canlı
+trader AYNI statik fonksiyonu kullanır (`BacktestEngine.swing_stop_price`).
+
+**Grid (IS/OOS × maliyet, 1 yıl):**
+- fvg + swing stop: **KABUL** — maliyetsiz +2202→+4332 (PF 2.10, WR %51.5),
+  taker %0.05'te bile **+3017** (PF 1.72). Stop medyanı 17$→46$ (fiyatın
+  ~%1'i), ücret/R ~0.10R'a düştü; whipsaw stoplar da elendi (IS ve OOS'ta
+  tutarlı büyük iyileşme).
+- threevol + swing stop: **RED** — IS ve OOS'ta zarara döner (+2247→−329
+  maliyetsiz). Momentum-patlaması deseni kendi desen-stopunu (3 mumun dibi —
+  o da yapısaldır, sadece doğası gereği dar) gerektiriyor; taker ücretinde
+  canlıya uygun değildir (maker/düşük ücret şartı devam).
+
+**Nihai (maliyetsiz, %1 risk):** fvg 68/+4332 (PF 2.10) | threevol 94/+2247 |
+london 6/+1542 | qwe 59/+1333 → **TOPLAM +9454/yıl (~%95)**.
+Taker %0.05 dünyasında: fvg +3017 ✓, london +1121 ✓, qwe ~+90, threevol
+−2344 ✗ (yalnız düşük ücretle çalıştırılmalı).

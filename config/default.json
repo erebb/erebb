@@ -30,7 +30,8 @@
       9,
       10,
       11
-    ]
+    ],
+    "swing_stop": true
   },
   "threevol": {
     "bias": "none",
@@ -40,7 +41,8 @@
       9,
       10,
       11
-    ]
+    ],
+    "swing_stop": false
   },
   "costs": {
     "spread_usd": 0.0,

@@ -134,12 +134,16 @@ def _strategy_presets(cfg) -> dict:
                          rr=str(cfg.get("fvg", "rr", default="1:2fix")),
                          emf=bool(cfg.get("fvg", "ema_filter", default=True)),
                          blackout=list(cfg.get("fvg", "blackout_hours",
-                                               default=[]) or [])),
+                                               default=[]) or []),
+                         swing_stop=bool(cfg.get("fvg", "swing_stop",
+                                                 default=True))),
         "threevol": dict(bias=cfg.get("threevol", "bias", default="none"),
                          rr=str(cfg.get("threevol", "rr", default="1:2be")),
                          emf=bool(cfg.get("threevol", "ema_filter", default=True)),
                          blackout=list(cfg.get("threevol", "blackout_hours",
-                                               default=[]) or [])),
+                                               default=[]) or []),
+                         swing_stop=bool(cfg.get("threevol", "swing_stop",
+                                                 default=False))),
         "london":   dict(bias=cfg.get("london_reversal", "bias", default="none"),
                          rr="1:2fix", emf=False, blackout=[]),
         "qwe":      dict(bias=cfg.get("qwe", "bias", default="none"),
@@ -205,7 +209,9 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         p = presets[strat]
         p_rr, p_be = rr_map.get(p["rr"], (2.0, None))
         rr_label   = p["rr"]
-        common_kw  = dict(blackout_hours=p.get("blackout") or None, **cost_kw)
+        common_kw  = dict(blackout_hours=p.get("blackout") or None,
+                          swing_stop_1h=bool(p.get("swing_stop", False)),
+                          **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"
             buf = io.StringIO()

@@ -33,7 +33,7 @@ from xauusd_fvg_engine_v10 import (
     FVG, MSBEvent, TradeSignal, HarmonicSignal,
     FVGEngine, MSB5MEngine, HarmonicEngine,
     MarketBrain, RiskManager,
-    QweBrain, QweBacktestEngine,
+    QweBrain, QweBacktestEngine, BacktestEngine,
     ThreeVolBrain, LondonReversalBrain,
     AsianRangeCalculator, PrivateBiasProvider,
     EMAEngine, RSIEngine, IndicatorEngine, MACDEngine,
@@ -1019,9 +1019,40 @@ class LiveTrader:
             print(f"  QWE kısmi kontrol hatası: {e}")
 
     # ── İşlem aç ─────────────────────────────────────────────────────────────
+    def _apply_swing_stop(self, signal: TradeSignal, entry: float) -> None:
+        """fvg/threevol preset'i: SL'i son onaylı 1H swing yapısına genişlet
+        (backtest ile AYNI fonksiyon: BacktestEngine.swing_stop_price)."""
+        try:
+            from config import get_config
+            if not bool(get_config().get(self.strategy, 'swing_stop',
+                                         default=False)):
+                return
+            df1 = getattr(self, '_df1h_cache', None)
+            if df1 is None or len(df1) < 20:
+                return
+            H1 = df1['High'].values.astype(float)
+            L1 = df1['Low'].values.astype(float)
+            A1 = IndicatorEngine.atr(df1, 14).values.astype(float)
+            T1 = np.array([to_naive(t).timestamp() for t in df1.index])
+            ets = to_naive(signal.entry_time).timestamp() \
+                if signal.entry_time is not None else T1[-1] + 3600
+            sw = BacktestEngine.swing_stop_price(
+                signal.direction, entry, ets, H1, L1, T1, A1)
+            if sw is None:
+                return
+            wider = (sw < signal.stop_price if signal.direction == 'bull'
+                     else sw > signal.stop_price)
+            if wider:
+                print(f"  Swing stop: {signal.stop_price:.2f} → {sw:.2f} "
+                      f"(1H yapı)")
+                signal.stop_price = sw
+        except Exception as e:
+            print(f"  swing-stop hesabı atlandı: {e}")
+
     def _enter_trade(self, signal: TradeSignal,
                      equity: float, last_close: float) -> None:
         entry = last_close
+        self._apply_swing_stop(signal, entry)
 
         # SL/TP fiyatlarını hesapla (RiskManager'dan)
         r = self.risk_mgr.compute(
@@ -1226,6 +1257,7 @@ class LiveTrader:
                     self.client, '1h', 900 if self.strategy == 'qwe' else 200)
 
                 last_close = float(df_5m['Close'].iloc[-1])
+                self._df1h_cache = df_1h        # swing-stop hesabı için
                 self._log_bar(now, last_close, current_bias)
 
                 # ── Sinyal yalnız açık pozisyon yokken ───────────────────────
