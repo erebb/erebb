@@ -364,8 +364,9 @@ def backtest_menu() -> None:
             _info(f"Not: London (sabit [bold {C_YEL}]{fixed_bias['london']}[/]) ve "
                   f"QWE (sabit [bold {C_YEL}]{fixed_bias['qwe']}[/]) bu seçimden "
                   f"etkilenmez.")
-        # 1 yıllık dürüst grid kazananları öneri olarak sunulur (değiştirilebilir)
-        _grid_best_bias = {"fvg": "none", "threevol": "daily"}
+        # 1 yıllık dürüst grid kazananları öneri olarak sunulur (değiştirilebilir).
+        # threevol: kullanıcı tercihi none (en iyi none varyantı: EMA + 1:2be).
+        _grid_best_bias = {"fvg": "none", "threevol": "none"}
         bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
                      _grid_best_bias.get(
                          strategy,
@@ -385,10 +386,11 @@ def backtest_menu() -> None:
     else:
         tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"], "8h")
 
-    # EMA-MACD filtre — fvg'de grid kazananının parçası (none bias'ı kârlı yapan bu)
+    # EMA-MACD filtre — fvg/threevol none önerisinin parçası:
+    # none bias'ı kârlı yapan bileşen bu filtre (EMA'sız none zararda)
     console.print()
     emf = _confirm("EMA-MACD filtresi uygulansın mı?",
-                   default=(strategy == "fvg"))
+                   default=(strategy in ("fvg", "threevol")))
 
     # Sermaye
     console.print()

@@ -30,9 +30,10 @@ karşılaştırma): FVG daily 114/+417 (PF 1.11), ThreeVol daily 124/+697
   filtre fvg için none'ı kârlı yapan bileşen).
 - ThreeVol kazananı: `daily + 1:2be` → 124/+1620, PF 1.27, Sh 0.91, DD %5.9
   (daily 1:1: +1430/Sh 1.01; none yalnız 1:2be+EMA'da artı: +640).
-- GUI önerileri bu kazananlara çekildi (fvg: none+EMA, threevol: daily+1:2be);
-  kullanıcı istediğini seçebilir. `backtest.default_bias` 'daily' yapıldı
-  (weekly_bias.json manuel ve yalnız 20 haftayı kapsıyor).
+- GUI önerileri: fvg none+EMA+1:2fix; threevol **kullanıcı tercihiyle none** —
+  en iyi none varyantı `none + EMA + 1:2be` → 112/+640, PF 1.13, Sh 0.43, DD %8.7
+  (grid'in mutlak kazananı daily+1:2be +1620 idi; seçenek olarak duruyor).
+  `backtest.default_bias` 'daily' yapıldı (weekly_bias.json manuel, 20 hafta).
 
 **Nihai dürüst tablo (her strateji kendi kazananında, 1 yıl):**
 | Strateji | Config | N | WR | PnL | PF | Sharpe | MaxDD |
