@@ -24,6 +24,25 @@ kapsam dışıdır.
 karşılaştırma): FVG daily 114/+417 (PF 1.11), ThreeVol daily 124/+697
 (PF 1.09) — eski "+2994" düzeyleri lookahead ürünüydü.
 
+**FVG/ThreeVol dürüst grid'i (bias × RR × EMA, 22 hücre, 1 yıl):**
+- FVG kazananı: `none + EMA-MACD + 1:2fix` → 91/+748, PF 1.26, Sh 0.87, DD %3.5
+  (private 1:2fix +795 ama DD %7.7; none bias EMA filtresiz TÜM RR'larda zararda —
+  filtre fvg için none'ı kârlı yapan bileşen).
+- ThreeVol kazananı: `daily + 1:2be` → 124/+1620, PF 1.27, Sh 0.91, DD %5.9
+  (daily 1:1: +1430/Sh 1.01; none yalnız 1:2be+EMA'da artı: +640).
+- GUI önerileri bu kazananlara çekildi (fvg: none+EMA, threevol: daily+1:2be);
+  kullanıcı istediğini seçebilir. `backtest.default_bias` 'daily' yapıldı
+  (weekly_bias.json manuel ve yalnız 20 haftayı kapsıyor).
+
+**Nihai dürüst tablo (her strateji kendi kazananında, 1 yıl):**
+| Strateji | Config | N | WR | PnL | PF | Sharpe | MaxDD |
+|---|---|---|---|---|---|---|---|
+| threevol | daily 1:2be | 124 | %39.1 | +1620 | 1.27 | 0.91 | %5.9 |
+| fvg | none+EMA 1:2fix | 91 | %39.6 | +748 | 1.26 | 0.87 | %3.5 |
+| qwe | none preset | 59 | %45.8 | +661 | 1.39 | 1.05 | %2.5 |
+| london | private preset | 16 | %37.5 | +419 | 1.81 | 0.68 | %1.8 |
+| **toplam** | | 290 | | **+3448** | | | |
+
 **London preset güncellemesi** (kullanıcı isteği: yılda 5-6 işlem çok az):
 1 yıllık dürüst grid kazananı `immediate + tüm killzone + daily bias` →
 **67 işlem/yıl, WR %40.3, +1313$, PF 1.61, Sharpe 1.16, MaxDD %3.7**

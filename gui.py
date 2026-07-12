@@ -364,12 +364,17 @@ def backtest_menu() -> None:
             _info(f"Not: London (sabit [bold {C_YEL}]{fixed_bias['london']}[/]) ve "
                   f"QWE (sabit [bold {C_YEL}]{fixed_bias['qwe']}[/]) bu seçimden "
                   f"etkilenmez.")
+        # 1 yıllık dürüst grid kazananları öneri olarak sunulur (değiştirilebilir)
+        _grid_best_bias = {"fvg": "none", "threevol": "daily"}
         bias = _pick("Bias seç", ["weekly","daily","none","private","hepsi"],
-                     cfg.get("backtest", "default_bias", default="weekly"))
+                     _grid_best_bias.get(
+                         strategy,
+                         cfg.get("backtest", "default_bias", default="daily")))
 
-    # RR
+    # RR — grid kazananı öneri: threevol=1:2be, diğerleri=1:2fix
     console.print()
-    rr = _pick("Risk/Ödül seç", ["1:1","1:2be","1:2fix"], "1:2fix")
+    rr = _pick("Risk/Ödül seç", ["1:1","1:2be","1:2fix"],
+               "1:2be" if strategy == "threevol" else "1:2fix")
 
     # TBE — sabit-preset stratejiler (london/qwe) TBE'siz doğrulandı;
     # bu ikisinde seçim yok sayılır (aşağıda None zorlanır).
@@ -380,9 +385,10 @@ def backtest_menu() -> None:
     else:
         tbe = _pick("Zaman çıkışı (TBE)", ["yok","2h","4h","8h"], "8h")
 
-    # EMA-MACD filtre
+    # EMA-MACD filtre — fvg'de grid kazananının parçası (none bias'ı kârlı yapan bu)
     console.print()
-    emf = _confirm("EMA-MACD filtresi uygulansın mı?", default=False)
+    emf = _confirm("EMA-MACD filtresi uygulansın mı?",
+                   default=(strategy == "fvg"))
 
     # Sermaye
     console.print()
