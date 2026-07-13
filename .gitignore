@@ -1,3 +1,6 @@
 __pycache__/
 live_config.json
 live_state.json
+
+# Teşhis raporu çıktıları (run_diagnostics_report.py ile üretilir)
+reports/diagnostics/

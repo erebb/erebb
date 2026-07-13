@@ -45,6 +45,13 @@ sormaz — strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
 - `scripts/run_test_matrix.py`, `scripts/test_london_only.py` — hazır backtest matrisleri.
 - `scripts/run_full_backtest.py` — sabit preset'lerle tam backtest (GUI paritesi;
   CSV'lerde kaç yıl varsa işler, çok yıllık veride yıl yıl PnL kırılımı yazar).
+- `scripts/run_diagnostics_report.py` — **kurumsal teşhis raporu** (motora
+  dokunmadan): giriş anı ATR/BBW, long/short asimetri, işlem süresi & zaman-stopu
+  what-if, drawdown süresi, haftanın günü, emir doluş/fırsat maliyeti (limit
+  yaşam döngüsü 5M'den yeniden kurulur), W taraması, London zaman-toleransı &
+  katılık matrisleri, HTF trend uyumu, key-level yakınlığı, kesişim matrisi.
+  Çıktı: `reports/diagnostics/rapor_diagnostik.html` + `ledger_diagnostik.csv`.
+  `python3 scripts/run_diagnostics_report.py [--fast] [--capital N]`.
 - `tests/` — pytest paketi (179 test): `python3 -m pytest tests -q`
 - `docs/CODE_AUDIT.md` — kod denetim raporu.
 
