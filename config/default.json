@@ -31,7 +31,9 @@
       10,
       11
     ],
-    "swing_stop": true
+    "swing_stop": true,
+    "entry_order": "limit",
+    "limit_entry_bars": 3
   },
   "threevol": {
     "bias": "none",
@@ -42,12 +44,15 @@
       10,
       11
     ],
-    "swing_stop": false
+    "swing_stop": false,
+    "entry_order": "limit",
+    "limit_entry_bars": 3
   },
   "costs": {
-    "spread_usd": 0.0,
-    "slippage_usd": 0.0,
-    "commission_pct": 0.0
+    "spread_usd": 0.3,
+    "slippage_usd": 0.05,
+    "commission_pct": 0.05,
+    "maker_pct": 0.02
   },
   "private_bias": {
     "vol_lambda": 0.94,

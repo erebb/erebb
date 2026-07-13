@@ -239,6 +239,27 @@ class BingXClient:
             return result['order']
         return result if isinstance(result, dict) else {}
 
+    def place_limit_order(self, side: str, qty: float, price: float,
+                          sl: float, tp: float) -> dict:
+        """LIMIT (maker) giriş + borsa-taraflı SL/TP. GTC — dolmazsa
+        çağıran iptal eder (pending yaşam döngüsü LiveTrader'da)."""
+        pos_side = 'LONG' if side == 'BUY' else 'SHORT'
+        params: dict = {
+            'symbol':          self.symbol,
+            'side':            side,
+            'positionSide':    pos_side,
+            'type':            'LIMIT',
+            'price':           str(round(price, 2)),
+            'quantity':        str(qty),
+            'timeInForce':     'GTC',
+            'stopLossPrice':   str(round(sl, 2)),
+            'takeProfitPrice': str(round(tp, 2)),
+        }
+        result = self._request('POST', '/openApi/swap/v2/trade/order', params)
+        if isinstance(result, dict) and 'order' in result:
+            return result['order']
+        return result if isinstance(result, dict) else {}
+
     # ── Tüm açık emirleri iptal ─────────────────────────────────────────────
     def cancel_all_orders(self) -> None:
         try:
@@ -411,6 +432,9 @@ class StateManager:
         # ThreeVol yazılımsal BE@1R durumu
         self.be_arm_price: Optional[float] = None
         self.be_armed = False
+        # LİMİT giriş bekleyen emir durumu
+        self.pending_entry = False
+        self.entry_expire: Optional[str] = None   # ISO UTC
         self._load()
 
     def _load(self) -> None:
@@ -434,6 +458,8 @@ class StateManager:
             self.qwe_used    = d.get('qwe_used', [])
             self.be_arm_price = d.get('be_arm_price')
             self.be_armed     = bool(d.get('be_armed', False))
+            self.pending_entry = bool(d.get('pending_entry', False))
+            self.entry_expire  = d.get('entry_expire')
             if self.active:
                 tbe_str = f"  TBE: {self.tbe_minutes}dk" if self.tbe_minutes else ""
                 print(f"  Önceki pozisyon bulundu: "
@@ -483,6 +509,8 @@ class StateManager:
         self.setup_key   = None
         self.be_arm_price = None
         self.be_armed     = False
+        self.pending_entry = False
+        self.entry_expire  = None
         self._write()
 
     def _write(self) -> None:
@@ -503,6 +531,8 @@ class StateManager:
             'qwe_used':    self.qwe_used,
             'be_arm_price': self.be_arm_price,
             'be_armed':     self.be_armed,
+            'pending_entry': self.pending_entry,
+            'entry_expire':  self.entry_expire,
         }, indent=2))
 
 
@@ -1102,6 +1132,42 @@ class LiveTrader:
         print(f"  │  TBE   : {tbe_str}")
         print(f"  └{'─'*40}")
 
+        # LİMİT giriş modu (config: <strateji>.entry_order = 'limit'):
+        # limit fiyatı = kapanış ∓ spread (bid/ask tarafı); dolmazsa
+        # W×5dk sonra iptal (_check_position pending yaşam döngüsü).
+        from config import get_config as _gc
+        use_limit = (_gc().get(self.strategy, 'entry_order',
+                               default='market') == 'limit')
+        if use_limit:
+            spread = float(_gc().get('costs', 'spread_usd', default=0.30)) or 0.30
+            wbars  = int(_gc().get(self.strategy, 'limit_entry_bars', default=3))
+            lim = (entry - spread if signal.direction == 'bull'
+                   else entry + spread)
+            from datetime import timedelta as _td
+            expire = (datetime.utcnow() + _td(minutes=5 * wbars)).isoformat()
+            print(f"  LİMİT giriş: {lim:.2f} (spread dahil)  "
+                  f"— {wbars} bar içinde dolmazsa iptal")
+            if self.dry_run:
+                print("  [DRY-RUN] LIMIT order gönderilmedi (dolum varsayıldı).\n")
+                self.state.save(order_id='DRY-RUN', direction=signal.direction,
+                                entry=lim, sl=r['sl'], tp=r['tp'], qty=qty,
+                                signal_type=label, tbe_minutes=self.tbe_minutes)
+                return
+            try:
+                res = self.client.place_limit_order(side, qty, lim,
+                                                    r['sl'], r['tp'])
+                self.state.save(order_id=res.get('orderId', 'N/A'),
+                                direction=signal.direction, entry=lim,
+                                sl=r['sl'], tp=r['tp'], qty=qty,
+                                signal_type=label, tbe_minutes=self.tbe_minutes)
+                self.state.pending_entry = True
+                self.state.entry_expire  = expire
+                self.state._write()
+                print(f"  ✓  LIMIT order kondu: #{self.state.order_id}\n")
+            except Exception as e:
+                print(f"  ✗  LIMIT ORDER HATASI: {e}\n")
+            return
+
         if self.dry_run:
             print("  [DRY-RUN] Order gönderilmedi.\n")
             self.state.save(
@@ -1140,6 +1206,32 @@ class LiveTrader:
         TBE süresi dolduysa pozisyonu market'ten kapatır.
         """
         if not self.state.active:
+            return
+        # ── Bekleyen LİMİT emri: doldu mu / süresi doldu mu? ────────────────
+        if self.state.pending_entry and not self.dry_run:
+            try:
+                pos = self.client.get_position()
+                if pos and abs(float(pos.get('positionAmt', 0))) > 0:
+                    self.state.pending_entry = False
+                    self.state.open_time = datetime.utcnow().isoformat()
+                    # threevol: BE kolunu dolum sonrası kur
+                    if self.state.signal_type == 'EMA+3VOL':
+                        dist = abs(self.state.entry - self.state.sl)
+                        self.state.be_arm_price = (
+                            self.state.entry + dist
+                            if self.state.direction == 'bull'
+                            else self.state.entry - dist)
+                        self.state.be_armed = False
+                    self.state._write()
+                    print("  LIMIT emir DOLDU → pozisyon aktif")
+                elif (self.state.entry_expire and
+                      datetime.utcnow() >
+                      datetime.fromisoformat(self.state.entry_expire)):
+                    print("  LIMIT emir dolmadı → iptal (sinyal kaçtı)")
+                    self.client.cancel_all_orders()
+                    self.state.clear()
+            except Exception as e:
+                print(f"  pending kontrol hatası: {e}")
             return
         if self.dry_run:
             # Dry-run: sadece TBE süresini logla

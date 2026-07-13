@@ -136,14 +136,24 @@ def _strategy_presets(cfg) -> dict:
                          blackout=list(cfg.get("fvg", "blackout_hours",
                                                default=[]) or []),
                          swing_stop=bool(cfg.get("fvg", "swing_stop",
-                                                 default=True))),
+                                                 default=True)),
+                         limit_bars=(int(cfg.get("fvg", "limit_entry_bars",
+                                                 default=3))
+                                     if cfg.get("fvg", "entry_order",
+                                                default="market") == "limit"
+                                     else None)),
         "threevol": dict(bias=cfg.get("threevol", "bias", default="none"),
                          rr=str(cfg.get("threevol", "rr", default="1:2be")),
                          emf=bool(cfg.get("threevol", "ema_filter", default=True)),
                          blackout=list(cfg.get("threevol", "blackout_hours",
                                                default=[]) or []),
                          swing_stop=bool(cfg.get("threevol", "swing_stop",
-                                                 default=False))),
+                                                 default=False)),
+                         limit_bars=(int(cfg.get("threevol", "limit_entry_bars",
+                                                 default=3))
+                                     if cfg.get("threevol", "entry_order",
+                                                default="market") == "limit"
+                                     else None)),
         "london":   dict(bias=cfg.get("london_reversal", "bias", default="none"),
                          rr="1:2fix", emf=False, blackout=[]),
         "qwe":      dict(bias=cfg.get("qwe", "bias", default="none"),
@@ -200,6 +210,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         cost_spread_usd=float(cfg.get("costs", "spread_usd", default=0.0)),
         cost_slippage_usd=float(cfg.get("costs", "slippage_usd", default=0.0)),
         cost_commission_pct=float(cfg.get("costs", "commission_pct", default=0.0)),
+        cost_maker_pct=float(cfg.get("costs", "maker_pct", default=0.02)),
         # HER İŞLEM EŞİT RİSK (config risk.risk_fraction; 0.01 = %1)
         uniform_risk_fraction=float(cfg.get("risk", "risk_fraction",
                                             default=0.01)),
@@ -211,6 +222,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         rr_label   = p["rr"]
         common_kw  = dict(blackout_hours=p.get("blackout") or None,
                           swing_stop_1h=bool(p.get("swing_stop", False)),
+                          limit_entry_bars=p.get("limit_bars"),
                           **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"

@@ -1987,7 +1987,9 @@ class BacktestEngine:
                  cost_commission_pct: float = 0.0,
                  uniform_risk_fraction: Optional[float] = None,
                  swing_stop_1h: bool = False,
-                 swing_stop_buf_atr: float = 0.25):
+                 swing_stop_buf_atr: float = 0.25,
+                 limit_entry_bars: Optional[int] = None,
+                 cost_maker_pct: float = 0.02):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
@@ -2020,6 +2022,15 @@ class BacktestEngine:
         # ücret/R patlaması; swing stop hem yapısal hem ücret-dostu.
         self.swing_stop_1h      = swing_stop_1h
         self.swing_stop_buf_atr = swing_stop_buf_atr
+        # ── LİMİT GİRİŞ MODU (maker) ─────────────────────────────────────────
+        # limit_entry_bars=W: sinyalde market yerine LİMİT emir konur —
+        # fiyat sinyal barı kapanışının SPREAD kadar lehte tarafına yazılır
+        # (bull: C−spread → bid tarafı). Sonraki W bar içinde fiyat limite
+        # DEĞERSE dolum (giriş=limit fiyatı, maker komisyonu, spread/slip yok);
+        # değmezse sinyal KAÇAR (limit_missed sayacı). Çıkışlar (SL/TP)
+        # taker kalır (borsa-taraflı koşullu emirler market tetiklenir).
+        self.limit_entry_bars = limit_entry_bars
+        self.cost_maker_pct   = cost_maker_pct
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -2068,6 +2079,12 @@ class BacktestEngine:
             return 0.0
         qty = t.risk_dollar / max(t.risk, 1e-9)      # etkin oz büyüklüğü
         ep  = t.exit_price if t.exit_price is not None else t.entry_price
+        if self.limit_entry_bars:
+            # maker giriş: komisyon maker%, spread/slippage YOK (limit dolumu);
+            # çıkış: taker% + slippage (SL/TP koşullu emirleri market tetiklenir)
+            return (self.cost_maker_pct / 100.0 * qty * t.entry_price
+                    + self.cost_commission_pct / 100.0 * qty * ep
+                    + qty * self.cost_slippage_usd)
         return (qty * (self.cost_spread_usd + 2.0 * self.cost_slippage_usd)
                 + self.cost_commission_pct / 100.0 * qty * (t.entry_price + ep))
 
@@ -2077,14 +2094,17 @@ class BacktestEngine:
                           mit1_bull=None, mit1_bear=None,
                           fvg1_eng=None,
                           H1=None, L1=None, ATR1=None,
-                          T1: Optional[np.ndarray] = None) -> Optional[Trade]:
+                          T1: Optional[np.ndarray] = None,
+                          entry_override: Optional[float] = None) -> Optional[Trade]:
         """
         Entry trade nesnesi oluşturur.
         Alt sınıflar bunu override ederek dinamik TP vs. uygulayabilir.
         H1/L1/ATR1/T1: EqualLiquidityFinder kullanan alt sınıflar için geçirilir.
         T1: float timestamp array (np.array([t.timestamp() for t in df1.index])).
+        entry_override: LİMİT dolumu — giriş O[idx+1] yerine limit fiyatı.
         """
-        entry = float(O[idx + 1])
+        entry = (float(O[idx + 1]) if entry_override is None
+                 else float(entry_override))
         stop_price  = signal.stop_price
         tp_override = None
         rr_eff      = self.risk.rr
@@ -2244,7 +2264,9 @@ class BacktestEngine:
 
         print(f"\n  Sinyaller taranıyor... ({len(bt_idx)} mum | {bs.date()} sonrası)\n")
 
-        dbg = dict(no_bias=0, no_signal=0, risk_fail=0, generated=0, harmonic=0)
+        dbg = dict(no_bias=0, no_signal=0, risk_fail=0, generated=0, harmonic=0,
+                   limit_filled=0, limit_missed=0)
+        pending_limit: Optional[dict] = None   # bekleyen limit emri
 
         trades: List[Trade] = []
         trade_id             = 0
@@ -2366,6 +2388,49 @@ class BacktestEngine:
                     else:
                         active_prz = None
 
+            # ── Bekleyen LİMİT emri: dolum / iptal ──────────────────────
+            if pending_limit is not None:
+                pl = pending_limit
+                d_ = pl['signal'].direction
+                touched = (float(L[idx]) <= pl['limit'] if d_ == 'bull'
+                           else float(H[idx]) >= pl['limit'])
+                slot_free = (active_prz is None if pl['is_prz']
+                             else active_fvg is None)
+                if touched and slot_free:
+                    trade_id += 1
+                    t_new = self._make_entry_trade(
+                        signal=pl['signal'], idx=idx, O=O, equity=equity,
+                        trade_id=trade_id,
+                        fvg1_bull=fvg1_bull, fvg1_bear=fvg1_bear,
+                        mit1_bull=mit1_bull, mit1_bear=mit1_bear,
+                        fvg1_eng=fvg1_eng, H1=H1, L1=L1, ATR1=atr1, T1=t1_ts,
+                        entry_override=pl['limit'])
+                    if t_new is None:
+                        trade_id -= 1
+                        dbg['risk_fail'] += 1
+                    else:
+                        dbg['generated'] += 1
+                        dbg['limit_filled'] += 1
+                        if pl['is_prz']:
+                            active_prz = t_new
+                        else:
+                            active_fvg = t_new
+                        # Dolum barında aynı-bar SL/TP kontrolü (kötümser
+                        # kural _process_exit içinde: SL öncelikli)
+                        exited, delta = _process_exit(t_new)
+                        equity += delta
+                        if exited:
+                            t_new.equity_after = round(equity, 2)
+                            trades.append(t_new)
+                            if pl['is_prz']:
+                                active_prz = None
+                            else:
+                                active_fvg = None
+                    pending_limit = None
+                elif idx >= pl['expire']:
+                    dbg['limit_missed'] += 1        # fiyat dönmedi → sinyal kaçtı
+                    pending_limit = None
+
             # İki slot da doluysa sinyal arama
             if active_fvg is not None and active_prz is not None:
                 continue
@@ -2430,6 +2495,17 @@ class BacktestEngine:
             if not is_prz and active_fvg is not None:
                 continue   # FVG slot dolu; PRZ slot serbest ama FVG sinyali geldi
 
+            # ── LİMİT modu: market yerine bekleyen limit emri kur ────────
+            if self.limit_entry_bars:
+                if pending_limit is None:
+                    lim = (float(C[idx]) - self.cost_spread_usd
+                           if signal.direction == 'bull'
+                           else float(C[idx]) + self.cost_spread_usd)
+                    pending_limit = dict(signal=signal, limit=round(lim, 2),
+                                         expire=idx + self.limit_entry_bars,
+                                         is_prz=is_prz)
+                continue
+
             # Entry trade oluştur (alt sınıflar _make_entry_trade override eder)
             trade_id += 1
             new_trade = self._make_entry_trade(
@@ -2481,6 +2557,11 @@ class BacktestEngine:
         print(f"    Risk filtresi      : {dbg['risk_fail']:>6}")
         print(f"    Üretilen sinyaller : {dbg['generated']:>6}")
         print(f"      └─ Harmonik PRZ POI (senaryo-2)  : {dbg['harmonic']:>6}")
+        if self.limit_entry_bars:
+            tot_lim = dbg['limit_filled'] + dbg['limit_missed']
+            fr = dbg['limit_filled'] / tot_lim * 100 if tot_lim else 0.0
+            print(f"    LİMİT emirler      : {dbg['limit_filled']} doldu / "
+                  f"{dbg['limit_missed']} kaçtı  (doluş %{fr:.0f})")
         print(f"\n  TOPLAM İŞLEM: {len(trades)}")
         return trades
 

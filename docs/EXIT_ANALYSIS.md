@@ -155,3 +155,37 @@ trader AYNI statik fonksiyonu kullanır (`BacktestEngine.swing_stop_price`).
 london 6/+1542 | qwe 59/+1333 → **TOPLAM +9454/yıl (~%95)**.
 Taker %0.05 dünyasında: fvg +3017 ✓, london +1121 ✓, qwe ~+90, threevol
 −2344 ✗ (yalnız düşük ücretle çalıştırılmalı).
+
+## EK — LİMİT (maker) GİRİŞ modu ve gerçek-maliyet varsayılanı (2026-07)
+
+**Yeni motor yeteneği `limit_entry_bars=W`:** sinyalde market yerine LİMİT
+emir — fiyat sinyal kapanışının SPREAD kadar lehte tarafına yazılır (bull:
+C−spread = bid). Sonraki W bar içinde fiyat limite değerse dolum (giriş =
+limit fiyatı, maker %0.02, spread/slip yok); değmezse sinyal KAÇAR
+(doluş oranı raporlanır — dürüst modelleme). Çıkışlar taker kalır (SL/TP
+koşullu emirleri market tetiklenir). Canlı bot birebir: place_limit_order +
+pending yaşam döngüsü (doldu → aktif; W bar dolmadı → iptal).
+
+**Grid (maliyetli, %1 risk, IS/OOS):**
+- fvg(swing): market +3017 → **limit W=3: +3124** (PF 1.79, doluş %88) → KABUL
+- threevol: market −2344 → **limit W=3: −21 (başabaş)**, OOS +345 → KABUL
+  (en iyi maliyetli varyantı; yine de taker dünyasında kâr merkezi değil)
+- W=6, W=3'ten kötü (geç dolumlar kalitesiz).
+- Maliyetsiz dünyada market hâlâ önde (fvg 4332 vs 3696) — kaçan işlemler;
+  limit modunun amacı gerçek-maliyet dünyasıdır.
+
+**Config artık GERÇEK-MALİYET varsayılanlı:** costs = spread 0.30 /
+slippage 0.05 / taker %0.05 / maker %0.02. Kanonik tablo bundan böyle
+maliyetlidir:
+
+| Preset | N | WR | PnL (maliyetli) | PF | DD |
+|---|---|---|---|---|---|
+| fvg swing+limit W3 | 65 | %50.8 | **+3124** | 1.79 | %6.4 |
+| london private w6 | 6 | %66.7 | **+1200** | 5.28 | %1.8 |
+| threevol limit W3 | 84 | %34.5 | −21 (başabaş) | 1.00 | %9.2 |
+| qwe | 59 | %45.8 | −27 (başabaş) | 0.99 | %7.2 |
+| **toplam** | 214 | | **+4276/yıl (~%43, gerçek ücretlerle)** | | |
+
+Kâr merkezleri: **fvg + london**. threevol/qwe gerçek taker ücretlerinde
+başabaş — portföyde tutulmaları nötr; ücret kademesi düşerse artıya geçerler
+(maliyetsiz: threevol +2247, qwe +1333).
