@@ -4,3 +4,7 @@ live_state.json
 
 # Teşhis raporu çıktıları (run_diagnostics_report.py ile üretilir)
 reports/diagnostics/
+
+# Zip içinde tutulan büyük 5m/15m CSV (5m-15m.zip); çıkarılınca izlenmez
+xauusd_5m.csv
+xauusd_15m.csv
