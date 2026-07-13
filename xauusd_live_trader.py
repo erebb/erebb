@@ -1390,6 +1390,18 @@ class LiveTrader:
                         continue
 
                     if self.strategy == 'threevol':
+                        # Rejim kapısı: volatilite tabanı (nedensel — dünün
+                        # verisiyle; backtest RegimeEngine ile birebir)
+                        from config import get_config as _gc
+                        from xauusd_fvg_engine_v10 import RegimeEngine
+                        vf = float(_gc().get('threevol', 'vol_floor',
+                                             default=0.0))
+                        if vf > 0:
+                            vnow = RegimeEngine.daily_vol_pct(df_1h).iloc[-1]
+                            if pd.notna(vnow) and vnow < vf:
+                                print(f"  Rejim: UYKU — günlük vol "
+                                      f"{vnow:.2f} < taban {vf} (3VOL bekliyor)")
+                                continue
                         ctx = self._run_all_detections(df_5m, df_1h)
                         brain3 = ThreeVolBrain(bias_provider=None)
                         signal = self._find_signal(ctx, brain3)

@@ -173,7 +173,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
         PrivateBiasProvider, ThreeVolBrain,
         LondonReversalBrain, LondonBacktestEngine,
-        QweBrain, QweBacktestEngine,
+        QweBrain, QweBacktestEngine, RegimeEngine,
     )
     from config import get_config
 
@@ -216,6 +216,13 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                                             default=0.01)),
     )
 
+    # Rejim kapısı (meta-katman): threevol volatilite tabanı — düşük-vol
+    # rejimde uyku (config threevol.vol_floor; 0 = kapalı)
+    vol_floor = float(cfg.get("threevol", "vol_floor", default=0.0))
+    gate_3v = (RegimeEngine.to_gate(
+                   RegimeEngine.daily_vol_pct(df_1h) >= vol_floor, df_5m)
+               if vol_floor > 0 else None)
+
     for strat in strategies:
         p = presets[strat]
         p_rr, p_be = rr_map.get(p["rr"], (2.0, None))
@@ -223,6 +230,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         common_kw  = dict(blackout_hours=p.get("blackout") or None,
                           swing_stop_1h=bool(p.get("swing_stop", False)),
                           limit_entry_bars=p.get("limit_bars"),
+                          entry_gate=(gate_3v if strat == "threevol" else None),
                           **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"

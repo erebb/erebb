@@ -46,7 +46,8 @@
     ],
     "swing_stop": false,
     "entry_order": "limit",
-    "limit_entry_bars": 3
+    "limit_entry_bars": 3,
+    "vol_floor": 0.9
   },
   "costs": {
     "spread_usd": 0.3,

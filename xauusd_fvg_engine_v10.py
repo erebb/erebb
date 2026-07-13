@@ -1711,6 +1711,70 @@ class MarketBrain:
 # BÖLÜM 6: RİSK YÖNETİCİSİ
 # ═══════════════════════════════════════════════════════════════════════════
 
+class RegimeEngine:
+    """Piyasa 'hava durumu' metrikleri — hepsi NEDENSEL: gün D'nin değeri
+    yalnız D-1 ve öncesindeki TAMAMLANMIŞ günlerden hesaplanır (shift 1 gün);
+    5M barlarına gün bazında eşlenir. Meta-katman (entry_gate) bu dizilerle
+    stratejileri rejime göre uyutur/uyandırır."""
+
+    @staticmethod
+    def _daily(df_1h: pd.DataFrame) -> pd.DataFrame:
+        ts = pd.to_datetime(df_1h.index)
+        if ts.tz is not None:
+            ts = ts.tz_localize(None)
+        d = df_1h.copy(); d.index = ts
+        return d.resample('D').agg({'Open': 'first', 'High': 'max',
+                                    'Low': 'min', 'Close': 'last'}).dropna()
+
+    @staticmethod
+    def daily_vol_pct(df_1h: pd.DataFrame, window: int = 20) -> pd.Series:
+        """Günlük getiri std'si (%), son `window` gün, 1 gün gecikmeli."""
+        dd = RegimeEngine._daily(df_1h)
+        ret = dd['Close'].pct_change()
+        return (ret.rolling(window).std() * 100).shift(1)
+
+    @staticmethod
+    def adx_daily(df_1h: pd.DataFrame, period: int = 14) -> pd.Series:
+        """Klasik Wilder ADX (günlük), 1 gün gecikmeli."""
+        dd = RegimeEngine._daily(df_1h)
+        h, l, c = dd['High'], dd['Low'], dd['Close']
+        up, dn = h.diff(), -l.diff()
+        plus_dm  = np.where((up > dn) & (up > 0), up, 0.0)
+        minus_dm = np.where((dn > up) & (dn > 0), dn, 0.0)
+        tr = pd.concat([h - l, (h - c.shift()).abs(),
+                        (l - c.shift()).abs()], axis=1).max(axis=1)
+        atr = tr.ewm(alpha=1/period, adjust=False).mean()
+        pdi = 100 * pd.Series(plus_dm, index=dd.index)\
+                  .ewm(alpha=1/period, adjust=False).mean() / atr
+        mdi = 100 * pd.Series(minus_dm, index=dd.index)\
+                  .ewm(alpha=1/period, adjust=False).mean() / atr
+        dx  = 100 * (pdi - mdi).abs() / (pdi + mdi).replace(0, np.nan)
+        return dx.ewm(alpha=1/period, adjust=False).mean().shift(1)
+
+    @staticmethod
+    def bb_squeeze(df_1h: pd.DataFrame, period: int = 20,
+                   look: int = 30, tol: float = 1.10) -> pd.Series:
+        """Bollinger Bant Genişliği sıkışması: BBW, son `look` günün dip
+        bölgesindeyse True (fiyat sıkışıyor). 1 gün gecikmeli."""
+        dd = RegimeEngine._daily(df_1h)
+        c = dd['Close']
+        mid = c.rolling(period).mean(); sd = c.rolling(period).std()
+        bbw = (4 * sd) / mid
+        return (bbw <= bbw.rolling(look).min() * tol).shift(1).fillna(False)
+
+    @staticmethod
+    def to_gate(daily_bool: pd.Series, df_5m: pd.DataFrame) -> np.ndarray:
+        """Günlük bool serisini 5M bar dizisine eşler (gün → o günün barları).
+        NaN/eksik gün = kapı AÇIK (filtre veri yetersizse karışmaz)."""
+        ts5 = pd.to_datetime(df_5m.index)
+        if ts5.tz is not None:
+            ts5 = ts5.tz_localize(None)
+        days = ts5.normalize()
+        m = daily_bool.reindex(days.unique())
+        mapped = pd.Series(days).map(m)
+        return mapped.fillna(True).values.astype(bool)
+
+
 class RiskManager:
     """
     MSB-tabanlı SL (stop fiyatı dışarıdan gelir), 1:2 RR TP ve
@@ -1989,7 +2053,8 @@ class BacktestEngine:
                  swing_stop_1h: bool = False,
                  swing_stop_buf_atr: float = 0.25,
                  limit_entry_bars: Optional[int] = None,
-                 cost_maker_pct: float = 0.02):
+                 cost_maker_pct: float = 0.02,
+                 entry_gate: Optional[np.ndarray] = None):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
@@ -2031,6 +2096,9 @@ class BacktestEngine:
         # taker kalır (borsa-taraflı koşullu emirler market tetiklenir).
         self.limit_entry_bars = limit_entry_bars
         self.cost_maker_pct   = cost_maker_pct
+        # entry_gate: 5M bar bazlı rejim kapısı (RegimeEngine ile üretilir).
+        # False olan barlarda YENİ giriş sinyali alınmaz (açık işlem etkilenmez).
+        self.entry_gate = entry_gate
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -2479,6 +2547,11 @@ class BacktestEngine:
                     if not ok:
                         dbg['no_signal'] += 1
                         continue
+
+            # ── Rejim kapısı (meta-katman): uygun olmayan rejimde giriş yok ─
+            if self.entry_gate is not None and not bool(self.entry_gate[idx]):
+                dbg['no_signal'] += 1
+                continue
 
             # ── Saat karartması (blackout): bu UTC saatlerinde giriş yok ────
             if self.blackout_hours:

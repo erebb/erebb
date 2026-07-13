@@ -189,3 +189,29 @@ maliyetlidir:
 Kâr merkezleri: **fvg + london**. threevol/qwe gerçek taker ücretlerinde
 başabaş — portföyde tutulmaları nötr; ücret kademesi düşerse artıya geçerler
 (maliyetsiz: threevol +2247, qwe +1333).
+
+## EK — REJİM META-KATMANI (RegimeEngine + entry_gate, 2026-07)
+
+Kullanıcının strateji-karakter analizi ("ThreeVol kaos avcısı / QWE salınım
+taşıyıcısı") üzerine motora genel **rejim kapısı** eklendi:
+- `RegimeEngine`: nedensel günlük metrikler (20g getiri-vol %, Wilder ADX,
+  BB genişliği sıkışması) — hepsi 1 gün gecikmeli, dünün verisiyle.
+- `entry_gate` (engine): False barlarda yeni giriş yok (açık işlem etkilenmez).
+
+**Grid hükümleri (tek tek + kombinasyon, IS/OOS, maliyetli):**
+- threevol `vol_floor`: **KABUL — 0.9** (IS +267 / OOS +367 / FULL **+634**,
+  PF 1.23; başabaştan gerçek kâra). Eşik platosu 0.8–0.9 sağlam (0.8: +600).
+  Kullanıcının volatilite-tabanı hipotezi mekanik olarak doğrulandı.
+- threevol ADX<40 kapısı tek başına da sağ kaldı (+496) ama floor'dan zayıf;
+  kombinasyon (+512) aşırı-filtreleme → yalnız vol_floor preset'e girdi.
+- threevol US-seans/haber-saati whitelist: **RED** (OOS −145).
+- QWE vol tavanı (1.8/2.0), squeeze-off, bant filtresi: **hepsi RED** —
+  OOS'ta base'den kötü; squeeze hiçbir işleme dokunmadı (aylık anlatı,
+  işlem-bazlı gerçekle örtüşmedi). QWE değişmedi.
+
+Canlı parite: threevol tick'te aynı RegimeEngine ile vol tabanını kontrol
+eder; düşük-vol rejimde "UYKU" loglayıp sinyal aramaz.
+
+**Nihai (gerçek maliyetli, %1):** fvg 65/+3124 · threevol 52/**+634** ·
+london 6/+1200 · qwe 59/−27 → **TOPLAM +4931/yıl (~%49)** (önceki +4276).
+Tek ortak kasada bileşik: 10k → ~15.3k (1 yıl).
