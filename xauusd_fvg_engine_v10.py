@@ -1310,6 +1310,9 @@ class FVGEngine:
         _tf_map = {'1h': pd.Timedelta(hours=1), '5m': pd.Timedelta(minutes=5),
                    '15m': pd.Timedelta(minutes=15), '1d': pd.Timedelta(days=1)}
         self._detect_offset = _tf_map.get(timeframe, pd.Timedelta(minutes=5))
+        # get_active hızlandırması için FVG listesi başına önhesap önbelleği
+        # (detect zamanları int64 + sıralı). Çıktı değişmez; yalnız performans.
+        self._active_cache: Dict[int, tuple] = {}
 
     def detect(self, df: pd.DataFrame, direction: str,
                atr_series: pd.Series = None) -> List[FVG]:
@@ -1362,50 +1365,82 @@ class FVGEngine:
 
     def build_mitigation_map(self, df: pd.DataFrame,
                               fvg_list: List[FVG]) -> Dict[int, Optional[Any]]:
-        """Her FVG'nin ne zaman mitigasyon yaşadığını ön hesapla."""
+        """Her FVG'nin ne zaman mitigasyon yaşadığını ön hesapla.
+
+        Vektörleştirilmiş: start_i için lineer tarama yerine searchsorted,
+        tüketim için Python döngüsü yerine boolean argmax. Çıktı ESKİ
+        implementasyonla birebir aynı (T sıralı ve tz'siz; searchsorted-left
+        = 'ilk T[j] >= fvg_time', argmax = 'ilk True'). 5 yıllık veride O(n²)
+        Python döngüsü saatler alıyordu; bu saf performans düzeltmesidir."""
         C = df['Close'].values.astype(float)
         T = df.index
         n = len(df)
+        # T tz'siz ve sıralı → ns-epoch int64 (birim normalize; _naive_i8 ile aynı)
+        T_i8 = T.values.astype('datetime64[ns]').astype(np.int64)
         mit_map: Dict[int, Optional[Any]] = {}
 
         for fvg in fvg_list:
             fvg_time = to_naive(fvg.detect_time)
-            start_i  = next((j for j in range(n)
-                             if to_naive(T[j]) >= fvg_time), None)
-            if start_i is None:
+            ft_i8 = np.datetime64(fvg_time).astype('datetime64[ns]').astype(np.int64)
+            # ilk j: to_naive(T[j]) >= fvg_time  (eski next(...) ile aynı)
+            start_i = int(np.searchsorted(T_i8, ft_i8, side='left'))
+            if start_i >= n:
                 mit_map[fvg.fvg_id] = None
                 continue
 
-            mit_map[fvg.fvg_id] = None
-            for j in range(start_i, n):
-                c = C[j]
-                # KULLANIM KURALI: bir mum FVG'nin İÇİNE (proksimal kenardan)
-                # kapanırsa FVG tüketilir → artık işlem alınmaz.
-                #   Bull: proksimal=top  → close <= top   (gap'e girdi/aştı)
-                #   Bear: proksimal=bottom → close >= bottom
-                # Tüketim zamanı = mumun KAPANIŞ anı (lookahead engeli).
-                consumed = (c <= fvg.top) if fvg.direction == 'bull' else (c >= fvg.bottom)
-                if consumed:
-                    mit_map[fvg.fvg_id] = to_naive(T[j]) + self._detect_offset
-                    break
+            # KULLANIM KURALI: bir mum FVG'nin İÇİNE (proksimal kenardan)
+            # kapanırsa FVG tüketilir → artık işlem alınmaz.
+            #   Bull: proksimal=top  → close <= top   (gap'e girdi/aştı)
+            #   Bear: proksimal=bottom → close >= bottom
+            # Tüketim zamanı = mumun KAPANIŞ anı (lookahead engeli).
+            sub  = C[start_i:]
+            mask = (sub <= fvg.top) if fvg.direction == 'bull' \
+                else (sub >= fvg.bottom)
+            pos = int(np.argmax(mask))     # ilk True; hiç yoksa 0 döner
+            if mask[pos]:
+                j = start_i + pos
+                mit_map[fvg.fvg_id] = to_naive(T[j]) + self._detect_offset
+            else:
+                mit_map[fvg.fvg_id] = None
 
         return mit_map
 
     def get_active(self, fvg_list: List[FVG],
                    mit_map: Dict[int, Optional[Any]],
                    current_time: Any) -> List[FVG]:
-        """Belirli zamanda aktif (taze, mitigasyon yok) FVG'leri döndür."""
-        t      = to_naive(current_time)
-        cutoff = t - timedelta(hours=self.max_age_hours)
+        """Belirli zamanda aktif (taze, mitigasyon yok) FVG'leri döndür.
+
+        Vektörleştirilmiş: her bar için tüm listeyi to_naive ile gezmek yerine,
+        detect zamanları int64 diziye (önbellek) alınıp ikili aramayla
+        [cutoff, t) penceresi seçilir; yalnız o dilim mit_map ile süzülür.
+        Çıktı ESKİ implementasyonla birebir aynı — listeler detect sırasıyla
+        (artan zaman) kurulduğundan pencere bitişik ve sıra korunur. 5 yıllık
+        veride O(bar × FVG) Python döngüsü darboğazını kaldırır (saf performans)."""
+        if not fvg_list:
+            return []
+        t = to_naive(current_time)
+        key = id(fvg_list)
+        cache = self._active_cache.get(key)
+        if cache is None or cache[2] != len(fvg_list):
+            dets_i8 = np.array(
+                [np.datetime64(to_naive(f.detect_time)).astype('datetime64[ns]')
+                 .astype(np.int64) for f in fvg_list], dtype=np.int64)
+            # detect sırası artan; garanti için stable argsort (eşitte sıra korunur)
+            order = np.argsort(dets_i8, kind='stable')
+            dets_sorted = dets_i8[order]
+            fvgs_sorted = [fvg_list[i] for i in order]
+            cache = (dets_sorted, fvgs_sorted, len(fvg_list))
+            self._active_cache[key] = cache
+        dets_sorted, fvgs_sorted, _ = cache
+
+        t_i8 = np.datetime64(t).astype('datetime64[ns]').astype(np.int64)
+        cutoff_i8 = t_i8 - int(round(self.max_age_hours * 3_600_000_000_000))
+        lo = int(np.searchsorted(dets_sorted, cutoff_i8, side='left'))  # det >= cutoff
+        hi = int(np.searchsorted(dets_sorted, t_i8, side='left'))       # det <  t
         active = []
-        for fvg in fvg_list:
-            det = to_naive(fvg.detect_time)
-            if det >= t:
-                continue                              # lookahead engeli
-            if det < cutoff:
-                continue                              # çok eski
+        for fvg in fvgs_sorted[lo:hi]:
             mit = mit_map.get(fvg.fvg_id)
-            if mit is not None and mit <= t:
+            if mit is not None and to_naive(mit) <= t:
                 continue                              # mitigasyon yapıldı
             active.append(fvg)
         return active
