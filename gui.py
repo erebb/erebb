@@ -163,10 +163,12 @@ def _strategy_presets(cfg) -> dict:
 
 def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                   tbe_label: str = "", emf: bool = False,
-                  capital: float = 10_000.0) -> list[dict]:
+                  capital: float = 10_000.0,
+                  keep_trades: bool = False) -> list[dict]:
     """Backtest çalıştır, satır listesi döndür. TÜM stratejiler config'teki
     SABİT preset'leriyle koşar — bias/rr/tbe/emf argümanları geriye uyum
-    için durur, YOK SAYILIR."""
+    için durur, YOK SAYILIR. keep_trades=True → satıra '_trades' listesi
+    eklenir (scripts/run_full_backtest.py yıllık kırılım için kullanır)."""
     sys.path.insert(0, str(ROOT / "scripts"))
     from xauusd_fvg_engine_v10 import (
         DataEngine, MarketBrain, RiskManager, BacktestEngine,
@@ -288,6 +290,8 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                         "maxdd":  metrics["max_dd"],
                         "ret":    metrics["ret_pct"],
                     })
+                    if keep_trades:
+                        results[-1]["_trades"] = trades
             except Exception as exc:
                 results.append({
                     "strategy": strat, "bias": bias_label, "rr": rr_label,

@@ -12,7 +12,7 @@ AVANTAJ: Dukascopy zaman damgaları GMT/UTC'dir → MT5'teki gibi broker saat
 dilimi düzeltmesi GEREKMEZ; killzone stratejileriyle doğrudan uyumludur.
 
 Kullanım:
-  python3 download_data_dukascopy.py                     # 1 yıl, 5m+15m+1h+4h
+  python3 download_data_dukascopy.py                     # 5 yıl, 5m+15m+1h+4h
   python3 download_data_dukascopy.py --years 2 --excel
   python3 download_data_dukascopy.py --start 2025-01-01 --end 2025-12-31
   python3 download_data_dukascopy.py --intervals 5m,1h
@@ -156,15 +156,15 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Örnekler:
-  python3 download_data_dukascopy.py                    # 1 yıl, 5m+15m+1h+4h
+  python3 download_data_dukascopy.py                    # 5 yıl, 5m+15m+1h+4h
   python3 download_data_dukascopy.py --years 2 --excel
   python3 download_data_dukascopy.py --start 2025-06-01 --intervals 5m,1h
         """,
     )
     parser.add_argument("--symbol", default="XAUUSD",
                         help="Dukascopy enstrüman kodu (varsayılan: XAUUSD)")
-    parser.add_argument("--years", type=float, default=1.0,
-                        help="Kaç YIL geriye (varsayılan: 1)")
+    parser.add_argument("--years", type=float, default=5.0,
+                        help="Kaç YIL geriye (varsayılan: 5)")
     parser.add_argument("--start", default=None,
                         help="Başlangıç YYYY-MM-DD (verilirse --years yok sayılır)")
     parser.add_argument("--end", default=None,

@@ -30,7 +30,7 @@ SAAT DİLİMİ UYARISI (önemli):
   broker'ın sunucu saatini MT5'te Market Watch'tan kontrol edin.
 
 Kullanım (Windows'ta):
-  python download_data_mt5.py                          # XAUUSD, 1 yıl, 5m+15m+1h+4h
+  python download_data_mt5.py                          # XAUUSD, 5 yıl, 5m+15m+1h+4h
   python download_data_mt5.py --years 2 --excel        # 2 yıl + Excel çıktısı
   python download_data_mt5.py --symbol XAUUSD.a        # broker soneki elle
   python download_data_mt5.py --utc-offset 2           # EET(kış) → UTC
@@ -274,7 +274,7 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Örnekler:
-  python download_data_mt5.py                        # 1 yıl, 5m+15m+1h+4h
+  python download_data_mt5.py                        # 5 yıl, 5m+15m+1h+4h
   python download_data_mt5.py --years 2 --excel
   python download_data_mt5.py --symbol XAUUSD.a --utc-offset 2
   python download_data_mt5.py --intervals 5m,1h --start 2025-06-01
@@ -282,8 +282,8 @@ def main() -> None:
     )
     parser.add_argument("--symbol", default=None,
                         help="MT5 sembolü (verilmezse XAUUSD varyantları denenir)")
-    parser.add_argument("--years", type=float, default=1.0,
-                        help="Kaç YIL geriye (varsayılan: 1)")
+    parser.add_argument("--years", type=float, default=5.0,
+                        help="Kaç YIL geriye (varsayılan: 5)")
     parser.add_argument("--start", default=None, help="Başlangıç YYYY-MM-DD "
                         "(verilirse --years yok sayılır)")
     parser.add_argument("--end", default=None, help="Bitiş YYYY-MM-DD (varsayılan: şimdi)")

@@ -33,14 +33,18 @@ sormaz — strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
   qwe (none, kısmi TP). Her işlem eşit risk: kasa × risk_pct (%1).
 - `download_data.py` — BingX/Yahoo veri indirici (7/24 kripto-altın).
 - `download_data_mt5.py` — MetaTrader 5 indirici (**yalnız Windows** + açık MT5
-  terminali): `python download_data_mt5.py --years 1` → 5m/15m/1h/4h CSV (+`--excel`).
+  terminali): `python download_data_mt5.py` → **5 yıl** 5m/15m/1h/4h CSV (+`--excel`;
+  `--years N` ile değiştirilebilir).
   **Broker saati EET ise `--utc-offset 2` (kış) / `3` (yaz) şart** — motor UTC varsayar.
 - `download_data_dukascopy.py` — **macOS/Linux/Windows** indirici (hesap gerekmez):
   Dukascopy 1M mumlarından 5m/15m/1h/4h üretir, zaman damgaları doğal UTC:
-  `python3 download_data_dukascopy.py --years 1 [--excel]`. **Mac kullanıcısı için
-  önerilen yol budur** (MetaTrader5 paketi macOS'ta çalışmaz).
+  `python3 download_data_dukascopy.py [--excel]` (varsayılan **5 yıl**; `--years N`
+  ile değiştirilebilir). **Mac kullanıcısı için önerilen yol budur**
+  (MetaTrader5 paketi macOS'ta çalışmaz).
 - `config/default.json` — tüm strateji/risk/canlı parametreleri (`config.py` yükler).
 - `scripts/run_test_matrix.py`, `scripts/test_london_only.py` — hazır backtest matrisleri.
+- `scripts/run_full_backtest.py` — sabit preset'lerle tam backtest (GUI paritesi;
+  CSV'lerde kaç yıl varsa işler, çok yıllık veride yıl yıl PnL kırılımı yazar).
 - `tests/` — pytest paketi (179 test): `python3 -m pytest tests -q`
 - `docs/CODE_AUDIT.md` — kod denetim raporu.
 
