@@ -572,13 +572,15 @@ class LiveTrader:
                  strategy:      str   = 'fvg'):       # 'fvg' (varsayılan) | 'qwe'
         self.client        = client
         self.strategy      = (strategy if strategy in
-                              ('fvg', 'qwe', 'threevol', 'london') else 'fvg')
+                              ('fvg', 'harmonic', 'qwe', 'threevol', 'london')
+                              else 'fvg')
         # SABİT PRESET'ler (backtest ile birebir):
         #   fvg      : bias none + EMA-MACD + blackout 09-11
+        #   harmonic : fvg iskeleti, yalnız harmonik PRZ POI (poi_mode='prz')
         #   threevol : bias none + EMA-MACD + blackout 09-11 + BE@1R (yazılımsal)
         #   london   : bias PRIVATE (GARCH, otomatik — prompt yok), w6, kısmi TP
         #   qwe      : bias none (swing), kısmi TP
-        if self.strategy in ('qwe', 'fvg', 'threevol', 'london'):
+        if self.strategy in ('qwe', 'fvg', 'harmonic', 'threevol', 'london'):
             bias_provider = None          # london kendi private'ını tick'te kurar
             bias_mode     = 'none'
         # Giriş karartma saatleri (config: <strateji>.blackout_hours)
@@ -1284,6 +1286,8 @@ class LiveTrader:
         strat_desc = {
             'qwe':      'QWE — fib pullback swing (618, 15M onay) [none sabit]',
             'fvg':      'FVG intraday [none+EMA+blackout 09-11 sabit]',
+            'harmonic': 'Harmonik bot — 8 desen PRZ (Gartley/Bat/...) '
+                        '[none+EMA+blackout sabit]',
             'threevol': 'ThreeVol momentum [none+EMA+blackout+BE@1R sabit]',
             'london':   'London Reversal [private(GARCH)+w6 sabit, kısmi TP]',
         }[self.strategy]
@@ -1320,10 +1324,12 @@ class LiveTrader:
             except Exception as e:
                 print(f"  Kaldıraç ayar hatası: {e}")
 
-        # MarketBrain yalnız fvg yolunda gerekir (qwe kendi brain'ini tick
-        # başına taze kurar)
-        brain = (MarketBrain(bias_provider=self.bias_provider)
-                 if self.strategy == 'fvg' else None)
+        # MarketBrain yalnız fvg/harmonic yolunda gerekir (qwe kendi brain'ini
+        # tick başına taze kurar). harmonic = fvg akışı, yalnız PRZ POI.
+        brain = (MarketBrain(bias_provider=self.bias_provider,
+                             poi_mode=('prz' if self.strategy == 'harmonic'
+                                       else 'all'))
+                 if self.strategy in ('fvg', 'harmonic') else None)
         current_bias: Optional[str] = None
 
         print("\n  5M bar kapanışı bekleniyor...\n")
@@ -1509,8 +1515,10 @@ def main() -> None:
         """,
     )
     parser.add_argument(
-        '--strategy', choices=['fvg', 'qwe', 'threevol', 'london'], default=None,
+        '--strategy', choices=['fvg', 'harmonic', 'qwe', 'threevol', 'london'],
+        default=None,
         help="Strateji (hepsi SABİT preset): fvg (none+EMA+blackout) | "
+             "harmonic (yalnız harmonik PRZ, fvg iskeleti) | "
              "qwe (none, swing) | threevol (none+EMA+blackout+BE@1R) | "
              "london (private/GARCH otomatik, kısmi TP)",
     )

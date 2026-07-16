@@ -154,6 +154,18 @@ def _strategy_presets(cfg) -> dict:
                                      if cfg.get("threevol", "entry_order",
                                                 default="market") == "limit"
                                      else None)),
+        "harmonic": dict(bias=cfg.get("harmonic", "bias", default="none"),
+                         rr=str(cfg.get("harmonic", "rr", default="1:2fix")),
+                         emf=bool(cfg.get("harmonic", "ema_filter", default=True)),
+                         blackout=list(cfg.get("harmonic", "blackout_hours",
+                                               default=[]) or []),
+                         swing_stop=bool(cfg.get("harmonic", "swing_stop",
+                                                 default=True)),
+                         limit_bars=(int(cfg.get("harmonic", "limit_entry_bars",
+                                                 default=3))
+                                     if cfg.get("harmonic", "entry_order",
+                                                default="market") == "limit"
+                                     else None)),
         "london":   dict(bias=cfg.get("london_reversal", "bias", default="none"),
                          rr="1:2fix", emf=False, blackout=[]),
         "qwe":      dict(bias=cfg.get("qwe", "bias", default="none"),
@@ -185,7 +197,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
 
     # Strategy modes
     if strategy == "hepsi":
-        strategies = ["fvg", "threevol", "london", "qwe"]
+        strategies = ["fvg", "harmonic", "threevol", "london", "qwe"]
     else:
         strategies = [strategy]
 
@@ -258,6 +270,14 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                         # Three Vol Directional = ThreeVolBrain (doğrudan momentum)
                         engine = BacktestEngine(
                             ThreeVolBrain(bias_provider=bp), risk,
+                            initial_capital=capital, breakeven_at_R=p_be,
+                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            **common_kw)
+                    elif strat == "harmonic":
+                        # Harmonik bot: yalnız harmonik PRZ POI girişleri
+                        # (Gartley/Bat/Butterfly/Crab... → PRZ, MSB+EMA+RSI onaylı)
+                        engine = BacktestEngine(
+                            MarketBrain(bias_provider=bp, poi_mode="prz"), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
                             time_exit_bars=None, ema_macd_filter=p["emf"],
                             **common_kw)
@@ -374,7 +394,8 @@ def backtest_menu() -> None:
     strat_table.add_row(f"[bold {C_YEL}]qwe[/]",      "QWE  (Fib Pullback: BOS+HH + hacim onayı)")
     strat_table.add_row(f"[bold {C_YEL}]hepsi[/]",    "Hepsi  (fvg + threevol + london + qwe)")
     console.print(strat_table)
-    strategy = _pick("Strateji seç", ["fvg","threevol","london","qwe","hepsi"], "fvg")
+    strategy = _pick("Strateji seç",
+                     ["fvg","harmonic","threevol","london","qwe","hepsi"], "fvg")
 
     # ── SABİT PRESET'ler: soru yok — her strateji kendi doğrulanmış
     #    en-kârlı-none konfigürasyonuyla koşar (config'ten) ────────────────
@@ -384,8 +405,8 @@ def backtest_menu() -> None:
                title=f"[bold {C_TEAL}]Sabit Preset'ler[/] [dim](1 yıllık dürüst grid)[/]")
     pt.add_column("Strateji", style=f"bold {C_YEL}")
     pt.add_column("Bias"); pt.add_column("RR"); pt.add_column("EMA-MACD")
-    shown = (["fvg", "threevol", "london", "qwe"] if strategy == "hepsi"
-             else [strategy])
+    shown = (["fvg", "harmonic", "threevol", "london", "qwe"]
+             if strategy == "hepsi" else [strategy])
     for s in shown:
         p = presets[s]
         pt.add_row(s.upper(), f"{p['bias']} (sabit)", p["rr"],

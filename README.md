@@ -9,6 +9,7 @@ giriş bir sonraki barın açılışında yapılır.
 | Strateji | Tarz | Sabit preset | 1 yıl dürüst sonuç |
 |---|---|---|---|
 | `fvg` | Intraday | none + EMA + blackout + **1H swing stop** | 68 işlem, +4332, PF 2.10 |
+| `harmonic` | Intraday | none + EMA + blackout; **yalnız harmonik PRZ** (8 desen: Gartley/Bat/AltBat/Butterfly/Crab/DeepCrab/Shark/Cypher) | fvg'den ayrıştırıldı — kendi sonucu için `scripts/run_full_backtest.py --strategy harmonic` |
 | `threevol` | Intraday | none + EMA + 1:2be + blackout 09-11 | 94 işlem, +2247, PF 1.60 |
 | `london` | Intraday | private, immediate, w6 (~06:00) | 6 işlem, +756, PF 8.29 |
 | `qwe` | Swing | none, 618 Golden Zone, 15M onay | 59 işlem, +661, PF 1.39 |

@@ -33,7 +33,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(
         description="Sabit preset'lerle tam backtest (GUI paritesi, çok yıllık)")
     parser.add_argument("--strategy", default="hepsi",
-                        choices=["hepsi", "fvg", "threevol", "london", "qwe"])
+                        choices=["hepsi", "fvg", "harmonic", "threevol",
+                                 "london", "qwe"])
     parser.add_argument("--capital", type=float, default=10_000.0)
     args = parser.parse_args()
 

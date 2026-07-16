@@ -35,6 +35,19 @@
     "entry_order": "limit",
     "limit_entry_bars": 3
   },
+  "harmonic": {
+    "bias": "none",
+    "rr": "1:2fix",
+    "ema_filter": true,
+    "blackout_hours": [
+      9,
+      10,
+      11
+    ],
+    "swing_stop": true,
+    "entry_order": "limit",
+    "limit_entry_bars": 3
+  },
   "threevol": {
     "bias": "none",
     "rr": "1:2be",

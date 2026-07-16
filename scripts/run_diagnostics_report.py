@@ -55,8 +55,9 @@ sys.path.insert(0, str(ROOT / "scripts"))
 
 OUT_DIR = ROOT / "reports" / "diagnostics"
 
-STRATS = ["fvg", "threevol", "london", "qwe"]
-RR_PRESET = {"fvg": (2.0, None), "threevol": (2.0, 1.0),
+STRATS = ["fvg", "harmonic", "threevol", "london", "qwe"]
+RR_PRESET = {"fvg": (2.0, None), "harmonic": (2.0, None),
+             "threevol": (2.0, 1.0),
              "london": (2.0, None), "qwe": (2.0, None)}
 DOW_TR = ["Pazartesi", "Salı", "Çarşamba", "Perşembe", "Cuma", "Cumartesi", "Pazar"]
 
@@ -657,7 +658,7 @@ def sec_execution(sig_cache: dict, cfg, shadow: Shadow) -> str:
             "kapanışı ∓ spread) 5M veride ileri taranır. Dolmayan sinyalin "
             "<b>market girilseydi</b> motorun ürettiği gerçek PnL'i = fırsat "
             "maliyeti.</p>"]
-    for s in ("fvg", "threevol"):
+    for s in ("fvg", "harmonic", "threevol"):
         if s not in sig_cache:
             continue
         sigs = sig_cache[s]
@@ -713,7 +714,7 @@ def sec_w_sweep(sig_cache: dict, cfg, capital: float, shadow: Shadow) -> str:
             "limit-mod motor koşusundan; doluş oranı market sinyallerinden "
             "yeniden kurulur.</p>"]
     rows_out = []
-    for s in ("fvg", "threevol"):
+    for s in ("fvg", "harmonic", "threevol"):
         orig = cfg.get(s, "limit_entry_bars", default=3)
         sigs = sig_cache.get(s, [])
         for W in (2, 3, 4, 5):
@@ -1002,7 +1003,7 @@ def main() -> None:
         cost_maker_pct=costs["maker_pct"],
         uniform_risk_fraction=float(cfg.get("risk", "risk_fraction",
                                             default=0.01)))
-    limit_strats = {s for s in ("fvg", "threevol")
+    limit_strats = {s for s in ("fvg", "harmonic", "threevol")
                     if cfg.get(s, "entry_order", default="market") == "limit"}
 
     print("Temel koşu: 4 strateji (sabit preset'ler)...")
@@ -1026,7 +1027,7 @@ def main() -> None:
     sig_cache = {}
     if not args.fast:
         print("Market-mod sinyalleri toplanıyor (fvg/threevol/london)...")
-        for s in ("fvg", "threevol", "london"):
+        for s in ("fvg", "harmonic", "threevol", "london"):
             sigs, _ = collect_signals(s, cfg, args.capital, shadow,
                                       costs["spread_usd"])
             sig_cache[s] = sigs
