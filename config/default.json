@@ -36,7 +36,8 @@
     "limit_entry_bars": 3,
     "min_stop_pct": 0.6,
     "daily_trend_filter": true,
-    "daily_trend_sma": 200
+    "daily_trend_sma": 200,
+    "enabled": true
   },
   "harmonic": {
     "bias": "none",
@@ -52,7 +53,8 @@
     "limit_entry_bars": 3,
     "min_stop_pct": 0.6,
     "daily_trend_filter": true,
-    "daily_trend_sma": 200
+    "daily_trend_sma": 200,
+    "enabled": true
   },
   "threevol": {
     "bias": "none",
@@ -69,7 +71,8 @@
     "vol_floor": 0.9,
     "min_stop_pct": 0.6,
     "daily_trend_filter": true,
-    "daily_trend_sma": 200
+    "daily_trend_sma": 200,
+    "enabled": false
   },
   "costs": {
     "spread_usd": 0.3,
@@ -107,7 +110,8 @@
     "ote_max": 0.79,
     "min_stop_pct": 0.6,
     "daily_trend_filter": true,
-    "daily_trend_sma": 200
+    "daily_trend_sma": 200,
+    "enabled": false
   },
   "qwe": {
     "entry_level": "618",
@@ -132,7 +136,8 @@
     "ema4h_slow": 50,
     "min_stop_pct": 0.6,
     "daily_trend_filter": true,
-    "daily_trend_sma": 200
+    "daily_trend_sma": 200,
+    "enabled": false
   },
   "paths": {
     "csv_5m": "xauusd_5m.csv",

@@ -196,8 +196,13 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
     rr_map = {"1:1": (1.0, None), "1:2be": (2.0, 1.0), "1:2fix": (2.0, None)}
 
     # Strategy modes
+    # "hepsi" = 5 yıllık IS/OOS elemesinden GEÇEN stratejiler (config: enabled).
+    # Elenenler (threevol/london/qwe) tek tek seçilerek yine koşulabilir.
+    _sec = {"fvg": "fvg", "harmonic": "harmonic", "threevol": "threevol",
+            "london": "london_reversal", "qwe": "qwe"}
     if strategy == "hepsi":
-        strategies = ["fvg", "harmonic", "threevol", "london", "qwe"]
+        strategies = [s for s in ["fvg", "harmonic", "threevol", "london", "qwe"]
+                      if bool(cfg.get(_sec[s], "enabled", default=True))]
     else:
         strategies = [strategy]
 
@@ -425,7 +430,10 @@ def backtest_menu() -> None:
                title=f"[bold {C_TEAL}]Sabit Preset'ler[/] [dim](1 yıllık dürüst grid)[/]")
     pt.add_column("Strateji", style=f"bold {C_YEL}")
     pt.add_column("Bias"); pt.add_column("RR"); pt.add_column("EMA-MACD")
-    shown = (["fvg", "harmonic", "threevol", "london", "qwe"]
+    _sec_map = {"fvg": "fvg", "harmonic": "harmonic", "threevol": "threevol",
+                "london": "london_reversal", "qwe": "qwe"}
+    shown = ([s for s in ["fvg", "harmonic", "threevol", "london", "qwe"]
+              if bool(cfg.get(_sec_map[s], "enabled", default=True))]
              if strategy == "hepsi" else [strategy])
     for s in shown:
         p = presets[s]

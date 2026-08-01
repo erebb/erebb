@@ -4,23 +4,49 @@ XAUUSD (altın) için çoklu-strateji backtest motoru + canlı trading botu.
 Tüm stratejiler lookahead-bias korumalıdır: sinyal bar kapanışında üretilir,
 giriş bir sonraki barın açılışında yapılır.
 
+## İki yapısal kural (5 yıllık analizin çekirdeği)
+
+Sistemin tamamı şu iki kurala dayanır — ikisi de gerçek BingX ücretleriyle
+5 yıllık veride IS/OOS ayrımıyla doğrulandı:
+
+1. **`min_stop_pct = 0.6`** — stop mesafesi giriş fiyatının %0.6'sından darsa
+   sinyal reddedilir. Gerekçe fiziksel: ücret notional ile, risk stop
+   mesafesiyle orantılıdır →
+   **`ücret_R ≈ (maker% + taker%) × fiyat / stop_mesafesi`**.
+   Ölçüm (861 işlem): stop <%0.2 kovası **net −0.40R/işlem**, stop >%0.6
+   kovası **net +0.05R/işlem** — brüt edge her kovada benzer, farkı ücret
+   yaratıyor.
+2. **`daily_trend_filter` (SMA200)** — sinyal yönü günlük makro trendle
+   uyuşmalı; SMA ısınmasında (veri yetersiz) giriş yok. Ana trende karşı
+   işlem alınmaz.
+
+Etki (fvg+harmonic, 5 yıl, gerçek maliyet, her işlemde %1 risk):
+
+| | N | PF | IS | OOS | Pozitif yıl |
+|---|---|---|---|---|---|
+| Filtresiz (eski) | 861 | 0.87 | − | + | 1/6 |
+| **İki kuralla** | **167** | **1.51** | **+** | **+** | **5/5** |
+
+Aşırı-uyum değil: stop eşiği **%0.4–1.0 arası her değerde** ve SMA periyodu
+**100/150/200/250 hepsinde** IS+OOS pozitif (geniş plato + mekanizma ücret
+formülüyle açıklanıyor).
+
 ## Stratejiler
 
-| Strateji | Tarz | Sabit preset | 1 yıl dürüst sonuç |
+5 yıllık IS/OOS elemesinden **ikisi geçti** (config `enabled`); elenenler kodda
+kalır ve tek tek seçilerek koşulabilir, ama `hepsi` ve canlı varsayılanına
+girmez.
+
+| Strateji | Durum | Tarz | 5 yıl (gerçek maliyet, %1 risk) |
 |---|---|---|---|
-| `fvg` | Intraday | none + EMA + blackout + **1H swing stop** | 68 işlem, +4332, PF 2.10 |
-| `harmonic` | Intraday | none + EMA + blackout; **yalnız harmonik PRZ** (8 desen: Gartley/Bat/AltBat/Butterfly/Crab/DeepCrab/Shark/Cypher) | fvg'den ayrıştırıldı — kendi sonucu için `scripts/run_full_backtest.py --strategy harmonic` |
-| `threevol` | Intraday | none + EMA + 1:2be + blackout 09-11 | 94 işlem, +2247, PF 1.60 |
-| `london` | Intraday | private, immediate, w6 (~06:00) | 6 işlem, +756, PF 8.29 |
-| `qwe` | Swing | none, 618 Golden Zone, 15M onay | 59 işlem, +661, PF 1.39 |
+| `fvg` | ✅ **aktif** | Intraday, none+EMA+blackout+1H swing stop | 111 işlem, **+4.204$**, PF 1.57, DD %6.3 |
+| `harmonic` | ✅ **aktif** | 8 harmonik desen PRZ (Gartley/Bat/AltBat/Butterfly/Crab/DeepCrab/Shark/Cypher) | 56 işlem, **+1.157$**, PF 1.32 |
+| `threevol` | ❌ elendi | ThreeVol momentum | swing stop'la 51 işlem +430$ ama **IS −264** (OOS'ta değil IS'te çürük) |
+| `london` | ❌ elendi | London Reversal | stopları yapısal olarak %0.14 → ücret kapısını hiç geçemiyor (**0 işlem**) |
+| `qwe` | ❌ elendi | Fib pullback swing | −628$, PF 0.56, IS ve OOS ikisi de negatif |
 
-İşlem maliyeti modeli config `costs` bölümünden açılır (spread/slippage/komisyon;
-varsayılan 0). Uyarı: %0.05 taker + 0.30$ spread ile dar-stoplu fvg/threevol
-zarardadır — canlıda düşük ücretli hesap şarttır (bkz. docs/EXIT_ANALYSIS.md).
-
-**Tüm stratejiler SABİT preset'le koşar** (config'ten; en kârlı none
-konfigürasyonları, 1 yıllık lookahead'siz grid ile seçildi). GUI parametre
-sormaz — strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
+**Tüm stratejiler SABİT preset'le koşar** (config'ten). GUI parametre sormaz —
+strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
 
 ## Dosyalar
 

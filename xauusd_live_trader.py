@@ -949,6 +949,10 @@ class LiveTrader:
         yarım market'ten kapatılır; borsa SL'i felaket-stopu olarak kalır).
         """
         entry = last_close
+        # Backtest paritesi: dar-stop reddi + makro trend kapısı (config)
+        if self._stop_too_tight(entry, signal.stop_price) \
+                or self._trend_blocks(signal.direction):
+            return
         tp2   = signal.tp_hint
         tp1v  = signal.tp1_hint
         r = self.risk_mgr.compute(signal.direction, entry, signal.stop_price,
@@ -1081,10 +1085,63 @@ class LiveTrader:
         except Exception as e:
             print(f"  swing-stop hesabı atlandı: {e}")
 
+    def _cfg_section(self) -> str:
+        return ('london_reversal' if self.strategy == 'london'
+                else self.strategy)
+
+    def _stop_too_tight(self, entry: float, stop_price: float) -> bool:
+        """min_stop_pct kapısı — backtest BacktestEngine._reject_tight_stop ile
+        AYNI kural. Ücret notional ile orantılı olduğundan dar stop edge'i yer:
+        ücret_R ≈ (maker%+taker%) × fiyat / stop_mesafesi."""
+        try:
+            from config import get_config
+            mp = float(get_config().get(self._cfg_section(), 'min_stop_pct',
+                                        default=0.0) or 0.0)
+        except Exception:
+            return False
+        if mp <= 0:
+            return False
+        too_tight = abs(entry - stop_price) < (mp / 100.0) * abs(entry)
+        if too_tight:
+            print(f"  Stop çok dar ({abs(entry-stop_price):.2f}$ < "
+                  f"%{mp} × {entry:.2f}) — ücret edge'i yer, işlem atlandı")
+        return too_tight
+
+    def _trend_blocks(self, direction: str) -> bool:
+        """Makro trend kapısı — backtest trend_gate ile AYNI kural:
+        sinyal yönü günlük SMA(period) trendiyle uyuşmalı; ısınmada giriş yok.
+        1H veri önbelleğini (self._df1h_cache) kullanır."""
+        try:
+            from config import get_config
+            sec = self._cfg_section()
+            if not bool(get_config().get(sec, 'daily_trend_filter',
+                                         default=False)):
+                return False
+            df_1h = getattr(self, '_df1h_cache', None)
+            if df_1h is None or len(df_1h) < 24:
+                print("  Trend kapısı: 1H veri yetersiz — işlem atlandı")
+                return True
+            p = int(get_config().get(sec, 'daily_trend_sma', default=200))
+            from xauusd_fvg_engine_v10 import RegimeEngine
+            td = RegimeEngine.daily_trend(df_1h, period=p)
+            cur = float(td.iloc[-1]) if len(td) else 0.0
+        except Exception as e:
+            print(f"  Trend kapısı hesaplanamadı ({e}) — kapı atlandı")
+            return False
+        want = 1.0 if direction == 'bull' else -1.0
+        if cur != want:
+            state = ('bull' if cur > 0 else 'bear' if cur < 0 else 'ısınma/yok')
+            print(f"  Makro trend uyuşmuyor (günlük SMA: {state}, "
+                  f"sinyal: {direction}) — işlem atlandı")
+            return True
+        return False
+
     def _enter_trade(self, signal: TradeSignal,
                      equity: float, last_close: float) -> None:
         entry = last_close
         self._apply_swing_stop(signal, entry)
+        if self._stop_too_tight(entry, signal.stop_price):
+            return
 
         # SL/TP fiyatlarını hesapla (RiskManager'dan)
         r = self.risk_mgr.compute(
@@ -1416,6 +1473,9 @@ class LiveTrader:
                             print(f"  Sinyal blackout saatinde "
                                   f"({now.hour}:xx UTC) — atlandı")
                             signal = None
+                        if signal is not None and self._trend_blocks(
+                                signal.direction):
+                            signal = None
                         if signal is not None:
                             self._enter_trade(signal, _equity(), last_close)
                             # Yazılımsal BE@1R kolu (preset: 1:2be)
@@ -1444,6 +1504,9 @@ class LiveTrader:
                     if (signal is not None and self._blackout
                             and now.hour in self._blackout):
                         print(f"  Sinyal blackout saatinde ({now.hour}:xx UTC) — atlandı")
+                        signal = None
+                    if signal is not None and self._trend_blocks(
+                            signal.direction):
                         signal = None
 
                     if signal is not None:
