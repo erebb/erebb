@@ -25,7 +25,21 @@ Etki (fvg+harmonic, 5 yıl, gerçek maliyet, her işlemde %1 risk):
 | | N | PF | IS | OOS | Pozitif yıl |
 |---|---|---|---|---|---|
 | Filtresiz (eski) | 861 | 0.87 | − | + | 1/6 |
-| **İki kuralla** | **167** | **1.51** | **+** | **+** | **5/5** |
+| **İki kuralla** | **168** | **1.49** | **+** | **+** | **5/5** |
+
+**Tek 10.000$ hesapta, her işlemde %1 risk, bileşik** (fvg+harmonic birlikte,
+işlemler kapanış sırasına göre):
+
+| Yıl | R | Kasa sonu |
+|---|---|---|
+| 2022 | +6.3 | 10.627$ |
+| 2023 | +3.9 | 11.022$ |
+| 2024 | +7.7 | 11.857$ |
+| 2025 | +14.8 | 13.643$ |
+| 2026 | +15.5 | **15.886$** |
+
+168 işlem, WR %45.2, PF 1.49, MaxDD **%12.1** → toplam **+%58.9**
+(yıllık bileşik **+%9.7**). Katkı: fvg +36.6R, harmonic +11.6R.
 
 Aşırı-uyum değil: stop eşiği **%0.4–1.0 arası her değerde** ve SMA periyodu
 **100/150/200/250 hepsinde** IS+OOS pozitif (geniş plato + mekanizma ücret
