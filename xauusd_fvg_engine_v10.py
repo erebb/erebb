@@ -1798,6 +1798,33 @@ class RegimeEngine:
         return (bbw <= bbw.rolling(look).min() * tol).shift(1).fillna(False)
 
     @staticmethod
+    def daily_trend(df_1h: pd.DataFrame, period: int = 200) -> pd.Series:
+        """Makro trend yönü: günlük kapanış `period` günlük SMA'nın üstünde mi.
+        Dönen: +1 (bull) | -1 (bear) | 0 (bilinmiyor — ısınma).
+
+        NEDENSEL: gün D'nin değeri D-1 kapanışıyla hesaplanır (shift 1).
+        Isınma döneminde (SMA henüz yok) 0 döner → to_dir_gate 0'ı 'işlem yok'
+        sayar; veri yetersizken körlemesine yön atanmaz."""
+        dd = RegimeEngine._daily(df_1h)['Close']
+        sma = dd.rolling(period).mean()
+        d = pd.Series(np.where(dd.values > sma.values, 1, -1),
+                      index=dd.index, dtype=float)
+        d[sma.isna().values] = 0.0            # ısınma → yön yok
+        return d.shift(1).fillna(0.0)
+
+    @staticmethod
+    def to_dir_gate(daily_dir: pd.Series, df_5m: pd.DataFrame) -> np.ndarray:
+        """Günlük yön serisini (+1/-1/0) 5M bar dizisine eşler.
+        Eksik/ısınma günü = 0 → BacktestEngine o barlarda giriş almaz."""
+        ts5 = pd.to_datetime(df_5m.index)
+        if ts5.tz is not None:
+            ts5 = ts5.tz_localize(None)
+        days = ts5.normalize()
+        m = daily_dir.reindex(days.unique())
+        mapped = pd.Series(days).map(m)
+        return mapped.fillna(0.0).values.astype(np.int8)
+
+    @staticmethod
     def to_gate(daily_bool: pd.Series, df_5m: pd.DataFrame) -> np.ndarray:
         """Günlük bool serisini 5M bar dizisine eşler (gün → o günün barları).
         NaN/eksik gün = kapı AÇIK (filtre veri yetersizse karışmaz)."""
@@ -2089,7 +2116,9 @@ class BacktestEngine:
                  swing_stop_buf_atr: float = 0.25,
                  limit_entry_bars: Optional[int] = None,
                  cost_maker_pct: float = 0.02,
-                 entry_gate: Optional[np.ndarray] = None):
+                 entry_gate: Optional[np.ndarray] = None,
+                 min_stop_pct: float = 0.0,
+                 trend_gate: Optional[np.ndarray] = None):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
@@ -2134,6 +2163,16 @@ class BacktestEngine:
         # entry_gate: 5M bar bazlı rejim kapısı (RegimeEngine ile üretilir).
         # False olan barlarda YENİ giriş sinyali alınmaz (açık işlem etkilenmez).
         self.entry_gate = entry_gate
+        # min_stop_pct: stop mesafesi giriş fiyatının %X'inden DAR ise sinyal
+        # reddedilir (0 = kapalı). GEREKÇE (5 yıllık maliyet analizi):
+        #   ücret_R ≈ (maker%+taker%) × fiyat / stop_mesafesi
+        # Dar stop → dev notional → ücret brüt edge'i yer. Ölçüm: stop <%0.2
+        # kovası net −0.40R/işlem, stop >%0.6 kovası net +0.05R/işlem.
+        self.min_stop_pct = float(min_stop_pct or 0.0)
+        # trend_gate: 5M bar bazlı YÖNLÜ makro trend kapısı (+1 bull / -1 bear /
+        # 0 bilinmiyor; RegimeEngine.daily_trend + to_dir_gate ile üretilir).
+        # Sinyal yönü kapıyla uyuşmuyorsa (veya kapı 0 ise) giriş alınmaz.
+        self.trend_gate = trend_gate
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -2191,6 +2230,16 @@ class BacktestEngine:
         return (qty * (self.cost_spread_usd + 2.0 * self.cost_slippage_usd)
                 + self.cost_commission_pct / 100.0 * qty * (t.entry_price + ep))
 
+    def _reject_tight_stop(self, entry: float, stop_price: float) -> bool:
+        """min_stop_pct kapısı: stop mesafesi giriş fiyatının %X'inden dar mı?
+
+        Ücret notional ile orantılı, risk ise stop mesafesiyle → dar stop
+        ücreti R cinsinden patlatır (ücret_R ≈ ücret% × fiyat / stop). Bu kapı
+        ücretin edge'i yiyeceği kadar dar stoplu sinyalleri baştan eler."""
+        if self.min_stop_pct <= 0:
+            return False
+        return abs(entry - stop_price) < (self.min_stop_pct / 100.0) * abs(entry)
+
     def _make_entry_trade(self, signal: TradeSignal, idx: int,
                           O: np.ndarray, equity: float, trade_id: int,
                           fvg1_bull=None, fvg1_bear=None,
@@ -2232,6 +2281,8 @@ class BacktestEngine:
             stop_price  = entry - sgn * dist * self.sl_tighten
             tp_override = entry + sgn * self.risk.rr * dist
             rr_eff      = self.risk.rr / self.sl_tighten
+        if self._reject_tight_stop(entry, stop_price):
+            return None
         r = self.risk.compute(signal.direction, entry,
                               stop_price, equity, (self.uniform_risk_fraction or signal.risk_fraction),
                               tp_override=tp_override)
@@ -2587,6 +2638,15 @@ class BacktestEngine:
             if self.entry_gate is not None and not bool(self.entry_gate[idx]):
                 dbg['no_signal'] += 1
                 continue
+
+            # ── Makro trend kapısı: sinyal yönü günlük trendle uyuşmalı ─────
+            #    (0 = ısınma/bilinmiyor → giriş yok; ana trende karşı işlem yok)
+            if self.trend_gate is not None:
+                td = int(self.trend_gate[idx])
+                want = 1 if signal.direction == 'bull' else -1
+                if td != want:
+                    dbg['no_signal'] += 1
+                    continue
 
             # ── Saat karartması (blackout): bu UTC saatlerinde giriş yok ────
             if self.blackout_hours:
@@ -3766,6 +3826,8 @@ class FibBacktestEngine(BacktestEngine):
             elif signal.direction == 'bear' and tp_cand < entry:
                 tp_override = tp_cand
 
+        if self._reject_tight_stop(entry, signal.stop_price):
+            return None
         r = self.risk.compute(signal.direction, entry,
                               signal.stop_price, equity,
                               (self.uniform_risk_fraction or signal.risk_fraction),
@@ -4469,6 +4531,8 @@ class LondonBacktestEngine(BacktestEngine):
                 self.brain._last_signal_date = None
             return None   # TP2 yetersiz RR → işlem açılmaz
 
+        if self._reject_tight_stop(entry, signal.stop_price):
+            return None
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
                               (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2)
         if r is None:
@@ -5126,6 +5190,8 @@ class QweBacktestEngine(BacktestEngine):
                 self.brain._refund_daily()   # gün limitini geri ver
             return None
 
+        if self._reject_tight_stop(entry, signal.stop_price):
+            return None
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
                               (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2)
         if r is None:

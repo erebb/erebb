@@ -237,6 +237,23 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                    RegimeEngine.daily_vol_pct(df_1h) >= vol_floor, df_5m)
                if vol_floor > 0 else None)
 
+    # Makro trend kapısı (5 yıllık analiz kazananı): sinyal yönü günlük
+    # SMA200 trendiyle uyuşmalı. Dar-stop reddi (min_stop_pct) ile birlikte
+    # ücretin edge'i yemesini engeller — ikisi birlikte PF 1.08 → 1.72.
+    _cfg_sec = {"fvg": "fvg", "harmonic": "harmonic", "threevol": "threevol",
+                "london": "london_reversal", "qwe": "qwe"}
+    _trend_cache: dict = {}
+
+    def trend_gate_for(strat: str):
+        sec = _cfg_sec.get(strat, strat)
+        if not bool(cfg.get(sec, "daily_trend_filter", default=False)):
+            return None
+        p = int(cfg.get(sec, "daily_trend_sma", default=200))
+        if p not in _trend_cache:
+            _trend_cache[p] = RegimeEngine.to_dir_gate(
+                RegimeEngine.daily_trend(df_1h, period=p), df_5m)
+        return _trend_cache[p]
+
     for strat in strategies:
         p = presets[strat]
         p_rr, p_be = rr_map.get(p["rr"], (2.0, None))
@@ -245,6 +262,9 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                           swing_stop_1h=bool(p.get("swing_stop", False)),
                           limit_entry_bars=p.get("limit_bars"),
                           entry_gate=(gate_3v if strat == "threevol" else None),
+                          min_stop_pct=float(cfg.get(_cfg_sec.get(strat, strat),
+                                                     "min_stop_pct", default=0.0)),
+                          trend_gate=trend_gate_for(strat),
                           **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"
