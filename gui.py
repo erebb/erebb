@@ -338,6 +338,11 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                           trail_start_r=float(
                               cfg.get(_cfg_sec.get(strat, strat),
                                       "trail_start_r", default=1.0)),
+                          # SL sıkılaştırma: stop × faktör, TP yapısal hedefte
+                          # kalır → RR otomatik yükselir. Gerekçe: kazananların
+                          # MAE'si ortalama yalnız 0.47R (stopun yarısı yetiyor).
+                          sl_tighten=float(cfg.get(_cfg_sec.get(strat, strat),
+                                                   "sl_tighten", default=0) or 0),
                           **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"
