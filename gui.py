@@ -193,7 +193,15 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
 
     cfg = get_config()
 
-    rr_map = {"1:1": (1.0, None), "1:2be": (2.0, 1.0), "1:2fix": (2.0, None)}
+    # RR seçenekleri: "<hedef>fix" = sabit TP, "<hedef>be" = TP + 1R'de breakeven.
+    # Yüksek RR adayları (1:3, 1:4, 1:5): 5 yıllık R dağılımı TÜM kazananların
+    # tam 2R'de kesildiğini, 2.5R+ kovasının BOŞ olduğunu gösterdi — sabit 1:2
+    # hedefi trendleri erken kapatıyor.
+    rr_map = {"1:1": (1.0, None), "1:1.5": (1.5, None),
+              "1:2be": (2.0, 1.0), "1:2fix": (2.0, None),
+              "1:3fix": (3.0, None), "1:3be": (3.0, 1.0),
+              "1:4fix": (4.0, None), "1:4be": (4.0, 1.0),
+              "1:5fix": (5.0, None), "1:5be": (5.0, 1.0)}
 
     # Strategy modes
     # "hepsi" = 5 yıllık IS/OOS elemesinden GEÇEN stratejiler (config: enabled).
@@ -270,6 +278,15 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                           min_stop_pct=float(cfg.get(_cfg_sec.get(strat, strat),
                                                      "min_stop_pct", default=0.0)),
                           trend_gate=trend_gate_for(strat),
+                          # Kısmi TP (config: <strateji>.partial_tp_r/_fraction):
+                          # +X R'de pozisyonun bir kısmını kapat + SL'i BE'ye taşı,
+                          # kalan runner yüksek RR hedefine gider. 0/None = kapalı.
+                          partial_tp_r=(float(cfg.get(_cfg_sec.get(strat, strat),
+                                                      "partial_tp_r", default=0) or 0)
+                                        or None),
+                          partial_tp_fraction=float(
+                              cfg.get(_cfg_sec.get(strat, strat),
+                                      "partial_tp_fraction", default=0.5)),
                           **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"
