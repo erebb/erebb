@@ -1798,6 +1798,24 @@ class RegimeEngine:
         return (bbw <= bbw.rolling(look).min() * tol).shift(1).fillna(False)
 
     @staticmethod
+    def daily_macd_pct(df_1h: pd.DataFrame, fast: int = 12, slow: int = 26,
+                       signal: int = 9) -> pd.Series:
+        """Günlük MACD'nin MUTLAK büyüklüğü, fiyatın %'si olarak (1 gün gecikmeli).
+
+        Makro momentum ölçer — YÖN DEĞİL, VARLIK. 5 yıllık ay analizi:
+          |MACD%| < 0.5 (sıfır bölgesi): 19 ay, toplam −45.3R, yalnız %32 pozitif
+          |MACD%| 0.5–1.5              : 18 ay, +106.2R, %83 pozitif
+          |MACD%| > 1.5                :  5 ay,  +68.3R, %100 pozitif
+        Simetriktir: güçlü NEGATİF MACD aylarında da sistem kârlı (+25.9R),
+        çünkü trend kapısı short'lara izin verir. Kanama momentumun YOKLUĞUNDA.
+        """
+        dd = RegimeEngine._daily(df_1h)['Close']
+        ef = dd.ewm(span=fast, adjust=False).mean()
+        es = dd.ewm(span=slow, adjust=False).mean()
+        macd = ef - es
+        return (macd.abs() / dd * 100.0).shift(1)
+
+    @staticmethod
     def daily_trend(df_1h: pd.DataFrame, period: int = 200) -> pd.Series:
         """Makro trend yönü: günlük kapanış `period` günlük SMA'nın üstünde mi.
         Dönen: +1 (bull) | -1 (bear) | 0 (bilinmiyor — ısınma).

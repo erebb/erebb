@@ -267,15 +267,32 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                 RegimeEngine.adx_daily(df_1h) >= fl, df_5m)
         return _adx_cache[fl]
 
+    # Günlük MACD momentum tabanı: |MACD|/fiyat %. Ay analizi, momentumun
+    # olmadığı (|MACD%|<0.5) 19 ayın toplam −45.3R getirdiğini ve yalnız
+    # %32'sinin pozitif olduğunu gösterdi; |MACD%|>1.5 aylarının HEPSİ pozitif.
+    _macd_cache: dict = {}
+
+    def macd_gate_for(strat: str):
+        sec = _cfg_sec.get(strat, strat)
+        fl = float(cfg.get(sec, "macd_floor", default=0) or 0)
+        if fl <= 0:
+            return None
+        if fl not in _macd_cache:
+            _macd_cache[fl] = RegimeEngine.to_gate(
+                RegimeEngine.daily_macd_pct(df_1h) >= fl, df_5m)
+        return _macd_cache[fl]
+
     def combined_gate(strat: str):
-        """vol_floor (threevol) + adx_floor kapılarını VE ile birleştir."""
-        g1 = gate_3v if strat == "threevol" else None
-        g2 = adx_gate_for(strat)
-        if g1 is None:
-            return g2
-        if g2 is None:
-            return g1
-        return g1 & g2
+        """vol_floor (threevol) + adx_floor + macd_floor kapılarını VE'le."""
+        gates = [g for g in (gate_3v if strat == "threevol" else None,
+                             adx_gate_for(strat),
+                             macd_gate_for(strat)) if g is not None]
+        if not gates:
+            return None
+        out = gates[0]
+        for g in gates[1:]:
+            out = out & g
+        return out
 
     # Makro trend kapısı (5 yıllık analiz kazananı): sinyal yönü günlük
     # SMA200 trendiyle uyuşmalı. Dar-stop reddi (min_stop_pct) ile birlikte
