@@ -184,7 +184,7 @@
     "min_stop_pct": 0.0,
     "daily_trend_filter": true,
     "daily_trend_sma": 200,
-    "enabled": false,
+    "enabled": true,
     "partial_tp_r": 0.0,
     "partial_tp_fraction": 0.5
   }
