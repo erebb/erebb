@@ -597,7 +597,22 @@ class LiveTrader:
         self.capital       = capital
         self.dry_run       = dry_run
         self.state         = StateManager()
-        self.risk_mgr      = RiskManager(rr=2.0)
+        # RR config'ten (backtest paritesi): 5 yıllık IS/OOS optimizasyonu
+        # fvg/harmonic için 1:5, threevol için 1:2be seçti. Sabit 2.0 kullanmak
+        # kazananları 2R'de keserdi (kâr yarıya iner).
+        _rr_map = {"1:1": 1.0, "1:1.5": 1.5, "1:2be": 2.0, "1:2fix": 2.0,
+                   "1:3fix": 3.0, "1:3be": 3.0, "1:4fix": 4.0, "1:4be": 4.0,
+                   "1:5fix": 5.0, "1:5be": 5.0, "1:6fix": 6.0, "1:7fix": 7.0,
+                   "1:8fix": 8.0, "1:10fix": 10.0}
+        try:
+            from config import get_config as _gc0
+            _sec = ('london_reversal' if self.strategy == 'london'
+                    else self.strategy)
+            _rr_lbl = str(_gc0().get(_sec, 'rr', default='1:2fix'))
+        except Exception:
+            _rr_lbl = '1:2fix'
+        self.rr_label      = _rr_lbl
+        self.risk_mgr      = RiskManager(rr=_rr_map.get(_rr_lbl, 2.0))
         # TBE: tüm sabit preset'ler TBE'siz doğrulandı → otomatikte kapalı
         # (kullanıcı --tbe ile açıkça isterse uygulanır)
         if tbe_minutes == -1 or tbe_minutes is None:
@@ -1349,6 +1364,8 @@ class LiveTrader:
             'london':   'London Reversal [private(GARCH)+w6 sabit, kısmi TP]',
         }[self.strategy]
         print(f"  Strateji: {strat_desc}")
+        print(f"  RR/Trend: {self.rr_label} hedef  |  "
+              f"makro trend kapısı (SMA200) + swing stop (config)")
         print(f"  Sembol : {self.client.symbol}")
         print(f"  Risk   : {self.risk_pct*100:.1f}%  |  "
               f"Kaldıraç: {self.leverage}x")

@@ -24,7 +24,7 @@
   },
   "fvg": {
     "bias": "none",
-    "rr": "1:2fix",
+    "rr": "1:5fix",
     "ema_filter": true,
     "blackout_hours": [
       9,
@@ -37,11 +37,13 @@
     "min_stop_pct": 0.0,
     "daily_trend_filter": true,
     "daily_trend_sma": 200,
-    "enabled": true
+    "enabled": true,
+    "partial_tp_r": 0.0,
+    "partial_tp_fraction": 0.5
   },
   "harmonic": {
     "bias": "none",
-    "rr": "1:2fix",
+    "rr": "1:5fix",
     "ema_filter": true,
     "blackout_hours": [
       9,
@@ -54,7 +56,9 @@
     "min_stop_pct": 0.0,
     "daily_trend_filter": true,
     "daily_trend_sma": 200,
-    "enabled": true
+    "enabled": true,
+    "partial_tp_r": 0.0,
+    "partial_tp_fraction": 0.5
   },
   "threevol": {
     "bias": "none",
@@ -69,10 +73,12 @@
     "entry_order": "limit",
     "limit_entry_bars": 3,
     "vol_floor": 0.9,
-    "min_stop_pct": 0.2,
+    "min_stop_pct": 0.1,
     "daily_trend_filter": true,
     "daily_trend_sma": 200,
-    "enabled": true
+    "enabled": true,
+    "partial_tp_r": 0.0,
+    "partial_tp_fraction": 0.5
   },
   "costs": {
     "spread_usd": 0.3,

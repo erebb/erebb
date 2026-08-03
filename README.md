@@ -27,21 +27,65 @@ Test edilen her ücret seviyesinde ayakta kaldı; SMA periyodu 100/150/200/250
 hepsinde IS+OOS pozitif.
 
 **`min_stop_pct`** (dar-stop reddi) strateji bazında ayarlanır; bu tarifede
-çoğu strateji için gereksiz (maker ucuz), yalnız `threevol` %0.2 gerektiriyor.
+fvg/harmonic için gereksiz (maker ucuz), `threevol` %0.1 ile hem daha çok işlem
+hem daha çok kâr veriyor (33 → 75 işlem, +10.0R → +12.5R).
+
+### RR: sistemin en pahalı hatasıydı
+
+5 yıllık R dağılımı, TÜM kazananların **tam 2R'de** kesildiğini ve 2.5R+ kovasının
+**boş** olduğunu gösterdi — sabit 1:2 hedefi trendleri erken kapatıyordu. Bu ayar
+şişik ücret varsayımı döneminde "kesin kâr al" mantığıyla seçilmişti.
+
+| fvg RR | N | R | PF | IS | OOS | Pozitif ay |
+|---|---|---|---|---|---|---|
+| 1:2 (eski) | 150 | +52.9 | 1.63 | +20.8 | +32.1 | %65 |
+| **1:5 (seçilen)** | 121 | **+101.1** | **2.11** | +55.3 | +45.9 | %55 |
+| 1:7 (tepe) | 107 | +130.4 | 2.60 | +71.2 | +59.2 | %45 |
+| 1:8 | 109 | +105.2 | 2.15 | +51.0 | +54.3 | %40 |
+
+1:8'de düşüp 1:10'da yükselmesi gürültü işareti → güvenilir plato **1:5–1:7**.
+**1:5 seçildi**: platonun ortasında (geleceğe karşı en sağlam) ve aylık
+tutarlılığı en az bozan nokta.
+
+**Her strateji farklı RR ister** — tek tip RR uygulamak birini bozuyordu:
+`fvg`/`harmonic` trend binicisi (1:5), `threevol` momentum scalper'ı (1:2be;
+1:3'te IS −2.9 ile çürüyor).
+
+**Denenip REDDEDİLENLER** (hepsi IS/OOS veya kâr testinde kaldı):
+- Filtre gevşetme ile işlem artırma: fvg EMA kapalı 317 işlem ama +29.2R
+  (kâr yarıya); harmonic EMA kapalı **−7.2R** (zarara geçiyor); blackout kapatma
+  her ikisinde de kötü → **filtreler gürültüyü eliyor, az işlem arıza değil**
+- Kısmi TP + runner (TP1@1R/1.5R/2R/3R × %30/%50): frontier'ı yenmiyor, her
+  varyant kârdan yiyor (en iyisi +79.2R vs düz 1:5'in +101.1R'si)
+- BE'li yüksek RR (1:3be/1:4be): 1R'de başabaşa çekmek runner'ları öldürüyor
+- threevol'de vol_floor kapatma (IS −3.0) ve swing stop (IS −6.5)
 
 ### Sonuç — tek 10.000$ hesap, her işlemde %1 risk, bileşik
 
-**265 işlem (53/yıl) | WR %46.0 | PF 1.52 | MaxDD %22.3 | IS +31.1R / OOS +46.9R**
+**266 işlem (53/yıl) | WR %33.1 | PF 1.85 | MaxDD %19.0 | IS +80.6R / OOS +74.4R**
 
-| Yıl | İşlem | R | Kasa sonu | Yıl getirisi |
-|---|---|---|---|---|
-| 2022 | 34 | +19.8 | 12.141$ | +21.4% |
-| 2023 | 50 | −2.3 | 11.808$ | −2.7% |
-| 2024 | 57 | +14.2 | 13.515$ | +14.5% |
-| 2025 | 81 | +23.7 | 16.982$ | +25.7% |
-| 2026 | 43 | +22.5 | **21.167$** | +24.6% |
+| Yıl | R | Kasa sonu |
+|---|---|---|
+| 2022 | +17.7 | — |
+| 2023 | +20.8 | — |
+| 2024 | +28.5 | — |
+| 2025 | +72.4 | — |
+| 2026 | +15.6 | **43.395$** |
 
-Toplam **+%111.7**, yıllık bileşik **+%16.2**. 53 ayın 35'i artıda.
+Toplam **+%334**, yıllık bileşik **+%34.1**, pozitif ay %62, **5/5 yıl artıda**.
+
+Karşılaştırma (aynı işlemler, farklı RR):
+
+| Portföy | R | Kasa | Yıllık | MaxDD | Pozitif ay |
+|---|---|---|---|---|---|
+| A) 1:2 (eski) | +80.4 | 21.610$ | +%16.7 | %22.5 | %65 |
+| **B) 1:5 (seçilen)** | **+155.0** | **43.395$** | **+%34.1** | **%19.0** | %62 |
+| C) 1:7 | +195.6 | 62.713$ | +%44.4 | %17.7 | %49 |
+
+Dikkate değer: **yüksek RR drawdown'ı DÜŞÜRÜYOR** (%22.5 → %19.0) — büyük
+kazançlar düşüşleri hızlı kapatıyor. Ayrıca portföy düzeyinde çeşitlendirme,
+yüksek RR'nin tek-strateji bazındaki tutarlılık kaybını telafi ediyor (fvg tek
+başına %55 pozitif ay, portföyde %62).
 
 ## Stratejiler
 
@@ -51,9 +95,9 @@ girmez.
 
 | Strateji | Durum | min_stop_pct | 5 yıl (gerçek ücret, %1 risk) |
 |---|---|---|---|
-| `fvg` | ✅ **aktif** | 0.0 | 149 işlem, **+6.628$**, PF 1.63, R +52.9 |
-| `harmonic` | ✅ **aktif** | 0.0 | 82 işlem, **+1.514$**, PF 1.27, R +15.0 |
-| `threevol` | ✅ **aktif** | 0.2 | 33 işlem, **+1.024$**, PF 1.74, R +10.0 |
+| `fvg` | ✅ **aktif** | 0.0 | RR **1:5** — 121 işlem, R **+101.1**, PF 2.11 |
+| `harmonic` | ✅ **aktif** | 0.0 | RR **1:5** — 70 işlem, R **+41.4**, PF 1.72 |
+| `threevol` | ✅ **aktif** | 0.1 | RR **1:2be** — 75 işlem, R **+12.5**, PF 1.33 |
 | `london` | ❌ elendi | — | 26 işlem, **−768$**, PF 0.73 |
 | `qwe` | ❌ elendi | — | IS −3.7R / OOS −14.9R, PF 0.84 |
 
@@ -66,10 +110,10 @@ strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
   backtest engine'leri, `FibonacciEngine`, `VolumeEngine`, risk yönetimi, analitik.
 - `gui.py` — Rich TUI kontrol paneli (backtest çalıştırma): `python3 gui.py`
 - `xauusd_live_trader.py` — BingX canlı bot: `python3 xauusd_live_trader.py
-  [--strategy fvg|qwe|threevol|london] [--dry-run]`. DÖRT strateji de canlıda,
-  hepsi sabit preset'iyle: fvg/threevol (none+EMA+blackout, threevol'de
-  yazılımsal BE@1R), london (private/GARCH otomatik — prompt yok, kısmi TP),
-  qwe (none, kısmi TP). Her işlem eşit risk: kasa × risk_pct (%1).
+  [--strategy fvg|harmonic|threevol|london|qwe] [--dry-run]`. BEŞ strateji de
+  canlıda seçilebilir; aktif preset üçü (fvg/harmonic RR 1:5, threevol 1:2be).
+  RR, min_stop_pct, SMA200 trend kapısı ve swing stop config'ten okunur →
+  **backtest paritesi**. Her işlem eşit risk: kasa × risk_pct (%1).
 - `download_data.py` — BingX/Yahoo veri indirici (7/24 kripto-altın).
 - `download_data_mt5.py` — MetaTrader 5 indirici (**yalnız Windows** + açık MT5
   terminali): `python download_data_mt5.py` → **5 yıl** 5m/15m/1h/4h CSV (+`--excel`;
@@ -84,6 +128,11 @@ strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
 - `scripts/run_test_matrix.py`, `scripts/test_london_only.py` — hazır backtest matrisleri.
 - `scripts/run_full_backtest.py` — sabit preset'lerle tam backtest (GUI paritesi;
   CSV'lerde kaç yıl varsa işler, çok yıllık veride yıl yıl PnL kırılımı yazar).
+- `scripts/monthly_charts.py` — **ay ay kapsamlı rapor**: her ay için günlük
+  fiyat+EMA+işlem işaretleri, MACD, volatilite (ATR/gerçekleşen/BB), hacim +
+  proxy CVD, 5M/15M/1H/4H/1D gösterge tablosu, makro olay notları.
+  Çıktı: `reports/monthly/aylik_rapor.html`. (CVD **proxy**'dir — veride bid/ask
+  ayrımı yok; haber notları elle derlenmiştir, canlı takvim değildir.)
 - `scripts/run_diagnostics_report.py` — **kurumsal teşhis raporu** (motora
   dokunmadan): giriş anı ATR/BBW, long/short asimetri, işlem süresi & zaman-stopu
   what-if, drawdown süresi, haftanın günü, emir doluş/fırsat maliyeti (limit
