@@ -4,60 +4,58 @@ XAUUSD (altın) için çoklu-strateji backtest motoru + canlı trading botu.
 Tüm stratejiler lookahead-bias korumalıdır: sinyal bar kapanışında üretilir,
 giriş bir sonraki barın açılışında yapılır.
 
-## İki yapısal kural (5 yıllık analizin çekirdeği)
+## Sistemin çekirdeği (5 yıllık analiz, gerçek BingX ücretleri)
 
-Sistemin tamamı şu iki kurala dayanır — ikisi de gerçek BingX ücretleriyle
-5 yıllık veride IS/OOS ayrımıyla doğrulandı:
+**Ücret modeli — BingX VIP0:** taker **%0.05**, maker **%0.02**, spread 0.30$,
+slippage 0.05$/oz. Limit (maker) giriş + taker çıkış ≈ **17.6$/işlem = 0.207R**.
+Ücret muhasebesi denetlendi: işlem başına tam 1 kez kesiliyor (111/111) ve elle
+hesapla motor **0.0000$ farkla** aynı.
 
-1. **`min_stop_pct = 0.6`** — stop mesafesi giriş fiyatının %0.6'sından darsa
-   sinyal reddedilir. Gerekçe fiziksel: ücret notional ile, risk stop
-   mesafesiyle orantılıdır →
-   **`ücret_R ≈ (maker% + taker%) × fiyat / stop_mesafesi`**.
-   Ölçüm (861 işlem): stop <%0.2 kovası **net −0.40R/işlem**, stop >%0.6
-   kovası **net +0.05R/işlem** — brüt edge her kovada benzer, farkı ücret
-   yaratıyor.
-2. **`daily_trend_filter` (SMA200)** — sinyal yönü günlük makro trendle
-   uyuşmalı; SMA ısınmasında (veri yetersiz) giriş yok. Ana trende karşı
-   işlem alınmaz.
+Ücretin R cinsinden büyüklüğü şu ilişkiyle belirlenir — sistemin tasarımı buna
+dayanır:
 
-Etki (fvg+harmonic, 5 yıl, gerçek maliyet, her işlemde %1 risk):
+> **`ücret_R ≈ (maker% + taker%) × fiyat / stop_mesafesi`**
 
-| | N | PF | IS | OOS | Pozitif yıl |
-|---|---|---|---|---|---|
-| Filtresiz (eski) | 861 | 0.87 | − | + | 1/6 |
-| **İki kuralla** | **168** | **1.49** | **+** | **+** | **5/5** |
+Ücret *notional* ile, risk ise *stop mesafesi* ile orantılıdır: dar stop → aynı
+%1 risk için dev pozisyon → ücret brüt edge'i yer. Bu yüzden swing-tabanlı geniş
+stoplar (mikro stop değil) sistemin ön koşuludur.
 
-**Tek 10.000$ hesapta, her işlemde %1 risk, bileşik** (fvg+harmonic birlikte,
-işlemler kapanış sırasına göre):
+**Sistemi taşıyan tek filtre — `daily_trend_filter` (SMA200):** sinyal yönü
+günlük makro trendle uyuşmalı; SMA ısınmasında giriş yok. Etkisi (861 işlem,
+gerçek ücret): **filtresiz −13.0R (PF 0.98) → trendle +72.1R (PF 1.22)**.
+Test edilen her ücret seviyesinde ayakta kaldı; SMA periyodu 100/150/200/250
+hepsinde IS+OOS pozitif.
 
-| Yıl | R | Kasa sonu |
-|---|---|---|
-| 2022 | +6.3 | 10.627$ |
-| 2023 | +3.9 | 11.022$ |
-| 2024 | +7.7 | 11.857$ |
-| 2025 | +14.8 | 13.643$ |
-| 2026 | +15.5 | **15.886$** |
+**`min_stop_pct`** (dar-stop reddi) strateji bazında ayarlanır; bu tarifede
+çoğu strateji için gereksiz (maker ucuz), yalnız `threevol` %0.2 gerektiriyor.
 
-168 işlem, WR %45.2, PF 1.49, MaxDD **%12.1** → toplam **+%58.9**
-(yıllık bileşik **+%9.7**). Katkı: fvg +36.6R, harmonic +11.6R.
+### Sonuç — tek 10.000$ hesap, her işlemde %1 risk, bileşik
 
-Aşırı-uyum değil: stop eşiği **%0.4–1.0 arası her değerde** ve SMA periyodu
-**100/150/200/250 hepsinde** IS+OOS pozitif (geniş plato + mekanizma ücret
-formülüyle açıklanıyor).
+**265 işlem (53/yıl) | WR %46.0 | PF 1.52 | MaxDD %22.3 | IS +31.1R / OOS +46.9R**
+
+| Yıl | İşlem | R | Kasa sonu | Yıl getirisi |
+|---|---|---|---|---|
+| 2022 | 34 | +19.8 | 12.141$ | +21.4% |
+| 2023 | 50 | −2.3 | 11.808$ | −2.7% |
+| 2024 | 57 | +14.2 | 13.515$ | +14.5% |
+| 2025 | 81 | +23.7 | 16.982$ | +25.7% |
+| 2026 | 43 | +22.5 | **21.167$** | +24.6% |
+
+Toplam **+%111.7**, yıllık bileşik **+%16.2**. 53 ayın 35'i artıda.
 
 ## Stratejiler
 
-5 yıllık IS/OOS elemesinden **ikisi geçti** (config `enabled`); elenenler kodda
+5 yıllık IS/OOS elemesinden **üçü geçti** (config `enabled`); elenenler kodda
 kalır ve tek tek seçilerek koşulabilir, ama `hepsi` ve canlı varsayılanına
 girmez.
 
-| Strateji | Durum | Tarz | 5 yıl (gerçek maliyet, %1 risk) |
+| Strateji | Durum | min_stop_pct | 5 yıl (gerçek ücret, %1 risk) |
 |---|---|---|---|
-| `fvg` | ✅ **aktif** | Intraday, none+EMA+blackout+1H swing stop | 111 işlem, **+4.204$**, PF 1.57, DD %6.3 |
-| `harmonic` | ✅ **aktif** | 8 harmonik desen PRZ (Gartley/Bat/AltBat/Butterfly/Crab/DeepCrab/Shark/Cypher) | 56 işlem, **+1.157$**, PF 1.32 |
-| `threevol` | ❌ elendi | ThreeVol momentum | swing stop'la 51 işlem +430$ ama **IS −264** (OOS'ta değil IS'te çürük) |
-| `london` | ❌ elendi | London Reversal | stopları yapısal olarak %0.14 → ücret kapısını hiç geçemiyor (**0 işlem**) |
-| `qwe` | ❌ elendi | Fib pullback swing | −628$, PF 0.56, IS ve OOS ikisi de negatif |
+| `fvg` | ✅ **aktif** | 0.0 | 149 işlem, **+6.628$**, PF 1.63, R +52.9 |
+| `harmonic` | ✅ **aktif** | 0.0 | 82 işlem, **+1.514$**, PF 1.27, R +15.0 |
+| `threevol` | ✅ **aktif** | 0.2 | 33 işlem, **+1.024$**, PF 1.74, R +10.0 |
+| `london` | ❌ elendi | — | 26 işlem, **−768$**, PF 0.73 |
+| `qwe` | ❌ elendi | — | IS −3.7R / OOS −14.9R, PF 0.84 |
 
 **Tüm stratejiler SABİT preset'le koşar** (config'ten). GUI parametre sormaz —
 strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
