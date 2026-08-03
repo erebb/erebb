@@ -32,7 +32,7 @@
       11
     ],
     "swing_stop": true,
-    "entry_order": "market",
+    "entry_order": "limit",
     "limit_entry_bars": 3,
     "min_stop_pct": 0.0,
     "daily_trend_filter": true,
@@ -49,9 +49,9 @@
       11
     ],
     "swing_stop": true,
-    "entry_order": "market",
+    "entry_order": "limit",
     "limit_entry_bars": 3,
-    "min_stop_pct": 0.5,
+    "min_stop_pct": 0.0,
     "daily_trend_filter": true,
     "daily_trend_sma": 200,
     "enabled": true
@@ -77,8 +77,8 @@
   "costs": {
     "spread_usd": 0.3,
     "slippage_usd": 0.05,
-    "commission_pct": 0.045,
-    "maker_pct": 0.045
+    "commission_pct": 0.05,
+    "maker_pct": 0.02
   },
   "private_bias": {
     "vol_lambda": 0.94,
@@ -111,7 +111,7 @@
     "min_stop_pct": 0.0,
     "daily_trend_filter": true,
     "daily_trend_sma": 200,
-    "enabled": false
+    "enabled": true
   },
   "qwe": {
     "entry_level": "618",
