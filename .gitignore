@@ -8,3 +8,6 @@ reports/diagnostics/
 # Zip içinde tutulan büyük 5m/15m CSV (5m-15m.zip); çıkarılınca izlenmez
 xauusd_5m.csv
 xauusd_15m.csv
+
+# Ay ay rapor çıktıları (scripts/monthly_charts.py ile üretilir, ~10MB)
+reports/monthly/
