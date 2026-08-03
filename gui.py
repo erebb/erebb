@@ -380,8 +380,15 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                             time_exit_bars=None, ema_macd_filter=p["emf"],
                             **common_kw)
                     else:
+                        # poi_mode config'ten: 'all' (FVG+PRZ+OB) | 'fvg' | 'ob'.
+                        # DİKKAT: 'all', harmonic'in kullandığı 'prz'yi İÇERİR →
+                        # ikisi birlikte koşarsa aynı kuruluma çift risk alınır
+                        # (ölçüm: harmonic işlemlerinin %97'si fvg ile aynı
+                        # zaman/fiyat/sonuç). Bağımsızlık için fvg='fvg' yapın.
                         engine = BacktestEngine(
-                            MarketBrain(bias_provider=bp, poi_mode="all"), risk,
+                            MarketBrain(bias_provider=bp,
+                                        poi_mode=str(cfg.get("fvg", "poi_mode",
+                                                             default="all"))), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
                             time_exit_bars=None, ema_macd_filter=p["emf"],
                             **common_kw)
