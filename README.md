@@ -62,17 +62,19 @@ tutarlılığı en az bozan nokta.
 
 ### Sonuç — tek 10.000$ hesap, her işlemde %1 risk, bileşik
 
-**266 işlem (53/yıl) | WR %33.1 | PF 1.85 | MaxDD %19.0 | IS +80.6R / OOS +74.4R**
+**210 işlem (4.2/ay) | WR %35.2 | PF 2.00 | MaxDD %12.3 | IS +73.3R / OOS +61.1R**
 
-| Yıl | R | Kasa sonu |
-|---|---|---|
-| 2022 | +17.7 | — |
-| 2023 | +20.8 | — |
-| 2024 | +28.5 | — |
-| 2025 | +72.4 | — |
-| 2026 | +15.6 | **43.395$** |
+| Yıl | İşlem | R | Kasa | Getiri | Kâr |
+|---|---|---|---|---|---|
+| 2022 | 26 | +19.6 | 12.035$ | +20.4% | +2.035$ |
+| 2023 | 31 | +20.6 | 14.631$ | +21.6% | +2.596$ |
+| 2024 | 51 | +24.5 | 18.436$ | +26.0% | +3.804$ |
+| 2025 | 57 | +48.2 | 29.230$ | +58.5% | +10.794$ |
+| 2026 (7 ay) | 45 | +21.6 | **35.991$** | +23.1% | +6.762$ |
 
-Toplam **+%334**, yıllık bileşik **+%34.1**, pozitif ay %62, **5/5 yıl artıda**.
+Toplam **+%259.9**, yıllık bileşik **+%29.2**, pozitif ay 31/50 (%62),
+aylık ortalama +2.69R (medyan +3.04R), **5/5 yıl artıda**.
+
 
 Karşılaştırma (aynı işlemler, farklı RR):
 
@@ -95,11 +97,12 @@ girmez.
 
 | Strateji | Durum | min_stop_pct | 5 yıl (gerçek ücret, %1 risk) |
 |---|---|---|---|
-| `fvg` | ✅ **aktif** | 0.0 | RR **1:5** — 121 işlem, R **+101.1**, PF 2.11 |
-| `harmonic` | ✅ **aktif** | 0.0 | RR **1:5** — 70 işlem, R **+41.4**, PF 1.72 |
-| `threevol` | ✅ **aktif** | 0.1 | RR **1:2be** — 75 işlem, R **+12.5**, PF 1.33 |
-| `london` | ❌ elendi | — | 26 işlem, **−768$**, PF 0.73 |
-| `qwe` | ❌ elendi | — | IS −3.7R / OOS −14.9R, PF 0.84 |
+| `fvg` | ✅ **aktif** | RR **1:5**, poi_mode=`fvg` — 48 işlem, **+8.151$**, PF 2.87 |
+| `harmonic` | ✅ **aktif** | RR **1:5**, poi_mode=`prz` — 69 işlem, **+4.743$**, PF 1.72 |
+| `threevol` | ✅ **aktif** | RR **1:2be**, min_stop %0.1 — 75 işlem, **+1.255$**, PF 1.33 |
+| `fib` | ✅ **aktif** ⚠ | RR **1:5** — 16 işlem, **+1.950$**, PF 2.59. Sistemin en düşük korelasyonlu stratejisi (0.05–0.19) ama **küçük örneklem** (yılda 3 işlem) → gözlem altında |
+| `london` | ❌ elendi | Doğru ayarlarla yeniden test edildi: IS −7.5…−10.0R, PF 0.73–0.75 |
+| `qwe` | ❌ elendi | RR/hedef taraması yapıldı: en iyi PF 0.82, `min_rr 2.0`'da IS +4.2 ama OOS −19.6 |
 
 **Tüm stratejiler SABİT preset'le koşar** (config'ten). GUI parametre sormaz —
 strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
