@@ -3833,8 +3833,13 @@ class FibBacktestEngine(BacktestEngine):
     def __init__(self, brain, risk_mgr: RiskManager,
                  liq_finder=None,
                  initial_capital: float = 10_000,
-                 breakeven_at_R: Optional[float] = None):
-        super().__init__(brain, risk_mgr, initial_capital, breakeven_at_R)
+                 breakeven_at_R: Optional[float] = None,
+                 **kwargs):
+        # **kwargs: maliyet modeli, trend/rejim kapıları, min_stop_pct,
+        # swing stop, limit giriş vb. — bu motor diğerlerinden ÖNCE yazıldığı
+        # için o parametreleri almıyordu ve bu yüzden hiç adil test edilememişti.
+        super().__init__(brain, risk_mgr, initial_capital, breakeven_at_R,
+                         **kwargs)
         self.liq_finder = liq_finder
 
     def _make_entry_trade(self, signal: TradeSignal, idx: int,

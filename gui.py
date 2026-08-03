@@ -170,6 +170,18 @@ def _strategy_presets(cfg) -> dict:
                          rr="1:2fix", emf=False, blackout=[]),
         "qwe":      dict(bias=cfg.get("qwe", "bias", default="none"),
                          rr="1:2fix", emf=False, blackout=[]),
+        "fib":      dict(bias=cfg.get("fib", "bias", default="none"),
+                         rr=str(cfg.get("fib", "rr", default="1:5fix")),
+                         emf=bool(cfg.get("fib", "ema_filter", default=True)),
+                         blackout=list(cfg.get("fib", "blackout_hours",
+                                               default=[]) or []),
+                         swing_stop=bool(cfg.get("fib", "swing_stop",
+                                                 default=True)),
+                         limit_bars=(int(cfg.get("fib", "limit_entry_bars",
+                                                 default=3))
+                                     if cfg.get("fib", "entry_order",
+                                                default="market") == "limit"
+                                     else None)),
     }
 
 
@@ -188,6 +200,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         PrivateBiasProvider, ThreeVolBrain,
         LondonReversalBrain, LondonBacktestEngine,
         QweBrain, QweBacktestEngine, RegimeEngine,
+        FibRetestBrain, FibBacktestEngine,
     )
     from config import get_config
 
@@ -209,9 +222,9 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
     # "hepsi" = 5 yıllık IS/OOS elemesinden GEÇEN stratejiler (config: enabled).
     # Elenenler (threevol/london/qwe) tek tek seçilerek yine koşulabilir.
     _sec = {"fvg": "fvg", "harmonic": "harmonic", "threevol": "threevol",
-            "london": "london_reversal", "qwe": "qwe"}
+            "london": "london_reversal", "qwe": "qwe", "fib": "fib"}
     if strategy == "hepsi":
-        strategies = [s for s in ["fvg", "harmonic", "threevol", "london", "qwe"]
+        strategies = [s for s in ["fvg", "harmonic", "threevol", "london", "qwe", "fib"]
                       if bool(cfg.get(_sec[s], "enabled", default=True))]
     else:
         strategies = [strategy]
@@ -298,7 +311,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
     # SMA200 trendiyle uyuşmalı. Dar-stop reddi (min_stop_pct) ile birlikte
     # ücretin edge'i yemesini engeller — ikisi birlikte PF 1.08 → 1.72.
     _cfg_sec = {"fvg": "fvg", "harmonic": "harmonic", "threevol": "threevol",
-                "london": "london_reversal", "qwe": "qwe"}
+                "london": "london_reversal", "qwe": "qwe", "fib": "fib"}
     _trend_cache: dict = {}
 
     def trend_gate_for(strat: str):
@@ -368,6 +381,14 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                         # Three Vol Directional = ThreeVolBrain (doğrudan momentum)
                         engine = BacktestEngine(
                             ThreeVolBrain(bias_provider=bp), risk,
+                            initial_capital=capital, breakeven_at_R=p_be,
+                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            **common_kw)
+                    elif strat == "fib":
+                        # Fib 0.618 retest — kodda vardı ama hiç bağlanmamıştı
+                        engine = FibBacktestEngine(
+                            FibRetestBrain(bias_provider=bp), risk,
+                            liq_finder=None,
                             initial_capital=capital, breakeven_at_R=p_be,
                             time_exit_bars=None, ema_macd_filter=p["emf"],
                             **common_kw)
