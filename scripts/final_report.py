@@ -437,7 +437,8 @@ def s_rejim(d, df_1h):
     """Volatilite ve trend rejimi analizi."""
     h = ['<h2 id="s6">6. Volatilite ve Trend Rejimi</h2>']
     dd = df_1h.Close.resample("D").last().dropna()
-    hi = df_1h.High.resample("D").max(); lo = df_1h.Low.resample("D").min()
+    hi = df_1h.High.resample("D").max().reindex(dd.index)
+    lo = df_1h.Low.resample("D").min().reindex(dd.index)
     up, dn = hi.diff(), -lo.diff()
     pdm = np.where((up > dn) & (up > 0), up, 0.0)
     mdm = np.where((dn > up) & (dn > 0), dn, 0.0)
