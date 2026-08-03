@@ -39,7 +39,8 @@
     "daily_trend_sma": 200,
     "enabled": true,
     "partial_tp_r": 0.0,
-    "partial_tp_fraction": 0.5
+    "partial_tp_fraction": 0.5,
+    "poi_mode": "fvg"
   },
   "harmonic": {
     "bias": "none",
