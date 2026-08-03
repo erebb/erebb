@@ -811,6 +811,10 @@ def settings_menu() -> None:
             ("private_bias.vol_mult",    str(cfg.get("private_bias","vol_mult",default=1.20)), "Trending eşiği"),
             ("private_bias.ema_fast",    str(cfg.get("private_bias","ema_fast",default=21)), "EMA hızlı"),
             ("private_bias.ema_slow",    str(cfg.get("private_bias","ema_slow",default=55)), "EMA yavaş"),
+            ("live.order_flow_guard",
+             ("AÇIK ⚠" if (cfg.get("live","order_flow_guard",default={}) or {})
+              .get("enabled") else "kapalı"),
+             "Mikro-yapı (CVD+emir defteri) — CANLI-ÖZEL, backtest EDİLEMEZ"),
         ]
         for k, v, d in rows:
             t.add_row(k, v, d)
@@ -831,19 +835,71 @@ def settings_menu() -> None:
         "8": ("private_bias", "vol_mult"),
         "9": ("private_bias", "ema_fast"),
         "10": ("private_bias", "ema_slow"),
+        "o": ("order_flow", ""),
         "g": ("geri", ""),
     }
 
-    choice_list = [str(i) for i in range(1, 11)] + ["g"]
+    choice_list = [str(i) for i in range(1, 11)] + ["o", "g"]
     for k, (sec, param) in options.items():
         if sec == "geri":
             console.print(f"  [{C_YEL}]{k}[/] → Geri")
+        elif sec == "order_flow":
+            of = (cfg.get("live", "order_flow_guard", default={}) or {})
+            dur = "AÇIK ⚠" if of.get("enabled") else "kapalı"
+            console.print(f"  [{C_YEL}]{k}[/] → [bold]MİKRO-YAPI KORUMASI[/] "
+                          f"(order flow) — şu an: [bold]{dur}[/]")
         else:
             console.print(f"  [{C_YEL}]{k}[/] → {sec}.{param}")
 
     console.print()
     sel = _pick("Değiştirilecek parametre", choice_list, "g")
     if sel == "g":
+        return
+
+    if sel == "o":
+        of = dict(cfg.get("live", "order_flow_guard", default={}) or {})
+        console.print()
+        console.print(Panel(
+            "[bold]MİKRO-YAPI (ORDER FLOW) KORUMASI[/]\n\n"
+            "Sinyal anında BingX emir defterine ve son işlemlere bakar;\n"
+            "tahta sinyalin aksini söylüyorsa girişi iptal eder.\n"
+            "  • [bold]CVD[/]: agresör bazlı alım−satım hacim farkı\n"
+            "  • [bold]Dengesizlik[/]: bid/ask duvar kalınlığı oranı\n\n"
+            f"[bold {C_RED}]⚠ UYARI:[/] Bu filtre sistemin geri kalanından "
+            "FARKLIDIR — tarihsel emir defteri/tick verisi olmadığı için "
+            "[bold]ASLA BACKTEST EDİLMEDİ[/]. Diğer tüm mekanizmalar 5 yıllık "
+            "IS/OOS testinden geçti, bu geçmedi.\n"
+            "Ölçebildiğimiz vekil (proxy) CVD testi, 'CVD sinyali doğrulasın' "
+            "kuralının backtest'te [bold]kaybettirdiğini[/] gösterdi "
+            "(+115.9R → +87.2R). Gerçek agresör CVD'si farklı davranabilir "
+            "ama bu bilinmiyor.\n\n"
+            "Yalnız CANLI modda çalışır; backtest sonuçlarını etkilemez.",
+            style=C_YEL, box=ROUNDED, padding=(1, 2)))
+        console.print()
+        yeni = _confirm("Mikro-yapı korumasını AÇ (E) / KAPAT (H)",
+                        default=bool(of.get("enabled", False)))
+        of["enabled"] = yeni
+        if yeni:
+            of["use_cvd"] = _confirm("  CVD kontrolü kullanılsın mı?",
+                                     default=bool(of.get("use_cvd", True)))
+            of["use_imbalance"] = _confirm("  Emir defteri dengesizliği kullanılsın mı?",
+                                           default=bool(of.get("use_imbalance", True)))
+            of["cvd_window_sec"] = IntPrompt.ask(
+                "  CVD penceresi (saniye)",
+                default=int(of.get("cvd_window_sec", 60)), console=console)
+            of["cvd_block_ratio"] = FloatPrompt.ask(
+                "  CVD engel eşiği (0-1; 0.65 = %65 ters agresyon)",
+                default=float(of.get("cvd_block_ratio", 0.65)), console=console)
+            of["imbalance_block"] = FloatPrompt.ask(
+                "  Dengesizlik engel eşiği (2.0 = karşı duvar 2 kat kalın)",
+                default=float(of.get("imbalance_block", 2.0)), console=console)
+        cfg.set("live", "order_flow_guard", of)
+        cfg.save()
+        _ok(f"Mikro-yapı koruması → {'AÇIK ⚠ (test edilmemiş)' if yeni else 'kapalı'}"
+            "  |  config/default.json kaydedildi.")
+        console.print()
+        Prompt.ask("  [dim]Devam için Enter[/]", default="", show_default=False,
+                   console=console)
         return
 
     sec, param = options[sel]

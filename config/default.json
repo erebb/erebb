@@ -20,7 +20,17 @@
     "risk_pct": 1.0,
     "dry_run": true,
     "tbe_minutes": 480,
-    "symbol": "NCCGOLD2USD-USDT"
+    "symbol": "NCCGOLD2USD-USDT",
+    "order_flow_guard": {
+      "enabled": false,
+      "use_cvd": true,
+      "cvd_window_sec": 60,
+      "cvd_block_ratio": 0.65,
+      "use_imbalance": true,
+      "depth_levels": 10,
+      "imbalance_block": 2.0,
+      "_not": "CANLI-OZEL, BACKTEST EDILEMEZ (tarihsel L2/tick verisi yok). Diger tum mekanizmalar 5 yillik IS/OOS'tan gecti, bu GECMEDI. Varsayilan kapali."
+    }
   },
   "fvg": {
     "bias": "none",

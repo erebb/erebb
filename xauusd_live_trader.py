@@ -186,6 +186,25 @@ class BingXClient:
             print("  --symbol'e soldaki API sembolünü yazın.")
         return False
 
+    # ── Mikro-yapı (order flow) ────────────────────────────────────────────────
+    def get_depth(self, limit: int = 20) -> dict:
+        """Emir defteri anlık görüntüsü: {'bids': [[fiyat, miktar], ...],
+        'asks': [...]}. YALNIZ CANLI — tarihsel L2 verisi yoktur, bu yüzden
+        buna dayanan filtreler BACKTEST EDİLEMEZ."""
+        data = self._request('GET', '/openApi/swap/v2/quote/depth',
+                             {'symbol': self.symbol, 'limit': limit})
+        if not isinstance(data, dict):
+            return {'bids': [], 'asks': []}
+        return {'bids': data.get('bids', []) or [],
+                'asks': data.get('asks', []) or []}
+
+    def get_recent_trades(self, limit: int = 200) -> list:
+        """Son gerçekleşen işlemler (agresör yönü dahil). BingX 'buyerMaker'
+        alanı verir: True ise ALICI maker → agresör SATICIDIR."""
+        data = self._request('GET', '/openApi/swap/v2/quote/trades',
+                             {'symbol': self.symbol, 'limit': limit})
+        return data if isinstance(data, list) else []
+
     # ── Hesap ──────────────────────────────────────────────────────────────────
     def get_balance(self) -> float:
         """USDT serbest margin (availableMargin)."""
@@ -540,6 +559,117 @@ class StateManager:
 #  Live Trader — Ana Sınıf
 # ═══════════════════════════════════════════════════════════════════════════════
 
+class OrderFlowGuard:
+    """MİKRO-YAPI (ORDER FLOW) KORUMASI — YALNIZ CANLI, BACKTEST EDİLEMEZ.
+
+    Sinyal geldiği anda emir defterine ve son işlemlere bakar; tahta sinyalin
+    aksini söylüyorsa girişi iptal eder. İki ölçüm:
+
+      1) GERÇEK CVD (agresör bazlı): son `window_sec` saniyedeki market alım
+         hacmi − market satım hacmi. BingX 'buyerMaker' alanı agresörü verir
+         (buyerMaker=True → alıcı maker → AGRESÖR SATICI).
+         Bull sinyalde CVD güçlü NEGATİFSE (satıcılar tahtayı emiyorsa) → iptal.
+      2) EMİR DEFTERİ DENGESİZLİĞİ: en iyi `levels` seviyedeki bid ve ask
+         toplam miktarları. Bull sinyalde ask duvarı bid'in `imbalance` katından
+         kalınsa → iptal (yukarıda satış duvarı var).
+
+    ⚠ DÜRÜSTLÜK UYARISI — bu filtre sistemin geri kalanından FARKLIDIR:
+    tarihsel L2/tick verisi olmadığı için ASLA backtest edilmedi. Diğer tüm
+    mekanizmalar 5 yıllık IS/OOS testinden geçti; bu geçmedi. Bu yüzden
+    VARSAYILAN KAPALIDIR ve config'ten açıkça açılması gerekir.
+    Ayrıca ölçebildiğimiz vekil (proxy) CVD testi, "CVD sinyali doğrulasın"
+    kuralının backtest'te KAYBETTİRDİĞİNİ gösterdi (+115.9R → +87.2R) —
+    gerçek agresör CVD'si farklı davranabilir ama bu bilinmiyor.
+    """
+
+    def __init__(self, client, cfg: dict):
+        self.client      = client
+        self.enabled     = bool(cfg.get('enabled', False))
+        self.window_sec  = int(cfg.get('cvd_window_sec', 60))
+        self.cvd_ratio   = float(cfg.get('cvd_block_ratio', 0.65))
+        self.levels      = int(cfg.get('depth_levels', 10))
+        self.imbalance   = float(cfg.get('imbalance_block', 2.0))
+        self.use_cvd     = bool(cfg.get('use_cvd', True))
+        self.use_depth   = bool(cfg.get('use_imbalance', True))
+
+    def _cvd(self) -> Optional[float]:
+        """Son window_sec saniyede (alım hacmi − satım hacmi) / toplam hacim.
+        +1 = tamamen agresif alım, −1 = tamamen agresif satım. None = veri yok."""
+        try:
+            trades = self.client.get_recent_trades(500)
+        except Exception as e:
+            print(f"  OrderFlow: işlem verisi alınamadı ({e}) — kapı atlandı")
+            return None
+        if not trades:
+            return None
+        now_ms = int(time.time() * 1000)
+        cut = now_ms - self.window_sec * 1000
+        buy = sell = 0.0
+        for t in trades:
+            try:
+                ts = int(t.get('time', 0))
+                if ts < cut:
+                    continue
+                q = abs(float(t.get('qty', 0) or 0))
+                # buyerMaker=True → alıcı LIMIT (maker) → agresör SATICI
+                if bool(t.get('buyerMaker', False)):
+                    sell += q
+                else:
+                    buy += q
+            except Exception:
+                continue
+        tot = buy + sell
+        if tot <= 0:
+            return None
+        return (buy - sell) / tot
+
+    def _imbalance(self) -> Optional[float]:
+        """bid_toplam / ask_toplam (ilk `levels` seviye). >1 alış duvarı kalın."""
+        try:
+            d = self.client.get_depth(max(self.levels, 5))
+        except Exception as e:
+            print(f"  OrderFlow: derinlik alınamadı ({e}) — kapı atlandı")
+            return None
+        try:
+            b = sum(abs(float(x[1])) for x in d['bids'][:self.levels])
+            a = sum(abs(float(x[1])) for x in d['asks'][:self.levels])
+        except Exception:
+            return None
+        if a <= 0 or b <= 0:
+            return None
+        return b / a
+
+    def allows(self, direction: str) -> bool:
+        """True = giriş serbest. Kapalıysa veya veri yoksa DAİMA True
+        (koruma, sinyali sessizce yutmaz — yalnız açık aksi kanıtta engeller)."""
+        if not self.enabled:
+            return True
+        want_buy = (direction == 'bull')
+        if self.use_cvd:
+            cvd = self._cvd()
+            if cvd is not None:
+                # bull'da CVD çok negatifse / bear'da çok pozitifse iptal
+                against = (-cvd) if want_buy else cvd
+                if against >= self.cvd_ratio:
+                    print(f"  OrderFlow ENGEL: CVD sinyale karşı "
+                          f"({cvd:+.2f}, eşik {self.cvd_ratio}) — "
+                          f"tahtayı ters taraf emiyor")
+                    return False
+                print(f"  OrderFlow: CVD {cvd:+.2f} (son {self.window_sec}s) ✓")
+        if self.use_depth:
+            imb = self._imbalance()
+            if imb is not None:
+                # bull'da ask duvarı bid'in imbalance katından kalınsa iptal
+                bad = (1.0 / imb) if want_buy else imb
+                if bad >= self.imbalance:
+                    print(f"  OrderFlow ENGEL: emir defteri dengesizliği "
+                          f"(bid/ask {imb:.2f}, eşik {self.imbalance}) — "
+                          f"karşı tarafta duvar var")
+                    return False
+                print(f"  OrderFlow: bid/ask dengesi {imb:.2f} ✓")
+        return True
+
+
 class LiveTrader:
     """
     5M bar kapanışına senkronize döngü.
@@ -625,6 +755,14 @@ class LiveTrader:
             self._qcfg = get_config().section('qwe')
         except Exception:
             self._qcfg = {}
+        # MİKRO-YAPI (order flow) koruması — canlı-özel, backtest edilemez.
+        # Varsayılan KAPALI; config live.order_flow_guard.enabled ile açılır.
+        try:
+            from config import get_config as _gc1
+            _ofc = _gc1().section('live').get('order_flow_guard', {}) or {}
+        except Exception:
+            _ofc = {}
+        self.flow_guard = OrderFlowGuard(client, _ofc)
 
     # ── 5M bar kapanışına senkronize ─────────────────────────────────────────
     def _wait_for_bar_close(self) -> None:
@@ -968,6 +1106,8 @@ class LiveTrader:
         if self._stop_too_tight(entry, signal.stop_price) \
                 or self._trend_blocks(signal.direction):
             return
+        if not self.flow_guard.allows(signal.direction):
+            return
         tp2   = signal.tp_hint
         tp1v  = signal.tp1_hint
         r = self.risk_mgr.compute(signal.direction, entry, signal.stop_price,
@@ -1156,6 +1296,9 @@ class LiveTrader:
         entry = last_close
         self._apply_swing_stop(signal, entry)
         if self._stop_too_tight(entry, signal.stop_price):
+            return
+        # Mikro-yapı kapısı (kapalıysa daima serbest)
+        if not self.flow_guard.allows(signal.direction):
             return
 
         # SL/TP fiyatlarını hesapla (RiskManager'dan)
@@ -1366,6 +1509,12 @@ class LiveTrader:
         print(f"  Strateji: {strat_desc}")
         print(f"  RR/Trend: {self.rr_label} hedef  |  "
               f"makro trend kapısı (SMA200) + swing stop (config)")
+        if self.flow_guard.enabled:
+            print(f"  OrderFlow: AÇIK ⚠ (CVD {self.flow_guard.window_sec}s / "
+                  f"defter {self.flow_guard.levels} seviye) — "
+                  f"BACKTEST EDİLMEMİŞ deneysel filtre")
+        else:
+            print("  OrderFlow: kapalı (canlı-özel, backtest edilemez)")
         print(f"  Sembol : {self.client.symbol}")
         print(f"  Risk   : {self.risk_pct*100:.1f}%  |  "
               f"Kaldıraç: {self.leverage}x")
