@@ -252,6 +252,31 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                    RegimeEngine.daily_vol_pct(df_1h) >= vol_floor, df_5m)
                if vol_floor > 0 else None)
 
+    # ADX tabanı (rejim kapısı): 5 yıllık ay-rejim analizi, ADX<20 aylarının
+    # toplam −23.6R getirdiğini ve yalnız %31'inin pozitif olduğunu gösterdi
+    # (akümülasyon/yatay = sistemin kanadığı rejim). Tüm kâr ADX 30+ aylarından.
+    _adx_cache: dict = {}
+
+    def adx_gate_for(strat: str):
+        sec = _cfg_sec.get(strat, strat)
+        fl = float(cfg.get(sec, "adx_floor", default=0) or 0)
+        if fl <= 0:
+            return None
+        if fl not in _adx_cache:
+            _adx_cache[fl] = RegimeEngine.to_gate(
+                RegimeEngine.adx_daily(df_1h) >= fl, df_5m)
+        return _adx_cache[fl]
+
+    def combined_gate(strat: str):
+        """vol_floor (threevol) + adx_floor kapılarını VE ile birleştir."""
+        g1 = gate_3v if strat == "threevol" else None
+        g2 = adx_gate_for(strat)
+        if g1 is None:
+            return g2
+        if g2 is None:
+            return g1
+        return g1 & g2
+
     # Makro trend kapısı (5 yıllık analiz kazananı): sinyal yönü günlük
     # SMA200 trendiyle uyuşmalı. Dar-stop reddi (min_stop_pct) ile birlikte
     # ücretin edge'i yemesini engeller — ikisi birlikte PF 1.08 → 1.72.
@@ -276,7 +301,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
         common_kw  = dict(blackout_hours=p.get("blackout") or None,
                           swing_stop_1h=bool(p.get("swing_stop", False)),
                           limit_entry_bars=p.get("limit_bars"),
-                          entry_gate=(gate_3v if strat == "threevol" else None),
+                          entry_gate=combined_gate(strat),
                           min_stop_pct=float(cfg.get(_cfg_sec.get(strat, strat),
                                                      "min_stop_pct", default=0.0)),
                           trend_gate=trend_gate_for(strat),
