@@ -201,7 +201,9 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
               "1:2be": (2.0, 1.0), "1:2fix": (2.0, None),
               "1:3fix": (3.0, None), "1:3be": (3.0, 1.0),
               "1:4fix": (4.0, None), "1:4be": (4.0, 1.0),
-              "1:5fix": (5.0, None), "1:5be": (5.0, 1.0)}
+              "1:5fix": (5.0, None), "1:5be": (5.0, 1.0),
+              "1:6fix": (6.0, None), "1:7fix": (7.0, None),
+              "1:8fix": (8.0, None), "1:10fix": (10.0, None)}
 
     # Strategy modes
     # "hepsi" = 5 yıllık IS/OOS elemesinden GEÇEN stratejiler (config: enabled).
