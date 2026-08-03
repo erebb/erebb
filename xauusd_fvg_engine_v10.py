@@ -2118,7 +2118,9 @@ class BacktestEngine:
                  cost_maker_pct: float = 0.02,
                  entry_gate: Optional[np.ndarray] = None,
                  min_stop_pct: float = 0.0,
-                 trend_gate: Optional[np.ndarray] = None):
+                 trend_gate: Optional[np.ndarray] = None,
+                 trail_atr: float = 0.0,
+                 trail_start_r: float = 1.0):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
@@ -2173,6 +2175,15 @@ class BacktestEngine:
         # 0 bilinmiyor; RegimeEngine.daily_trend + to_dir_gate ile üretilir).
         # Sinyal yönü kapıyla uyuşmuyorsa (veya kapı 0 ise) giriş alınmaz.
         self.trend_gate = trend_gate
+        # trail_atr: TAKİP EDEN STOP — kâr trail_start_r R'ye ulaşınca SL,
+        # barın ekstremumundan trail_atr × ATR(5M) geride sürüklenir (yalnız
+        # lehe yönde, asla geri gitmez). 0 = kapalı.
+        # Gerekçe: 5 yıllık R dağılımı kazançların sabit TP'de kesildiğini
+        # gösterdi; takip eden stop hem tavanı kaldırır hem dönüşte kârı korur.
+        # Nedensellik: SL bar KAPANDIKTAN sonra (o barın H/L'siyle) güncellenir,
+        # yeni seviye ancak SONRAKİ bardan itibaren tetiklenebilir.
+        self.trail_atr     = float(trail_atr or 0.0)
+        self.trail_start_r = float(trail_start_r or 1.0)
         # time_exit_bars: N 5M bar sonra ne TP ne SL olduysa marketten kapat.
         # None → kapalı. Örn 48 → 48×5dk = 4 saat.
         self.time_exit_bars   = time_exit_bars
@@ -2492,6 +2503,25 @@ class BacktestEngine:
                         t.pnl_dollar = round(total, 2)
                         t.exit_reason = 'be'
                         return True, partial - cost
+
+            # ── TAKİP EDEN STOP (opt-in) ─────────────────────────────────
+            # Kâr trail_start_r R'ye ulaştıysa SL'i bu barın ekstremumundan
+            # trail_atr × ATR geride sürükle. Yalnız lehe yönde hareket eder.
+            # Bu bar KAPANDI → H/L bilinir; yeni SL sonraki barda geçerli olur
+            # (bar-içi yol bilinmediği için aynı barda tetiklenmez = lookahead yok).
+            if self.trail_atr > 0:
+                atr_now = float(ATR[idx])
+                if atr_now == atr_now and atr_now > 0:      # NaN değilse
+                    prof = ((float(H[idx]) - entry) if d == 'bull'
+                            else (entry - float(L[idx]))) / (R + 1e-10)
+                    if prof >= self.trail_start_r:
+                        new_sl = (float(H[idx]) - self.trail_atr * atr_now
+                                  if d == 'bull'
+                                  else float(L[idx]) + self.trail_atr * atr_now)
+                        if d == 'bull' and new_sl > t.sl:
+                            t.sl = round(new_sl, 2)
+                        elif d == 'bear' and new_sl < t.sl:
+                            t.sl = round(new_sl, 2)
             return False, partial
 
         for idx in bt_idx:

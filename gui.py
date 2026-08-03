@@ -289,6 +289,13 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                           partial_tp_fraction=float(
                               cfg.get(_cfg_sec.get(strat, strat),
                                       "partial_tp_fraction", default=0.5)),
+                          # Takip eden stop (config: <strateji>.trail_atr /
+                          # trail_start_r). 0 = kapalı.
+                          trail_atr=float(cfg.get(_cfg_sec.get(strat, strat),
+                                                  "trail_atr", default=0) or 0),
+                          trail_start_r=float(
+                              cfg.get(_cfg_sec.get(strat, strat),
+                                      "trail_start_r", default=1.0)),
                           **cost_kw)
         for bmode in [p["bias"]]:
             bias_label = f"{bmode} (sabit)"
