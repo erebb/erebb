@@ -3848,9 +3848,24 @@ class FibBacktestEngine(BacktestEngine):
                           mit1_bull=None, mit1_bear=None,
                           fvg1_eng=None,
                           H1=None, L1=None, ATR1=None,
-                          T1: Optional[np.ndarray] = None) -> Optional[Trade]:
-        entry = float(O[idx + 1])
+                          T1: Optional[np.ndarray] = None,
+                          entry_override: Optional[float] = None) -> Optional[Trade]:
+        # entry_override: LİMİT dolumu (sonradan eklendi; bu motor daha eskiydi)
+        entry = (float(O[idx + 1]) if entry_override is None
+                 else float(entry_override))
         tp_override = None
+        # SWING STOP (opt-in) — diğer motorlarla aynı kural
+        if self.swing_stop_1h and H1 is not None and L1 is not None \
+                and T1 is not None and ATR1 is not None:
+            ets = to_naive(signal.entry_time).timestamp()
+            sw = self.swing_stop_price(signal.direction, entry, ets,
+                                       H1, L1, T1, ATR1,
+                                       buf_atr=self.swing_stop_buf_atr)
+            if sw is not None:
+                wider = (sw < signal.stop_price if signal.direction == 'bull'
+                         else sw > signal.stop_price)
+                if wider:
+                    signal.stop_price = sw
 
         if self.liq_finder is not None and fvg1_eng is not None:
             fvg_list = fvg1_bull if signal.direction == 'bull' else fvg1_bear
