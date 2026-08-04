@@ -68,6 +68,11 @@ def summarize(d: pd.DataFrame) -> dict:
 def main() -> None:
     from config import get_config
     cfg = get_config()
+    # argv ile alt küme koşulabilir (uzun tarama yarıda kalırsa kalanı sürdür):
+    #   python3 scripts/be_lock_sweep.py harmonic threevol fib
+    global STRATS
+    if len(sys.argv) > 1:
+        STRATS = [s for s in sys.argv[1:] if s in STRATS]
     keep = {s: (cfg.get(s, "be_at_r", default=0), cfg.get(s, "be_lock_r", default=0))
             for s in STRATS}
     out: dict[str, dict] = {s: {} for s in STRATS}
