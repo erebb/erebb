@@ -122,14 +122,14 @@ def month_chart(dd, tr, ym, title):
     ax[0].set_title(title, color="#e6edf5", fontsize=12)
     ax[0].set_ylabel("Fiyat $", color="#9fb0c4")
     ax[0].legend(fontsize=8, facecolor="#1a222c", labelcolor="#9fb0c4")
-    ax[1].bar(w.index, w.hist, color=np.where(w.hist >= 0, "#26a69a", "#ef5350"))
-    ax[1].plot(w.index, w.macd, lw=1.2, color="#4C78A8", label="MACD")
-    ax[1].plot(w.index, w.sig, lw=1.2, color="#f5c542", label="Sinyal")
+    ax[1].bar(w.index, w["hist"], color=np.where(w["hist"] >= 0, "#26a69a", "#ef5350"))
+    ax[1].plot(w.index, w["macd"], lw=1.2, color="#4C78A8", label="MACD")
+    ax[1].plot(w.index, w["sig"], lw=1.2, color="#f5c542", label="Sinyal")
     ax[1].axhline(0, color="#7c8896", lw=.7)
     ax[1].set_ylabel("MACD (1G)", color="#9fb0c4")
     ax[1].legend(fontsize=7, facecolor="#1a222c", labelcolor="#9fb0c4")
-    ax[2].plot(w.index, w.atrp, lw=1.3, color="#E45756", label="ATR14 %")
-    ax[2].plot(w.index, w.bbw, lw=1.1, color="#B279A2", ls="--", label="BB genişliği %")
+    ax[2].plot(w.index, w["atrp"], lw=1.3, color="#E45756", label="ATR14 %")
+    ax[2].plot(w.index, w["bbw"], lw=1.1, color="#B279A2", ls="--", label="BB genişliği %")
     ax[2].set_ylabel("Volatilite", color="#9fb0c4")
     ax[2].legend(fontsize=7, facecolor="#1a222c", labelcolor="#9fb0c4")
     ax[2].xaxis.set_major_formatter(mdates.DateFormatter("%d %b"))
@@ -206,8 +206,8 @@ def ay_bolumu(d, dd, ym, baslik, sinif):
         h.append(f'<p class="note">Altın aylık getiri <b>{ret:+.2f}%</b> · '
                  f'trend verimliliği <b>{eff:.2f}</b> '
                  f'({"TRENDLİ" if eff>=.30 else "AKÜMÜLASYON" if eff<.18 else "karışık"}) · '
-                 f'ay ortalaması: MACD {w.macd.mean()/w.Close.mean()*100:+.2f}% · '
-                 f'ATR {w.atrp.mean():.2f}% · BB genişliği {w.bbw.mean():.2f}%</p>')
+                 f'ay ortalaması: MACD {w["macd"].mean()/w["Close"].mean()*100:+.2f}% · '
+                 f'ATR {w["atrp"].mean():.2f}% · BB genişliği {w["bbw"].mean():.2f}%</p>')
     img = month_chart(dd, tr, ym, f"{ym} — işlemler numaralı (▲long ▼short, yeşil=kâr)")
     if img:
         h.append(f'<img src="data:image/png;base64,{img}">')
@@ -255,12 +255,12 @@ def main():
         "getiri": dd.Close.pct_change().resample("ME").sum()*100,
         "eff": dd.Close.pct_change().resample("ME").apply(
             lambda x: abs(x.sum())/x.abs().sum() if x.abs().sum() > 0 else 0),
-        "macd": (dd.macd/dd.Close*100).resample("ME").mean(),
-        "hist": (dd.hist/dd.Close*100).resample("ME").mean(),
-        "atrp": dd.atrp.resample("ME").mean(),
-        "bbw": dd.bbw.resample("ME").mean(),
-        "e20_50": ((dd.ema20 > dd.ema50).astype(float)).resample("ME").mean()*100,
-        "ustu200": ((dd.Close > dd.ema200).astype(float)).resample("ME").mean()*100})
+        "macd": (dd["macd"]/dd["Close"]*100).resample("ME").mean(),
+        "hist": (dd["hist"]/dd["Close"]*100).resample("ME").mean(),
+        "atrp": dd["atrp"].resample("ME").mean(),
+        "bbw": dd["bbw"].resample("ME").mean(),
+        "e20_50": ((dd["ema20"] > dd["ema50"]).astype(float)).resample("ME").mean()*100,
+        "ustu200": ((dd["Close"] > dd["ema200"]).astype(float)).resample("ME").mean()*100})
     mk.index = mk.index.to_period("M")
     m = m.join(mk).dropna(subset=["R"])
     best, worst = m.R.idxmax(), m.R.idxmin()
