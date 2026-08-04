@@ -2138,19 +2138,11 @@ class BacktestEngine:
                  min_stop_pct: float = 0.0,
                  trend_gate: Optional[np.ndarray] = None,
                  trail_atr: float = 0.0,
-                 trail_start_r: float = 1.0,
-                 be_lock_r: float = 0.0):
+                 trail_start_r: float = 1.0):
         self.brain   = brain
         self.risk    = risk_mgr
         self.capital = initial_capital
         self.breakeven_at_R = breakeven_at_R
-        # be_lock_r: breakeven_at_R tetiklendiğinde SL'in KONACAĞI seviye (R).
-        #   0.0  → klasik breakeven (SL = giriş)
-        #  -0.5  → kısmi sıkılaştırma (SL hâlâ 0.5R geride; kazanana nefes payı)
-        #  +0.5  → 0.5R kâr kilitle
-        # Gerekçe: tam BE, hedefe gitmeden önce girişe geri çekilen kazananları
-        # de kesiyor. Negatif kilit zararı yarılar, kazananı kesmez.
-        self.be_lock_r = float(be_lock_r or 0.0)
         # partial_tp_r: +X R'de pozisyonun partial_tp_fraction kadarını kapat,
         # kalan SL'i breakeven'a taşı (mevcut tp1 altyapısı; None = kapalı).
         # Gerekçe (çıkış adli-analizi): kaybedenlerin önemli bölümü stop
@@ -2512,33 +2504,23 @@ class BacktestEngine:
                 if t.tp1_done:
                     t.exit_reason = 'tp1+' + t.exit_reason
                 return True, partial + dlr
-            if self.breakeven_at_R is not None:
+            if self.breakeven_at_R is not None and t.sl != entry:
                 be_lvl  = (entry + self.breakeven_at_R * R if d == 'bull'
                            else entry - self.breakeven_at_R * R)
                 reached = (H[idx] >= be_lvl) if d == 'bull' else (L[idx] <= be_lvl)
-                # Kilit seviyesi: be_lock_r = 0 → giriş (klasik BE).
-                lock    = (entry + self.be_lock_r * R if d == 'bull'
-                           else entry - self.be_lock_r * R)
-                new_sl  = round(lock, 2)
-                # Yalnız LEHE yönde sıkılaştır (idempotent: ikinci kez tetiklenmez).
-                improves = (new_sl > t.sl) if d == 'bull' else (new_sl < t.sl)
-                if reached and improves:
-                    t.sl = new_sl
+                if reached:
+                    t.sl = round(entry, 2)
                     be_hit = (L[idx] <= t.sl) if d == 'bull' else (H[idx] >= t.sl)
                     if be_hit:
-                        ep    = t.sl
-                        mult  = ((ep - entry) if d == 'bull'
-                                 else (entry - ep)) / (R + 1e-10)
-                        t.exit_price = ep
+                        t.exit_price = t.sl
                         cost  = self._trade_cost(t)
-                        dlr   = mult * t.risk_dollar * rem_frac - cost
-                        total = t.realized_pnl + dlr
+                        total = t.realized_pnl - cost   # kalan BE'de → 0 − maliyet
                         t.exit_time = TM[idx]
                         t.result = ('WIN' if total > 0.01 else
                                     ('BE' if abs(total) <= 0.01 else 'LOSS'))
                         t.pnl_dollar = round(total, 2)
                         t.exit_reason = 'be'
-                        return True, partial + dlr
+                        return True, partial - cost
 
             # ── TAKİP EDEN STOP (opt-in) ─────────────────────────────────
             # Kâr trail_start_r R'ye ulaştıysa SL'i bu barın ekstremumundan

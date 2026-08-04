@@ -327,12 +327,6 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
     for strat in strategies:
         p = presets[strat]
         p_rr, p_be = rr_map.get(p["rr"], (2.0, None))
-        # be_at_r (config: <strateji>.be_at_r) — rr etiketindeki sabit 1.0R
-        # BE'yi ezer, keyfi eşiğe izin verir. 0/yok = etiketteki değer geçerli.
-        _be_ovr = float(cfg.get(_cfg_sec.get(strat, strat), "be_at_r",
-                                default=0) or 0)
-        if _be_ovr > 0:
-            p_be = _be_ovr
         rr_label   = p["rr"]
         common_kw  = dict(blackout_hours=p.get("blackout") or None,
                           swing_stop_1h=bool(p.get("swing_stop", False)),
@@ -357,11 +351,6 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                           trail_start_r=float(
                               cfg.get(_cfg_sec.get(strat, strat),
                                       "trail_start_r", default=1.0)),
-                          # BE kilit seviyesi (config: <strateji>.be_lock_r).
-                          # 0 = klasik breakeven, -0.5 = SL hâlâ 0.5R geride
-                          # (kısmi sıkılaştırma), +0.5 = 0.5R kâr kilitle.
-                          be_lock_r=float(cfg.get(_cfg_sec.get(strat, strat),
-                                                  "be_lock_r", default=0) or 0),
                           # SL sıkılaştırma: stop × faktör, TP yapısal hedefte
                           # kalır → RR otomatik yükselir. Gerekçe: kazananların
                           # MAE'si ortalama yalnız 0.47R (stopun yarısı yetiyor).
