@@ -91,7 +91,7 @@ başına %55 pozitif ay, portföyde %62).
 
 ## Stratejiler
 
-5 yıllık IS/OOS elemesinden **üçü geçti** (config `enabled`); elenenler kodda
+5 yıllık IS/OOS elemesinden **dördü geçti** (config `enabled`); elenenler kodda
 kalır ve tek tek seçilerek koşulabilir, ama `hepsi` ve canlı varsayılanına
 girmez.
 

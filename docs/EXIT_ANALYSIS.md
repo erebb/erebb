@@ -215,3 +215,125 @@ eder; düşük-vol rejimde "UYKU" loglayıp sinyal aramaz.
 **Nihai (gerçek maliyetli, %1):** fvg 65/+3124 · threevol 52/**+634** ·
 london 6/+1200 · qwe 59/−27 → **TOPLAM +4931/yıl (~%49)** (önceki +4276).
 Tek ortak kasada bileşik: 10k → ~15.3k (1 yıl).
+
+## EK — BREAKEVEN ailesi: 60 backtest, TAMAMEN ELENDİ (2026-08)
+
+Tetikleyici bulgu (`reports/AY_DERIN_ANALIZ.html`): kaybeden işlemlerin
+**%62'si stop olmadan önce +0.5R'ye, %45'i +1.0R'ye** gitti. Kazananların
+ortalama MAE'si yalnız 0.42R. MFE tabanlı kaba simülasyon BE@0.5R için
+**+61R** vaat etti. Bu sayı YANLIŞ çıktı.
+
+### Motor yetenekleri (varsayılan 0 = etkisiz)
+- `be_at_r` — BE tetiğini keyfi eşiğe açar (önce rr etiketinde 1.0R'ye sabitti)
+- `be_lock_r` — SL'in KONACAĞI seviye: 0 = klasik BE, −0.5 = SL hâlâ 0.5R
+  geride (kısmi sıkılaştırma), +0.5 = kâr kilitle
+
+### Tur 1 — tam BE eşik taraması (`scripts/be_sweep.py`, 32 backtest)
+Eşikler 0.8 / 1.0 / 1.2 / 1.5 / 2.0 / 2.5 / 3.0 R. **Hiçbiri, hiçbir
+stratejide IS+OOS'ta birlikte iyileştirmedi.**
+
+| Strateji | Baz | En kötü BE | En iyi BE |
+|---|---|---|---|
+| fvg | +62.0R | BE@0.8 → +35.8R | BE@3.0 → +60.9R |
+| harmonic | +41.4R | BE@1.0 → **+7.3R** | BE@3.0 → +30.0R |
+| threevol | +12.5R | BE@0.8 → +5.3R | BE@1.0 → +12.5R |
+| fib | +18.6R | BE@0.8 → +6.6R | BE@2.0 → +15.6R |
+
+**Simülasyon neden yanıldı:** "+1R görüp stop olan işlem BE ile kurtarılır"
+varsayımı, o işlemlerin çoğunun 5R hedefe gidecek KAZANANLAR olduğunu
+görmüyor. fvg BE@0.8'de 28 BE tetiklendi; hepsi kurtarılmış kaybeden olsa
++28R olurdu, gerçek −26.2R. WR çöküşü aynı hikâye: fvg %38.8→%20.0,
+harmonic %28.6→%11.4.
+
+### Tur 2 — yumuşak kilit (`scripts/be_lock_sweep.py`, 28 backtest)
+Kilit −0.5R / −0.75R, tetik 1.0–2.5R. Pozitif kilitler taranmadı (tam
+BE'den sert oldukları için mantıken kesin daha kötü).
+
+| Strateji | Baz | En iyi kilit | Fark |
+|---|---|---|---|
+| harmonic | +41.4R | tetik2.0/−0.75 → +31.4R | **−10.0R** |
+| threevol | +12.5R | tetik1.0/−0.50 → +8.5R | **−4.0R** |
+| fvg | +62.0R | tetik2.5/−0.75 → +63.5R | +1.5R |
+| fib | +18.6R | tetik1.5/−0.75 → +19.1R | +0.5R |
+
+**fvg ve fib'in "geçen" adayları KULLANILMADI.** Gerekçe: her ikisinde de
+işlem sayısı ve WR hiç değişmiyor (fvg 49→49 %38.8, fib 16→16 %37.5) — fark
+1-2 işlemin sonucundan geliyor. 28 kombinasyon taranıp en iyisi seçilince
+şansa bu kadar sapma zaten beklenir; bu seçim yanlılığı, sistematik kazanç
+değil. En iyimser toplam etki +2.1R (%1.6).
+
+### Neden BE bu sistemde çalışmıyor
+Kazananlar ortalama **206 saat** taşınıyor ve yolda derin geri çekilme
+yapıyor (74 kazananın 29'unun MAE'si >0.5R). Kaybedenler **62 saatte**
+ölüyor. Girişten sonra stop'a dokunan her mekanizma, kazananın salınımını
+kaybedenin ölümünden ayırt edemiyor — ikisini birden kesiyor. Edge çıkış
+geometrisinde değil, işlemi UZUN taşımakta.
+
+**Karar: `be_at_r` ve `be_lock_r` config'de 0 (kapalı). Hiçbir preset
+değişmedi.** Regresyon doğrulaması: taramanın KAPALI satırları bilinen bazı
+birebir üretti (62.0+41.4+12.5+18.6 = 134.5R ≈ 134.4R).
+
+## EK — Giriş filtreleri: yön-göreli MTF hizalama da ELENDİ (2026-08)
+
+Aylık analiz "zararlı aylarda momentum yok" diyordu (|1G MACD%| kârlı
+aylarda 1.15, zararlı aylarda 0.69). Bunu giriş filtresine çevirme denemesi:
+
+| Aday | Toplam etki |
+|---|---|
+| \|D1 MACD%\|/ATR% (yön verimliliği) | ayları 2.02× ayırıyor, **işlemleri d=+0.02** |
+| H4 EMA dizilim uyumu ≥1 | −28.0R |
+| H1 dizilim uyumu ≥1 | −11.2R |
+| H4 & H1 birlikte | −41.6R |
+| D1 aşırı-uzama dışla | −95.1R |
+
+Hizalamalar **yön-göreli** hesaplandı (short işlemde bearish dizilim = iyi).
+Hepsi zarar. **Aylık istatistik işlem seviyesine inmiyor** — kötü aylarda da
+büyük kazananlar var, filtre onları da kesiyor.
+
+## EK — Zarar rejimleri: İKİ ayrı ölüm şekli (2026-08)
+
+`scripts/streak_analysis.py` — 4 ardışık-zarar serisi:
+
+| Seri | Ay | R | PnL | İşlem |
+|---|---|---|---|---|
+| 2026-02→04 | 3 | −9.3R | −3.047$ | 20 |
+| 2025-05→06 | 2 | −11.2R | −2.394$ | 14 |
+| 2023-05→08 | 4 | −8.5R | −1.145$ | 7 |
+| 2022-10→11 | 2 | −7.4R | −929$ | 7 |
+
+| Grup | İşlem | WR | 1G ATR% | Ort. MFE | Ort. süre |
+|---|---|---|---|---|---|
+| Zarar serileri | 48 | %10 | **2.00** | 1.20R | 51s |
+| Tek-ay zararlar | 23 | %4 | **0.96** | 1.67R | 115s |
+| Kârlı aylar | 137 | %50 | 1.29 | 2.62R | 128s |
+
+**Seriler YÜKSEK volatilitede, tek-ay zararlar DÜŞÜK volatilitede oluşuyor.**
+Aynı olgu değiller. Seri uzunluğu maliyetle ilişkili değil — işlem sayısı
+ilişkili (4 aylık seri yalnız −1.145$, 3 aylık seri −3.047$).
+
+### Trend rejimi stop oranını AÇIKLAMIYOR
+Kaufman verimlilik oranıyla ay sınıflandırması (`reports/ay_rejim.csv`):
+
+| Rejim | Ay | Pozitif ay | İşlem | Stop oranı | Toplam R |
+|---|---|---|---|---|---|
+| BOĞA | 10 | %70 | 35 | %51 | +36.6 |
+| AYI | 4 | %50 | 23 | %48 | +7.4 |
+| YATAY | 27 | %56 | 108 | %56 | +49.2 |
+
+Stop oranı her rejimde %48–57 — fark yok. Her rejim kârlı. En kötü aylar her
+rejimden geliyor (2026-03 ayı −6.9R, 2022-11 boğa −5.7R, 2025-06 yatay −8.5R).
+
+### Asıl ayrım: SMA200 filtresi piyasaya ters düştüğünde
+| | Ay | Pozitif ay | İşlem | Toplam R | Ay başına |
+|---|---|---|---|---|---|
+| **UYUMLU** (filtre ↔ piyasa aynı yön) | 37 | %70 | 142 | **+143.8R** | +3.89R |
+| **TERS** (zıt yön) | 16 | %31 | 66 | **−9.4R** | −0.59R |
+
+Sistemin tüm kârı uyumlu aylardan geliyor. Zararlı 18 ayın 10'u ters; kârlı
+31 ayın yalnız 5'i ters. Mekanizma: SMA200 yavaştır, piyasa döndüğünde filtre
+eski yönü göstermeye devam eder (2026-03'te fiyat −%16.6 düşerken filtre
+"boğa" diyordu → 7 işlemin 6'sı stop).
+
+**UYARI: bu tablo GERİYE DÖNÜK.** "Ayın gerçek yönü" ancak ay bitince bilinir;
+canlıda bu filtre kurulamaz. Teşhis, çözüm değil. Nedensel karşılığı
+(SMA200 kesişimine yakınlık = geçiş anı tespiti) henüz test EDİLMEDİ.
