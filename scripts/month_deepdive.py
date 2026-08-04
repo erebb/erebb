@@ -275,13 +275,18 @@ def main():
     rows = []
     for ym, r in neg.iterrows():
         tr = d[d.ym == ym]
-        rej = ("TRENDLİ" if r.eff >= .30 else
-               "AKÜMÜLASYON" if r.eff < .18 else "karışık")
-        rows.append([str(ym), f'<span class="n">{r.R:+.1f}</span>', int(r.N),
-                     f"%{r.WR:.0f}", f"{r.getiri:+.1f}%", f"{r.eff:.2f}", rej,
-                     f"{r.macd:+.2f}", f"{r.hist:+.3f}", f"{r.atrp:.2f}",
-                     f"{r.bbw:.1f}", f"%{r.e20_50:.0f}", f"%{r.ustu200:.0f}",
-                     "/".join(f"{s}:{g.r.sum():+.1f}" for s, g in tr.groupby("s"))])
+        R_, N_, WR_ = r["R"], int(r["N"]), r["WR"]
+        get_, eff_ = r["getiri"], r["eff"]
+        mac_, his_ = r["macd"], r["hist"]
+        atr_, bbw_ = r["atrp"], r["bbw"]
+        e_, u_ = r["e20_50"], r["ustu200"]
+        rej = ("TRENDLİ" if eff_ >= .30 else
+               "AKÜMÜLASYON" if eff_ < .18 else "karışık")
+        kir = "/".join(f"{s2}:{g.r.sum():+.1f}" for s2, g in tr.groupby("s"))
+        rows.append([str(ym), f'<span class="n">{R_:+.1f}</span>', N_,
+                     f"%{WR_:.0f}", f"{get_:+.1f}%", f"{eff_:.2f}", rej,
+                     f"{mac_:+.2f}", f"{his_:+.3f}", f"{atr_:.2f}",
+                     f"{bbw_:.1f}", f"%{e_:.0f}", f"%{u_:.0f}", kir])
     h.append(tbl3(["Ay", "R", "N", "WR", "Altın %", "Verim", "Rejim", "MACD%",
                    "MACD hist%", "ATR%", "BB gen.", "EMA20>50 gün%", "200 üstü gün%",
                    "Strateji kırılımı"], rows))
