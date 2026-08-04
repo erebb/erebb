@@ -337,3 +337,44 @@ eski yönü göstermeye devam eder (2026-03'te fiyat −%16.6 düşerken filtre
 **UYARI: bu tablo GERİYE DÖNÜK.** "Ayın gerçek yönü" ancak ay bitince bilinir;
 canlıda bu filtre kurulamaz. Teşhis, çözüm değil. Nedensel karşılığı
 (SMA200 kesişimine yakınlık = geçiş anı tespiti) henüz test EDİLMEDİ.
+
+## EK — SMA200 geçiş tespiti: nedensel filtre ELENDİ (2026-08)
+
+Bir önceki EK'teki "TERS aylar" bulgusunun (filtre piyasaya ters düştüğünde
+16 ay −9.4R, uyumlu 37 ay +143.8R) **canlıda kurulabilir** karşılığı arandı.
+`scripts/sma200_transition_test.py` — 25 aday, hepsi shift(1) ile nedensel
+(motorun `daily_trend`'iyle aynı disiplin).
+
+| Aday ailesi | En iyi varyant | Toplam etki |
+|---|---|---|
+| A) SMA200'e uzaklık ≥ X% (geçiş bölgesini dışla) | ≥0.5% | −9.6R |
+| B) kesişimden geçen gün ≥ N (taze trendi dışla) | ≥5 gün | −7.4R |
+| C) SMA200 eğimi işlem yönünde | ≥0.0% | −40.4R |
+| D) A/B/C birleşimleri | uzaklık≥1% & yaş≥20g | −31.0R |
+| E) tersi (yalnız SMA200 yakınında işle) | ≤3.0% | −96.9R |
+| F) filtre yönü == N-gün momentum | 40 gün | −25.5R |
+| G) işlem yönü == N-gün momentum | 40 gün | −25.5R |
+
+**KABUL EDİLEN ADAY YOK.** 25 varyantın hiçbiri IS+OOS'ta birlikte
+iyileştirmedi; en iyisi bile −7.4R.
+
+### Bulgunun neden çevrilemediği — kritik nokta
+"TERS" ayların geriye dönük olarak −9.4R getirmesine karşılık, aynı
+uyumsuzluk **gerçek zamanlı** tespit edildiğinde o işlemler **kârlı**:
+
+| Nedensel TERS alt kümesi | İşlem | Toplam R |
+|---|---|---|
+| filtre ≠ 10 gün momentum | 73 | **+44.2R** |
+| filtre ≠ 20 gün momentum | 56 | **+53.5R** |
+| filtre ≠ 40 gün momentum | 40 | **+25.5R** |
+
+Yani "filtre yanılıyor" durumu canlıda tespit edilebiliyor ama o durumdaki
+işlemler zarar etmiyor. Aylık TERS istatistiği, ayın sonunda bilinen bir
+sonuca göre yapılan gruplamadan doğan **geriye dönük artefakt**; işlem
+seviyesinde karşılığı yok.
+
+Bu, aynı desenin dördüncü tekrarı: aylık/rejim düzeyinde çok güçlü görünen
+ayrımlar (ADX, |MACD%|, MTF hizalama, SMA200 uyumu) işlem seviyesine
+inmiyor. Kötü aylarda da büyük kazananlar var; her filtre onları da kesiyor.
+
+**Config'de hiçbir değişiklik yapılmadı.**
