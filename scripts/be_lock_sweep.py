@@ -32,10 +32,13 @@ STRATS = ["fvg", "harmonic", "threevol", "fib"]
 SPLIT = pd.Timestamp("2025-01-11")
 
 # (tetik, kilit) ızgarası. (0,0) = mekanizma kapalı = referans.
+# POZİTİF KİLİTLER TARANMIYOR: tam BE (kilit 0.0) scripts/be_sweep.py'de
+# 32 backtestin HEPSİNDE zarar etti (fvg +62.0→+35.8R, harmonic +41.4→+7.3R).
+# Kâr kilitleme tam BE'den daha SERT olduğu için mantıken kesin daha kötü.
+# Geriye yalnız BE'den YUMUŞAK olan negatif kilitler kalıyor.
 GRID = [(0.0, 0.0),
-        (1.0, -0.5), (1.5, -0.5), (2.0, -0.5), (2.5, -0.5),
-        (1.5, -0.25), (2.0, -0.25),
-        (2.0, 0.5), (2.5, 0.5), (3.0, 1.0)]
+        (1.0, -0.5), (1.5, -0.5), (2.0, -0.5),
+        (1.5, -0.75), (2.0, -0.75), (2.5, -0.75)]
 
 
 def run(strat: str) -> pd.DataFrame:
