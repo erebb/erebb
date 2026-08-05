@@ -145,6 +145,14 @@ def run(swing: bool, rr: str, teb, cost: dict) -> pd.DataFrame:
     return pd.DataFrame(rows).sort_values("exit").reset_index(drop=True)
 
 
+def slug(x: str) -> str:
+    """Dosya adı için güvenli etiket."""
+    out = x.lower()
+    for ch in " ()+.:":
+        out = out.replace(ch, "_")
+    return "_".join(t for t in out.split("_") if t)
+
+
 def float_dd(d: pd.DataFrame, f: float) -> float:
     """Yüzen zarar dahil maks. düşüş — prop firmalar anlık özkaynak ölçer.
     Açık pozisyonların MAE'si kadar yüzen zarar varsayılır (üst sınır)."""
@@ -215,7 +223,12 @@ def main() -> None:
         print("--- maliyet profili: %s ---" % cname, flush=True)
         for label, swing, rr, teb in VARIANTS:
             try:
-                report(label, cname, run(swing, rr, teb, cost))
+                d = run(swing, rr, teb, cost)
+                if not d.empty:
+                    d.to_csv(ROOT / "reports" /
+                             ("scalp__%s__%s.csv" % (slug(cname), slug(label))),
+                             index=False)
+                report(label, cname, d)
             except Exception as ex:
                 print("  %-22s %-11s HATA: %s" % (label, cname, ex))
         print(flush=True)
