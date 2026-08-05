@@ -378,3 +378,69 @@ ayrımlar (ADX, |MACD%|, MTF hizalama, SMA200 uyumu) işlem seviyesine
 inmiyor. Kötü aylarda da büyük kazananlar var; her filtre onları da kesiyor.
 
 **Config'de hiçbir değişiklik yapılmadı.**
+
+## EK — EŞ-ZAMANLI POZİSYON: kaldıraç kılığında, ELENDİ (2026-08)
+
+Soru: sinyal geldiğinde açık işlem varken de girsek ne olur? Motor iki
+TEK-kişilik slot tutuyor ('fvg' ve 'prz'); slot doluyken gelen sinyal
+atlanıyor. `scripts/concurrency_lab.py` bu slotları kapasiteli havuza
+çevirir (motor bellekte yamanır, diskte hiçbir dosya değişmez).
+
+### Ham sonuç — ilk bakışta çok güçlü
+| | İşlem | IS | OOS | Toplam R | Bakiye | MaxDD |
+|---|---|---|---|---|---|---|
+| N=1 (mevcut) | 210 | +73.3 | +61.1 | +134.4R | 35.991$ | %12.3 |
+| N=2 | 330 | +126.4 | +102.2 | +228.6R | 88.054$ | %20.8 |
+| N=3 | 436 | +165.1 | +134.4 | +299.5R | 171.854$ | %29.2 |
+| N=5 | 620 | +193.6 | +181.8 | +375.5R | 345.235$ | %45.6 |
+
+İşlem başına R korunuyor (0.640 → 0.693 → 0.687 → 0.606) ve IS/OOS birlikte
+artıyor. İlk koşuda mekanizma "KABUL" göründü.
+
+### Riske-normalize kıyas — sonucu TERSİNE çevirdi
+Her senaryo, maks. düşüşü %12.3'e (mevcut sistemin seviyesi) eşitleyecek
+risk oranıyla yeniden koşuldu:
+
+| | Risk/işlem | Bakiye | MaxDD |
+|---|---|---|---|
+| **N=1** | %1.00 | **35.991$** | %12.3 |
+| N=2 | %0.56 | 34.950$ | %12.3 |
+| N=3 | %0.38 | 30.658$ | %12.3 |
+
+**Eşit riskte eş-zamanlılık daha KÖTÜ** (N=2 −%3, N=3 −%15).
+
+Kaldıraçla doğrudan kıyas (N=1 defteri, yalnız pozisyon boyutu büyütülerek):
+
+| Senaryo | Bakiye | MaxDD | Bakiye/DD |
+|---|---|---|---|
+| N=1 risk %2.0 | 114.745$ | %23.2 | 45.1 |
+| N=2 risk %1.0 | 88.054$ | %20.8 | 37.5 |
+| N=1 risk %3.0 | 326.774$ | %33.0 | 96.0 |
+| N=3 risk %1.0 | 171.854$ | %29.2 | 55.4 |
+
+Benzer düşüşte **riski artırmak eş-zamanlılıktan daha çok getiriyor**.
+
+### Neden: mükerrer giriş
+| | İşlem | 48 saat içinde aynı yön + %0.2 fiyat yakınlığı |
+|---|---|---|
+| N=1 | 210 | 7 çift |
+| N=2 | 330 | **123 çift** |
+| N=3 | 436 | **318 çift** |
+
+İşlem sayısı %57 artarken mükerrer çift **17 kat** artıyor. Ek işlemler yeni
+fırsat değil, aynı kurulumu tekrar oynamak. Yeni işlemlerin R/işlem'inin
+daha yüksek çıkması (0.785 vs 0.640) da bunu doğruluyor: aynı kazanan
+kurulum iki kez alınınca ikisi de kazanıyor.
+
+### Test aracındaki düzeltilen hata
+İlk koşuda basılan "KABUL" etiketi YANLIŞTI. Kriter "bakiye oranı ≥ düşüş
+oranı" idi; bileşik getiri süperlineer büyüdüğü için bu şart neredeyse her
+zaman sağlanır. Kriter riske-normalize kıyasla değiştirildi. Ayrıca
+eş-zamanlılık metriği hatalıydı (işlem başına kendini de sayıyordu, N=1'de
+"14" gösteriyordu); olay-taraması ile düzeltildi — gerçek değerler:
+N=1 ortalama 1.33 tepe 4 · N=2 2.43/6 · N=3 3.39/8.
+
+**Karar: mekanizma ELENDİ. Motor ve config değişmedi.**
+Pratik çıkarım: daha çok getiri isteniyorsa doğru yol eş-zamanlılık değil,
+`risk.risk_fraction`'ı bilinçli yükseltmek — ama %2 risk maks. düşüşü
+%23'e çıkarır ve backtest düşüşü zaten iyimserdir.

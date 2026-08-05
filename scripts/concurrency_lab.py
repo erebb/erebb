@@ -176,6 +176,50 @@ def run(nmax: int) -> pd.DataFrame:
     return d
 
 
+DD_TARGET = 12.3          # mevcut sistemin maks. düşüşü (%) — normalize hedefi
+
+
+def _concurrency(d: pd.DataFrame) -> tuple:
+    """(zaman-ağırlıklı ortalama, tepe) açık pozisyon sayısı.
+    Olay taraması — işlem başına 'kendini de say' hatası yapmaz."""
+    ev = []
+    for r in d.itertuples():
+        ev += [(r.entry, 1), (r.exit, -1)]
+    ev.sort()
+    c = mx = 0
+    area = span = 0.0
+    prev = None
+    for t, x in ev:
+        if prev is not None and c > 0:
+            dt = (t - prev).total_seconds()
+            area += c * dt
+            span += dt
+        c += x
+        mx = max(mx, c)
+        prev = t
+    return (area / span if span else 0.0), mx
+
+
+def _bal_at_dd(d: pd.DataFrame, target: float) -> float:
+    """Risk oranını, maks. düşüş `target`'a eşitlenecek şekilde ayarla ve
+    bileşik son bakiyeyi döndür. Senaryolar ancak böyle adil kıyaslanır."""
+    def curve(f):
+        bal, c = 10000.0, []
+        for x in d.sort_values("exit").r:
+            bal *= (1 + f * x)
+            c.append(bal)
+        s = pd.Series(c)
+        return bal, abs((s / s.cummax() - 1).min()) * 100
+    lo, hi = 0.0005, 0.05
+    for _ in range(40):
+        mid = (lo + hi) / 2
+        if curve(mid)[1] > target:
+            hi = mid
+        else:
+            lo = mid
+    return curve(lo)[0]
+
+
 def stats(d: pd.DataFrame) -> dict:
     isk = d.entry < SPLIT
     bal, curve = 10000.0, []
@@ -183,13 +227,12 @@ def stats(d: pd.DataFrame) -> dict:
         bal *= (1 + 0.01 * x)
         curve.append(bal)
     c = pd.Series(curve)
-    # aynı anda kaç işlem açıktı
-    conc = [int(((d.entry < r.exit) & (d["exit"] > r.entry)).sum())
-            for r in d.itertuples()]
+    conc_avg, conc_max = _concurrency(d)
+    dd = abs((c / c.cummax() - 1).min()) * 100
     return dict(n=len(d), is_r=d[isk].r.sum(), oos_r=d[~isk].r.sum(),
-                r=d.r.sum(), wr=100 * (d.r > 0).mean(), bal=bal,
-                dd=abs((c / c.cummax() - 1).min()) * 100,
-                conc=float(np.mean(conc)), cmax=int(np.max(conc)))
+                r=d.r.sum(), wr=100 * (d.r > 0).mean(), bal=bal, dd=dd,
+                bal_norm=_bal_at_dd(d, DD_TARGET),
+                conc=conc_avg, cmax=conc_max)
 
 
 def show(name: str, m: dict, base=None) -> None:
@@ -197,17 +240,24 @@ def show(name: str, m: dict, base=None) -> None:
     ok = ""
     if base:
         d = " (TOP %+.1f)" % (m["r"] - base["r"])
-        # kabul: IS+OOS birlikte artmali VE düşüş getiriden daha hizli
-        # artmamali (risk-ayarli iyilesme sarti)
+        # KABUL KRITERI = RISKE-NORMALIZE KIYAS.
+        # Eski kriter ("bakiye orani >= dusus orani") YANLISTI: bilesik getiri
+        # superlineer buyudugu icin neredeyse her zaman saglaniyordu ve 2026-08
+        # kosusunda es-zamanliligi hatali sekilde KABUL gosterdi. Dogrusu:
+        # her iki senaryoyu AYNI maksimum dususe ayarlayip bakiyeleri
+        # karsilastirmak. Es-zamanlilik gercek edge katiyorsa, ayni dususte
+        # daha yuksek bakiye vermeli.
         better = m["is_r"] > base["is_r"] and m["oos_r"] > base["oos_r"]
-        eff = (m["bal"] / base["bal"]) >= (m["dd"] / base["dd"])
-        ok = "  <<< KABUL" if (better and eff) else ("  (R arttı ama düşüş "
-                                                     "daha hızlı arttı)"
-                                                     if better else "")
+        gain = m["bal_norm"] / base["bal_norm"] - 1
+        ok = ("  <<< KABUL (esit riskte %+.1f%%)" % (100 * gain)
+              if (better and gain > 0)
+              else "  ELENDI (esit riskte %+.1f%%)" % (100 * gain))
     print("%-14s N=%3d IS=%+6.1f OOS=%+6.1f TOP=%+6.1f%s WR=%4.1f%% "
-          "bakiye=%s$ maxDD=%%%.1f  ortalama es-zaman=%.2f (en fazla %d)%s"
+          "bakiye=%s$ maxDD=%%%.1f  esit-riskte=%s$  es-zaman ort %.2f "
+          "tepe %d%s"
           % (name, m["n"], m["is_r"], m["oos_r"], m["r"], d, m["wr"],
              format(m["bal"], ",.0f").replace(",", "."), m["dd"],
+             format(m["bal_norm"], ",.0f").replace(",", "."),
              m["conc"], m["cmax"], ok), flush=True)
 
 
