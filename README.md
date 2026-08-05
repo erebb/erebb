@@ -146,6 +146,36 @@ strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
 - `tests/` — pytest paketi (179 test): `python3 -m pytest tests -q`
 - `docs/CODE_AUDIT.md` — kod denetim raporu.
 
+## Broker: BingX veya MetaTrader 5
+
+`config/default.json` → `live.broker` = `"bingx"` (varsayılan) veya `"mt5"`.
+GUI'de **6 — Canlı İşlem** menüsünden de seçilir; MT5 o makinede
+kullanılamıyorsa menü sebebini yazar ve seçeneği kapatır.
+
+`mt5_client.py`, `BingXClient` ile birebir aynı arayüzü uygular (11 metot),
+bu yüzden `LiveTrader` tek satır değişmeden iki broker'da da çalışır.
+
+**MT5'e özgü dört fark — hepsi istemcide kapatılır:**
+
+| Konu | BingX | MT5 |
+|---|---|---|
+| Miktar | ons | **lot** (1 lot ≈ 100 ons) — istemci çevirir, broker adımına yuvarlar |
+| Mum zamanı | UTC | **broker sunucu saati** — UTC farkı otomatik bulunur |
+| İşlem akışı (tape) | var | **yok** → OrderFlowGuard'ın CVD bileşeni çalışmaz |
+| Kaldıraç | API'den | **broker hesap ayarı**, API'den değiştirilemez |
+
+Zaman dilimi en kritik olanı: sistemin blackout saatleri (09–11 UTC) ve
+günlük barları UTC varsayar, kayma sessiz hasar verir. İstemci son barın
+zamanını gerçek UTC ile karşılaştırıp offset'i saate yuvarlayarak bulur
+(yaz saati geçişleri kendiliğinden düzelir); `live.mt5.time_offset_hours`
+ile elle ezilebilir.
+
+**Platform kısıtı:** MetaTrader5 Python paketi yalnızca **Windows**'ta ve MT5
+terminaliyle **aynı makinede** çalışır. Linux VPS'te doğrudan koşmaz.
+
+**Sembol adı** brokerdan brokera değişir (`XAUUSD`, `XAUUSD.a`, `GOLD`,
+`XAUUSDm`). MT5 Market Watch'a ekleyip `live.mt5.symbol`'e doğru adı yazın.
+
 ## Hızlı başlangıç
 
 ```bash

@@ -947,6 +947,107 @@ def settings_menu() -> None:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# CANLI İŞLEM (BingX / MetaTrader 5)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def live_menu() -> None:
+    """Canlı/dry-run botu başlat. Broker seçimi: BingX (REST) veya MT5."""
+    console.clear()
+    _print_header()
+    console.print(_divider("CANLI İŞLEM"))
+    cfg = get_config()
+
+    # MT5 bu makinede kullanılabilir mi?
+    try:
+        from mt5_client import available as _mt5_available
+        mt5_ok, mt5_why = _mt5_available()
+    except Exception as e:
+        mt5_ok, mt5_why = False, f"mt5_client yüklenemedi: {e}"
+
+    t = Table(box=SIMPLE_HEAVY, show_header=False, border_style=C_BLUE,
+              padding=(0, 2))
+    t.add_column("k", style=f"bold {C_YEL}", no_wrap=True)
+    t.add_column("v", style=C_FG)
+    t.add_row("Strateji",  str(cfg.get("live", "strategy", default="fvg")))
+    t.add_row("Broker",    str(cfg.get("live", "broker",   default="bingx")))
+    t.add_row("Risk",      f'%{cfg.get("live", "risk_pct", default=1.0)}')
+    t.add_row("Kaldıraç",  f'{cfg.get("live", "leverage", default=10)}x')
+    t.add_row("Dry-run",   ("AÇIK (emir gönderilmez)"
+                            if cfg.get("live", "dry_run", default=True)
+                            else f"[bold {C_RED}]KAPALI — GERÇEK EMİR[/]"))
+    t.add_row("BingX sembol", str(cfg.get("live", "symbol", default="-")))
+    _m = cfg.get("live", "mt5", default={}) or {}
+    t.add_row("MT5 sembol",   str(_m.get("symbol", "XAUUSD")))
+    t.add_row("MT5 durumu",   (f"[{C_GREEN}]{mt5_why}[/]" if mt5_ok
+                               else f"[{C_RED}]{mt5_why}[/]"))
+    console.print(t)
+
+    choices = ["bingx", "q"] + (["mt5"] if mt5_ok else [])
+    if not mt5_ok:
+        console.print()
+        console.print(Panel(
+            f"[{C_YEL}]MT5 bu makinede kullanılamıyor.[/]\n"
+            "MetaTrader5 Python paketi YALNIZCA Windows'ta ve MT5 terminali "
+            "ile aynı makinede çalışır. Windows'ta:  pip install MetaTrader5\n"
+            "Ayrıca sembolü MT5 Market Watch'a ekleyip config'e doğru adı "
+            "yazın (XAUUSD / XAUUSD.a / GOLD / XAUUSDm).",
+            style=C_YEL, box=ROUNDED, padding=(0, 2)))
+
+    broker = _pick("Broker seç", choices,
+                   str(cfg.get("live", "broker", default="bingx")))
+    if broker == "q":
+        return
+
+    dry = cfg.get("live", "dry_run", default=True)
+    if not dry:
+        console.print()
+        console.print(Panel(
+            f"[bold {C_RED}]DRY-RUN KAPALI — GERÇEK PARA İLE EMİR "
+            f"GÖNDERİLECEK.[/]\n"
+            "Ayarlar menüsünden live.dry_run=true yaparak kağıt moda "
+            "geçebilirsiniz.",
+            style=C_RED, box=ROUNDED, padding=(0, 2)))
+        if not _confirm("Gerçek emir göndermeyi onaylıyor musunuz?",
+                        default=False):
+            _info("İptal edildi.")
+            Prompt.ask("  [dim]Devam için Enter[/]", default="",
+                       show_default=False, console=console)
+            return
+
+    if broker == "mt5":
+        console.print()
+        console.print(Panel(
+            f"[{C_YEL}]MT5 farkları:[/]\n"
+            "• Miktar LOT cinsinden gider (1 lot ≈ 100 ons) — istemci "
+            "çeviriyi kendisi yapar.\n"
+            "• Mum zamanları broker sunucu saatindedir; UTC farkı otomatik "
+            "bulunur (config live.mt5.time_offset_hours ile ezilebilir).\n"
+            "• MT5'te genel işlem akışı (tape) yoktur → OrderFlowGuard'ın "
+            "CVD bileşeni çalışmaz.\n"
+            "• Kaldıraç MT5'te broker hesap ayarıdır, API'den değiştirilemez.",
+            style=C_BLUE, box=ROUNDED, padding=(0, 2)))
+
+    cmd = [sys.executable, str(ROOT / "xauusd_live_trader.py"),
+           "--broker", broker]
+    if dry:
+        cmd.append("--dry-run")
+    console.print()
+    _info("Çalıştırılıyor:  " + " ".join(cmd))
+    _info("Durdurmak için Ctrl+C.")
+    console.print()
+    import subprocess
+    try:
+        subprocess.run(cmd, cwd=str(ROOT))
+    except KeyboardInterrupt:
+        console.print(f"\n  [{C_YEL}]Bot durduruldu.[/]")
+    except Exception as e:
+        _err(f"Bot başlatılamadı: {e}")
+    console.print()
+    Prompt.ask("  [dim]Devam için Enter[/]", default="", show_default=False,
+               console=console)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # ANA MENÜ
 # ═══════════════════════════════════════════════════════════════════════════════
 
@@ -960,6 +1061,7 @@ def _main_menu_panel() -> Panel:
     t.add_row("3", "Tam Test Matrisi  (BÖLÜM A+C+G+H+W — uzun sürer)")
     t.add_row("4", "Veri İndir / Güncelle")
     t.add_row("5", "Ayarlar  (config/default.json)")
+    t.add_row("6", "Canlı İşlem  (BingX / MetaTrader 5)")
     t.add_row("q", f"[{C_RED}]Çıkış[/]")
     return Panel(t, title="[bold]ANA MENÜ[/]", style=C_BLUE,
                  box=ROUNDED, padding=(1, 2))
@@ -972,6 +1074,7 @@ def main() -> None:
         "3": full_matrix_menu,
         "4": download_menu,
         "5": settings_menu,
+        "6": live_menu,
     }
 
     while True:
@@ -982,7 +1085,7 @@ def main() -> None:
 
         choice = Prompt.ask(
             f"  [{C_YEL}]Seçim[/]",
-            choices=["1", "2", "3", "4", "5", "q"],
+            choices=["1", "2", "3", "4", "5", "6", "q"],
             default="1",
             console=console,
         )

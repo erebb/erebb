@@ -1756,6 +1756,9 @@ def main() -> None:
         help='Bias modu (yalnız fvg): weekly=haftalık, daily=günlük, none=yok. '
              'QWE stratejisinde YOK SAYILIR (zorunlu none).',
     )
+    parser.add_argument('--broker', choices=['bingx', 'mt5'], default=None,
+                        help='Broker: bingx (varsayılan) | mt5 (MetaTrader 5, '
+                             'yalnız Windows). config live.broker ile de ayarlanır.')
     parser.add_argument('--leverage', type=int,   default=None,
                         help='Kaldıraç (config varsayılanını geçersiz kılar)')
     parser.add_argument('--risk-pct', type=float, default=None,
@@ -1786,15 +1789,45 @@ def main() -> None:
     capital    = (args.balance if args.balance is not None
                   else float(cfg.get('capital', 0)))
 
-    # API anahtarı kontrolü (dry-run hariç)
-    if not args.dry_run and (
-        not api_key or api_key == 'YOUR_BINGX_API_KEY'
-    ):
-        print("HATA: API anahtarı ayarlanmamış.")
-        print(f"      '{args.config}' dosyasını açıp api_key / api_secret girin.")
-        sys.exit(1)
+    # Broker seçimi: CLI > live_config.json > config/default.json > bingx
+    broker = args.broker or cfg.get('broker')
+    if not broker:
+        try:
+            from config import get_config
+            broker = get_config().get('live', 'broker', default='bingx')
+        except Exception:
+            broker = 'bingx'
+    broker = str(broker).lower()
 
-    client = BingXClient(api_key, api_secret, symbol)
+    if broker == 'mt5':
+        # MT5: kimlik doğrulama terminal üzerinden yapılır, API anahtarı yok.
+        # Sembol adı brokerdan brokera değişir (XAUUSD, XAUUSD.a, GOLD...).
+        m = dict(cfg.get('mt5', {}) or {})
+        if not m:
+            try:
+                from config import get_config
+                m = dict(get_config().get('live', 'mt5', default={}) or {})
+            except Exception:
+                m = {}
+        from mt5_client import MT5Client
+        client = MT5Client(
+            symbol            = args.symbol or m.get('symbol', 'XAUUSD'),
+            login             = int(m.get('login', 0) or 0),
+            password          = m.get('password', ''),
+            server            = m.get('server', ''),
+            terminal_path     = m.get('terminal_path', ''),
+            time_offset_hours = m.get('time_offset_hours', None),
+        )
+        print("  " + client.describe())
+    else:
+        # API anahtarı kontrolü (dry-run hariç)
+        if not args.dry_run and (
+            not api_key or api_key == 'YOUR_BINGX_API_KEY'
+        ):
+            print("HATA: API anahtarı ayarlanmamış.")
+            print(f"      '{args.config}' dosyasını açıp api_key / api_secret girin.")
+            sys.exit(1)
+        client = BingXClient(api_key, api_secret, symbol)
 
     # --close: pozisyonu kapat ve çık
     if args.close:

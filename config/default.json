@@ -21,6 +21,16 @@
     "dry_run": true,
     "tbe_minutes": 480,
     "symbol": "NCCGOLD2USD-USDT",
+    "broker": "bingx",
+    "mt5": {
+      "symbol": "XAUUSD",
+      "login": 0,
+      "password": "",
+      "server": "",
+      "terminal_path": "",
+      "time_offset_hours": null,
+      "_not": "MT5 YALNIZ WINDOWS'ta calisir (paket, terminal ile ayni makinede olmali). symbol brokerdan brokera degisir (XAUUSD, XAUUSD.a, GOLD, XAUUSDm). time_offset_hours=null ise broker sunucu saati ile UTC farki OTOMATIK bulunur; sistem 09-11 UTC blackout ve gunluk barlara bagli oldugu icin bu kritik. login=0 ise acik olan terminal oturumu kullanilir."
+    },
     "order_flow_guard": {
       "enabled": false,
       "use_cvd": true,
