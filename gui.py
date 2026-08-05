@@ -982,7 +982,7 @@ def live_menu() -> None:
                                else f"[{C_RED}]{mt5_why}[/]"))
     console.print(t)
 
-    choices = ["bingx", "q"] + (["mt5"] if mt5_ok else [])
+    choices = ["bingx"] + (["mt5"] if mt5_ok else []) + ["q"]
     if not mt5_ok:
         console.print()
         console.print(Panel(
@@ -997,6 +997,11 @@ def live_menu() -> None:
                    str(cfg.get("live", "broker", default="bingx")))
     if broker == "q":
         return
+
+    if broker != str(cfg.get("live", "broker", default="bingx")):
+        cfg.set("live", "broker", broker)
+        cfg.save()
+        _ok(f"live.broker → {broker}  (config/default.json kaydedildi)")
 
     dry = cfg.get("live", "dry_run", default=True)
     if not dry:
