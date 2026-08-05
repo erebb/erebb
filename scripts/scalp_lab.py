@@ -82,11 +82,13 @@ def load_gui(teb):
                          "scripts/scalp_lab.py güncellenmeli" % n)
     src = src.replace(_ANCHOR,
                       "time_exit_bars=_LAB_TEB, ema_macd_filter=p[\"emf\"],")
-    src = ("_LAB_TEB = %r\n" % teb) + src
-    for m in ("gui",):
-        sys.modules.pop(m, None)
+    sys.modules.pop("gui", None)
     mod = types.ModuleType("gui")
     mod.__file__ = str(GUI_SRC)
+    # Değişkeni kaynağa EKLEMEK yerine modül sözlüğüne önceden koy:
+    # `from __future__ import annotations` dosyanın ilk deyimi olmak zorunda,
+    # başa satır eklemek SyntaxError verir.
+    mod.__dict__["_LAB_TEB"] = teb
     sys.modules["gui"] = mod
     exec(compile(src, str(GUI_SRC), "exec"), mod.__dict__)
     return mod
