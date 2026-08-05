@@ -201,37 +201,26 @@ def _concurrency(d: pd.DataFrame) -> tuple:
 
 
 def _bal_at_dd(d: pd.DataFrame, target: float) -> float:
-    """Risk oranını, maks. düşüş `target`'a eşitlenecek şekilde ayarla ve
-    bileşik son bakiyeyi döndür. Senaryolar ancak böyle adil kıyaslanır."""
-    def curve(f):
-        bal, c = 10000.0, []
-        for x in d.sort_values("exit").r:
-            bal *= (1 + f * x)
-            c.append(bal)
-        s = pd.Series(c)
-        return bal, abs((s / s.cummax() - 1).min()) * 100
-    lo, hi = 0.0005, 0.05
-    for _ in range(40):
-        mid = (lo + hi) / 2
-        if curve(mid)[1] > target:
-            hi = mid
-        else:
-            lo = mid
-    return curve(lo)[0]
+    """Risk oranını maks. düşüş `target`'a eşitleyecek şekilde ayarla ve son
+    bakiyeyi döndür. OLAY TABANLI (scripts/equity.py) — eski sıralı bileşik
+    eş-zamanlı pozisyonda bakiyeyi kat kat fazla gösteriyordu."""
+    from equity import event_equity, risk_for_dd
+    return event_equity(d, risk_for_dd(d, target))["final"]
 
 
 def stats(d: pd.DataFrame) -> dict:
+    from equity import event_equity, required_leverage
     isk = d.entry < SPLIT
-    bal, curve = 10000.0, []
-    for x in d.r:
-        bal *= (1 + 0.01 * x)
-        curve.append(bal)
-    c = pd.Series(curve)
+    _e = event_equity(d, 0.01)
+    bal = _e["final"]
+    c = _e["curve"].bal if len(_e["curve"]) else pd.Series([10000.0])
+    _lev_avg, _lev_max = required_leverage(d, 0.01)
     conc_avg, conc_max = _concurrency(d)
     dd = abs((c / c.cummax() - 1).min()) * 100
     return dict(n=len(d), is_r=d[isk].r.sum(), oos_r=d[~isk].r.sum(),
                 r=d.r.sum(), wr=100 * (d.r > 0).mean(), bal=bal, dd=dd,
                 bal_norm=_bal_at_dd(d, DD_TARGET),
+                lev_avg=_lev_avg, lev_max=_lev_max,
                 conc=conc_avg, cmax=conc_max)
 
 
@@ -254,11 +243,12 @@ def show(name: str, m: dict, base=None) -> None:
               else "  ELENDI (esit riskte %+.1f%%)" % (100 * gain))
     print("%-14s N=%3d IS=%+6.1f OOS=%+6.1f TOP=%+6.1f%s WR=%4.1f%% "
           "bakiye=%s$ maxDD=%%%.1f  esit-riskte=%s$  es-zaman ort %.2f "
-          "tepe %d%s"
+          "tepe %d  kaldirac ort %.1fx tepe %.1fx%s"
           % (name, m["n"], m["is_r"], m["oos_r"], m["r"], d, m["wr"],
              format(m["bal"], ",.0f").replace(",", "."), m["dd"],
              format(m["bal_norm"], ",.0f").replace(",", "."),
-             m["conc"], m["cmax"], ok), flush=True)
+             m["conc"], m["cmax"], m["lev_avg"], m["lev_max"], ok),
+          flush=True)
 
 
 def main() -> None:

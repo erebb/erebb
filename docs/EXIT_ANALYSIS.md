@@ -492,3 +492,58 @@ sonucu açıklamıyor ama işlemin trendle UYUMU açıklıyor.
   tek-yön modda ters emir mevcut pozisyonu KAPATIR.
 
 **Karar: ELENDİ. Motor ve config değişmedi.**
+
+## EK — BİLEŞİK HESABI DÜZELTMESİ: sıralı → olay tabanlı (2026-08)
+
+Raporlar portföy bakiyesini ÇIKIŞ SIRASINA göre hesaplıyordu:
+
+    for r in trades.sort_values('exit').r:  bal *= (1 + f*r)
+
+Bu, eş-zamanlı pozisyon varken YANLIŞTIR: bir işlem açıldığında, ondan sonra
+kapanacak işlemlerin kârı henüz hesapta yoktur; sıralı yöntem o kârı peşinen
+sayıp pozisyonu olduğundan büyük boyutlandırır.
+
+Doğrusu (motorun kendi davranışı): pozisyon GİRİŞ anındaki gerçekleşmiş
+bakiyeye göre boyutlanır, kâr/zarar ancak ÇIKIŞ'ta bakiyeye geçer.
+`scripts/equity.py` bunu uygular.
+
+### Hata eş-zamanlılıkla büyüyor
+| Senaryo | Sıralı (hatalı) | Olay tabanlı (doğru) | Hata |
+|---|---|---|---|
+| N=1 (mevcut, ort. 1.33 pozisyon) | 35.991$ | **34.586$** | %3.9 |
+| N=2 | 88.054$ | 71.661$ | %23 |
+| N=3 | 171.854$ | 111.983$ | %53 |
+| Limitsiz (ort. 8.5, tepe 37) | **5.894.202$** | **119.582$** | **49 kat** |
+
+### Limitsiz senaryo ayrıca FİNANSE EDİLEMEZ
+Gereken kaldıraç (açık pozisyonların toplam notional'ı / bakiye):
+
+| Senaryo | Ortalama | Tepe |
+|---|---|---|
+| N=1 (mevcut) | 1.4x | 9.3x |
+| N=2 | 2.3x | 17.7x |
+| N=3 | 3.0x | 22.5x |
+| Limitsiz @ %1 | 10.5x | **63.8x** |
+
+Stoplar swing noktalarında olduğu için işlem başına notional bakiyenin ~2
+katı; eş-zamanlılıkta toplanır. 63.8x ne BingX'te ne MT5'te finanse edilebilir
+— marjin çağrısı gelir. O backtest yaşanamayacak bir senaryoyu simüle ediyor.
+
+### Eş-zamanlılık kararı DEĞİŞMEDİ (güçlendi)
+Riske-normalize kıyas, doğru yöntemle (hedef DD %12.3):
+
+| | Risk/işlem | Bakiye |
+|---|---|---|
+| **N=1** | %1.00 | **34.586$** |
+| N=2 | %0.56 | 32.452$ |
+| N=3 | %0.38 | 28.235$ |
+| Limitsiz | %0.09 | 17.505$ |
+
+### Düzeltilen sistem rakamı
+Sistemin bildirilen bakiyesi **35.991$ değil, 34.586$** (−%3.9). Yıl yıl:
+2022 +1.975$ · 2023 +2.460$ · 2024 +3.507$ · 2025 +10.235$ · 2026 +6.409$.
+
+**R toplamı (+134.4R), işlem sayısı (208), WR (%35.2), PF (2.00) ve MaxDD
+(%12.3) DEĞİŞMEDİ** — hepsi R tabanlıydı ve doğruydu. Değişen yalnız dolar
+bileşiği. `scripts/pnl_report.py` ve `scripts/concurrency_lab.py` düzeltildi;
+concurrency_lab artık gereken kaldıracı da basıyor.

@@ -48,16 +48,14 @@ def load() -> pd.DataFrame:
     d = d[d["reason"] != "open"].copy()
     d = d.sort_values("exit").reset_index(drop=True)
 
-    # bileşik bakiye: risk = giriş anındaki bakiyenin %1'i
-    bal = CAPITAL
-    op, pnl, cl = [], [], []
-    for r in d["r"]:
-        op.append(bal)
-        p = RISK_FRAC * bal * r
-        bal += p
-        pnl.append(p)
-        cl.append(bal)
-    d["bal_open"], d["pnl"], d["bal"] = op, pnl, cl
+    # OLAY TABANLI bileşik: pozisyon GİRİŞ anındaki gerçekleşmiş bakiyeye
+    # göre boyutlanır, kâr/zarar ancak ÇIKIŞ'ta bakiyeye geçer. Eski sıralı
+    # yöntem (çıkış sırasına göre bileşik) eş-zamanlı pozisyonda henüz
+    # kazanılmamış kârı peşinen sayıyordu → bakiyeyi %3.9 fazla gösteriyordu.
+    from equity import event_equity
+    res = event_equity(d, RISK_FRAC, CAPITAL)
+    d["pnl"] = res["pnl"]
+    d["bal"] = CAPITAL + pd.Series(res["pnl"]).cumsum()
     d["ym"] = d["exit"].dt.to_period("M")
     d["yr"] = d["exit"].dt.year
     d["res"] = np.where(d["r"] > 0.01, "W", np.where(d["r"] < -0.01, "L", "BE"))
