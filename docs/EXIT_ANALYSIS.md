@@ -444,3 +444,51 @@ N=1 ortalama 1.33 tepe 4 · N=2 2.43/6 · N=3 3.39/8.
 Pratik çıkarım: daha çok getiri isteniyorsa doğru yol eş-zamanlılık değil,
 `risk.risk_fraction`'ı bilinçli yükseltmek — ama %2 risk maks. düşüşü
 %23'e çıkarır ve backtest düşüşü zaten iyimserdir.
+
+## EK — HEDGE (açık işlemin tersi yönde ikinci giriş): ELENDİ (2026-08)
+
+Soru: açık işlem varken ters yönde sinyal gelse hedge olarak alsak ne olur?
+
+### Önce yapısal tespit
+Mevcut sistemde hedge **zaten imkânsız**. Günlük SMA200 kapısı
+(`xauusd_fvg_engine_v10.py:2710`) ana trende karşı HER sinyali reddeder;
+dört stratejinin dördü de aynı filtreyi kullandığı için aynı anda iki yönde
+sinyal hiç oluşmaz. Test için kapı YALNIZCA hedge girişinde delindi
+(`scripts/hedge_lab.py`). Yani ölçülen şey "kaçırılan hedge fırsatları"
+değil, **bilinçli karşı-trend pozisyon açmak**.
+
+### Sonuç
+| | İşlem | IS | OOS | Toplam R | Bakiye | MaxDD | Eşit riskte |
+|---|---|---|---|---|---|---|---|
+| hedge KAPALI | 210 | +73.3 | +61.1 | **+134.4R** | 35.991$ | %12.3 | **36.107$** |
+| hedge AÇIK | 244 | +64.1 | +56.0 | +120.1R | 30.978$ | %12.3 | 31.066$ (**−%14**) |
+
+### Temiz ayrışma — ana işlemler hiç etkilenmedi
+Hedge işlemleri tek başına: **34 işlem, −14.3R, işlem başı −0.422R**
+(30 stop / 4 TP, kazanma oranı %11.8; yön: 28 short / 6 long).
+
+Toplam düşüş (134.4 → 120.1 = −14.3R) hedge işlemlerinin PnL'ine **birebir
+eşit**. Yani hedge girişleri ana işlemlerin hiçbirini bozmadı, sırasını
+kaydırmadı — saf ek yük olarak geldiler ve saf zarar ettiler.
+
+### Bunun asıl değeri: günlük trend filtresinin ölçülmesi
+| | R / işlem | Kazanma |
+|---|---|---|
+| Trend yönlü (mevcut sistem) | **+0.640** | %35.2 |
+| Karşı-trend (hedge) | **−0.421** | %11.8 |
+
+Aradaki fark **1.06 R/işlem**. Bu, `daily_trend_filter`'ın tek başına en net
+ölçülmüş katkısıdır: filtre kaldırılsa alınacak işlemler işlem başına 1R'den
+fazla kaybettiriyor. Daha önce "trend rejimi stop oranını açıklamıyor"
+bulunmuştu (her rejimde %48–57) — bu onunla çelişmez: rejimin KENDİSİ
+sonucu açıklamıyor ama işlemin trendle UYUMU açıklıyor.
+
+### Ekonomik ve canlı uyarıları (kayıt için)
+- Tek enstrümanda long+short aynı anda net pozisyonu düzleştirir ama HER İKİ
+  tarafın spread+komisyonu ödenir. Ücret formülü
+  `(maker+taker) × fiyat / stop_mesafesi` olduğu için hedge maliyeti ikiye
+  katlar. Risk azaltmaz.
+- BingX vadeli işlemlerde aynı sembolde iki yön "hedge mode" gerektirir;
+  tek-yön modda ters emir mevcut pozisyonu KAPATIR.
+
+**Karar: ELENDİ. Motor ve config değişmedi.**
