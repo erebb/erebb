@@ -58,12 +58,16 @@ COSTS = {
     # $3.5/lot/yön = $0.035/oz ≈ altın 2700$'da notional'ın %0.0013'ü
     "MT5 prop":   dict(spread_usd=0.20, slippage_usd=0.05,
                        commission_pct=0.0013, maker_pct=0.0013),
+    # STRES: kötü senaryo — geniş spread, $7/lot komisyon, 3x slippage.
+    # Scalp'te maliyet varsayımı sonucu belirler; kırılganlığı ölçmek şart.
+    "MT5 kotu":   dict(spread_usd=0.45, slippage_usd=0.15,
+                       commission_pct=0.0026, maker_pct=0.0026),
 }
 
 # ── denenecek konfigürasyonlar ──────────────────────────────────────────
 # (etiket, swing_stop, rr, time_exit_bars)  teb=None → zaman çıkışı yok
 VARIANTS = [
-    ("mevcut (swing 1:5)",  True,  "1:5fix", None),
+    ("mevcut (config)",     None,  None,     None),
     ("scalp A  dar 1:2",    False, "1:2fix", None),
     ("scalp B  dar 1:2 +4s", False, "1:2fix", 48),
     ("scalp C  dar 1:3 +8s", False, "1:3fix", 96),
@@ -97,12 +101,21 @@ def load_gui(teb):
 def run(swing: bool, rr: str, teb, cost: dict) -> pd.DataFrame:
     from config import get_config
     cfg = get_config()
+    # swing/rr None → config'e DOKUNMA. Referans koşu gerçek preset'lerle
+    # koşmalı: threevol swing_stop=False + rr=1:2be, diğerleri True + 1:5fix.
+    # (İlk sürüm hepsine swing_stop=True veriyordu → referans GERÇEK sistemi
+    #  üretmiyordu: N=180 yerine 210, DD %18.4 yerine %12.3.)
     keep = {}
     for s in STRATS:
         keep[s] = (cfg.get(s, "swing_stop", default=True),
-                   cfg.get(s, "rr", default="1:5fix"))
-        cfg.set(s, "swing_stop", swing)
-        cfg.set(s, "rr", rr)
+                   cfg.get(s, "rr", default="1:5fix"),
+                   cfg.get(s, "min_stop_pct", default=0.0))
+        if swing is not None:
+            cfg.set(s, "swing_stop", swing)
+        if rr is not None:
+            cfg.set(s, "rr", rr)
+        if swing is False:
+            cfg.set(s, "min_stop_pct", 0.0)   # scalp'te dar stop reddi kapalı
     kc = {k: cfg.get("costs", k, default=0) for k in cost}
     for k, v in cost.items():
         cfg.set("costs", k, v)
@@ -126,6 +139,7 @@ def run(swing: bool, rr: str, teb, cost: dict) -> pd.DataFrame:
         for s in STRATS:
             cfg.set(s, "swing_stop", keep[s][0])
             cfg.set(s, "rr", keep[s][1])
+            cfg.set(s, "min_stop_pct", keep[s][2])
         for k, v in kc.items():
             cfg.set("costs", k, v)
     return pd.DataFrame(rows).sort_values("exit").reset_index(drop=True)
@@ -190,7 +204,7 @@ def report(label: str, cost_name: str, d: pd.DataFrame) -> None:
 def main() -> None:
     print("KONTROL — mevcut ayar + BingX maliyeti, +134.4R uretmeli\n",
           flush=True)
-    base = run(True, "1:5fix", None, COSTS["BingX VIP0"])
+    base = run(None, None, None, COSTS["BingX VIP0"])
     report("mevcut (kontrol)", "BingX VIP0", base)
     if abs(base.r.sum() - BASE_TOP) > 0.5:
         print("  !! KONTROL BASARISIZ (beklenen %+.1f) — cikiliyor" % BASE_TOP)
