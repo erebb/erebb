@@ -23,6 +23,16 @@ Kural: IS (<2025-01-11) ve OOS'ta BİRLİKTE iyileşmeyen aday elenir.
 Her koşu önce KONTROL yapar (kural kapalı → mevcut sistemi birebir üretmeli);
 kontrol geçmezse sonuçlar basılmaz.
 
+DİKKAT — belock ailesi motorun KENDİ breakeven bloğunun yerine geçer. Yani
+threevol'ün preset'indeki "1:2be" (BE@1.0R) davranışı bu ailede LAB'ın
+tetik/kilit değerleriyle ezilir. maebe/maecut ailelerinde böyle bir ezme
+yoktur; onlar mevcut BE bloğunun önüne eklenir.
+
+DOĞRULAMA (2026-08): kaldırılan be_lock_sweep.py'nin ölçtüğü
+tetik 1.0R / kilit −0.5R sonucu bu laboratuvarla yeniden üretildi —
++88.7R (eski: strateji toplamları +88.8R, fark yuvarlamadan).
+Kontrol koşusu TOP=+134.4R'yi birebir verdi.
+
 Kullanım:
     python3 scripts/exit_rule_lab.py belock 1.0,-0.5 2.0,-0.75
     python3 scripts/exit_rule_lab.py maebe  0.5 0.75
