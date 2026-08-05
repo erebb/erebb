@@ -167,8 +167,13 @@ def run(nmax: int) -> pd.DataFrame:
                              entry=pd.Timestamp(str(t.signal.entry_time)[:19]),
                              exit=pd.Timestamp(str(t.exit_time)[:19]),
                              r=t.pnl_dollar / t.risk_dollar,
+                             px=t.entry_price, sl=t.sl,
+                             dir=t.signal.direction,
+                             conf=getattr(t.signal, "confirmation_type", ""),
                              reason=getattr(t, "exit_reason", "")))
-    return pd.DataFrame(rows).sort_values("exit").reset_index(drop=True)
+    d = pd.DataFrame(rows).sort_values("exit").reset_index(drop=True)
+    d.to_csv(ROOT / "reports" / ("conc_ledger_N%d.csv" % nmax), index=False)
+    return d
 
 
 def stats(d: pd.DataFrame) -> dict:
