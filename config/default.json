@@ -1,5 +1,36 @@
 {
   "version": "10.0",
+  "profile": "swing",
+  "profiles": {
+    "_not": "Aktif profil 'profile' anahtariyla secilir. 'swing' = config'teki ana ayarlar (hicbir override uygulanmaz). 'scalp' asagidaki override'lari uygular; MT5/prop firm komisyon yapisi icin tasarlandi. BingX'te scalp ZARARDA (ucret_R 0.30) - orada kullanmayin.",
+    "scalp": {
+      "_not": "scalp C varyanti: dar yapisal stop + 1:3 hedef + 8 saat zaman cikisi. 5 yil MT5 maliyetiyle +102.7R, DD %10.2, pozitif ay %65, medyan sure 3.1 saat, medyan stop 6.3$. UYARI: IS/OOS elemesinden GECMEDI.",
+      "fvg": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      },
+      "harmonic": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      },
+      "threevol": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      },
+      "fib": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      }
+    }
+  },
   "backtest": {
     "initial_capital": 10000,
     "default_bias": "daily",
@@ -60,7 +91,8 @@
     "enabled": true,
     "partial_tp_r": 0.0,
     "partial_tp_fraction": 0.5,
-    "poi_mode": "fvg"
+    "poi_mode": "fvg",
+    "time_exit_bars": null
   },
   "harmonic": {
     "bias": "none",
@@ -79,7 +111,8 @@
     "daily_trend_sma": 200,
     "enabled": true,
     "partial_tp_r": 0.0,
-    "partial_tp_fraction": 0.5
+    "partial_tp_fraction": 0.5,
+    "time_exit_bars": null
   },
   "threevol": {
     "bias": "none",
@@ -99,7 +132,8 @@
     "daily_trend_sma": 200,
     "enabled": true,
     "partial_tp_r": 0.0,
-    "partial_tp_fraction": 0.5
+    "partial_tp_fraction": 0.5,
+    "time_exit_bars": null
   },
   "costs": {
     "spread_usd": 0.3,
@@ -196,6 +230,7 @@
     "daily_trend_sma": 200,
     "enabled": true,
     "partial_tp_r": 0.0,
-    "partial_tp_fraction": 0.5
+    "partial_tp_fraction": 0.5,
+    "time_exit_bars": null
   }
 }

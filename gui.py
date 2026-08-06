@@ -124,6 +124,22 @@ def _load_data() -> tuple:
     return df_1h, df_5m, bt_start
 
 
+def _profile_get(cfg, section: str, key: str, default=None):
+    """Aktif profilin override'ini uygula; yoksa config'in kendi degerini dondur.
+
+    config.profile = "swing" -> hicbir override yok (ana ayarlar gecerli)
+    config.profile = "scalp" -> config.profiles.scalp[section][key] varsa o
+    kullanilir. Scalp MT5/prop komisyon yapisi icin tasarlandi; BingX'te
+    ucret_R 0.30 oldugu icin ZARARDA (bkz. docs/EXIT_ANALYSIS.md)."""
+    prof = str(cfg.get("profile", default="swing") or "swing")
+    if prof != "swing":
+        ov = (cfg.get("profiles", default={}) or {}).get(prof, {}) or {}
+        sec = ov.get(section, {}) or {}
+        if key in sec:
+            return sec[key]
+    return cfg.get(section, key, default=default)
+
+
 def _strategy_presets(cfg) -> dict:
     """Her stratejinin SABİT preset'i (config'ten) — 1 yıllık dürüst grid'in
     en kârlı none konfigürasyonları. GUI soru sormaz, bunları işler.
@@ -131,36 +147,36 @@ def _strategy_presets(cfg) -> dict:
     onlar için nominaldir."""
     return {
         "fvg":      dict(bias=cfg.get("fvg", "bias", default="none"),
-                         rr=str(cfg.get("fvg", "rr", default="1:2fix")),
+                         rr=str(_profile_get(cfg, "fvg", "rr", "1:2fix")),
                          emf=bool(cfg.get("fvg", "ema_filter", default=True)),
                          blackout=list(cfg.get("fvg", "blackout_hours",
                                                default=[]) or []),
-                         swing_stop=bool(cfg.get("fvg", "swing_stop",
-                                                 default=True)),
+                         swing_stop=bool(_profile_get(cfg, "fvg",
+                                                      "swing_stop", True)),
                          limit_bars=(int(cfg.get("fvg", "limit_entry_bars",
                                                  default=3))
                                      if cfg.get("fvg", "entry_order",
                                                 default="market") == "limit"
                                      else None)),
         "threevol": dict(bias=cfg.get("threevol", "bias", default="none"),
-                         rr=str(cfg.get("threevol", "rr", default="1:2be")),
+                         rr=str(_profile_get(cfg, "threevol", "rr", "1:2be")),
                          emf=bool(cfg.get("threevol", "ema_filter", default=True)),
                          blackout=list(cfg.get("threevol", "blackout_hours",
                                                default=[]) or []),
-                         swing_stop=bool(cfg.get("threevol", "swing_stop",
-                                                 default=False)),
+                         swing_stop=bool(_profile_get(cfg, "threevol",
+                                                      "swing_stop", False)),
                          limit_bars=(int(cfg.get("threevol", "limit_entry_bars",
                                                  default=3))
                                      if cfg.get("threevol", "entry_order",
                                                 default="market") == "limit"
                                      else None)),
         "harmonic": dict(bias=cfg.get("harmonic", "bias", default="none"),
-                         rr=str(cfg.get("harmonic", "rr", default="1:2fix")),
+                         rr=str(_profile_get(cfg, "harmonic", "rr", "1:2fix")),
                          emf=bool(cfg.get("harmonic", "ema_filter", default=True)),
                          blackout=list(cfg.get("harmonic", "blackout_hours",
                                                default=[]) or []),
-                         swing_stop=bool(cfg.get("harmonic", "swing_stop",
-                                                 default=True)),
+                         swing_stop=bool(_profile_get(cfg, "harmonic",
+                                                      "swing_stop", True)),
                          limit_bars=(int(cfg.get("harmonic", "limit_entry_bars",
                                                  default=3))
                                      if cfg.get("harmonic", "entry_order",
@@ -171,12 +187,12 @@ def _strategy_presets(cfg) -> dict:
         "qwe":      dict(bias=cfg.get("qwe", "bias", default="none"),
                          rr="1:2fix", emf=False, blackout=[]),
         "fib":      dict(bias=cfg.get("fib", "bias", default="none"),
-                         rr=str(cfg.get("fib", "rr", default="1:5fix")),
+                         rr=str(_profile_get(cfg, "fib", "rr", "1:5fix")),
                          emf=bool(cfg.get("fib", "ema_filter", default=True)),
                          blackout=list(cfg.get("fib", "blackout_hours",
                                                default=[]) or []),
-                         swing_stop=bool(cfg.get("fib", "swing_stop",
-                                                 default=True)),
+                         swing_stop=bool(_profile_get(cfg, "fib",
+                                                      "swing_stop", True)),
                          limit_bars=(int(cfg.get("fib", "limit_entry_bars",
                                                  default=3))
                                      if cfg.get("fib", "entry_order",
@@ -314,6 +330,12 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                 "london": "london_reversal", "qwe": "qwe", "fib": "fib"}
     _trend_cache: dict = {}
 
+    def _teb(strat: str):
+        """Zaman cikisi (5M bar). config <strateji>.time_exit_bars veya aktif
+        profilin override'i. None/0 = kapali. Scalp profilinde 96 = 8 saat."""
+        v = _profile_get(cfg, _cfg_sec.get(strat, strat), "time_exit_bars", None)
+        return int(v) if v else None
+
     def trend_gate_for(strat: str):
         sec = _cfg_sec.get(strat, strat)
         if not bool(cfg.get(sec, "daily_trend_filter", default=False)):
@@ -332,8 +354,9 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                           swing_stop_1h=bool(p.get("swing_stop", False)),
                           limit_entry_bars=p.get("limit_bars"),
                           entry_gate=combined_gate(strat),
-                          min_stop_pct=float(cfg.get(_cfg_sec.get(strat, strat),
-                                                     "min_stop_pct", default=0.0)),
+                          min_stop_pct=float(_profile_get(
+                              cfg, _cfg_sec.get(strat, strat),
+                              "min_stop_pct", 0.0)),
                           trend_gate=trend_gate_for(strat),
                           # Kısmi TP (config: <strateji>.partial_tp_r/_fraction):
                           # +X R'de pozisyonun bir kısmını kapat + SL'i BE'ye taşı,
@@ -369,20 +392,20 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                         engine = LondonBacktestEngine(
                             LondonReversalBrain(bias_provider=bp), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            time_exit_bars=_teb(strat), ema_macd_filter=p["emf"],
                             **common_kw)
                     elif strat == "qwe":
                         engine = QweBacktestEngine(
                             QweBrain(bias_provider=bp), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            time_exit_bars=_teb(strat), ema_macd_filter=p["emf"],
                             **common_kw)
                     elif strat == "threevol":
                         # Three Vol Directional = ThreeVolBrain (doğrudan momentum)
                         engine = BacktestEngine(
                             ThreeVolBrain(bias_provider=bp), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            time_exit_bars=_teb(strat), ema_macd_filter=p["emf"],
                             **common_kw)
                     elif strat == "fib":
                         # Fib 0.618 retest — kodda vardı ama hiç bağlanmamıştı
@@ -390,7 +413,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                             FibRetestBrain(bias_provider=bp), risk,
                             liq_finder=None,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            time_exit_bars=_teb(strat), ema_macd_filter=p["emf"],
                             **common_kw)
                     elif strat == "harmonic":
                         # Harmonik bot: yalnız harmonik PRZ POI girişleri
@@ -398,7 +421,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                         engine = BacktestEngine(
                             MarketBrain(bias_provider=bp, poi_mode="prz"), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            time_exit_bars=_teb(strat), ema_macd_filter=p["emf"],
                             **common_kw)
                     else:
                         # poi_mode config'ten: 'all' (FVG+PRZ+OB) | 'fvg' | 'ob'.
@@ -411,7 +434,7 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
                                         poi_mode=str(cfg.get("fvg", "poi_mode",
                                                              default="all"))), risk,
                             initial_capital=capital, breakeven_at_R=p_be,
-                            time_exit_bars=None, ema_macd_filter=p["emf"],
+                            time_exit_bars=_teb(strat), ema_macd_filter=p["emf"],
                             **common_kw)
 
                     trades  = engine.run(df_1h, df_5m, bt_start)
@@ -825,6 +848,9 @@ def settings_menu() -> None:
             ("risk.risk_fraction",       f"{cfg.risk_fraction*100:.2f}%", "İşlem başına risk"),
             ("risk.sl_buffer",           f"{cfg.sl_buffer*100:.3f}%", "SL buffer"),
             ("risk.max_risk_dollar",     f"${cfg.get('risk','max_risk_dollar',default=150)}", "Max risk $"),
+            ("profile",
+             ("SCALP ⚠" if cfg.get("profile", default="swing") != "swing"
+              else "swing"), "Profil (swing / scalp)"),
             ("live.leverage",            str(cfg.get("live","leverage",default=10)), "Kaldıraç"),
             ("live.risk_pct",            f"{cfg.get('live','risk_pct',default=1.0)}%", "Canlı risk%"),
             ("live.dry_run",             str(cfg.get("live","dry_run",default=True)), "Kağıt trade?"),
@@ -873,7 +899,29 @@ def settings_menu() -> None:
             console.print(f"  [{C_YEL}]{k}[/] → {sec}.{param}")
 
     console.print()
+    choice_list = list(choice_list) + ["p"]
+    console.print(f"  [bold {C_YEL}]p[/]  Profil değiştir  (swing ↔ scalp)")
     sel = _pick("Değiştirilecek parametre", choice_list, "g")
+    if sel == "p":
+        cur = str(cfg.get("profile", default="swing") or "swing")
+        console.print()
+        console.print(Panel(
+            f"[{C_YEL}]swing[/]  — ana sistem. 5 yıl BingX +134.4R, MT5 +166.6R.\n"
+            f"          Geniş swing stop, 1:5 hedef, zaman çıkışı yok.\n\n"
+            f"[{C_YEL}]scalp[/]  — dar yapısal stop, 1:3 hedef, 8 saat zaman çıkışı.\n"
+            f"          MT5 maliyetiyle +102.7R, düşüş %10.2, pozitif ay %65,\n"
+            f"          medyan süre 3.1 saat, medyan stop 6.3$.\n"
+            f"          [bold {C_RED}]BingX'te ZARARDA[/] (ücret_R 0.30) — yalnız MT5/prop için.\n"
+            f"          [bold {C_RED}]IS/OOS elemesinden GEÇMEDİ[/] — kaba tarama sonucu.",
+            style=C_BLUE, box=ROUNDED, padding=(0, 2)))
+        new = _pick("Profil", ["swing", "scalp"], cur)
+        cfg.set("profile", new)
+        cfg.save()
+        _ok(f"profile → {new}  |  config/default.json kaydedildi.")
+        console.print()
+        Prompt.ask("  [dim]Devam için Enter[/]", default="",
+                   show_default=False, console=console)
+        return
     if sel == "g":
         return
 
@@ -970,6 +1018,9 @@ def live_menu() -> None:
     t.add_column("v", style=C_FG)
     t.add_row("Strateji",  str(cfg.get("live", "strategy", default="fvg")))
     t.add_row("Broker",    str(cfg.get("live", "broker",   default="bingx")))
+    _pf = str(cfg.get("profile", default="swing") or "swing")
+    t.add_row("Profil",    (_pf if _pf == "swing"
+                            else f"[{C_YEL}]{_pf}[/]  (MT5/prop için)"))
     t.add_row("Risk",      f'%{cfg.get("live", "risk_pct", default=1.0)}')
     t.add_row("Kaldıraç",  f'{cfg.get("live", "leverage", default=10)}x')
     t.add_row("Dry-run",   ("AÇIK (emir gönderilmez)"
