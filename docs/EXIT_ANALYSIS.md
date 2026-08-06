@@ -582,3 +582,51 @@ limiti öğrenilmeli**, yoksa backtestteki işlemlerin bir kısmı hiç açılam
 ve sonuç geçersiz olur. Swing bu açıdan rahat (medyan 1.3x).
 
 **Karar: ELENDİ. Config'e dokunulmadı (profile=swing, costs=BingX).**
+
+## EK — BIAS FİLTRELERİ: elendi + LOOKAHEAD HATASI bulundu (2026-08)
+
+`scripts/bias_lab.py` — dört bias modu × dört strateji, IS/OOS ayrımıyla.
+
+### Önce: kodda lookahead bulundu ve düzeltildi
+`DailyBiasProvider.build_from_1h` D gününün bias'ını **D gününün kendi
+kapanışından** türetiyordu (`o = ilk Open`, `c = son Close`, `out[D] = c>o`).
+Sabah işlem açarken o günün kapanışı bilinemez — kâhin filtresi.
+Düzeltildi: bias bir gün kaydırıldı (D'nin bias'ı = D−1'in yönü).
+Doğrulama: 1041/1041 kayıt D−1 ile eşleşiyor; aynı günle tesadüfen uyuşma
+%47 (rastgele ~%50). `build_weekly_from_1h` aynı mantıkla eklendi.
+
+Kapsam sorunu da vardı: `daily_bias.json` 245 kayıtla 2025-07'den başlıyordu
+→ IS'te sıfır işlem, test bias değil TARİH FİLTRESİ ölçüyordu. Yeniden
+üretildi (daily 1041 kayıt / 2021-07→2026-07, weekly 211 kayıt).
+`weekly_bias.json` kendi notunda "hindsight" yazıyordu.
+
+**Ana sistem bias kullanmıyor (`bias: "none"`), yayınlanmış hiçbir sonuç
+bu hatadan etkilenmedi.**
+
+### Sonuç (düzeltilmiş, nedensel veriyle)
+| Strateji | none | daily | weekly | private |
+|---|---|---|---|---|
+| fvg | **+62.0** | +49.0 | +68.9 ⚠ | +21.1 |
+| harmonic | **+41.4** | +9.8 | +13.7 | +21.6 |
+| threevol | +12.5 | +12.5 | +8.6 | **+19.7** |
+| fib | **+18.6** | +1.0 | +16.9 | +12.0 |
+
+`daily` hiçbir yerde işe yaramadı (harmonic +41.4→+9.8, fib +18.6→+1.0).
+
+**fvg+weekly tuzağı:** toplam +68.9R bazın üstünde ama IS +42.6 (baz +33.8)
+iken OOS +26.4 (baz +28.2) — OOS'ta GERİLİYOR. Yalnız toplama bakılsaydı
+kabul edilirdi; IS+OOS şartı bunu yakaladı.
+
+### Tek geçen aday da riske-normalize kıyasta elendi
+threevol+private: 75→47 işlem, WR %38.7→%46.8, IS +2.7→+8.9, OOS +9.7→+10.9.
+Portföy +134.4R → +141.7R (34.586$ → 37.228$) ama düşüş %12.3 → %13.1.
+
+| | İşlem | R | Bakiye | DD | **Eşit riskte** |
+|---|---|---|---|---|---|
+| mevcut (hepsi none) | 210 | +134.4 | 34.586$ | %12.3 | **34.586$** |
+| threevol=private | 182 | +141.7 | 37.228$ | %13.1 | **34.434$ (−%0.4)** |
+
+Ham +7.2R kazanç, düşüş artışıyla tam olarak sıfırlanıyor. Uyarı işareti
+zaten vardı: kazancın çoğu IS'te (IS 3.3 kat, OOS yalnız %12).
+
+**Karar: ELENDİ. Config'e dokunulmadı (tüm stratejiler bias="none").**
