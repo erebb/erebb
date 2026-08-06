@@ -219,7 +219,12 @@ def main() -> None:
         return
     print("  -> kontrol GECTI\n", flush=True)
 
+    # argv ile tek profil kosulabilir (uzun tarama yarida kalirsa kalani surdur):
+    #   python3 scripts/scalp_lab.py "MT5 kotu"
+    want = [a for a in sys.argv[1:] if a in COSTS]
     for cname, cost in COSTS.items():
+        if want and cname not in want:
+            continue
         print("--- maliyet profili: %s ---" % cname, flush=True)
         for label, swing, rr, teb in VARIANTS:
             try:
