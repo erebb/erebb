@@ -325,22 +325,76 @@ class DailyBiasProvider:
     def build_from_1h(df_1h: pd.DataFrame, filepath: str = 'daily_bias.json',
                       flat_pct: float = 0.25) -> Dict[str, str]:
         """
-        1H verisinden her takvim gününün gerçekleşen yönünü (close vs open)
-        üretir ve daily_bias.json'a yazar. |net%| < flat_pct → o gün bias yok.
+        1H verisinden NEDENSEL günlük bias üretir: D gününün bias'ı, D-1
+        gününün gerçekleşmiş yönüdür (close vs open). |net%| < flat_pct →
+        o gün bias yok.
+
+        LOOKAHEAD DÜZELTMESİ (2026-08). Bu fonksiyon önce D gününün bias'ını
+        D gününün KENDİ kapanışından türetiyordu:
+
+            o = g['Open'].iloc[0]; c = g['Close'].iloc[-1]
+            out[D] = 'bull' if c > o else 'bear'
+
+        Sabah işlem açarken o günün nasıl kapanacağı BİLİNEMEZ; bu bir kâhin
+        filtresiydi ve backtestte sahte kâr üretirdi. Artık yön bir gün
+        kaydırılır — D-1 kapandıktan sonra bilinen bilgiyle çalışır.
+        Ana sistem bias kullanmadığı için (config: bias="none") yayınlanmış
+        hiçbir sonuç bu hatadan etkilenmedi.
         """
         df = df_1h.copy()
         df.index = pd.to_datetime(df.index)
         out: Dict[str, str] = {
-            '_kaynak': (f'XAUUSD 1H verisinden günlük yön (close vs open). '
+            '_kaynak': (f'XAUUSD 1H verisinden NEDENSEL günlük yön: D gününün '
+                        f'bias\'ı = D-1 gününün yönü (close vs open). '
                         f'|net%|<{flat_pct} → bias yok.')
         }
+        gunler = []
         for day, g in df.groupby(df.index.normalize()):
             o = float(g['Open'].iloc[0]); c = float(g['Close'].iloc[-1])
             net = (c - o) / o * 100
-            if abs(net) < flat_pct:
-                continue
-            key = pd.Timestamp(day).strftime('%Y-%m-%d')
-            out[key] = 'bull' if c > o else 'bear'
+            gunler.append((pd.Timestamp(day),
+                           None if abs(net) < flat_pct
+                           else ('bull' if c > o else 'bear')))
+        # KAYDIRMA: gün i'nin yönü, gün i+1'e bias olarak yazılır
+        for i in range(len(gunler) - 1):
+            yon = gunler[i][1]
+            if yon:
+                out[gunler[i + 1][0].strftime('%Y-%m-%d')] = yon
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(out, f, ensure_ascii=False, indent=2)
+        return out
+
+    @staticmethod
+    def build_weekly_from_1h(df_1h: pd.DataFrame,
+                             filepath: str = 'weekly_bias.json',
+                             flat_pct: float = 0.5) -> Dict[str, str]:
+        """1H verisinden NEDENSEL haftalık bias: W haftasının bias'ı, W-1
+        haftasının gerçekleşmiş yönüdür. WeeklyBiasProvider ile aynı anahtar
+        formatı (ISO 'YYYY-W##').
+
+        weekly_bias.json normalde ELLE doldurulur; bu üretici yalnız test/
+        karşılaştırma içindir. Mevcut dosya kendi notunda 'hindsight' yazdığı
+        için (W07-W13 gerçekleşen yön) 5 yıllık testte kullanılamazdı."""
+        df = df_1h.copy()
+        df.index = pd.to_datetime(df.index)
+        iso = df.index.isocalendar()
+        key = (iso.year.astype(str) + '-W'
+               + iso.week.astype(int).astype(str).str.zfill(2))
+        out: Dict[str, str] = {
+            '_kaynak': (f'1H verisinden NEDENSEL haftalik yon: W haftasinin '
+                        f'bias\'i = W-1 haftasinin yonu. |net%|<{flat_pct} '
+                        f'-> bias yok.')
+        }
+        haftalar = []
+        for k, g in df.groupby(key.values):
+            o = float(g['Open'].iloc[0]); c = float(g['Close'].iloc[-1])
+            net = (c - o) / o * 100
+            haftalar.append((k, None if abs(net) < flat_pct
+                             else ('bull' if c > o else 'bear')))
+        haftalar.sort(key=lambda t: t[0])
+        for i in range(len(haftalar) - 1):
+            if haftalar[i][1]:
+                out[haftalar[i + 1][0]] = haftalar[i][1]
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(out, f, ensure_ascii=False, indent=2)
         return out
