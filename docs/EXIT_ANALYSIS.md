@@ -547,3 +547,38 @@ Sistemin bildirilen bakiyesi **35.991$ değil, 34.586$** (−%3.9). Yıl yıl:
 (%12.3) DEĞİŞMEDİ** — hepsi R tabanlıydı ve doğruydu. Değişen yalnız dolar
 bileşiği. `scripts/pnl_report.py` ve `scripts/concurrency_lab.py` düzeltildi;
 concurrency_lab artık gereken kaldıracı da basıyor.
+
+## EK — SCALP + İŞLEM LİMİTİ YOK: ELENDİ, ve kaldıraç sorunu (2026-08)
+
+En kârlı scalp varyantı (C: dar yapısal stop + 1:3 hedef + 8 saat zaman
+çıkışı, MT5 maliyeti) işlem limiti kaldırılarak koşuldu. Motor bellekte
+yamandı (concurrency_lab), config bellekte değiştirildi; disk değişmedi.
+
+| Limit | İşlem | Toplam R | Bakiye | Düşüş | **Eşit riskte** | Eş-zaman | Kaldıraç ort/tepe |
+|---|---|---|---|---|---|---|---|
+| N=1 | 302 | +102.7 | 26.715$ | %10.2 | **20.216$** | 1.12/3 | 3.9x / 54.2x |
+| N=2 | 490 | +155.5 | 42.485$ | %21.7 | 19.513$ (−%3.5) | 1.79/5 | 5.9x / 61.1x |
+| N=3 | 648 | +201.6 | 61.950$ | %25.4 | 20.603$ (+%1.9) | 2.38/7 | 7.9x / 61.1x |
+| Limitsiz | 1443 | **+350.5** | 124.037$ | **%56.5** | **15.869$ (−%21.5)** | 5.84/29 | 18.9x / 117.7x |
+
+Ham R üçe katlanıyor ama eşit riskte DÜŞÜYOR. N=3'ün +%1.9'u gürültü:
+N=2 −%3.5 veriyor, sıralama monoton değil. **Swing'deki sonucun aynısı —
+eş-zamanlılık edge katmıyor, riski büyütüyor.** (Beşinci tekrar.)
+
+### Eş-zamanlılıktan BAĞIMSIZ bulgu: scalp yüksek kaldıraç istiyor
+%1 risk sabit, stop yarıya inince pozisyon iki katına çıkar
+(pozisyon = risk / stop). Scalp'in medyan stopu 6.3$, swing'in 15$:
+
+| | Scalp C | Swing |
+|---|---|---|
+| Medyan kaldıraç (işlem başına) | **4.4x** | 1.3x |
+| %95 dilim | **11.4x** | 5.4x |
+| En yüksek tek işlem | **38.4x** (stop 0.53$) | — |
+
+Prop firmalar ve brokerlar altında kaldıracı sınırlar (yaygın 1:20–1:100).
+Scalp işlemlerinin %5'i 11x'in, biri 38x'in üstünde; limitsiz senaryoda tepe
+117.7x — finanse EDİLEMEZ. **Scalp canlıya konmadan önce broker'ın kaldıraç
+limiti öğrenilmeli**, yoksa backtestteki işlemlerin bir kısmı hiç açılamaz
+ve sonuç geçersiz olur. Swing bu açıdan rahat (medyan 1.3x).
+
+**Karar: ELENDİ. Config'e dokunulmadı (profile=swing, costs=BingX).**
