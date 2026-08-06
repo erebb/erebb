@@ -203,6 +203,22 @@ terminaliyle **aynı makinede** çalışır. Linux VPS'te doğrudan koşmaz.
 **Sembol adı** brokerdan brokera değişir (`XAUUSD`, `XAUUSD.a`, `GOLD`,
 `XAUUSDm`). MT5 Market Watch'a ekleyip `live.mt5.symbol`'e doğru adı yazın.
 
+## Arayüzler
+
+| | Komut | Notlar |
+|---|---|---|
+| Terminal (Rich TUI) | `python3 gui.py` | tam özellik: backtest, WFA, matris, veri, ayarlar, canlı işlem |
+| **Tarayıcı** | `python3 web_gui.py` → http://127.0.0.1:8770 | durum, backtest, ay/yıl PnL, profil, raporlar |
+
+`web_gui.py` **bağımlılık istemez** (yalnız stdlib `http.server`) ve terminal
+GUI ile aynı çekirdeği çağırır (`gui._run_strategy` + `config`), böylece iki
+arayüz asla ayrışmaz.
+
+**Güvenlik:** varsayılan olarak yalnız `127.0.0.1`'e bağlanır. `--host 0.0.0.0`
+arayüzü ağa açar; **kimlik doğrulama yoktur**, config değiştirilebilir ve
+backtest başlatılabilir. Canlı emir gönderme bu arayüzde bilinçli olarak
+**yoktur** — o yalnız `gui.py` ve `xauusd_live_trader.py` üzerinden.
+
 ## Hızlı başlangıç
 
 ```bash
