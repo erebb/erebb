@@ -146,6 +146,33 @@ strateji + sermaye seçilir, preset işlenir. Manuel bias girme yok.
 - `tests/` — pytest paketi (179 test): `python3 -m pytest tests -q`
 - `docs/CODE_AUDIT.md` — kod denetim raporu.
 
+## Profiller: swing (varsayılan) ve scalp (yalnız MT5)
+
+`config/default.json` → `profile` = `"swing"` veya `"scalp"`.
+GUI'de **Ayarlar → p** ile değiştirilir.
+
+| | swing | scalp |
+|---|---|---|
+| Durum | **varsayılan**, IS/OOS elemesinden geçti | deneysel, **elemeden geçmedi** |
+| Stop | 1H swing, medyan 15$ | POI yapısı, medyan 6.3$ |
+| Hedef | 1:5 | 1:3 |
+| Zaman çıkışı | yok | 8 saat |
+| BingX | +134.4R (34.586$) | **−0.7R** ❌ |
+| MT5 | **+166.6R** (47.444$) | +102.7R (26.715$) |
+| Düşüş | %12.3 | %10.2 |
+| Pozitif ay | %62 | %65 |
+| Medyan kaldıraç | **1.3x** | 4.4x (%95 dilim 11.4x, uç 38.4x) |
+| Prop (%10 limit) | risk %0.56 → **28.560$** | risk %0.74 → 20.854$ |
+
+**Scalp yalnızca MT5 ile çalışır** (`requires_broker: "mt5"`). Sebep ücret
+denklemi: `ücret_R ≈ ücret% × fiyat / stop`. 6.3$'lık stopta ücret 1R
+kazancın BingX'te %30'unu, MT5'te %1.9'unu yer. Hem GUI hem canlı bot yanlış
+broker ile başlatmayı engeller.
+
+**Scalp'i canlıya koymadan önce broker'ın kaldıraç limitini öğrenin.**
+İşlemlerin %5'i 11x'in, biri 38x'in üstünde kaldıraç ister; limit bunun
+altındaysa o işlemler hiç açılamaz ve backtest sonucu geçersiz olur.
+
 ## Broker: BingX veya MetaTrader 5
 
 `config/default.json` → `live.broker` = `"bingx"` (varsayılan) veya `"mt5"`.

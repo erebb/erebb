@@ -2,32 +2,34 @@
   "version": "10.0",
   "profile": "swing",
   "profiles": {
-    "_not": "Aktif profil 'profile' anahtariyla secilir. 'swing' = config'teki ana ayarlar (hicbir override uygulanmaz). 'scalp' asagidaki override'lari uygular; MT5/prop firm komisyon yapisi icin tasarlandi. BingX'te scalp ZARARDA (ucret_R 0.30) - orada kullanmayin.",
+    "_not": "Aktif profil 'profile' anahtariyla secilir. 'swing' = ana sistem (config'teki ayarlar, hicbir override yok). Bir profilde 'requires_broker' varsa o profil YALNIZ o broker ile calisir; gui ve canli bot engeller.",
     "scalp": {
-      "_not": "scalp D varyanti: dar yapisal stop + 1:1.5 hedef + 2 saat zaman cikisi. 5 yil MT5 maliyetiyle +66.1R, DD %7.3, pozitif ay %72 (39/54), zarar ayi 15, en uzun kayip serisi 6 islem, medyan sure 1.6 saat, medyan stop 6.6$. Dusuk dususu sayesinde prop hesabinda %1.01 risk kullanilabilir -> 19.136$. UYARI: IS/OOS elemesinden GECMEDI. BingX'te ZARARDA (-41.6R).",
+      "_not": "SCALP C — YALNIZ MT5. Dar yapisal stop + 1:3 hedef + 8 saat zaman cikisi. 5 yil MT5 maliyetiyle +102.7R, DD %10.2, pozitif ay %65 (35/54), 302 islem, medyan sure 3.1 saat, medyan stop 6.3$. Prop (%10 limit, %20 tampon): risk %0.74 -> 20.854$. Karsilastirma: swing MT5'te +166.6R, prop 28.560$.",
+      "_uyari": "(1) BINGX'TE ZARARDA: ucret_R 0.30 (MT5'te 0.019) -> -0.7R. requires_broker ile korunur. (2) IS/OOS elemesinden GECMEDI, kaba tarama sonucudur. (3) KALDIRAC: medyan 4.4x, %95 dilim 11.4x, en yuksek 38.4x (stop 0.53$). Brokerin/prop firmanin kaldirac limiti bunun altindaysa backtestteki islemlerin bir kismi HIC ACILAMAZ ve sonuc gecersiz olur. Swing medyan 1.3x.",
+      "requires_broker": "mt5",
       "fvg": {
         "swing_stop": false,
-        "rr": "1:1.5",
+        "rr": "1:3fix",
         "min_stop_pct": 0.0,
-        "time_exit_bars": 24
+        "time_exit_bars": 96
       },
       "harmonic": {
         "swing_stop": false,
-        "rr": "1:1.5",
+        "rr": "1:3fix",
         "min_stop_pct": 0.0,
-        "time_exit_bars": 24
+        "time_exit_bars": 96
       },
       "threevol": {
         "swing_stop": false,
-        "rr": "1:1.5",
+        "rr": "1:3fix",
         "min_stop_pct": 0.0,
-        "time_exit_bars": 24
+        "time_exit_bars": 96
       },
       "fib": {
         "swing_stop": false,
-        "rr": "1:1.5",
+        "rr": "1:3fix",
         "min_stop_pct": 0.0,
-        "time_exit_bars": 24
+        "time_exit_bars": 96
       }
     }
   },

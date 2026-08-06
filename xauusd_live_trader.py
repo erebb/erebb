@@ -1799,6 +1799,30 @@ def main() -> None:
             broker = 'bingx'
     broker = str(broker).lower()
 
+    # ── PROFIL / BROKER KILIDI ──────────────────────────────────────────
+    # Scalp profili yalnizca MT5 komisyon yapisinda karli: 6.3$'lik stopta
+    # ucret_R BingX'te 0.30 (1R kazancin %30'u), MT5'te 0.019. BingX'te scalp
+    # 5 yilda -0.7R getiriyor. GUI de engelliyor; bu kontrol botu dogrudan
+    # calistiranlar icin.
+    try:
+        from config import get_config as _gc
+        _cfg = _gc()
+        _prof = str(_cfg.get('profile', default='swing') or 'swing')
+        _need = ((_cfg.get('profiles', default={}) or {})
+                 .get(_prof, {}) or {}).get('requires_broker')
+        if _need and str(_need).lower() != broker:
+            print("HATA: profil '%s' yalnizca '%s' broker ile calisir "
+                  "(secili: '%s')." % (_prof, _need, broker))
+            print("      config/default.json -> profile'i 'swing' yapin veya")
+            print("      --broker %s ile calistirin." % _need)
+            sys.exit(1)
+        if _prof != 'swing':
+            print("  Profil: %s  (broker %s)" % (_prof, broker))
+    except SystemExit:
+        raise
+    except Exception:
+        pass
+
     if broker == 'mt5':
         # MT5: kimlik doğrulama terminal üzerinden yapılır, API anahtarı yok.
         # Sembol adı brokerdan brokera değişir (XAUUSD, XAUUSD.a, GOLD...).

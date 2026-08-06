@@ -140,6 +140,33 @@ def _profile_get(cfg, section: str, key: str, default=None):
     return cfg.get(section, key, default=default)
 
 
+def _profile_requires(cfg, profile: str | None = None) -> str | None:
+    """Aktif profilin zorunlu kildigi broker (yoksa None).
+
+    Scalp yalnizca MT5 komisyon yapisinda karli: 6.3$'lik stopta ucret_R
+    BingX'te 0.30 (1R kazancin %30'u), MT5'te 0.019. BingX'te scalp 5 yilda
+    -0.7R getiriyor. Bu yuzden profile requires_broker konur ve gui/canli bot
+    yanlis broker ile calistirmayi ENGELLER."""
+    prof = profile or str(cfg.get("profile", default="swing") or "swing")
+    if prof == "swing":
+        return None
+    ov = (cfg.get("profiles", default={}) or {}).get(prof, {}) or {}
+    return ov.get("requires_broker")
+
+
+def _profile_broker_conflict(cfg, broker: str | None = None) -> str | None:
+    """Uyumsuzluk varsa aciklama metni, yoksa None."""
+    need = _profile_requires(cfg)
+    if not need:
+        return None
+    cur = (broker or str(cfg.get("live", "broker", default="bingx"))).lower()
+    if cur == str(need).lower():
+        return None
+    prof = str(cfg.get("profile", default="swing"))
+    return ("Profil '%s' yalnizca '%s' broker ile calisir; secili broker '%s'."
+            % (prof, need, cur))
+
+
 def _strategy_presets(cfg) -> dict:
     """Her stratejinin SABİT preset'i (config'ten) — 1 yıllık dürüst grid'in
     en kârlı none konfigürasyonları. GUI soru sormaz, bunları işler.
@@ -906,18 +933,28 @@ def settings_menu() -> None:
         cur = str(cfg.get("profile", default="swing") or "swing")
         console.print()
         console.print(Panel(
-            f"[{C_YEL}]swing[/]  — ana sistem. 5 yıl BingX +134.4R, MT5 +166.6R.\n"
-            f"          Geniş swing stop, 1:5 hedef, zaman çıkışı yok.\n\n"
-            f"[{C_YEL}]scalp[/]  — dar yapısal stop, 1:3 hedef, 8 saat zaman çıkışı.\n"
-            f"          MT5 maliyetiyle +102.7R, düşüş %10.2, pozitif ay %65,\n"
-            f"          medyan süre 3.1 saat, medyan stop 6.3$.\n"
-            f"          [bold {C_RED}]BingX'te ZARARDA[/] (ücret_R 0.30) — yalnız MT5/prop için.\n"
-            f"          [bold {C_RED}]IS/OOS elemesinden GEÇMEDİ[/] — kaba tarama sonucu.",
+            f"[{C_YEL}]swing[/]  — ana sistem, 5 yıllık IS/OOS elemesinden geçti.\n"
+            f"          BingX +134.4R (34.586$) · MT5 +166.6R (47.444$)\n"
+            f"          Düşüş %12.3 · pozitif ay %62 · medyan kaldıraç 1.3x\n"
+            f"          Prop (%10 limit): risk %0.56 → 28.560$\n\n"
+            f"[{C_YEL}]scalp[/]  — [bold]YALNIZ MT5[/]. Dar stop, 1:3 hedef, 8s zaman çıkışı.\n"
+            f"          MT5 +102.7R (26.715$) · düşüş %10.2 · pozitif ay %65\n"
+            f"          Medyan süre 3.1 saat · medyan stop 6.3$\n"
+            f"          Prop (%10 limit): risk %0.74 → 20.854$\n"
+            f"          [bold {C_RED}]BingX'te −0.7R[/] (ücret_R 0.30 vs MT5 0.019)\n"
+            f"          [bold {C_RED}]IS/OOS elemesinden GEÇMEDİ[/]\n"
+            f"          [bold {C_RED}]Kaldıraç: medyan 4.4x, %95 dilim 11.4x, uç 38.4x[/]\n"
+            f"          Broker limiti bunun altındaysa bazı işlemler açılamaz.",
             style=C_BLUE, box=ROUNDED, padding=(0, 2)))
         new = _pick("Profil", ["swing", "scalp"], cur)
         cfg.set("profile", new)
         cfg.save()
         _ok(f"profile → {new}  |  config/default.json kaydedildi.")
+        warn = _profile_broker_conflict(cfg)
+        if warn:
+            _err(warn)
+            _info("Canlı işlem menüsü bu profille BingX'i kabul etmez. "
+                  "Broker'ı MT5 yapın (menü 6) veya profili swing'e alın.")
         console.print()
         Prompt.ask("  [dim]Devam için Enter[/]", default="",
                    show_default=False, console=console)
@@ -1047,6 +1084,21 @@ def live_menu() -> None:
     broker = _pick("Broker seç", choices,
                    str(cfg.get("live", "broker", default="bingx")))
     if broker == "q":
+        return
+
+    conflict = _profile_broker_conflict(cfg, broker)
+    if conflict:
+        console.print()
+        console.print(Panel(
+            f"[bold {C_RED}]ENGELLENDİ[/]  {conflict}\n\n"
+            "Scalp profili yalnızca MT5 komisyon yapısında kârlıdır: 6.3$'lık "
+            "stopta ücret 1R kazancın BingX'te %30'unu, MT5'te %1.9'unu yer. "
+            "BingX'te scalp 5 yılda −0.7R getiriyor.\n\n"
+            "Ayarlar → p ile profili 'swing' yapın veya MT5 brokerını seçin.",
+            style=C_RED, box=ROUNDED, padding=(0, 2)))
+        console.print()
+        Prompt.ask("  [dim]Devam için Enter[/]", default="",
+                   show_default=False, console=console)
         return
 
     if broker != str(cfg.get("live", "broker", default="bingx")):
