@@ -1714,7 +1714,7 @@ _CONFIG_TEMPLATE = {
     "api_secret": "YOUR_BINGX_API_SECRET",
     "symbol":     "NCCGOLD2USD-USDT",  # = uygulamadaki 'GOLD(XAU)-USDT'
     "leverage":   10,
-    "risk_pct":   1.0,
+    "_not_risk":  "risk_pct ve leverage burada YOKSA config/default.json -> live.* kullanilir",
     "capital":    0,
 }
 
@@ -1784,8 +1784,30 @@ def main() -> None:
     api_key    = cfg.get('api_key',    '')
     api_secret = cfg.get('api_secret', '')
     symbol     = args.symbol   or cfg.get('symbol',   'NCCGOLD2USD-USDT')
-    leverage   = args.leverage or int(cfg.get('leverage', 10))
-    risk_pct   = args.risk_pct or float(cfg.get('risk_pct',  1.0))
+    leverage = args.leverage
+    if leverage is None:
+        leverage = cfg.get('leverage')
+    if leverage is None:
+        try:
+            from config import get_config as _gc3
+            leverage = _gc3().get('live', 'leverage', default=10)
+        except Exception:
+            leverage = 10
+    leverage = int(leverage)
+    # Risk yuzdesi: CLI > live_config.json > config/default.json (live.risk_pct)
+    # PARITE NOTU: eskiden yalniz live_config.json okunuyordu; config/default.json'daki
+    # live.risk_pct GUI'de gorunuyor ama BOT KULLANMIYORDU. RR'de yasanan ayni
+    # tuzak (sabit 2.0) — iki kaynak ayrisirsa canlida yanlis pozisyon boyutu.
+    risk_pct = args.risk_pct
+    if risk_pct is None:
+        risk_pct = cfg.get('risk_pct')
+    if risk_pct is None:
+        try:
+            from config import get_config as _gc2
+            risk_pct = _gc2().get('live', 'risk_pct', default=1.0)
+        except Exception:
+            risk_pct = 1.0
+    risk_pct = float(risk_pct)
     capital    = (args.balance if args.balance is not None
                   else float(cfg.get('capital', 0)))
 
