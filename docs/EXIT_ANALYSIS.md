@@ -630,3 +630,47 @@ Ham +7.2R kazanç, düşüş artışıyla tam olarak sıfırlanıyor. Uyarı iş
 zaten vardı: kazancın çoğu IS'te (IS 3.3 kat, OOS yalnız %12).
 
 **Karar: ELENDİ. Config'e dokunulmadı (tüm stratejiler bias="none").**
+
+## EK — VWAP FİLTRESİ: dört çapada da ELENDİ (2026-08)
+
+`scripts/vwap_lab.py` — saatlik / günlük / haftalık / aylık çapa, 210 işlemin
+TAMAMI üzerinde, 44 filtre varyantı. VWAP ve σ shift(1) ile nedensel.
+
+### Önce: kendi testimde bulunan hata
+İlk tarama 5M verideki **sıfır hacimli barları 1.0** yapıyordu. Veride
+519.264 barın **169.129'u (%32.6)** sıfır hacimli (hafta sonu ve seans
+kapanışlarında doldurulmuş barlar; 21:00 UTC'de tepe yapıyor). Bu, VWAP'ı
+kısmen basit ortalamaya çeviriyor ve ayırt gücünü **yapay olarak
+0.145'ten 0.308'e** şişiriyordu. Düzeltildi: sıfır hacimli barlar birikime
+katılmaz. Rapor edilen d=0.308 GEÇERSİZ, doğrusu 0.145.
+
+### Ayırt gücü — hiçbiri anlamlı değil
+| Çapa | Geçerli | Kazanan z_al | Kaybeden z_al | Cohen d |
+|---|---|---|---|---|
+| saatlik | 199/210 | 1.382 | 1.157 | +0.119 |
+| günlük | 209/210 | 1.398 | 1.216 | +0.145 |
+| haftalık | 209/210 | 1.200 | 1.172 | **+0.026** |
+| aylık | 210/210 | 1.040 | 0.800 | **+0.209** |
+
+### 44 varyantın hiçbiri geçmedi
+| Çapa | En iyi filtre | Toplam (baz +134.4R) |
+|---|---|---|
+| saatlik | \|z\| ≤ 3.0 | +118.6R (−15.8) |
+| günlük | \|z\| ≤ 3.0 | +128.6R (−5.8) |
+| haftalık | \|z\| ≤ 3.0 | +134.7R (+0.3) ⚠ |
+| aylık | \|z\| ≤ 3.0 | +129.5R (−4.9) |
+
+Haftalık `|z|≤3.0` toplamda +0.3R ile bazın üstünde ama **IS +3.8 / OOS −3.5**
+— OOS'ta geriliyor, elendi. Zaten 209 işlemin 204'ünü tutuyor (5 işlem farkı).
+
+### Öğrenilen
+Çapa uzadıkça kazanan-kaybeden farkı açılıyor (aylık en yüksek). Sistemin
+işlemleri ortalama 206 saat taşındığı için saatlik VWAP o ölçekte gürültü,
+aylık anlamlı bir referans. Ama anlamlı olmak kârlı olmayı sağlamıyor.
+
+### Veri notu (VWAP dışına da uzanır)
+5M verinin %32.6'sı sıfır hacimli. Hacme dayalı HER gösterge bu veri setinde
+şüpheli. Fiyat bazlı göstergeler (EMA/MACD/ATR) etkilenmez ve **sistemin
+kendisi hacim kullanmıyor** — yayınlanmış sonuçlar etkilenmedi.
+
+**Karar: ELENDİ. Config'e dokunulmadı.**
