@@ -674,3 +674,51 @@ aylık anlamlı bir referans. Ama anlamlı olmak kârlı olmayı sağlamıyor.
 kendisi hacim kullanmıyor** — yayınlanmış sonuçlar etkilenmedi.
 
 **Karar: ELENDİ. Config'e dokunulmadı.**
+## EK — SEANS HİZALAMA İDDİALARININ ÖLÇÜMÜ (2026-08)
+
+`scripts/session_lab.py` — kullanıcının ileri sürdüğü dört seans iddiası
+1.274 iş günü (2021-08 → 2026-07) üzerinde ölçüldü. Wilson %95 güven
+aralıklarıyla. Seanslar (UTC): Tokyo 00–08, Londra 07–16, NY 12–21.
+
+| İddia | İleri sürülen | Ölçüm | %95 aralık | Sonuç |
+|---|---|---|---|---|
+| Üç seans aynı hizada | %30 | **%39.4** | 36.8–42.1 | daha GÜÇLÜ |
+| Londra = NY | %62 | **%74.5** | 72.0–76.8 | çok daha GÜÇLÜ |
+| Tokyo teyit edici | — | fark −1.0 puan | örtüşüyor | gösterilemedi |
+| NY ters manipülasyon | %40 | eşiğe bağlı | — | aşağıya bak |
+
+Rastgelelik referansı: üç seansın aynı yönde olması şans eseri %25 olurdu;
+%39.4 anlamlı yapı gösteriyor.
+
+### Tokyo'nun teyit değeri yok
+| Durum | Londra = NY |
+|---|---|
+| Tokyo, Londra ile UYUMLU | %74.0 [70.6–77.2] |
+| Tokyo, Londra ile TERS | %75.0 [71.4–78.3] |
+
+Güven aralıkları tamamen örtüşüyor. Tokyo'nun yönü Londra–NY uyumu hakkında
+bilgi taşımıyor. Tokyo'nun diğer seanslarla uyumu da yazı-tura seviyesinde
+(Tokyo=Londra %53.2, Tokyo=NY %51.1) — Londra=NY %74.5 ile kıyaslanınca
+Tokyo'nun ayrı bir hayvan olduğu görülüyor.
+
+### "NY manipülasyonu" sıradan oynaklık
+NY seansı içinde, seansın nihai yönünün TERSİNE hareket:
+
+| Eşik | Ters | Lehte |
+|---|---|---|
+| ≥0.10×ATR | %64.2 | **%97.8** |
+| ≥0.15×ATR | %50.5 | **%94.7** |
+| ≥0.20×ATR | %38.1 | **%90.0** |
+
+%40'ı yakalamak için eşiği 0.20×ATR seçmek gerekir — eşik seçilerek her oran
+üretilebilir, bu döngüsel olur. Asıl kanıt karşılaştırmada: LEHTE hareket her
+eşikte ~2 KAT daha sık. Gerçek bir manipülasyon deseni olsaydı ters hareketin
+daha sık veya daha derin olması gerekirdi; tersi çıkıyor. Bu, bir seans
+kapanış yönüne giderken yolda iki yöne de salınmasının doğal sonucu.
+
+### Uyarı: bunlar edge değil, istatistik
+Londra 07–16 ile NY 12–21 ÖRTÜŞÜYOR; Londra kapandığında NY'nin bir kısmı
+zaten geçmiş oluyor. %74.5 uyum "Londra yukarı kapandıysa NY'de long aç"
+demek DEĞİLDİR. İşlem edilebilir sinyale çevirmek ayrı bir test gerektirir.
+
+**Config'e dokunulmadı — bu bir ölçüm, mekanizma değişikliği değil.**
