@@ -290,12 +290,22 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
     # TÜM stratejiler SABİT preset'le koşar (en kârlı none konfigürasyonları)
     presets = _strategy_presets(cfg)
 
-    # Maliyet modeli (config: costs) — 0 = kapalı; gerçek ücretlerinizi girin
+    # Maliyet modeli — AKTIF BROKER'a göre (config: costs_by_broker[broker],
+    # yoksa costs). Backtest ve canlı aynı ücreti kullanmalı; ayrışırsa
+    # backtest yanıltır (BingX %0.07 gidiş-dönüş vs MT5 ~%0.0026 → 27 kat fark).
+    _bro = str(cfg.get("live", "broker", default="bingx")).lower()
+    _cbb = (cfg.get("costs_by_broker", default={}) or {}).get(_bro)
+
+    def _cost(k, d):
+        if _cbb and k in _cbb:
+            return float(_cbb[k])
+        return float(cfg.get("costs", k, default=d))
+
     cost_kw = dict(
-        cost_spread_usd=float(cfg.get("costs", "spread_usd", default=0.0)),
-        cost_slippage_usd=float(cfg.get("costs", "slippage_usd", default=0.0)),
-        cost_commission_pct=float(cfg.get("costs", "commission_pct", default=0.0)),
-        cost_maker_pct=float(cfg.get("costs", "maker_pct", default=0.02)),
+        cost_spread_usd=_cost("spread_usd", 0.0),
+        cost_slippage_usd=_cost("slippage_usd", 0.0),
+        cost_commission_pct=_cost("commission_pct", 0.0),
+        cost_maker_pct=_cost("maker_pct", 0.02),
         # HER İŞLEM EŞİT RİSK (config risk.risk_fraction; 0.01 = %1)
         uniform_risk_fraction=float(cfg.get("risk", "risk_fraction",
                                             default=0.01)),
