@@ -722,3 +722,48 @@ zaten geçmiş oluyor. %74.5 uyum "Londra yukarı kapandıysa NY'de long aç"
 demek DEĞİLDİR. İşlem edilebilir sinyale çevirmek ayrı bir test gerektirir.
 
 **Config'e dokunulmadı — bu bir ölçüm, mekanizma değişikliği değil.**
+
+## EK — F2 KLİMAKS+RET ve TERS-MARTİNGALE: ikisi de ELENDİ (2026-08)
+
+Dış kaynaklı bir bot tanımından (MARK 1.8) iki mekanizma test edildi:
+`scripts/f2_climax_lab.py`.
+
+### F2 — klimaks + ret filtresi
+Klimaks: H1 barının aralığı ≥ K×ATR14. Ret: aynı barda kapanış hareketin
+tersine çekilmiş (boğa için kapanış aralığın üst %40'ında ve alt fitil ≥
+aralığın yarısı). Filtre: girişten önceki N H1 barında işlem yönünde
+klimaks+ret varsa izin ver. Hacim KULLANILMADI (5M verinin %32.6'sı sıfır
+hacimli), klimaks aralık tabanlı.
+
+| K | N bar | İşlem | Toplam (baz +134.4R) |
+|---|---|---|---|
+| 1.5 | 6 | 21 | +15.2R |
+| 1.5 | 12 | 35 | +27.6R |
+| 2.0 | 12 | 23 | **+30.9R** |
+
+En iyisi 210 işlemin 187'sini kesiyor. Diğer eşiklerde örneklem <20.
+**NOT:** bu, F2'nin kendi botlarında işe yaramayacağı anlamına gelmez —
+oradaki üretici tek motor (H1 FVG), bizimki dört strateji + günlük SMA200
+kapısı; sistem zaten seçici.
+
+### RM — ters-martingale (piramit) boyutlandırma
+Taban %1, her ardışık kazançta ×çarpan, %8 tavan, kayıpta tabana dön.
+
+**İLK HESAP HATALIYDI** (sıralı bileşik; sistem ort. 1.33 pozisyon taşıyor).
+Olay tabanlı doğru hesap:
+
+| Çarpan | Bakiye | DD | Max risk | Eşit riskte |
+|---|---|---|---|---|
+| yok (%1) | 34.586$ | %12.3 | %1.00 | **34.586$** |
+| ×1.25 | 39.214$ | %12.6 | %3.05 | 37.905$ |
+| ×1.50 | 46.508$ | %17.5 | %7.59 | 30.134$ |
+| ×2.00 | 51.230$ | %23.6 | %8.00 | **25.196$** |
+
+Sıralı hesapta ×2.00 için 62.587$ çıkmıştı; doğrusu 25.196$ (2.5 kat hata).
+×1.25 eşit riskte +%9.6 ama ×1.50/×2.00 negatif — monoton değil, gürültü.
+
+**Neden çalışmıyor:** WR %35'te uzun kazanç serisi oluşmuyor.
+Seri dağılımı: 1 işlem×17, 2×16, 3×4, 4×2, 5×1. %8 tavana BİR kez ulaşılıyor.
+Dayanıklılık da kötü: ×2.00'de en iyi 5 işlem çıkarılırsa kâr %67 düşüyor.
+
+**Karar: ikisi de ELENDİ. Config'e dokunulmadı.**
