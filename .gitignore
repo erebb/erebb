@@ -11,3 +11,7 @@ xauusd_15m.csv
 
 # Ay ay rapor çıktıları (scripts/monthly_charts.py ile üretilir, ~10MB)
 reports/monthly/
+
+# gecici laboratuvar ciktilari (konteyner reset'lerinde korunsun diye repo icinde
+# tutuluyor ama versiyonlanmiyor)
+.labtmp/
