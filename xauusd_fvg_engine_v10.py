@@ -2326,6 +2326,18 @@ class BacktestEngine:
         return (qty * (self.cost_spread_usd + 2.0 * self.cost_slippage_usd)
                 + self.cost_commission_pct / 100.0 * qty * (t.entry_price + ep))
 
+    def _entry_hour(self, idx: int):
+        """Giris barinin UTC saati (hibrit RR icin). Emir SONRAKI barin
+        acilisinda dolar -> idx+1. TM run() icinde self._tm'e baglanir;
+        yoksa None doner ve RiskManager varsayilan RR'yi kullanir."""
+        tm = getattr(self, '_tm', None)
+        if tm is None or len(tm) == 0:
+            return None
+        try:
+            return to_naive(tm[min(idx + 1, len(tm) - 1)]).hour
+        except Exception:
+            return None
+
     def _reject_tight_stop(self, entry: float, stop_price: float) -> bool:
         """min_stop_pct kapısı: stop mesafesi giriş fiyatının %X'inden dar mı?
 
@@ -2382,8 +2394,7 @@ class BacktestEngine:
         r = self.risk.compute(signal.direction, entry,
                               stop_price, equity, (self.uniform_risk_fraction or signal.risk_fraction),
                               tp_override=tp_override,
-                              entry_hour=to_naive(
-                                  TM[min(idx + 1, len(TM) - 1)]).hour)
+                              entry_hour=self._entry_hour(idx))
         if r is None:
             return None
         # Genel kısmi-TP (opt-in): +partial_tp_r R'de kısmi kâr + SL→BE
@@ -2510,6 +2521,9 @@ class BacktestEngine:
         E200 = df5['ema200'].values.astype(float)
         RSI  = df5['rsi'].values.astype(float)
         TM   = df5.index
+        # HIBRIT RR icin: _make_entry_trade metodu TM'e erisemez (yerel
+        # degisken). Giris barinin saatini oradan okuyabilmek icin baglanir.
+        self._tm = TM
 
         bs      = to_naive(backtest_start)
         bt_idx  = np.where(np.array([to_naive(t) >= bs for t in TM]))[0]
@@ -3969,8 +3983,7 @@ class FibBacktestEngine(BacktestEngine):
                               signal.stop_price, equity,
                               (self.uniform_risk_fraction or signal.risk_fraction),
                               tp_override=tp_override,
-                              entry_hour=to_naive(
-                                  TM[min(idx + 1, len(TM) - 1)]).hour)
+                              entry_hour=self._entry_hour(idx))
         if r is None:
             return None
         return Trade(
@@ -4674,8 +4687,7 @@ class LondonBacktestEngine(BacktestEngine):
             return None
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
                               (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2,
-                              entry_hour=to_naive(
-                                  TM[min(idx + 1, len(TM) - 1)]).hour)
+                              entry_hour=self._entry_hour(idx))
         if r is None:
             return None
         return Trade(
@@ -5335,8 +5347,7 @@ class QweBacktestEngine(BacktestEngine):
             return None
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
                               (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2,
-                              entry_hour=to_naive(
-                                  TM[min(idx + 1, len(TM) - 1)]).hour)
+                              entry_hour=self._entry_hour(idx))
         if r is None:
             return None
         return Trade(
