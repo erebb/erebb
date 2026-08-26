@@ -1,0 +1,7 @@
+Strateji │ Bias            │ RR     │ İşlem │   W/L │ WR % │ NetPnL $ │ Ret % │   PF │ Sharpe │ MaxDD %  
+ ══════════╪═════════════════╪════════╪═══════╪═══════╪══════╪══════════╪═══════╪══════╪════════╪═════════ 
+  FVG      │ none            │ 1:2fix │    91 │ 36/55 │ 39.6 │  +747.73 │ +7.48 │ 1.26 │   0.87 │    3.47  
+  THREEVOL │ none            │ 1:2fix │     — │     — │    — │        — │     — │    — │      — │       —  
+  LONDON   │ private (sabit) │ 1:2fix │     — │     — │    — │        — │     — │    — │      — │       —  
+  QWE      │ none (sabit)    │ 1:2fix │     6 │   3/3 │ 50.0 │   +97.70 │ +0.98 │ 1.64 │   0.65 │    1.00  
+sonuçları böyle veriyor ve 1 yıllıkta eskisine göre daha az işlem buldu? threevol london işlem yok gösteriyor?

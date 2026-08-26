@@ -1,0 +1,581 @@
+"""
+Standart Test Matrisi — XAUUSD FVG Engine v10
+=============================================
+BÖLÜM T: TBE taraması              — 3 STR × 3 BİAS × 4 TBE = 36 test
+BÖLÜM A: FVG v10 (optimal TBE)    — 3 BİAS × 3 RR = 9 test
+BÖLÜM C: Three_vol (optimal TBE)  — 3 BİAS × 3 RR = 9 test
+BÖLÜM G: PRZ Only (optimal TBE)   — 3 BİAS × 3 RR = 9 test
+
+Kullanım: python3 scripts/run_test_matrix.py
+"""
+
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+import io
+import contextlib
+
+import numpy as np
+import pandas as pd
+
+from xauusd_fvg_engine_v10 import (
+    DataEngine, MarketBrain, RiskManager, BacktestEngine,
+    PerformanceAnalytics, WeeklyBiasProvider, DailyBiasProvider,
+    PrivateBiasProvider,
+    ThreeVolBrain, LondonReversalBrain, LondonBacktestEngine,
+    to_naive,
+)
+
+INITIAL_CAPITAL = 10_000
+
+RR_CONFIGS = [
+    ('1:1',       1.0, None),
+    ('1:2 BE@1R', 2.0, 1.0),
+    ('1:2 fix',   2.0, None),
+]
+
+BIAS_MODES = ['weekly', 'daily', 'none', 'private']
+
+TBE_OPTIONS = [
+    ('Yok',    None),
+    ('TBE-2h', 24),
+    ('TBE-4h', 48),
+    ('TBE-8h', 96),
+]
+
+
+def make_bias(mode, df_1h):
+    if mode == 'none':
+        return None
+    if mode == 'daily':
+        if not Path('daily_bias.json').exists():
+            DailyBiasProvider.build_from_1h(df_1h, 'daily_bias.json')
+        return DailyBiasProvider('daily_bias.json')
+    if mode == 'private':
+        return PrivateBiasProvider(df_1h)
+    return WeeklyBiasProvider('weekly_bias.json')
+
+
+def run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
+            poi_mode='all', tbe=None, emf=False):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        bias_provider = make_bias(bias_mode, df_1h)
+        brain    = MarketBrain(bias_provider=bias_provider, poi_mode=poi_mode)
+        risk_mgr = RiskManager(rr=rr, sl_buffer=0.0005)
+        engine   = BacktestEngine(brain, risk_mgr,
+                                  initial_capital=INITIAL_CAPITAL,
+                                  breakeven_at_R=be,
+                                  time_exit_bars=tbe,
+                                  ema_macd_filter=emf)
+        trades   = engine.run(df_1h, df_5m, bt_start)
+        analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
+        metrics   = analytics.compute()
+    return trades, metrics
+
+
+def run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be, tbe=None, emf=False):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        bias_provider = make_bias(bias_mode, df_1h)
+        brain    = ThreeVolBrain(bias_provider=bias_provider)
+        risk_mgr = RiskManager(rr=rr, sl_buffer=0.0005)
+        engine   = BacktestEngine(brain, risk_mgr,
+                                  initial_capital=INITIAL_CAPITAL,
+                                  breakeven_at_R=be,
+                                  time_exit_bars=tbe,
+                                  ema_macd_filter=emf)
+        trades   = engine.run(df_1h, df_5m, bt_start)
+        analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
+        metrics   = analytics.compute()
+    return trades, metrics
+
+
+def run_one_london(df_1h, df_5m, bt_start, bias_mode, be, tbe=None, emf=False):
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        bias_provider = make_bias(bias_mode, df_1h)
+        brain    = LondonReversalBrain(bias_provider=bias_provider)
+        risk_mgr = RiskManager(rr=2.0, sl_buffer=0.0005)
+        engine   = LondonBacktestEngine(brain, risk_mgr,
+                                        initial_capital=INITIAL_CAPITAL,
+                                        breakeven_at_R=be,
+                                        time_exit_bars=tbe,
+                                        ema_macd_filter=emf)
+        trades   = engine.run(df_1h, df_5m, bt_start)
+        analytics = PerformanceAnalytics(trades, INITIAL_CAPITAL)
+        metrics   = analytics.compute()
+    return trades, metrics
+
+
+def _print_row(row):
+    pf_str = f"{row['pf']:.2f}" if row['pf'] != float('inf') else "inf"
+    print(f"  {row['bias']:<8} {row['rr']:<11} {row['total']:>4} "
+          f"{row['wins']:>4} {row['losses']:>5} {row['be']:>3} "
+          f"{row['wr']:>6.1f} {row['pnl']:>+11.2f} {row['ret']:>+7.2f} "
+          f"{pf_str:>6} {row['sharpe']:>7.2f} {row['maxdd']:>7.2f}")
+
+
+def _header():
+    return (f"\n  {'BİAS':<8} {'RR/TP':<11} {'İŞL':>4} {'WIN':>4} {'LOSS':>5} "
+            f"{'BE':>3} {'WR%':>6} {'NetPnL$':>11} {'Ret%':>7} "
+            f"{'PF':>6} {'Sharpe':>7} {'MaxDD%':>7}")
+
+
+def _tbe_scan(df_1h, df_5m, bt_start):
+    """
+    3 strateji × 3 bias × 4 TBE seçeneği × 1:2 fix = 36 test.
+    Skor = sharpe × (1 - maxdd/100).
+    Her strateji için bias ortalaması en yüksek TBE'yi seçer.
+    """
+    print("\n" + "═" * 90)
+    print("  BÖLÜM T — TBE TARAMASI  │  3 STR × 3 BİAS × 4 TBE  =  36 TEST  │  1:2 fix")
+    print("  Skor = Sharpe × (1 - MaxDD/100)  |  optimal TBE → A/C/G bölümlerine uygulanır")
+    print("═" * 90)
+
+    # (str_key, bias, tbe_label) → metrics
+    scan: dict = {}
+
+    str_runners = [
+        ('fvg',      'FVG-v10',
+         lambda bias, tbe: run_one(df_1h, df_5m, bt_start, bias, 2.0, None, 'all', tbe)),
+        ('threevol', '3VOL-Dir',
+         lambda bias, tbe: run_one_threevol(df_1h, df_5m, bt_start, bias, 2.0, None, tbe)),
+        ('prz',      'PRZ-Only',
+         lambda bias, tbe: run_one(df_1h, df_5m, bt_start, bias, 2.0, None, 'prz', tbe)),
+    ]
+
+    for bias in BIAS_MODES:
+        print(f"\n  ── BİAS: {bias.upper()} " + "─" * 60)
+        print(f"  {'Strateji':<10} {'TBE':>6} {'İŞL':>4} {'WR%':>6} "
+              f"{'PnL$':>10} {'Sharpe':>7} {'MaxDD%':>7} {'Skor':>7}")
+        print("  " + "─" * 65)
+        for str_key, str_name, runner in str_runners:
+            for tbe_label, tbe_bars in TBE_OPTIONS:
+                _, m = runner(bias, tbe_bars)
+                if m is None:
+                    continue
+                score = m['sharpe'] * (1.0 - m['max_dd'] / 100.0)
+                scan[(str_key, bias, tbe_label)] = {**m, 'score': score}
+                marker = ' ←' if tbe_label == 'Yok' else ''
+                print(f"  {str_name:<10} {tbe_label:>6} {m['total']:>4} "
+                      f"{m['win_rate']*100:>6.1f} {m['net_pnl']:>+10.2f} "
+                      f"{m['sharpe']:>7.2f} {m['max_dd']:>7.2f} "
+                      f"{score:>7.3f}{marker}")
+
+    # ── Optimal TBE seçimi ───────────────────────────────────────────────────
+    print("\n  ── Optimal TBE seçimi (bias ortalaması üzerinden) " + "─" * 38)
+
+    optimal: dict = {}
+    for str_key, str_name, _ in str_runners:
+        best_tbe_label, best_avg = None, -1e9
+        for tbe_label, _ in TBE_OPTIONS:
+            scores = [
+                scan[(str_key, bias, tbe_label)]['score']
+                for bias in BIAS_MODES
+                if (str_key, bias, tbe_label) in scan
+            ]
+            if not scores:
+                continue
+            avg = sum(scores) / len(scores)
+            if avg > best_avg:
+                best_avg = avg
+                best_tbe_label = tbe_label
+
+        best_bars = dict(TBE_OPTIONS)[best_tbe_label]
+        optimal[str_key] = best_bars
+
+        # Baseline ile karşılaştır
+        base_scores = [
+            scan[(str_key, bias, 'Yok')]['score']
+            for bias in BIAS_MODES
+            if (str_key, bias, 'Yok') in scan
+        ]
+        base_avg = sum(base_scores) / len(base_scores) if base_scores else 0
+        delta = best_avg - base_avg
+        bars_str = f"{best_bars}bar" if best_bars else "—"
+        print(f"  {str_name:<10} → {best_tbe_label:<8} ({bars_str:<6})  "
+              f"Ort.Skor: {best_avg:.3f}  (baseline: {base_avg:.3f}  Δ{delta:+.3f})")
+
+    print("═" * 90)
+    return optimal
+
+
+def main():
+    df_1h, df_5m, bt_start = DataEngine.download(verbose=True)
+
+    # ── TBE taraması (BÖLÜM T) ————————————————————————————————————————————
+    OPTIMAL_TBE = _tbe_scan(df_1h, df_5m, bt_start)
+
+    # TBE etiketleri (başlıklar için)
+    def _tbe_label(bars):
+        if bars is None:
+            return 'TBE:Yok'
+        return f"TBE:{bars//12}h"
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM A: FVG v10
+    # ══════════════════════════════════════════════════════════════════════════
+    tbe_a = OPTIMAL_TBE['fvg']
+    print("\n" + "═" * 78)
+    print(f"  BÖLÜM A — FVG v10 STRATEJİSİ  │  {_tbe_label(tbe_a)}  │  3 BİAS × 3 RR  =  9 TEST")
+    print("  (NONE bias → EMA9/21+MACD filtresi aktif)")
+    print("═" * 78)
+
+    results_a = []
+    for bias_mode in BIAS_MODES:
+        emf = (bias_mode == 'none')
+        print(f"\n  ── BİAS: {bias_mode.upper()} " +
+              ("│ EMA-MACD " if emf else "") + "─" * 50)
+        print(_header())
+        print("  " + "─" * 76)
+        for rr_label, rr, be in RR_CONFIGS:
+            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
+                                tbe=tbe_a, emf=emf)
+            if m is None:
+                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
+                continue
+            row = dict(bias=bias_mode, rr=rr_label,
+                       total=m['total'], wins=m['wins'], losses=m['losses'],
+                       be=m['breakeven'], wr=m['win_rate'] * 100,
+                       pnl=m['net_pnl'], ret=m['ret_pct'],
+                       pf=m['profit_factor'], sharpe=m['sharpe'],
+                       maxdd=m['max_dd'])
+            results_a.append(row)
+            _print_row(row)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM C: Three_vol
+    # ══════════════════════════════════════════════════════════════════════════
+    tbe_c = OPTIMAL_TBE['threevol']
+    print("\n" + "═" * 78)
+    print(f"  BÖLÜM C — THREE_VOL DOĞRUDAN  │  {_tbe_label(tbe_c)}  │  3 BİAS × 3 RR  =  9 TEST")
+    print("  (Giriş: three_vol onay barında, FVG/POI dokunuşu yok)")
+    print("  (NONE bias → EMA9/21+MACD filtresi aktif)")
+    print("═" * 78)
+
+    results_c = []
+    for bias_mode in BIAS_MODES:
+        emf = (bias_mode == 'none')
+        print(f"\n  ── BİAS: {bias_mode.upper()} " +
+              ("│ EMA-MACD " if emf else "") + "─" * 50)
+        print(_header())
+        print("  " + "─" * 76)
+        for rr_label, rr, be in RR_CONFIGS:
+            trades, m = run_one_threevol(df_1h, df_5m, bt_start, bias_mode, rr, be,
+                                         tbe=tbe_c, emf=emf)
+            if m is None:
+                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
+                continue
+            row = dict(bias=bias_mode, rr=rr_label,
+                       total=m['total'], wins=m['wins'], losses=m['losses'],
+                       be=m['breakeven'], wr=m['win_rate'] * 100,
+                       pnl=m['net_pnl'], ret=m['ret_pct'],
+                       pf=m['profit_factor'], sharpe=m['sharpe'],
+                       maxdd=m['max_dd'])
+            results_c.append(row)
+            _print_row(row)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM G: Harmonik PRZ Only
+    # ══════════════════════════════════════════════════════════════════════════
+    tbe_g = OPTIMAL_TBE['prz']
+    print("\n" + "═" * 78)
+    print(f"  BÖLÜM G — HARMONİK PRZ ONLY  │  {_tbe_label(tbe_g)}  │  3 BİAS × 3 RR  =  9 TEST")
+    print("  (Giriş: 5M harmonik PRZ dokunuşu + 5M MSB, FVG filtresi yok)")
+    print("  (NONE bias → EMA9/21+MACD filtresi aktif)")
+    print("═" * 78)
+
+    results_g = []
+    for bias_mode in BIAS_MODES:
+        emf = (bias_mode == 'none')
+        print(f"\n  ── BİAS: {bias_mode.upper()} " +
+              ("│ EMA-MACD " if emf else "") + "─" * 50)
+        print(_header())
+        print("  " + "─" * 76)
+        for rr_label, rr, be in RR_CONFIGS:
+            trades, m = run_one(df_1h, df_5m, bt_start, bias_mode, rr, be,
+                                poi_mode='prz', tbe=tbe_g, emf=emf)
+            if m is None:
+                print(f"  {bias_mode:<8} {rr_label:<11} {'— tamamlanan işlem yok —':>50}")
+                continue
+            row = dict(bias=bias_mode, rr=rr_label,
+                       total=m['total'], wins=m['wins'], losses=m['losses'],
+                       be=m['breakeven'], wr=m['win_rate'] * 100,
+                       pnl=m['net_pnl'], ret=m['ret_pct'],
+                       pf=m['profit_factor'], sharpe=m['sharpe'],
+                       maxdd=m['max_dd'])
+            results_g.append(row)
+            _print_row(row)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # ÖZET — Net PnL'e göre sıralı
+    # ══════════════════════════════════════════════════════════════════════════
+    all_results = (
+        [dict(strateji='FVG-v10',  **r) for r in results_a] +
+        [dict(strateji='3VOL-Dir', **r) for r in results_c] +
+        [dict(strateji='PRZ-Only', **r) for r in results_g]
+    )
+
+    print("\n" + "═" * 90)
+    print(f"  GENEL ÖZET — Net PnL'e göre sıralı  "
+          f"│  FVG:{_tbe_label(tbe_a)}  3VOL:{_tbe_label(tbe_c)}  PRZ:{_tbe_label(tbe_g)}")
+    print("═" * 90)
+    print(f"\n  {'STRATEJİ':<9} {'BİAS':<8} {'RR/TP':<11} {'İŞL':>4} {'WIN':>4} "
+          f"{'LOSS':>5} {'BE':>3} {'WR%':>6} {'NetPnL$':>11} {'Ret%':>7} "
+          f"{'PF':>6} {'Sharpe':>7} {'MaxDD%':>7}")
+    print("  " + "─" * 88)
+    for row in sorted(all_results, key=lambda r: r['pnl'], reverse=True):
+        pf_str = f"{row['pf']:.2f}" if row['pf'] != float('inf') else "inf"
+        print(f"  {row['strateji']:<9} {row['bias']:<8} {row['rr']:<11} {row['total']:>4} "
+              f"{row['wins']:>4} {row['losses']:>5} {row['be']:>3} "
+              f"{row['wr']:>6.1f} {row['pnl']:>+11.2f} {row['ret']:>+7.2f} "
+              f"{pf_str:>6} {row['sharpe']:>7.2f} {row['maxdd']:>7.2f}")
+    print("═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM E: EMA-MACD Filtresi — optimal TBE + 1:2 fix, filtreli vs filtresiz
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM E — EMA 9/21 + MACD(12,26,9) FİLTRESİ  │  1H  │  1:2 fix  │  Optimal TBE")
+    print("  Koşul: EMA9>EMA21, Close>EMA9, MACD>Signal (bull) / tersi (bear)")
+    print("═" * 90)
+
+    str_runners_e = [
+        ('FVG-v10',  'fvg',
+         lambda b, emf: run_one(df_1h, df_5m, bt_start, b, 2.0, None, 'all',  OPTIMAL_TBE['fvg'],      emf)),
+        ('3VOL-Dir', 'threevol',
+         lambda b, emf: run_one_threevol(df_1h, df_5m, bt_start, b, 2.0, None, OPTIMAL_TBE['threevol'], emf)),
+        ('PRZ-Only', 'prz',
+         lambda b, emf: run_one(df_1h, df_5m, bt_start, b, 2.0, None, 'prz',  OPTIMAL_TBE['prz'],      emf)),
+    ]
+
+    print(f"\n  {'Strateji':<9} {'Bias':<7} {'Filtre':<8} "
+          f"{'İŞL':>4} {'WR%':>6} {'PnL$':>10} {'Sharpe':>7} {'MaxDD%':>7}")
+    print("  " + "─" * 70)
+
+    for str_name, str_key, runner in str_runners_e:
+        for bias in BIAS_MODES:
+            _, m0 = runner(bias, False)
+            _, m1 = runner(bias, True)
+            if m0 is None and m1 is None:
+                continue
+
+            def _erow(m, lbl):
+                if m is None:
+                    return f"  {str_name:<9} {bias:<7} {lbl:<8} {'—':>4}"
+                return (f"  {str_name:<9} {bias:<7} {lbl:<8} "
+                        f"{m['total']:>4} {m['win_rate']*100:>6.1f} "
+                        f"{m['net_pnl']:>+10.2f} {m['sharpe']:>7.2f} "
+                        f"{m['max_dd']:>7.2f}")
+
+            print(_erow(m0, 'Yok'))
+            if m1 is not None and m0 is not None:
+                dpnl   = m1['net_pnl']   - m0['net_pnl']
+                dsh    = m1['sharpe']     - m0['sharpe']
+                ddd    = m1['max_dd']     - m0['max_dd']
+                dtrd   = m1['total']      - m0['total']
+                print(_erow(m1, 'EMA-MACD'))
+                sign_pnl = '+' if dpnl >= 0 else ''
+                sign_sh  = '+' if dsh  >= 0 else ''
+                sign_dd  = '+' if ddd  >= 0 else ''
+                sign_tr  = '+' if dtrd >= 0 else ''
+                print(f"  {'':9} {'':7} {'  Δ':<8} "
+                      f"{sign_tr}{dtrd:>3} {'':>6} "
+                      f"{sign_pnl}{dpnl:>+9.2f} {sign_sh}{dsh:>+6.2f} "
+                      f"{sign_dd}{ddd:>+6.2f}")
+            else:
+                print(_erow(m1, 'EMA-MACD'))
+            print("  " + "·" * 70)
+
+    print("═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM H: London Reversal (ICT Judas Swing) — ilk backtest
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM H — LONDON REVERSAL (ICT Judas Swing)  │  TBE:Yok  │  3 BİAS  =  3 TEST")
+    print("  Giriş: London açılışı Asya H/L süpürme → 5M MSB → ters yön")
+    print("  TP: Asya range karşı tarafı (≥2R) veya sabit 1:2 RR")
+    print("═" * 90)
+
+    results_h = []
+    for bias_mode in BIAS_MODES:
+        print(f"\n  ── BİAS: {bias_mode.upper()} " + "─" * 60)
+        print(_header())
+        print("  " + "─" * 76)
+        trades_h, m = run_one_london(df_1h, df_5m, bt_start, bias_mode, be=None)
+        if m is None:
+            print(f"  {bias_mode:<8} {'adaptive':<11} {'— tamamlanan işlem yok —':>50}")
+            continue
+        row = dict(bias=bias_mode, rr='adaptive',
+                   total=m['total'], wins=m['wins'], losses=m['losses'],
+                   be=m['breakeven'], wr=m['win_rate'] * 100,
+                   pnl=m['net_pnl'], ret=m['ret_pct'],
+                   pf=m['profit_factor'], sharpe=m['sharpe'],
+                   maxdd=m['max_dd'])
+        results_h.append(row)
+        _print_row(row)
+
+    print("\n" + "═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM H-E: London Reversal × EMA-MACD Filtresi karşılaştırması
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM H-E — LONDON REVERSAL × EMA-MACD FİLTRESİ  │  TBE:Yok  │  3 bias")
+    print("  NOT: Reversal karşı-trend → trend filtresi olumsuz etki yapabilir")
+    print("═" * 90)
+    print(f"\n  {'Strateji':<12} {'Bias':<7} {'Filtre':<8} "
+          f"{'İŞL':>4} {'WR%':>6} {'PnL$':>10} {'Sharpe':>7} {'MaxDD%':>7}")
+    print("  " + "─" * 70)
+
+    for bias in BIAS_MODES:
+        _, m0 = run_one_london(df_1h, df_5m, bt_start, bias, be=None, emf=False)
+        _, m1 = run_one_london(df_1h, df_5m, bt_start, bias, be=None, emf=True)
+
+        def _hrow(m, lbl):
+            if m is None:
+                return f"  {'LR':<12} {bias:<7} {lbl:<8} {'—':>4}"
+            return (f"  {'LR':<12} {bias:<7} {lbl:<8} "
+                    f"{m['total']:>4} {m['win_rate']*100:>6.1f} "
+                    f"{m['net_pnl']:>+10.2f} {m['sharpe']:>7.2f} "
+                    f"{m['max_dd']:>7.2f}")
+
+        print(_hrow(m0, 'Yok'))
+        if m1 is not None and m0 is not None:
+            dpnl = m1['net_pnl'] - m0['net_pnl']
+            dsh  = m1['sharpe']  - m0['sharpe']
+            ddd  = m1['max_dd']  - m0['max_dd']
+            dtrd = m1['total']   - m0['total']
+            print(_hrow(m1, 'EMA-MACD'))
+            print(f"  {'':12} {'':7} {'  Δ':<8} "
+                  f"{'+' if dtrd>=0 else ''}{dtrd:>3} {'':>6} "
+                  f"{'+' if dpnl>=0 else ''}{dpnl:>+9.2f} "
+                  f"{'+' if dsh>=0 else ''}{dsh:>+6.2f} "
+                  f"{'+' if ddd>=0 else ''}{ddd:>+6.2f}")
+        else:
+            print(_hrow(m1, 'EMA-MACD'))
+        print("  " + "·" * 70)
+
+    print("═" * 90)
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # BÖLÜM W: Walk-Forward Analizi (IS:3ay optimize → OOS:1ay kör test)
+    # ══════════════════════════════════════════════════════════════════════════
+    print("\n" + "═" * 90)
+    print("  BÖLÜM W — WALK-FORWARD ANALİZİ  │  IS:3ay  OOS:1ay  │  FVG Strateji")
+    print("═" * 90)
+
+    wfa_rows = run_wfa(df_1h, df_5m, bt_start)
+    if not wfa_rows:
+        print("  WFA için yeterli veri yok.")
+    else:
+        hdr = (f"  {'#':<3} {'IS Dönemi':<20} {'OOS Dönemi':<16} "
+               f"{'En İyi IS Cfg':<16} {'OOS İşl':>7} {'OOS WR%':>8} {'OOS PnL$':>11}")
+        print(hdr)
+        print("  " + "─" * 83)
+        cum_pnl = 0.0
+        wr_list = []
+        for r in wfa_rows:
+            is_lbl  = f"{r['is_s'].strftime('%Y-%m')}→{r['is_e'].strftime('%Y-%m')}"
+            oos_lbl = f"{r['is_e'].strftime('%Y-%m')}→{r['oos_e'].strftime('%Y-%m')}"
+            m       = r['oos_m']
+            if m and m['total'] > 0:
+                cum_pnl += m['net_pnl']
+                wr_list.append(m['win_rate'] * 100)
+                print(f"  {r['window']:<3} {is_lbl:<20} {oos_lbl:<16} "
+                      f"{r['cfg']:<16} {m['total']:>7} {m['win_rate']*100:>7.1f}% "
+                      f"{m['net_pnl']:>+11.2f}")
+            else:
+                print(f"  {r['window']:<3} {is_lbl:<20} {oos_lbl:<16} "
+                      f"{r['cfg']:<16} {'—':>7}")
+        print("  " + "─" * 83)
+        avg_wr = sum(wr_list) / len(wr_list) if wr_list else 0.0
+        print(f"  OOS Kümülatif PnL: ${cum_pnl:>+9.2f}  │  Ort OOS WR: {avg_wr:.1f}%")
+
+    print("═" * 90)
+
+
+def run_wfa(df_1h, df_5m, bt_start,
+            in_months: int = 3, out_months: int = 1, n_windows: int = 4):
+    """
+    Rolling Walk-Forward Analizi:
+      IS: in_months veri üzerinde bias×RR optimizasyonu (max Sharpe×(1-MaxDD))
+      OOS: IS'te seçilen konfigürasyonla gizli veriler üzerinde kör test
+    Lookahead yok: IS ve OOS dönemleri hiçbir zaman çakışmaz.
+    """
+    bt_ts = to_naive(pd.Timestamp(bt_start, tz='UTC'))
+
+    bias_list  = ['weekly', 'daily', 'none', 'private']
+    rr_configs = [(1.0, None), (2.0, 1.0), (2.0, None)]
+
+    def _filter(trades, s, e):
+        return [t for t in trades
+                if s <= to_naive(t.signal.entry_time) < e]
+
+    results = []
+
+    for w in range(n_windows):
+        is_s  = bt_ts + pd.DateOffset(months=w * out_months)
+        is_e  = bt_ts + pd.DateOffset(months=w * out_months + in_months)
+        oos_e = bt_ts + pd.DateOffset(months=w * out_months + in_months + out_months)
+
+        df5_last = to_naive(df_5m.index[-1])
+        if oos_e > df5_last:
+            break
+
+        # ── IS optimizasyonu ──────────────────────────────────────────────────
+        best_score = -np.inf
+        best_cfg   = None
+        best_is_m  = None
+
+        for bm in bias_list:
+            for (rr, be) in rr_configs:
+                try:
+                    all_tr, _ = run_one(df_1h, df_5m,
+                                        is_s.strftime('%Y-%m-%d'), bm, rr, be)
+                    is_tr = _filter(all_tr, is_s, is_e)
+                    if len(is_tr) < 3:
+                        continue
+                    m = PerformanceAnalytics(is_tr, INITIAL_CAPITAL).compute()
+                    if m is None:
+                        continue
+                    score = m['sharpe'] * (1.0 - m['max_dd'] / 100.0)
+                    if score > best_score:
+                        best_score = score
+                        best_cfg   = (bm, rr, be)
+                        best_is_m  = m
+                except Exception:
+                    continue
+
+        if best_cfg is None:
+            continue
+
+        # ── OOS kör testi ─────────────────────────────────────────────────────
+        bm, rr, be = best_cfg
+        cfg_lbl = f"{bm}/{rr:.0f}:{'BE' if be else 'fix'}"
+        try:
+            all_tr_oos, _ = run_one(df_1h, df_5m,
+                                    is_e.strftime('%Y-%m-%d'), bm, rr, be)
+            oos_tr = _filter(all_tr_oos, is_e, oos_e)
+            m_oos  = PerformanceAnalytics(oos_tr, INITIAL_CAPITAL).compute() \
+                     if oos_tr else None
+        except Exception:
+            m_oos = None
+
+        results.append({
+            'window': w + 1,
+            'is_s' : is_s, 'is_e': is_e, 'oos_e': oos_e,
+            'cfg'  : cfg_lbl,
+            'score': best_score,
+            'is_m' : best_is_m,
+            'oos_m': m_oos,
+        })
+
+    return results
+
+
+if __name__ == '__main__':
+    main()
