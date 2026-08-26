@@ -17,9 +17,19 @@ export interface KindWeights {
 /**
  * Hiç görülmemiş / zorlanılan kelimelerde öğretmeye, ustalaşılanlarda
  * hatırlamaya ağırlık verir. Karışık bir destede ortalama ~%40/%35/%25 çıkar.
+ *
+ * `alreadyTaught`: kelime bu oturumda anlatım kartı almışsa. Aşağıdaki
+ * "öğret-sonra-test" kuralı ilk karşılaşmayı zaten anlatıma zorladığı için,
+ * öğretilmiş bir kelimeye tekrar anlatım basmak yeni bilgi vermez — bu yüzden
+ * ağırlık soruya kayar. Aksi halde yeni bir destede akış neredeyse tamamen
+ * anlatım kartlarından oluşur ve "sorular" tarafı hiç görünmez.
  */
-export function weightsForBox(box: LeitnerBox | undefined): KindWeights {
-  if (box === undefined) return { explainer: 0.7, mc: 0.25, ti: 0.05 };
+export function weightsForBox(box: LeitnerBox | undefined, alreadyTaught = false): KindWeights {
+  if (box === undefined) {
+    return alreadyTaught
+      ? { explainer: 0.2, mc: 0.5, ti: 0.3 }
+      : { explainer: 0.7, mc: 0.25, ti: 0.05 };
+  }
   switch (box) {
     case 1:
       return { explainer: 0.55, mc: 0.35, ti: 0.1 };
@@ -65,7 +75,7 @@ export interface BuildCardArgs {
 
 export function buildFeedCard(a: BuildCardArgs): FeedCard {
   const box = a.entry?.box;
-  const w = weightsForBox(box);
+  const w = weightsForBox(box, a.taught.has(a.question.id));
 
   let kind = a.forceKind ?? rollKind(w);
 

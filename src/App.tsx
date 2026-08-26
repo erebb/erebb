@@ -23,33 +23,32 @@ export default function App() {
     else setView({ name: 'quiz', setId });
   };
 
-  // Akış tam görünüm alanını sahiplenir ve dikey kaydırma yüzeyi olduğu için
-  // dikey slayt yerine düz solma geçişi kullanır (yanlış kaydırma gibi okunmasın).
-  if (view.name === 'feed') {
-    return (
-      <AppProvider>
+  return (
+    // Tek bir sağlayıcı: görünüm değişince unmount olmamalı. Aksi halde çıkışta
+    // tetiklenen ilerleme güncellemesi (ör. akışın biriken XP'sini yazan
+    // recordSessionResult) sağlayıcıyla birlikte sökülür ve hiç işlenmez.
+    <AppProvider>
+      {view.name === 'feed' ? (
+        // Akış tam görünüm alanını sahiplenir ve dikey kaydırma yüzeyi olduğu için
+        // dikey slayt yerine düz solma geçişi kullanır (yanlış kaydırma gibi okunmasın).
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
           <FeedZone setId={view.setId} onExit={goDashboard} />
         </motion.div>
-      </AppProvider>
-    );
-  }
-
-  return (
-    <AppProvider>
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={view.name + ('setId' in view ? view.setId : '')}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -16 }}
-          transition={{ duration: 0.2 }}
-        >
-          {view.name === 'dashboard' && <Dashboard onStudy={startStudy} />}
-          {view.name === 'flashcards' && <FlashcardZone setId={view.setId} onExit={goDashboard} />}
-          {view.name === 'quiz' && <DuolingoZone setId={view.setId} onExit={goDashboard} />}
-        </motion.div>
-      </AnimatePresence>
+      ) : (
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={view.name + ('setId' in view ? view.setId : '')}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -16 }}
+            transition={{ duration: 0.2 }}
+          >
+            {view.name === 'dashboard' && <Dashboard onStudy={startStudy} />}
+            {view.name === 'flashcards' && <FlashcardZone setId={view.setId} onExit={goDashboard} />}
+            {view.name === 'quiz' && <DuolingoZone setId={view.setId} onExit={goDashboard} />}
+          </motion.div>
+        </AnimatePresence>
+      )}
     </AppProvider>
   );
 }

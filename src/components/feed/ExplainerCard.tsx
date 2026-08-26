@@ -212,7 +212,8 @@ export function ExplainerCard({ card, isActive }: ExplainerCardProps) {
   return (
     <div
       className={cn(
-        'flex h-full w-full items-center justify-center bg-gradient-to-br px-8 py-24',
+        // pr-20: uzun tanımlar sağdaki eylem rayının altına girmesin.
+        'flex h-full w-full items-center justify-center bg-gradient-to-br pb-24 pl-8 pr-20 pt-24',
         p.gradient
       )}
     >

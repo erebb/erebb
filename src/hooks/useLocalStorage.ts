@@ -1,6 +1,13 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
-/** LocalStorage destekli, tipli React state. */
+/**
+ * LocalStorage destekli, tipli React state.
+ *
+ * Yazma işlemi state güncelleyicisinin İÇİNDE değil, çağrı anında senkron yapılır:
+ * güncelleyiciler saf olmalıdır ve React onları atlayabilir veya iki kez
+ * çalıştırabilir — kalıcılık render zamanlamasına bağlı kalmamalı. Bir ref
+ * güncel değeri tutar, böylece aynı tick içindeki ardışık çağrılar da doğru zincirlenir.
+ */
 export function useLocalStorage<T>(key: string, initialValue: T) {
   const [value, setValue] = useState<T>(() => {
     try {
@@ -11,17 +18,21 @@ export function useLocalStorage<T>(key: string, initialValue: T) {
     }
   });
 
+  const currentRef = useRef(value);
+
   const set = useCallback(
     (updater: T | ((prev: T) => T)) => {
-      setValue((prev) => {
-        const next = typeof updater === 'function' ? (updater as (prev: T) => T)(prev) : updater;
-        try {
-          window.localStorage.setItem(key, JSON.stringify(next));
-        } catch {
-          // Depolama dolu/erişilemez — durum yalnızca bellekte tutulur.
-        }
-        return next;
-      });
+      const next =
+        typeof updater === 'function'
+          ? (updater as (prev: T) => T)(currentRef.current)
+          : updater;
+      currentRef.current = next;
+      try {
+        window.localStorage.setItem(key, JSON.stringify(next));
+      } catch {
+        // Depolama dolu/erişilemez — durum yalnızca bellekte tutulur.
+      }
+      setValue(next);
     },
     [key]
   );

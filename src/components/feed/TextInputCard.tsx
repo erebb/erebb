@@ -30,7 +30,8 @@ export function TextInputCard({
   }, [card.id]);
 
   return (
-    <div className="flex h-full w-full flex-col justify-between bg-duo-gray-900 px-6 pb-28 pt-24">
+    // pr-20: sağdaki eylem rayının (w-10 + right-3) üstüne binmesini önler.
+    <div className="flex h-full w-full flex-col justify-between bg-duo-gray-900 pb-28 pl-6 pr-20 pt-24">
       <motion.div
         initial={isActive && !reduced ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
