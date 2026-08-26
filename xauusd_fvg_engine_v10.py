@@ -1915,9 +1915,17 @@ class RiskManager:
     konfluens-bazlı kesirli pozisyon büyüklüğü (0.5R / 1R).
     """
 
-    def __init__(self, rr: float = 2.0, sl_buffer: float = 0.0005):
+    def __init__(self, rr: float = 2.0, sl_buffer: float = 0.0005,
+                 hybrid_hours=None, hybrid_rr: float = 0.0):
         self.rr             = rr
         self.sl_buffer      = sl_buffer
+        # HIBRIT RR: giris saati hybrid_hours icindeyse hedef hybrid_rr olur.
+        # Gerekce (docs/EXIT_ANALYSIS.md): NY seansi onden-yuklu — ekstremumlarin
+        # %62'si ilk 1/3'te olusur ve asil hareket gunluk range'in %51'i. Stop
+        # ~15$, gunluk range ~30$ iken 5R hedef 75$ uzakta kalir; o pencerede
+        # ulasilmaz. 2R hedef menzil icinde.
+        self.hybrid_hours   = set(hybrid_hours or [])
+        self.hybrid_rr      = float(hybrid_rr or 0.0)
         self.min_risk       = 0.50
         self.max_risk       = 150.0
         self.max_risk_pct   = 2.0
@@ -1925,16 +1933,21 @@ class RiskManager:
     def compute(self, direction: str, entry: float,
                 stop_price: float, equity: float,
                 risk_fraction: float,
-                tp_override: Optional[float] = None) -> Optional[Dict]:
+                tp_override: Optional[float] = None,
+                entry_hour: Optional[int] = None) -> Optional[Dict]:
 
+        rr = self.rr
+        if (self.hybrid_rr > 0 and entry_hour is not None
+                and int(entry_hour) in self.hybrid_hours):
+            rr = self.hybrid_rr
         if direction == 'bull':
             sl   = stop_price * (1.0 - self.sl_buffer)
             risk = abs(entry - sl)
-            tp   = tp_override if tp_override is not None else entry + risk * self.rr
+            tp   = tp_override if tp_override is not None else entry + risk * rr
         else:
             sl   = stop_price * (1.0 + self.sl_buffer)
             risk = abs(sl - entry)
-            tp   = tp_override if tp_override is not None else entry - risk * self.rr
+            tp   = tp_override if tp_override is not None else entry - risk * rr
 
         if not (self.min_risk <= risk <= self.max_risk):
             return None
@@ -2368,7 +2381,9 @@ class BacktestEngine:
             return None
         r = self.risk.compute(signal.direction, entry,
                               stop_price, equity, (self.uniform_risk_fraction or signal.risk_fraction),
-                              tp_override=tp_override)
+                              tp_override=tp_override,
+                              entry_hour=to_naive(
+                                  TM[min(idx + 1, len(TM) - 1)]).hour)
         if r is None:
             return None
         # Genel kısmi-TP (opt-in): +partial_tp_r R'de kısmi kâr + SL→BE
@@ -3953,7 +3968,9 @@ class FibBacktestEngine(BacktestEngine):
         r = self.risk.compute(signal.direction, entry,
                               signal.stop_price, equity,
                               (self.uniform_risk_fraction or signal.risk_fraction),
-                              tp_override=tp_override)
+                              tp_override=tp_override,
+                              entry_hour=to_naive(
+                                  TM[min(idx + 1, len(TM) - 1)]).hour)
         if r is None:
             return None
         return Trade(
@@ -4656,7 +4673,9 @@ class LondonBacktestEngine(BacktestEngine):
         if self._reject_tight_stop(entry, signal.stop_price):
             return None
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
-                              (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2)
+                              (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2,
+                              entry_hour=to_naive(
+                                  TM[min(idx + 1, len(TM) - 1)]).hour)
         if r is None:
             return None
         return Trade(
@@ -5315,7 +5334,9 @@ class QweBacktestEngine(BacktestEngine):
         if self._reject_tight_stop(entry, signal.stop_price):
             return None
         r = self.risk.compute(direction, entry, signal.stop_price, equity,
-                              (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2)
+                              (self.uniform_risk_fraction or signal.risk_fraction), tp_override=tp2,
+                              entry_hour=to_naive(
+                                  TM[min(idx + 1, len(TM) - 1)]).hour)
         if r is None:
             return None
         return Trade(

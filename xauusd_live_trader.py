@@ -18,7 +18,7 @@ import sys
 import time
 import traceback
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timezone
 from hashlib import sha256
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -742,7 +742,24 @@ class LiveTrader:
         except Exception:
             _rr_lbl = '1:2fix'
         self.rr_label      = _rr_lbl
-        self.risk_mgr      = RiskManager(rr=_rr_map.get(_rr_lbl, 2.0))
+        # HIBRIT RR (config hybrid_rr): giris saati (UTC) pencerede ise hedef
+        # kisalir. BACKTEST PARITESI: gui de ayni config'i RiskManager'a verir;
+        # ayrisirsa canlida yanlis TP kurulur (bu oturumda ucuncu kez duzeltilen
+        # tuzak: RR sabit 2.0, risk_pct okunmamasi, maliyet modeli).
+        try:
+            from config import get_config as _gc1
+            _h = _gc1().get('hybrid_rr', default={}) or {}
+        except Exception:
+            _h = {}
+        self._hyb_hours = set(_h.get('hours', [])) if _h.get('enabled') else set()
+        self._hyb_rr    = float(_h.get('rr', 0) or 0) if _h.get('enabled') else 0.0
+        self.risk_mgr   = RiskManager(rr=_rr_map.get(_rr_lbl, 2.0),
+                                      hybrid_hours=list(self._hyb_hours),
+                                      hybrid_rr=self._hyb_rr)
+        if self._hyb_hours:
+            print("  Hibrit RR: %s UTC saatlerinde hedef 1:%.1f "
+                  "(disarida %s)" % (sorted(self._hyb_hours), self._hyb_rr,
+                                     _rr_lbl))
         # TBE: tüm sabit preset'ler TBE'siz doğrulandı → otomatikte kapalı
         # (kullanıcı --tbe ile açıkça isterse uygulanır)
         if tbe_minutes == -1 or tbe_minutes is None:
@@ -1111,7 +1128,8 @@ class LiveTrader:
         tp2   = signal.tp_hint
         tp1v  = signal.tp1_hint
         r = self.risk_mgr.compute(signal.direction, entry, signal.stop_price,
-                                  equity, signal.risk_fraction, tp_override=tp2)
+                                  equity, signal.risk_fraction, tp_override=tp2,
+                                  entry_hour=datetime.now(timezone.utc).hour)
         if r is None:
             print("  Risk hesabı geçersiz — işlem atlandı")
             return
@@ -1305,6 +1323,7 @@ class LiveTrader:
         r = self.risk_mgr.compute(
             signal.direction, entry, signal.stop_price,
             equity, signal.risk_fraction,
+            entry_hour=datetime.now(timezone.utc).hour,
         )
         if r is None:
             print("  Risk hesabı geçersiz — işlem atlandı")

@@ -423,7 +423,13 @@ def _run_strategy(strategy: str, bias: str = "", rr_label: str = "",
             try:
                 with contextlib.redirect_stdout(buf):
                     bp   = make_bias(bmode)
-                    risk = RiskManager(rr=p_rr, sl_buffer=cfg.sl_buffer)
+                    _h = cfg.get("hybrid_rr", default={}) or {}
+                    risk = RiskManager(
+                        rr=p_rr, sl_buffer=cfg.sl_buffer,
+                        hybrid_hours=(list(_h.get("hours", []))
+                                      if _h.get("enabled") else []),
+                        hybrid_rr=(float(_h.get("rr", 0) or 0)
+                                   if _h.get("enabled") else 0.0))
 
                     if strat == "london":
                         engine = LondonBacktestEngine(
