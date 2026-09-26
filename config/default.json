@@ -1,0 +1,268 @@
+{
+  "version": "10.0",
+  "profile": "swing",
+  "profiles": {
+    "_not": "Aktif profil 'profile' anahtariyla secilir. 'swing' = ana sistem (config'teki ayarlar, hicbir override yok). Bir profilde 'requires_broker' varsa o profil YALNIZ o broker ile calisir; gui ve canli bot engeller.",
+    "scalp": {
+      "_not": "SCALP C — YALNIZ MT5. Dar yapisal stop + 1:3 hedef + 8 saat zaman cikisi. 5 yil MT5 maliyetiyle +102.7R, DD %10.2, pozitif ay %65 (35/54), 302 islem, medyan sure 3.1 saat, medyan stop 6.3$. Prop (%10 limit, %20 tampon): risk %0.74 -> 20.854$. Karsilastirma: swing MT5'te +166.6R, prop 28.560$.",
+      "_uyari": "(1) BINGX'TE ZARARDA: ucret_R 0.30 (MT5'te 0.019) -> -0.7R. requires_broker ile korunur. (2) IS/OOS elemesinden GECMEDI, kaba tarama sonucudur. (3) KALDIRAC: medyan 4.4x, %95 dilim 11.4x, en yuksek 38.4x (stop 0.53$). Brokerin/prop firmanin kaldirac limiti bunun altindaysa backtestteki islemlerin bir kismi HIC ACILAMAZ ve sonuc gecersiz olur. Swing medyan 1.3x.",
+      "requires_broker": "mt5",
+      "fvg": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      },
+      "harmonic": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      },
+      "threevol": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      },
+      "fib": {
+        "swing_stop": false,
+        "rr": "1:3fix",
+        "min_stop_pct": 0.0,
+        "time_exit_bars": 96
+      }
+    }
+  },
+  "backtest": {
+    "initial_capital": 10000,
+    "default_bias": "daily",
+    "default_rr": 2.0,
+    "default_tbe_bars": 96,
+    "warmup_days": 4
+  },
+  "risk": {
+    "risk_fraction": 0.01,
+    "sl_buffer": 0.0005,
+    "min_risk_dollar": 0.5,
+    "max_risk_dollar": 150.0,
+    "max_risk_pct": 2.0
+  },
+  "live": {
+    "strategy": "fvg",
+    "leverage": 10,
+    "risk_pct": 1.0,
+    "dry_run": true,
+    "tbe_minutes": 480,
+    "symbol": "NCCGOLD2USD-USDT",
+    "broker": "mt5",
+    "mt5": {
+      "symbol": "XAUUSD",
+      "login": 0,
+      "password": "",
+      "server": "",
+      "terminal_path": "",
+      "time_offset_hours": null,
+      "_not": "MT5 YALNIZ WINDOWS'ta calisir (paket, terminal ile ayni makinede olmali). symbol brokerdan brokera degisir (XAUUSD, XAUUSD.a, GOLD, XAUUSDm). time_offset_hours=null ise broker sunucu saati ile UTC farki OTOMATIK bulunur; sistem 09-11 UTC blackout ve gunluk barlara bagli oldugu icin bu kritik. login=0 ise acik olan terminal oturumu kullanilir."
+    },
+    "order_flow_guard": {
+      "enabled": false,
+      "use_cvd": true,
+      "cvd_window_sec": 60,
+      "cvd_block_ratio": 0.65,
+      "use_imbalance": true,
+      "depth_levels": 10,
+      "imbalance_block": 2.0,
+      "_not": "CANLI-OZEL, BACKTEST EDILEMEZ (tarihsel L2/tick verisi yok). Diger tum mekanizmalar 5 yillik IS/OOS'tan gecti, bu GECMEDI. Varsayilan kapali."
+    },
+    "_not_risk": "%1 risk = KENDI HESABIN icin (5 yil MT5: +166.6R -> 47.444$, DD %10.7). PROP HESABI ICIN KULLANMAYIN: BenFunding 10.000$ (taban 9.200$) hesabinda 5 yilin en kotu serisi (-11.2R) ilk gunlerde gelirse bakiye 8.937$ olur -> HESAP KAPANIR. Prop icin --risk-pct 0.4 ile baslatin (guvenli, 362$ tampon), tampon biriktikce 0.75'e cikarin."
+  },
+  "fvg": {
+    "bias": "none",
+    "rr": "1:5fix",
+    "ema_filter": true,
+    "blackout_hours": [
+      9,
+      10,
+      11
+    ],
+    "swing_stop": true,
+    "entry_order": "limit",
+    "limit_entry_bars": 3,
+    "min_stop_pct": 0.0,
+    "daily_trend_filter": true,
+    "daily_trend_sma": 200,
+    "enabled": true,
+    "partial_tp_r": 0.0,
+    "partial_tp_fraction": 0.5,
+    "poi_mode": "fvg",
+    "time_exit_bars": null
+  },
+  "harmonic": {
+    "bias": "none",
+    "rr": "1:5fix",
+    "ema_filter": true,
+    "blackout_hours": [
+      9,
+      10,
+      11
+    ],
+    "swing_stop": true,
+    "entry_order": "limit",
+    "limit_entry_bars": 3,
+    "min_stop_pct": 0.0,
+    "daily_trend_filter": true,
+    "daily_trend_sma": 200,
+    "enabled": true,
+    "partial_tp_r": 0.0,
+    "partial_tp_fraction": 0.5,
+    "time_exit_bars": null
+  },
+  "threevol": {
+    "bias": "none",
+    "rr": "1:2be",
+    "ema_filter": true,
+    "blackout_hours": [
+      9,
+      10,
+      11
+    ],
+    "swing_stop": false,
+    "entry_order": "limit",
+    "limit_entry_bars": 3,
+    "vol_floor": 0.9,
+    "min_stop_pct": 0.1,
+    "daily_trend_filter": true,
+    "daily_trend_sma": 200,
+    "enabled": true,
+    "partial_tp_r": 0.0,
+    "partial_tp_fraction": 0.5,
+    "time_exit_bars": null
+  },
+  "costs": {
+    "spread_usd": 0.2,
+    "slippage_usd": 0.05,
+    "commission_pct": 0.0013,
+    "maker_pct": 0.0013
+  },
+  "hybrid_rr": {
+    "enabled": true,
+    "hours": [
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "rr": 2.0,
+    "_not": "HIBRIT RR — giris saati (UTC) bu pencerede ise hedef 1:2, disarida strateji preset'i (1:5). Filtre DEGIL: islem sayisi azalmaz. 5 yil MT5: baz +166.6R/DD %10.7/47.444$ -> hibrit +180.5R/DD %8.0/esit-riskte 95.748$ (+%102). IS +%24.3, OOS +%34.7.",
+    "_gerekce": "NY seansi ONDEN-YUKLU: ekstremumlarin %62'si ilk 1/3'te olusuyor, asil hareket gunluk range'in %51'i, tuzak %14.9 ve medyan 35 dk'da. Stop ~15$, gunluk range ~30$ iken 5R hedef 75$ uzakta - o pencerede ulasilmaz. 2R hedef menzil icinde. (scripts/behavior_atlas.py)",
+    "_uyari": "REJIME BAGIMLI. Yil yil esit-riskte etki: 2022-2023 -%10.8 (ZARAR), 2024-2026 +%91.3. R kazancinin tamami 2024'ten; 2024 haric net -3.1R ama dusus iyilesmesi genis (2024 -1.9pp, 2025 -2.7pp, 2026 -3.7pp; 2022 +1.0pp, 2023 +0.9pp). Altin 2024 sonrasi trendli/volatil rejime girdi; rejim donerse mekanizma 2022-2023 davranisina doner. 20 kombinasyon tarandi, IS+OOS'u ikisi gecti - secim yanliligi riski var."
+  },
+  "private_bias": {
+    "vol_lambda": 0.94,
+    "vol_mult": 1.2,
+    "ema_fast": 21,
+    "ema_slow": 55
+  },
+  "london_reversal": {
+    "entry_mode": "immediate",
+    "bias": "private",
+    "use_pdh_pdl": true,
+    "asian_start_utc": 23,
+    "asian_end_utc": 6,
+    "min_rr": 1.5,
+    "tp1_fraction": 0.5,
+    "max_cisd_bars": 6,
+    "max_entry_bars": 12,
+    "fvg_min_gap": 0.2,
+    "rejection_close_pct": 0.6,
+    "weekend_filter": true,
+    "min_sweep_mult": 0.05,
+    "min_sweep_pts": 0.3,
+    "max_sweep_mult": 1.5,
+    "asian_range_min_atr": 0.0,
+    "asian_range_max_atr": 0.0,
+    "sweep_window_bars": 6,
+    "displacement_min_atr": 0.5,
+    "ote_min": 0.62,
+    "ote_max": 0.79,
+    "min_stop_pct": 0.0,
+    "daily_trend_filter": true,
+    "daily_trend_sma": 200,
+    "enabled": false
+  },
+  "qwe": {
+    "entry_level": "618",
+    "bias": "none",
+    "structure_tf": "1h",
+    "confirm_tf_min": 15,
+    "vol_med_window": 48,
+    "swing_k": 2,
+    "min_leg_atr": 1.5,
+    "max_setup_age": 48,
+    "rejection_close_pct": 0.6,
+    "max_retest_vol_ratio": 1.0,
+    "require_4h_liq": false,
+    "use_4h_dir": true,
+    "liq_tol_atr": 3.0,
+    "min_rr": 1.5,
+    "tp1_fraction": 0.5,
+    "tp_ext": 0.272,
+    "daily_limit": 2,
+    "weekend_filter": true,
+    "ema4h_fast": 20,
+    "ema4h_slow": 50,
+    "min_stop_pct": 0.0,
+    "daily_trend_filter": true,
+    "daily_trend_sma": 200,
+    "enabled": false
+  },
+  "paths": {
+    "csv_5m": "xauusd_5m.csv",
+    "csv_1h": "xauusd_1h.csv",
+    "weekly_bias": "weekly_bias.json",
+    "daily_bias": "daily_bias.json",
+    "reports": "reports"
+  },
+  "gui": {
+    "theme": "dark",
+    "window_width": 1100,
+    "window_height": 720,
+    "font_size": 11
+  },
+  "fib": {
+    "bias": "none",
+    "rr": "1:5fix",
+    "ema_filter": true,
+    "blackout_hours": [
+      9,
+      10,
+      11
+    ],
+    "swing_stop": true,
+    "entry_order": "limit",
+    "limit_entry_bars": 3,
+    "min_stop_pct": 0.0,
+    "daily_trend_filter": true,
+    "daily_trend_sma": 200,
+    "enabled": true,
+    "partial_tp_r": 0.0,
+    "partial_tp_fraction": 0.5,
+    "time_exit_bars": null
+  },
+  "costs_by_broker": {
+    "_not": "Aktif maliyet modeli live.broker'a gore secilir. Backtest ve canli AYNI maliyeti kullanmali; aksi halde backtest yaniltir. BingX yuzde komisyon (VIP0 taker %0.05 / maker %0.02), MT5 lot basina sabit komisyon ($3.5/lot/yon = notional'in ~%0.0013'u).",
+    "bingx": {
+      "spread_usd": 0.3,
+      "slippage_usd": 0.05,
+      "commission_pct": 0.05,
+      "maker_pct": 0.02
+    },
+    "mt5": {
+      "spread_usd": 0.2,
+      "slippage_usd": 0.05,
+      "commission_pct": 0.0013,
+      "maker_pct": 0.0013
+    }
+  }
+}

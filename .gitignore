@@ -1,0 +1,17 @@
+__pycache__/
+live_config.json
+live_state.json
+
+# Teşhis raporu çıktıları (run_diagnostics_report.py ile üretilir)
+reports/diagnostics/
+
+# Zip içinde tutulan büyük 5m/15m CSV (5m-15m.zip); çıkarılınca izlenmez
+xauusd_5m.csv
+xauusd_15m.csv
+
+# Ay ay rapor çıktıları (scripts/monthly_charts.py ile üretilir, ~10MB)
+reports/monthly/
+
+# gecici laboratuvar ciktilari (konteyner reset'lerinde korunsun diye repo icinde
+# tutuluyor ama versiyonlanmiyor)
+.labtmp/
