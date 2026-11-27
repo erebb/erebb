@@ -14,7 +14,12 @@ işin doğrudan yapılmasını istiyor ("İzin isteme benden direkt yap").
      eşleştirme, hesaplama (slayttaki örnek çözümler).
    - Çeldiriciler aynı konudan ve inandırıcı olmalı (komşu tablo satırları, karıştırılan terimler).
    - Her sorunun açıklaması (`explanation`) neden doğru olduğunu slayt bilgisiyle söyler; `source`
-     her zaman "Slayt N · …" biçiminde.
+     kaynağı gösterir: slayt için "Slayt N · …"; ders kitabı/defter için "Plate 1.25 · …", "Table 15.6 · …",
+     "Sayfa 30 · …" ya da exercise için "Exercise · <konu> N — <sorunun İngilizce aslı>".
+   - Kalın, eğik, altı çizili ya da başında yıldız olan ifadeler önemlidir; önce onlar sorulur.
+   - **Exercise soruları** (defterdeki alıştırmalar) mutlaka MCQ olarak eklenir. Cevap boşluğu varsa plate ve
+     tablolarla, yoksa standart veteriner anatomi bilgisiyle cevaplanır ve kullanıcıya bu söylenir.
+   - Kullanıcı "konu anlatımı" isterse setin `lesson` alanına sınav odaklı anlatım yazılır.
    - Bilgi kartları kısa ve hatırlamaya yönelik: ön yüz terim/kavram, arka yüz sınavda istenen öz bilgi.
    - Slaytta olmayan bilgi eklenmez; slayt kendi içinde çelişkiliyse o nokta sorulmaz.
 2. **Dil: Türkçe cümleler, İngilizce ilaç adları ve terimler.**
@@ -34,8 +39,14 @@ işin doğrudan yapılmasını istiyor ("İzin isteme benden direkt yap").
 - `content/*.json`: `{ "name", "items": [...] }`. Öğeler:
   - `{ "id", "type": "mcq", "question", "options", "answer" (şıkla birebir aynı metin), "explanation", "source" }`
   - `{ "id", "type": "card", "front", "back", "source" }`
+- İsteğe bağlı `"lesson": [{ "title", "body", "source" }]` = konu anlatımı. `body` biçimi: boş satır yeni
+  blok, `- ` madde, `| a | b |` tablo (ilk satır başlık), `! ` ile başlayan blok "Sınavda" kutusu, `### `
+  ara başlık, `**kalın**` (bkz. `src/components/RichText.tsx`). Ara başlıkları büyük harfe çevirme:
+  sayfa dili `tr` olduğu için İngilizce terimlerde "İ" sorunu çıkar.
 - `id` her öğede sabit ve set içinde benzersiz (q01…, c01…). Soru kimliği = `<set anahtarı>:<id>`;
   tekrar (SRS) ilerlemesi buna bağlı. Bir öğeyi düzeltirken id'sini değiştirme; yeni öğeye yeni id ver.
+- Dersler: Mikrobiyoloji (`mikrobiyoloji-hafta-*.json`), Topografik Anatomi (`topografik-*.json`: damarlar,
+  lenf, sinirler, govde, klinik).
 - Uygulamaya ekleme: `src/content/seed.ts` → `BUNDLED_PACKS`. Yeni hafta = yeni set girdisi
   (yeni `key`, `version: 1`). **Var olan bir setin içeriği değiştiğinde `version` bir artırılır**;
   uygulama kullanıcının düzenlemediği kopyayı açılışta günceller.

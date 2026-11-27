@@ -1,0 +1,309 @@
+{
+  "name": "Klinik · Dehorning & injection sites",
+  "lesson": [
+    {
+      "title": "Dehorning (boynuz kesimi) anestezisi",
+      "body": "- Dehorning genellikle **bilinci açık, sedatize** hayvanda, ağrı kontrolü için **local anesthesia** ile yapılır.\n\n### Bovine (sığır)\n- Bloke edilen sinir: **cornual nerve**.\n- Yer: **lateral horn base ile gözün lateral canthus'u arasının ortası**.\n- Cornual nerve boynuz tabanına giderken **temporal ridge**'i takip eder.\n\n### Goat (keçi)\n- İki sinirin cornual dalı bloke edilir:\n- **A — cornual branch of the lacrimal nerve** (lateral tarafta)\n- **B — cornual branch of the infratrochlear nerve:** **medial horn base ile gözün medial canthus'u arasının ortası**\n\n! Kalın yazılar: **Cornual nerve:** lateral horn base – lateral canthus ortası (sığır). **Infratrochlear:** medial horn base – medial canthus ortası (keçi). Sığırda tek sinir, keçide iki sinir.",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "title": "Köpekte enjeksiyon yerleri",
+      "body": "| Yol | Yerler | İğne (şekil) |\n|---|---|---|\n| **Intravenous (IV)** | **Jugular vein**, **cephalic vein**, **saphenous vein** | Ven boyunca, damara dar açıyla |\n| **Subcutaneous (SC)** | **Scruff** (ense derisi), **side of chest**, **side of belly**, **flank** | Deri altına eğik |\n| **Intramuscular (IM)** | **Epaxial**, **triceps**, **quadriceps**, **hamstring group** | Kasa dik (~90°) |\n\n! Exercise: “The names of sites for making various injection in Dog” → bu tablo. Hamstring group'a IM enjeksiyonda **sciatic nerve**'e dikkat edilir (kasların arasından geçer).",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    },
+    {
+      "title": "Sığırda enjeksiyon yerleri",
+      "body": "| Yol | Yer |\n|---|---|\n| **Intravenous** | **Jugular vein** |\n| **Subcutaneous** | Boynun yan tarafı / omuzun önündeki gevşek deri |\n| **Intramuscular** | Sıklıkla **boyun kasları**; ya da **thigh (uyluk)** veya **rump (sağrı)** |\n| **Intraperitoneal** | **Daima sağ taraftan** (right flank) |\n\n! Exercise: “The names of sites for making various injection in Ox”. Intraperitoneal injection **always on the right side**: karnın sol tarafını **rumen** kaplar.",
+      "source": "Common sites for making various injections (ox)"
+    }
+  ],
+  "items": [
+    {
+      "id": "q01",
+      "type": "mcq",
+      "question": "Dehorning (boynuz kesimi) genellikle nasıl yapılır?",
+      "options": [
+        "Bilinci açık, sedatize hayvanda, ağrı kontrolü için local anesthesia ile",
+        "Her zaman genel anestezi altında",
+        "Anestezisiz, yalnızca fiziksel kontrolle",
+        "Yalnızca epidural anestezi ile"
+      ],
+      "answer": "Bilinci açık, sedatize hayvanda, ağrı kontrolü için local anesthesia ile",
+      "explanation": "Slayt: “Dehorning is usually performed on a conscious, sedated animal with local anesthesia for control of pain.”",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "q02",
+      "type": "mcq",
+      "question": "Sığırda (bovine) boynuz kesimi için bloke edilen sinir hangisidir?",
+      "options": [
+        "Cornual nerve",
+        "Infraorbital nerve",
+        "Auriculopalpebral nerve",
+        "Mandibular nerve"
+      ],
+      "answer": "Cornual nerve",
+      "explanation": "Slayt: “Needle placement for desensitizing the cornual nerve in the bovine.”",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "q03",
+      "type": "mcq",
+      "question": "Sığırda cornual nerve bloğunda iğne nereye yerleştirilir?",
+      "options": [
+        "Lateral horn base ile gözün lateral canthus'u arasının ortasına",
+        "Medial horn base ile gözün medial canthus'u arasının ortasına",
+        "Infraorbital foramen'e",
+        "Kulak tabanının kaudaline"
+      ],
+      "answer": "Lateral horn base ile gözün lateral canthus'u arasının ortasına",
+      "explanation": "Slayt (kalın): “Cornual nerve: blocked halfway between the lateral horn base and the lateral canthus of the eye.”",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "q04",
+      "type": "mcq",
+      "question": "Cornual nerve boynuz tabanına giderken hangi yapıyı takip eder?",
+      "options": [
+        "Temporal ridge",
+        "Facial crest",
+        "Zygomatic arch",
+        "Nuchal crest"
+      ],
+      "answer": "Temporal ridge",
+      "explanation": "Slayt: “The cornual nerve follows the temporal ridge to the base of the horn.”",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "q05",
+      "type": "mcq",
+      "question": "Keçide boynuz kesimi için hangi sinirlerin cornual dalları bloke edilir?",
+      "options": [
+        "Lacrimal nerve ve infratrochlear nerve",
+        "Yalnızca cornual nerve",
+        "Infraorbital ve mental nerve",
+        "Facial ve auriculopalpebral nerve"
+      ],
+      "answer": "Lacrimal nerve ve infratrochlear nerve",
+      "explanation": "Slayt: “Anesthesia for dehorning in the goat. A, needle placement for desensitizing the cornual branch of the lacrimal nerve. B, needle placement for desensitizing the cornual branch of the infratrochlear nerve.”",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "q06",
+      "type": "mcq",
+      "question": "Keçide infratrochlear nerve'ün cornual dalı nereden bloke edilir?",
+      "options": [
+        "Medial horn base ile gözün medial canthus'u arasının ortasından",
+        "Lateral horn base ile lateral canthus arasının ortasından",
+        "Kulak tabanından",
+        "Infraorbital foramen'den"
+      ],
+      "answer": "Medial horn base ile gözün medial canthus'u arasının ortasından",
+      "explanation": "Slayt (kalın): “Infratrochlear: halfway between the medial horn base and the medial canthus of the eye.”",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "q07",
+      "type": "mcq",
+      "question": "Hangi türde boynuz anestezisi için iki ayrı sinir bloke edilir?",
+      "options": [
+        "Goat (keçi)",
+        "Bovine (sığır)",
+        "Horse",
+        "Dog"
+      ],
+      "answer": "Goat (keçi)",
+      "explanation": "Sığırda tek sinir (cornual nerve); keçide iki sinir: lacrimal ve infratrochlear nerve'ün cornual dalları.",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "q08",
+      "type": "mcq",
+      "question": "Köpekte intravenous injection yerleri hangileridir?",
+      "options": [
+        "Jugular, cephalic ve saphenous vein",
+        "Scruff, side of chest ve flank",
+        "Epaxial, triceps ve quadriceps",
+        "Femoral vein ve portal vein"
+      ],
+      "answer": "Jugular, cephalic ve saphenous vein",
+      "explanation": "Injection Sites şekli — Intravenous: jugular vein, cephalic vein, saphenous vein.",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    },
+    {
+      "id": "q09",
+      "type": "mcq",
+      "question": "Köpekte subcutaneous injection yerleri hangileridir?",
+      "options": [
+        "Scruff, side of chest, side of belly ve flank",
+        "Jugular, cephalic ve saphenous vein",
+        "Epaxial, triceps, quadriceps ve hamstring",
+        "Yalnızca kuyruk tabanı"
+      ],
+      "answer": "Scruff, side of chest, side of belly ve flank",
+      "explanation": "Injection Sites şekli — Subcutaneous: scruff, side of chest, side of belly, flank.",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    },
+    {
+      "id": "q10",
+      "type": "mcq",
+      "question": "Köpekte intramuscular injection yerleri hangileridir?",
+      "options": [
+        "Epaxial, triceps, quadriceps ve hamstring group",
+        "Scruff ve side of belly",
+        "Jugular ve cephalic vein",
+        "Side of chest ve flank"
+      ],
+      "answer": "Epaxial, triceps, quadriceps ve hamstring group",
+      "explanation": "Injection Sites şekli — Intramuscular: epaxial, triceps, quadriceps, hamstring group.",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    },
+    {
+      "id": "q11",
+      "type": "mcq",
+      "question": "Aşağıdakilerden hangisi köpekte intramuscular injection yeri DEĞİLDİR?",
+      "options": [
+        "Scruff",
+        "Triceps",
+        "Quadriceps",
+        "Epaxial"
+      ],
+      "answer": "Scruff",
+      "explanation": "Scruff (ense derisi) subcutaneous injection yeridir. IM yerleri: epaxial, triceps, quadriceps, hamstring group.",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    },
+    {
+      "id": "q12",
+      "type": "mcq",
+      "question": "Injection Sites şekline göre intramuscular injection'da iğne nasıl tutulur?",
+      "options": [
+        "Kasa dik (yaklaşık 90°)",
+        "Deriye paralel, damar boyunca",
+        "Deri altına eğik, kas tabakasına girmeden",
+        "Kemiğe değene kadar yatay"
+      ],
+      "answer": "Kasa dik (yaklaşık 90°)",
+      "explanation": "Şekilde IV iğnesi ven boyunca dar açıyla, SC iğnesi deri altına eğik, IM iğnesi kasa dik girer.",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    },
+    {
+      "id": "q13",
+      "type": "mcq",
+      "question": "Köpekte hamstring group'a IM enjeksiyonda hangi sinire dikkat edilmelidir?",
+      "options": [
+        "Sciatic nerve",
+        "Femoral nerve",
+        "Radial nerve",
+        "Obturator nerve"
+      ],
+      "answer": "Sciatic nerve",
+      "explanation": "Sciatic nerve uyluğun kaudalinde hamstring kaslarının arasından geçer; bu bölgeye yanlış yapılan IM enjeksiyon siniri zedeleyebilir.",
+      "source": "Sayfa 33 · Injection Sites (dog) · klinik not"
+    },
+    {
+      "id": "q14",
+      "type": "mcq",
+      "question": "Sığırda intravenous injection hangi vene yapılır?",
+      "options": [
+        "Jugular vein",
+        "Cephalic vein",
+        "Lateral saphenous vein",
+        "Median caudal vein"
+      ],
+      "answer": "Jugular vein",
+      "explanation": "Şekil: “Intravenous injections made into jugular vein.” (Median caudal vein kuyruktan kan almak için kullanılır.)",
+      "source": "Common sites for making various injections (ox)"
+    },
+    {
+      "id": "q15",
+      "type": "mcq",
+      "question": "Sığırda intraperitoneal injection hangi taraftan yapılır?",
+      "options": [
+        "Daima sağ taraftan",
+        "Daima sol taraftan",
+        "Ventral orta hattan",
+        "Fark etmez"
+      ],
+      "answer": "Daima sağ taraftan",
+      "explanation": "Şekil: “Intra-peritoneal injections (always on the right side).”",
+      "source": "Common sites for making various injections (ox)"
+    },
+    {
+      "id": "q16",
+      "type": "mcq",
+      "question": "Sığırda intraperitoneal injection neden sağ taraftan yapılır?",
+      "options": [
+        "Karnın sol tarafını rumen kapladığı için",
+        "Sağ böbrek daha kaudalde olduğu için",
+        "Sol tarafta jugular vein bulunduğu için",
+        "Sağ tarafta karın kasları daha kalın olduğu için"
+      ],
+      "answer": "Karnın sol tarafını rumen kapladığı için",
+      "explanation": "Rumen karnın sol yarısının büyük bölümünü kaplar; sol taraftan yapılan enjeksiyon rumene girer. Bu yüzden IP injection daima sağ taraftan yapılır.",
+      "source": "Common sites for making various injections (ox)"
+    },
+    {
+      "id": "q17",
+      "type": "mcq",
+      "question": "Sığırda intramuscular injection'lar sıklıkla nereye yapılır?",
+      "options": [
+        "Boyun kaslarına ya da thigh (uyluk) veya rump (sağrı) bölgesine",
+        "Jugular vein'e",
+        "Sağ flank'ten karın boşluğuna",
+        "Meme dokusuna"
+      ],
+      "answer": "Boyun kaslarına ya da thigh (uyluk) veya rump (sağrı) bölgesine",
+      "explanation": "Şekil: “Intramuscular injections often made here (boyun) or in thigh or rump.”",
+      "source": "Common sites for making various injections (ox)"
+    },
+    {
+      "id": "q18",
+      "type": "mcq",
+      "question": "Şekle göre sığırda subcutaneous injection yeri neresidir?",
+      "options": [
+        "Boynun yan tarafı / omuzun önündeki gevşek deri",
+        "Sağ flank",
+        "Rump kasları",
+        "Jugular vein"
+      ],
+      "answer": "Boynun yan tarafı / omuzun önündeki gevşek deri",
+      "explanation": "Şekilde “Site for subcutaneous injections” boyun ve omuz önündeki gevşek deriyi gösterir.",
+      "source": "Common sites for making various injections (ox)"
+    },
+    {
+      "id": "c01",
+      "type": "card",
+      "front": "Cornual nerve block (bovine)",
+      "back": "Bilinci açık, sedatize hayvan + local anesthesia. Cornual nerve: lateral horn base ile gözün lateral canthus'u arasının ortasında bloke edilir; sinir temporal ridge boyunca boynuz tabanına gider.",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "c02",
+      "type": "card",
+      "front": "Goat dehorning: iki sinir",
+      "back": "A: cornual branch of the lacrimal nerve · B: cornual branch of the infratrochlear nerve — medial horn base ile medial canthus arasının ortası.",
+      "source": "Surgical Removal · Dehorning"
+    },
+    {
+      "id": "c03",
+      "type": "card",
+      "front": "Exercise · Köpekte enjeksiyon yerleri",
+      "back": "IV: jugular, cephalic, saphenous vein · SC: scruff, side of chest, side of belly, flank · IM: epaxial, triceps, quadriceps, hamstring group (sciatic n.'e dikkat).",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    },
+    {
+      "id": "c04",
+      "type": "card",
+      "front": "Exercise · Sığırda enjeksiyon yerleri",
+      "back": "IV: jugular vein · SC: boyun/omuz önü gevşek deri · IM: boyun kasları ya da thigh/rump · IP: daima sağ taraf (solda rumen).",
+      "source": "Common sites for making various injections (ox)"
+    },
+    {
+      "id": "c05",
+      "type": "card",
+      "front": "İğne açıları (IV / SC / IM)",
+      "back": "IV: ven boyunca dar açı · SC: deri altına eğik · IM: kasa dik (~90°).",
+      "source": "Sayfa 33 · Injection Sites (dog)"
+    }
+  ]
+}

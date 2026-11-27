@@ -11,13 +11,22 @@ cevaplar ve açıklamalar.
 - **Kartlar** — bilgi kartları (ya da soru → cevap kartları) 3D çevrilir; Leitner kutularıyla aralıklı tekrar,
   “Zor” işaretlenen kart aynı oturumda geri gelir.
 - **Akış** — TikTok tarzı dikey kaydırma; anlatım kartları ve sorular karışık, bitmez.
+- **Konu anlatımı** — konu anlatımı olan setlerde sınav için okunacak bölümler: içindekiler, tablolar,
+  “Sınavda” kutuları; sonunda tek dokunuşla o setin sorularına geçilir.
 
 Her mod tek bir sette ya da **“Tüm ders”** ile dersin bütün setlerinde çalışır.
 
-**Hazır içerik:** Uygulama ilk açılışta **Mikrobiyoloji** dersini getirir — Hafta 7 (mikrobiyal büyümeyi
-etkileyen faktörler) ve Hafta 8 (antimikrobiyaller) slaytlarından hazırlanmış 164 sınav sorusu ve 58 bilgi
-kartı; tablolara ve kalın yazılmış kavramlara ağırlık verildi, her sorunun açıklaması ve slayt numarası var.
-İçerik `content/` klasöründeki JSON dosyalarıdır; dersi silersen geri gelmez.
+**Hazır içerik:** Uygulama iki dersle gelir:
+- **Mikrobiyoloji** — Hafta 7 (mikrobiyal büyümeyi etkileyen faktörler) ve Hafta 8 (antimikrobiyaller)
+  slaytlarından 164 sınav sorusu ve 58 bilgi kartı.
+- **Topografik Anatomi** — damarlar, lenf düğümleri, sinirler, gövde topografisi ve klinik uygulamalar
+  (boynuz anestezisi, enjeksiyon yerleri); konu anlatımı, defterdeki exercise soruları dahil 129 sınav sorusu
+  ve 40 bilgi kartı.
+
+Sorular Türkçe, ilaç adları ve bilimsel terimler İngilizce; tablolara ve kalın/eğik yazılmış kavramlara ağırlık
+verildi, her sorunun açıklaması ve kaynağı (slayt, plate, tablo ya da exercise numarası) var. İçerik
+`content/` klasöründeki JSON dosyalarıdır; bir dersi silersen geri gelmez. Uygulama güncellendiğinde,
+düzenlemediğin hazır setler yeni içerikle yenilenir; tekrar ilerlemen korunur.
 
 Tüm veriler yalnızca senin bilgisayarında tutulur; uygulama internete bağlanmaz.
 
@@ -137,11 +146,17 @@ Ephemeral,"Kısa süreli, geçici"
 {
   "course": "Mikrobiyoloji",
   "sets": [
-    { "name": "Hafta 9", "items": [] }
+    {
+      "name": "Hafta 9",
+      "items": [],
+      "lesson": [{ "title": "Konu başlığı", "body": "Paragraf\n\n- madde\n\n! Sınavda çıkar", "source": "Slayt 3" }]
+    }
   ]
 }
 ```
-(`items` dizisine yukarıdaki gibi kart ve soru öğeleri gelir.)
+(`items` dizisine yukarıdaki gibi kart ve soru öğeleri gelir. `lesson` isteğe bağlıdır ve konu anlatımı olur:
+`body` içinde boş satır yeni blok, `- ` madde, `| a | b |` tablo, `! ` ile başlayan blok “Sınavda” kutusu,
+`### ` ara başlık, `**kalın**` vurgu.)
 
 ---
 

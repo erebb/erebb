@@ -1,5 +1,5 @@
 import Papa from 'papaparse';
-import type { Question } from '@/types';
+import type { LessonSection, Question } from '@/types';
 import { isMcq } from '@/types';
 import { dedupeBy, newId, normalizeAnswer } from '@/lib/utils';
 
@@ -10,12 +10,28 @@ import { dedupeBy, newId, normalizeAnswer } from '@/lib/utils';
  * - JSON öğe dizisi: kart `{ "kelime": "...", "tanim": "..." }` ya da sınav sorusu
  *   `{ "type": "mcq", "question": "...", "options": [...], "answer": "...", "explanation": "...", "source": "..." }`.
  * - JSON tek set: `{ "name": "...", "items": [...] }`.
- * - JSON ders paketi: `{ "course": "...", "sets": [ { "name": "...", "items": [...] } ] }`.
+ * - JSON ders paketi: `{ "course": "...", "sets": [ { "name": "...", "items": [...], "lesson": [...] } ] }`.
+ *   `lesson` (isteğe bağlı) konu anlatımıdır: `[{ "title": "...", "body": "...", "source": "..." }]`.
  */
 
 export interface ParsedPackSet {
   name: string;
   questions: Question[];
+  lesson?: LessonSection[];
+}
+
+/** Konu anlatımı bölümlerini doğrular; geçersiz bölümler atlanır. */
+export function parseLesson(raw: unknown): LessonSection[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const sections = raw.flatMap((s): LessonSection[] => {
+    if (!isObject(s)) return [];
+    const title = typeof s.title === 'string' ? s.title.trim() : '';
+    const body = typeof s.body === 'string' ? s.body.trim() : '';
+    if (!title || !body) return [];
+    const source = typeof s.source === 'string' && s.source.trim() ? s.source.trim() : undefined;
+    return [{ title, body, ...(source ? { source } : {}) }];
+  });
+  return sections.length ? sections : undefined;
 }
 
 export type ParseResult =
@@ -106,7 +122,8 @@ function parseJSON(raw: string): ParseResult {
         return;
       }
       warnings.push(...res.warnings.map((w) => `${name}: ${w}`));
-      sets.push({ name, questions: res.questions });
+      const lesson = parseLesson(s.lesson);
+      sets.push({ name, questions: res.questions, ...(lesson ? { lesson } : {}) });
     });
     if (sets.length === 0) return { success: false, error: 'Paketteki setlerin hiçbirinde geçerli soru yok.' };
     return { success: true, kind: 'pack', course, sets, warnings };

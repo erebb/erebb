@@ -1,0 +1,513 @@
+{
+  "name": "Sinirler · Forelimb & hindlimb nerves",
+  "lesson": [
+    {
+      "title": "Bu konuda neler var?",
+      "body": "Defterdeki görevler:\n- “**Write the names of the nerves of the forelimb and explain their function**” (sayfa 24) ve aynısı **hindlimb** için (sayfa 25)\n- **Table 15.6 / 15.11:** eklemlerin innervasyonu (sayfa 26'da genişletilmiş hali)\n- “**The name of the involved joint after paralysis of the following nerves**”: suprascapular, axillary, radial, median, femoral, tibial, fibular\n\n! Sınavda en çok: **eklem → sinir** tablosu ve **sinir → paralysis'te etkilenen eklem**.",
+      "source": "Sayfa 24–26 · Nervous System plate"
+    },
+    {
+      "title": "Forelimb sinirleri (brachial plexus)",
+      "body": "Brachial plexus spinal sinirlerin ventral dallarından (yaklaşık **C6–T2**) oluşur.\n\n| Sinir | Başlıca kaslar | Fonksiyon |\n|---|---|---|\n| **Suprascapular n.** | Supraspinatus, infraspinatus | Omuz ekstansiyonu; omuz eklemini **lateralden stabilize** eder |\n| **Subscapular n.** | Subscapularis | Omuz eklemini medialden stabilize eder |\n| **Axillary n.** | Deltoideus, teres major & minor | **Omuz fleksiyonu**; kolun lateral derisi |\n| **Musculocutaneous n.** | Biceps brachii, brachialis, coracobrachialis | **Dirsek fleksiyonu**; antebrachium'un medial derisi |\n| **Radial n.** | Triceps brachii, carpus ve parmak ekstansörleri | **Dirsek, carpus ve parmak ekstansiyonu**; antebrachium'un kraniolateral derisi |\n| **Median n.** | Flexor carpi radialis, digital flexors | **Carpus ve parmak fleksiyonu**; palmar deri |\n| **Ulnar n.** | Flexor carpi ulnaris, digital flexors | **Carpus ve parmak fleksiyonu**; antebrachium'un kaudal derisi |\n| **Palmar & digital nn.** | — (median ve ulnar'ın devamı) | Fetlock ve parmak eklemleri, parmak derisi |\n\n- Plate'te göğüs ve omuz kuşağı: **long thoracic n.** (serratus ventralis), **thoracodorsal n.** (latissimus dorsi), **lateral thoracic n.** (cutaneous trunci), cranial pectoral nn.\n\n! Radial n. = **ekstansör** siniri (dirsek, carpus, parmak). Median + ulnar = **fleksör** sinirleri. Suprascapular n. felci atta “**sweeny**”.",
+      "source": "Exercise · Nerves of the forelimb (sayfa 24) · Nervous System plate"
+    },
+    {
+      "title": "Hindlimb sinirleri (lumbosacral plexus)",
+      "body": "| Sinir | Başlıca kaslar | Fonksiyon |\n|---|---|---|\n| **Femoral n.** | Quadriceps femoris | **Stifle (knee) ekstansiyonu**; dalı **saphenous n.** → uyluk ve crus'un medial derisi |\n| **Obturator n.** | Adductor, pectineus, gracilis | Uyluğun **adduksiyonu** |\n| **Cranial gluteal n.** | Middle & deep gluteal, tensor fasciae latae | Kalça ekstansiyonu, abduksiyonu |\n| **Caudal gluteal n.** | Superficial gluteal | Kalça |\n| **Sciatic n.** | Hamstrings (biceps femoris, semitendinosus, semimembranosus) | Kalça ekstansiyonu, stifle fleksiyonu; stifle'ın proksimalinde **tibial** ve **common fibular (peroneal)** n.'a ayrılır |\n| **Tibial n.** | Gastrocnemius, digital flexors | **Hock ekstansiyonu**, parmak fleksiyonu; **medial & lateral plantar nn.** olarak devam eder |\n| **Common fibular (peroneal) n.** | Cranial tibial, long digital extensor | **Hock fleksiyonu**, **parmak ekstansiyonu**; superficial & deep fibular nn. |\n\n- Plate'te ayrıca: pudendal ve caudal rectal (perineum), genitofemoral, ilioinguinal, lateral cutaneous femoral, caudal cutaneous sural.\n\n! Femoral n. → stifle ekstansiyonu. Tibial n. → hock ekstansiyonu. Fibular n. → hock fleksiyonu + parmak ekstansiyonu. Sciatic n. vücudun en büyük siniridir.",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25) · Nervous System plate"
+    },
+    {
+      "title": "Eklemlerin innervasyonu (Table 15.6 ve 15.11)",
+      "body": "### Forelimb\n| Eklem | Sinir |\n|---|---|\n| Shoulder joint | **Axillary n.**, **suprascapular n.** |\n| Elbow joint | **Radial n.**, **musculocutaneous n.** |\n| Elbow & carpal joint | **Median n.**, **ulnar n.** |\n| Fetlock & digital joints | **Palmar nn.**, **digital nn.** |\n\n### Hindlimb\n| Eklem | Sinir |\n|---|---|\n| Hip joint | **Sciatic n.**, **cranial & caudal gluteal n.** |\n| Knee (stifle) joint | **Femoral n.**, **tibial n.**, **saphenous n.** |\n| Hock | **Tibial n.**, **superficial & deep fibular n.** |\n| Digital joints | **Plantar nn. of the tibial n.**, **digital nn.** |\n\n! Sayfa 24–25'teki tablolar kısa; sayfa 26'daki genişletilmiş hali (elbow → radial + musculocutaneous; hip → + gluteal nn.; knee → + femoral n.) sınav için esas al.",
+      "source": "Table 15.6 · Innervation of the joints of the forelimb · Table 15.11 · Innervation of the joints of the hindlimb"
+    },
+    {
+      "title": "Paralysis: hangi eklem etkilenir?",
+      "body": "| Felç olan sinir | Etkilenen eklem | Klinik tablo |\n|---|---|---|\n| **Suprascapular n.** | **Shoulder joint** | Supraspinatus & infraspinatus atrofisi (atta sweeny); yük binince omuz eklemi laterale kayar |\n| **Axillary n.** | **Shoulder joint** | Omuz fleksiyonu zayıflar; yürüyüş bozukluğu hafif |\n| **Radial n.** | **Elbow joint** (+ carpus, parmaklar) | Dirsek ekstansiyonu yok → bacak yük taşıyamaz; dirsek düşük, carpus ve parmaklar bükülü (knuckling) |\n| **Median n.** | **Elbow & carpal joint** | Carpus ve parmak fleksiyonu zayıflar |\n| **Femoral n.** | **Knee (stifle) joint** | Stifle ekstansiyonu yok → bacak yük binince çöker |\n| **Tibial n.** | **Hock** | Hock ekstansiyonu yok → hock aşırı bükülür (dropped hock); fetlock öne bükülür |\n| **Fibular (peroneal) n.** | **Hock** (+ parmaklar) | Hock fleksiyonu ve parmak ekstansiyonu yok → parmağın/tırnağın dorsal yüzü üstüne basar (knuckling) |\n\n! Exercise cevabı kısaca: suprascapular & axillary → **shoulder**; radial → **elbow**; median → **elbow & carpal**; femoral → **knee**; tibial → **hock**; fibular → **hock**.",
+      "source": "Paralysis exercise (sayfa 26)"
+    },
+    {
+      "title": "Baş ve gövde sinirleri (Nervous System plate)",
+      "body": "- Plate'teki kranial sinirler: olfactory, optic, oculomotor, trigeminal dalları (**ophthalmic**, **maxillary**, **mandibular**), facial, vagus, accessory.\n- **Infraorbital n.** maxillary n.'in devamıdır (yüz derisi, üst dudak); **mandibular alveolar n.** mandibular n.'in dalıdır (alt dişler).\n- Gövde: cervical spinal nn., dorsal spinal branches, intercostal nn. (spinal sinirlerin ventral dalları).\n- Boynuz anestezisindeki **cornual n.** ve **infratrochlear n.** için Klinik setine bak.",
+      "source": "Nervous System plate"
+    }
+  ],
+  "items": [
+    {
+      "id": "q01",
+      "type": "mcq",
+      "question": "Suprascapular n. felç olunca hangi eklem etkilenir?",
+      "options": [
+        "Shoulder joint",
+        "Elbow joint",
+        "Carpal joint",
+        "Hip joint"
+      ],
+      "answer": "Shoulder joint",
+      "explanation": "Suprascapular n. supraspinatus ve infraspinatus'u innerve eder; bu kaslar omuz eklemini lateralden destekler. Felçte omuz eklemi etkilenir (atta “sweeny”: kas atrofisi, yük binince omuzun laterale kayması). Table: shoulder joint → axillary + suprascapular n.",
+      "source": "Paralysis exercise (sayfa 26) — Suprascapular nerve"
+    },
+    {
+      "id": "q02",
+      "type": "mcq",
+      "question": "Axillary n. felç olunca hangi eklem etkilenir?",
+      "options": [
+        "Shoulder joint",
+        "Knee joint",
+        "Hock",
+        "Carpal joint"
+      ],
+      "answer": "Shoulder joint",
+      "explanation": "Axillary n. deltoideus ve teres kaslarını innerve eder (omuz fleksiyonu); felçte omuz eklemi etkilenir. Table: shoulder joint → axillary + suprascapular n.",
+      "source": "Paralysis exercise (sayfa 26) — Axillary nerve"
+    },
+    {
+      "id": "q03",
+      "type": "mcq",
+      "question": "Radial n. felç olunca hangi eklem etkilenir?",
+      "options": [
+        "Elbow joint",
+        "Shoulder joint",
+        "Hip joint",
+        "Knee joint"
+      ],
+      "answer": "Elbow joint",
+      "explanation": "Radial n. triceps brachii (dirsek ekstansiyonu) ile carpus ve parmak ekstansörlerini innerve eder. Felçte dirsek ekstansiyonu kaybolur: bacak yük taşıyamaz, dirsek düşer, carpus ve parmaklar bükülür. Table: elbow joint → radial + musculocutaneous n.",
+      "source": "Paralysis exercise (sayfa 26) — Radial nerve"
+    },
+    {
+      "id": "q04",
+      "type": "mcq",
+      "question": "Median n. felç olunca hangi eklem(ler) etkilenir?",
+      "options": [
+        "Elbow ve carpal joint",
+        "Shoulder joint",
+        "Hip joint",
+        "Hock"
+      ],
+      "answer": "Elbow ve carpal joint",
+      "explanation": "Median n. carpus ve parmak fleksörlerini innerve eder. Table: elbow & carpal joint → median + ulnar n. Felçte carpus ve parmak fleksiyonu zayıflar.",
+      "source": "Paralysis exercise (sayfa 26) — Median nerve"
+    },
+    {
+      "id": "q05",
+      "type": "mcq",
+      "question": "Femoral n. felç olunca hangi eklem etkilenir?",
+      "options": [
+        "Knee (stifle) joint",
+        "Hip joint",
+        "Hock",
+        "Shoulder joint"
+      ],
+      "answer": "Knee (stifle) joint",
+      "explanation": "Femoral n. quadriceps femoris'i innerve eder — stifle'ın ekstansörü. Felçte stifle ekstansiyonu yapılamaz, bacak yük binince çöker. Table: knee joint → femoral, tibial, saphenous n.",
+      "source": "Paralysis exercise (sayfa 26) — Femoral nerve"
+    },
+    {
+      "id": "q06",
+      "type": "mcq",
+      "question": "Tibial n. felç olunca hangi eklem etkilenir?",
+      "options": [
+        "Hock (tarsal joint)",
+        "Shoulder joint",
+        "Elbow joint",
+        "Hip joint"
+      ],
+      "answer": "Hock (tarsal joint)",
+      "explanation": "Tibial n. gastrocnemius (hock ekstansiyonu) ve parmak fleksörlerini innerve eder. Felçte hock aşırı bükülür (dropped hock), fetlock öne bükülür. Table: hock → tibial + superficial & deep fibular n.",
+      "source": "Paralysis exercise (sayfa 26) — Tibial nerve"
+    },
+    {
+      "id": "q07",
+      "type": "mcq",
+      "question": "Fibular (peroneal) n. felç olunca hangi eklem etkilenir?",
+      "options": [
+        "Hock (ve parmak eklemleri)",
+        "Shoulder joint",
+        "Elbow joint",
+        "Carpal joint"
+      ],
+      "answer": "Hock (ve parmak eklemleri)",
+      "explanation": "Common fibular (peroneal) n. hock'un fleksörlerini ve parmak ekstansörlerini (cranial tibial, long digital extensor) innerve eder. Felçte hock bükülemez, parmaklar ekstansiyona gelemez; hayvan tırnağının/pençesinin dorsal yüzü üstüne basar (knuckling).",
+      "source": "Paralysis exercise (sayfa 26) — Fibular nerve"
+    },
+    {
+      "id": "q08",
+      "type": "mcq",
+      "question": "Table 15.6'ya göre shoulder joint'i innerve eden sinirler hangileridir?",
+      "options": [
+        "Axillary n. ve suprascapular n.",
+        "Radial n. ve musculocutaneous n.",
+        "Median n. ve ulnar n.",
+        "Palmar nn. ve digital nn."
+      ],
+      "answer": "Axillary n. ve suprascapular n.",
+      "explanation": "Forelimb eklem innervasyonu: shoulder → axillary + suprascapular · elbow → radial + musculocutaneous · elbow & carpal → median + ulnar · fetlock & digital → palmar + digital nn.",
+      "source": "Table 15.6 · Innervation of the joints of the forelimb"
+    },
+    {
+      "id": "q09",
+      "type": "mcq",
+      "question": "Genişletilmiş tabloya göre elbow joint'i innerve eden sinirler hangileridir?",
+      "options": [
+        "Radial n. ve musculocutaneous n.",
+        "Axillary n. ve suprascapular n.",
+        "Palmar nn. ve digital nn.",
+        "Femoral n. ve saphenous n."
+      ],
+      "answer": "Radial n. ve musculocutaneous n.",
+      "explanation": "Sayfa 26: Elbow joint → radial nerve, musculocutaneous nerve; elbow & carpal joint → median nerve, ulnar nerve.",
+      "source": "Sayfa 26 · Innervation of the joints of the forelimb"
+    },
+    {
+      "id": "q10",
+      "type": "mcq",
+      "question": "Elbow ve carpal joint'i birlikte innerve eden sinirler hangileridir?",
+      "options": [
+        "Median n. ve ulnar n.",
+        "Axillary n. ve suprascapular n.",
+        "Radial n. ve axillary n.",
+        "Tibial n. ve fibular n."
+      ],
+      "answer": "Median n. ve ulnar n.",
+      "explanation": "Table 15.6: Elbow joint and carpal joint → median nerve, ulnar nerve.",
+      "source": "Table 15.6 · Innervation of the joints of the forelimb"
+    },
+    {
+      "id": "q11",
+      "type": "mcq",
+      "question": "Fetlock ve diğer parmak eklemlerini innerve eden sinirler hangileridir (forelimb)?",
+      "options": [
+        "Palmar nn. ve digital nn.",
+        "Median n. ve musculocutaneous n.",
+        "Axillary n. ve radial n.",
+        "Suprascapular n. ve subscapular n."
+      ],
+      "answer": "Palmar nn. ve digital nn.",
+      "explanation": "Table 15.6: Fetlock joint and further digital joints → palmar nerves, digital nerves.",
+      "source": "Table 15.6 · Innervation of the joints of the forelimb"
+    },
+    {
+      "id": "q12",
+      "type": "mcq",
+      "question": "Table 15.11'e göre hip joint'i innerve eden sinirler hangileridir?",
+      "options": [
+        "Sciatic n. ile cranial ve caudal gluteal n.",
+        "Femoral n. ve saphenous n.",
+        "Tibial n. ve fibular n.",
+        "Obturator n. ve pudendal n."
+      ],
+      "answer": "Sciatic n. ile cranial ve caudal gluteal n.",
+      "explanation": "Hindlimb: hip → sciatic + cranial & caudal gluteal · knee → femoral, tibial, saphenous · hock → tibial + superficial & deep fibular · digital → plantar nn. of tibial + digital nn.",
+      "source": "Table 15.11 · Innervation of the joints of the hindlimb"
+    },
+    {
+      "id": "q13",
+      "type": "mcq",
+      "question": "Knee (stifle) joint'i innerve eden sinirler hangileridir?",
+      "options": [
+        "Femoral n., tibial n. ve saphenous n.",
+        "Sciatic n. ve gluteal nn.",
+        "Superficial ve deep fibular n.",
+        "Plantar nn. ve digital nn."
+      ],
+      "answer": "Femoral n., tibial n. ve saphenous n.",
+      "explanation": "Sayfa 26: Knee joint → femoral nerve, tibial nerve, saphenous nerve.",
+      "source": "Table 15.11 · Innervation of the joints of the hindlimb"
+    },
+    {
+      "id": "q14",
+      "type": "mcq",
+      "question": "Hock'u innerve eden sinirler hangileridir?",
+      "options": [
+        "Tibial n. ile superficial ve deep fibular n.",
+        "Femoral n. ve saphenous n.",
+        "Sciatic n. ve cranial gluteal n.",
+        "Obturator n. ve femoral n."
+      ],
+      "answer": "Tibial n. ile superficial ve deep fibular n.",
+      "explanation": "Table 15.11: Hock → tibial nerve, superficial and deep fibular nerve.",
+      "source": "Table 15.11 · Innervation of the joints of the hindlimb"
+    },
+    {
+      "id": "q15",
+      "type": "mcq",
+      "question": "Hindlimb'de digital joints'i innerve eden sinirler hangileridir?",
+      "options": [
+        "Tibial n.'in plantar nn. ve digital nn.",
+        "Palmar nn. ve median n.",
+        "Femoral n. ve saphenous n.",
+        "Cranial ve caudal gluteal nn."
+      ],
+      "answer": "Tibial n.'in plantar nn. ve digital nn.",
+      "explanation": "Table 15.11: Digital joints → plantar nerves of the tibial nerve, digital nerves.",
+      "source": "Table 15.11 · Innervation of the joints of the hindlimb"
+    },
+    {
+      "id": "q16",
+      "type": "mcq",
+      "question": "Radial n.'in ana fonksiyonu nedir?",
+      "options": [
+        "Dirsek, carpus ve parmakların ekstansiyonu (triceps brachii ve ekstansörler)",
+        "Dirsek fleksiyonu (biceps brachii, brachialis)",
+        "Carpus ve parmak fleksiyonu",
+        "Omuz eklemini lateralden stabilize etmek"
+      ],
+      "answer": "Dirsek, carpus ve parmakların ekstansiyonu (triceps brachii ve ekstansörler)",
+      "explanation": "Radial n. ön bacağın ekstansör siniridir: triceps brachii (dirsek), carpus ve parmak ekstansörleri; antebrachium'un kraniolateral derisi.",
+      "source": "Exercise · Nerves of the forelimb (sayfa 24) · Nervous System plate"
+    },
+    {
+      "id": "q17",
+      "type": "mcq",
+      "question": "Musculocutaneous n. hangi hareketi sağlar?",
+      "options": [
+        "Dirsek fleksiyonu (biceps brachii, brachialis, coracobrachialis)",
+        "Dirsek ekstansiyonu (triceps brachii)",
+        "Omuz fleksiyonu (deltoideus, teres)",
+        "Hock ekstansiyonu"
+      ],
+      "answer": "Dirsek fleksiyonu (biceps brachii, brachialis, coracobrachialis)",
+      "explanation": "Musculocutaneous n. biceps brachii, brachialis ve coracobrachialis'i innerve eder → dirsek fleksiyonu; antebrachium'un medial derisi (medial cutaneous antebrachial n.).",
+      "source": "Exercise · Nerves of the forelimb (sayfa 24) · Nervous System plate"
+    },
+    {
+      "id": "q18",
+      "type": "mcq",
+      "question": "Median ve ulnar n.'in ortak fonksiyonu nedir?",
+      "options": [
+        "Carpus ve parmak fleksiyonu",
+        "Carpus ve parmak ekstansiyonu",
+        "Omuz fleksiyonu",
+        "Stifle ekstansiyonu"
+      ],
+      "answer": "Carpus ve parmak fleksiyonu",
+      "explanation": "Median ve ulnar n. carpus ve parmak fleksörlerini innerve eder; distalde palmar ve digital nn. olarak devam ederler.",
+      "source": "Exercise · Nerves of the forelimb (sayfa 24) · Nervous System plate"
+    },
+    {
+      "id": "q19",
+      "type": "mcq",
+      "question": "Supraspinatus ve infraspinatus'u innerve eden, felci atta “sweeny” olarak bilinen sinir hangisidir?",
+      "options": [
+        "Suprascapular n.",
+        "Axillary n.",
+        "Subscapular n.",
+        "Radial n."
+      ],
+      "answer": "Suprascapular n.",
+      "explanation": "Suprascapular n. scapula'nın kraniyal kenarını dolanıp supraspinatus ve infraspinatus'u innerve eder; felcinde bu kaslar atrofiye olur (sweeny).",
+      "source": "Exercise · Nerves of the forelimb (sayfa 24) · Nervous System plate"
+    },
+    {
+      "id": "q20",
+      "type": "mcq",
+      "question": "Axillary n. hangi kasları innerve eder ve hangi hareketi sağlar?",
+      "options": [
+        "Deltoideus, teres major ve minor — omuz fleksiyonu",
+        "Triceps brachii — dirsek ekstansiyonu",
+        "Biceps brachii — dirsek fleksiyonu",
+        "Serratus ventralis — gövdenin ön bacaklar arasında asılması"
+      ],
+      "answer": "Deltoideus, teres major ve minor — omuz fleksiyonu",
+      "explanation": "Axillary n. → deltoideus, teres major, teres minor (omuz fleksiyonu) + kolun lateral derisi.",
+      "source": "Exercise · Nerves of the forelimb (sayfa 24) · Nervous System plate"
+    },
+    {
+      "id": "q21",
+      "type": "mcq",
+      "question": "Plate'te serratus ventralis'i innerve eden sinir hangisidir?",
+      "options": [
+        "Long thoracic n.",
+        "Thoracodorsal n.",
+        "Lateral thoracic n.",
+        "Suprascapular n."
+      ],
+      "answer": "Long thoracic n.",
+      "explanation": "Long thoracic n. → serratus ventralis · thoracodorsal n. → latissimus dorsi · lateral thoracic n. → cutaneous trunci (deri kası).",
+      "source": "Nervous System plate"
+    },
+    {
+      "id": "q22",
+      "type": "mcq",
+      "question": "Femoral n.'in ana fonksiyonu nedir?",
+      "options": [
+        "Quadriceps femoris ile stifle (knee) ekstansiyonu",
+        "Gastrocnemius ile hock ekstansiyonu",
+        "Uyluğun adduksiyonu",
+        "Hock fleksiyonu ve parmak ekstansiyonu"
+      ],
+      "answer": "Quadriceps femoris ile stifle (knee) ekstansiyonu",
+      "explanation": "Femoral n. quadriceps femoris'i innerve eder → stifle ekstansiyonu; saphenous n. dalı medial deriyi innerve eder.",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25) · Nervous System plate"
+    },
+    {
+      "id": "q23",
+      "type": "mcq",
+      "question": "Sciatic n. stifle'ın proksimalinde hangi iki sinire ayrılır?",
+      "options": [
+        "Tibial n. ve common fibular (peroneal) n.",
+        "Femoral n. ve saphenous n.",
+        "Medial ve lateral plantar nn.",
+        "Cranial ve caudal gluteal nn."
+      ],
+      "answer": "Tibial n. ve common fibular (peroneal) n.",
+      "explanation": "Sciatic n. (vücudun en büyük siniri) hamstring kaslarını innerve eder ve stifle'ın proksimalinde tibial n. ile common fibular (peroneal) n.'a ayrılır.",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25) · Nervous System plate"
+    },
+    {
+      "id": "q24",
+      "type": "mcq",
+      "question": "Tibial n.'in ana fonksiyonu nedir?",
+      "options": [
+        "Hock ekstansiyonu (gastrocnemius) ve parmak fleksiyonu",
+        "Hock fleksiyonu ve parmak ekstansiyonu",
+        "Stifle ekstansiyonu",
+        "Uyluğun adduksiyonu"
+      ],
+      "answer": "Hock ekstansiyonu (gastrocnemius) ve parmak fleksiyonu",
+      "explanation": "Tibial n. gastrocnemius ve digital flexor'ları innerve eder → hock ekstansiyonu, parmak fleksiyonu; distalde medial ve lateral plantar nn.",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25) · Nervous System plate"
+    },
+    {
+      "id": "q25",
+      "type": "mcq",
+      "question": "Common fibular (peroneal) n.'in ana fonksiyonu nedir?",
+      "options": [
+        "Hock fleksiyonu ve parmak ekstansiyonu",
+        "Hock ekstansiyonu ve parmak fleksiyonu",
+        "Stifle ekstansiyonu",
+        "Kalça ekstansiyonu"
+      ],
+      "answer": "Hock fleksiyonu ve parmak ekstansiyonu",
+      "explanation": "Common fibular (peroneal) n. → cranial tibial (hock fleksiyonu) ve long digital extensor (parmak ekstansiyonu); superficial ve deep fibular nn. olarak dallanır.",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25) · Nervous System plate"
+    },
+    {
+      "id": "q26",
+      "type": "mcq",
+      "question": "Femoral n.'in uyluk ve crus'un medial derisini innerve eden dalı hangisidir?",
+      "options": [
+        "Saphenous n.",
+        "Caudal cutaneous sural n.",
+        "Lateral cutaneous femoral n.",
+        "Superficial fibular n."
+      ],
+      "answer": "Saphenous n.",
+      "explanation": "Saphenous n. femoral n.'in dalıdır; uyluk, crus ve ayağın medial derisini innerve eder (ayrıca knee joint innervasyonuna katılır).",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25) · Nervous System plate"
+    },
+    {
+      "id": "q27",
+      "type": "mcq",
+      "question": "Uyluğun adduktör kaslarını innerve eden sinir hangisidir?",
+      "options": [
+        "Obturator n.",
+        "Femoral n.",
+        "Pudendal n.",
+        "Cranial gluteal n."
+      ],
+      "answer": "Obturator n.",
+      "explanation": "Obturator n. adductor, pectineus ve gracilis'i innerve eder → uyluğun adduksiyonu.",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25) · Nervous System plate"
+    },
+    {
+      "id": "q28",
+      "type": "mcq",
+      "question": "Tibial n. distalde hangi sinirler olarak devam eder?",
+      "options": [
+        "Medial ve lateral plantar nn.",
+        "Superficial ve deep fibular nn.",
+        "Medial ve lateral palmar nn.",
+        "Saphenous n. ve caudal cutaneous sural n."
+      ],
+      "answer": "Medial ve lateral plantar nn.",
+      "explanation": "Tibial n. → medial & lateral plantar nn. → plantar digital nn. (Palmar nn. ön bacaktadır.)",
+      "source": "Nervous System plate"
+    },
+    {
+      "id": "q29",
+      "type": "mcq",
+      "question": "Nervous System plate'te infraorbital n. hangi sinirin devamıdır?",
+      "options": [
+        "Maxillary n.",
+        "Mandibular n.",
+        "Facial n.",
+        "Ophthalmic n."
+      ],
+      "answer": "Maxillary n.",
+      "explanation": "Infraorbital n. trigeminal n.'in maxillary dalının devamıdır; infraorbital foramen'den çıkıp yüzün derisini ve üst dudağı innerve eder.",
+      "source": "Nervous System plate"
+    },
+    {
+      "id": "q30",
+      "type": "mcq",
+      "question": "Brachial plexus yaklaşık hangi spinal sinirlerin ventral dallarından oluşur?",
+      "options": [
+        "C6–T2",
+        "L4–S2",
+        "C1–C5",
+        "T3–T13"
+      ],
+      "answer": "C6–T2",
+      "explanation": "Brachial plexus C6, C7, C8, T1 ve T2 spinal sinirlerinin ventral dallarından oluşur ve ön bacağın sinirlerini verir.",
+      "source": "Nervous System plate"
+    },
+    {
+      "id": "c01",
+      "type": "card",
+      "front": "Exercise · Forelimb sinirleri ve fonksiyonları",
+      "back": "Suprascapular: supraspinatus/infraspinatus, omuzun lateral stabilitesi (felç = sweeny) · Subscapular: subscapularis · Axillary: omuz fleksiyonu · Musculocutaneous: dirsek fleksiyonu · Radial: dirsek/carpus/parmak ekstansiyonu · Median & ulnar: carpus/parmak fleksiyonu · Palmar & digital nn.: fetlock ve parmaklar.",
+      "source": "Exercise · Nerves of the forelimb (sayfa 24)"
+    },
+    {
+      "id": "c02",
+      "type": "card",
+      "front": "Exercise · Hindlimb sinirleri ve fonksiyonları",
+      "back": "Femoral: stifle ekstansiyonu (+ saphenous n., medial deri) · Obturator: adduksiyon · Cranial & caudal gluteal: kalça · Sciatic: hamstrings → tibial + common fibular · Tibial: hock ekstansiyonu, parmak fleksiyonu (→ plantar nn.) · Fibular: hock fleksiyonu, parmak ekstansiyonu.",
+      "source": "Exercise · Nerves of the hindlimb (sayfa 25)"
+    },
+    {
+      "id": "c03",
+      "type": "card",
+      "front": "Forelimb eklem innervasyonu",
+      "back": "Shoulder: axillary + suprascapular · Elbow: radial + musculocutaneous · Elbow & carpal: median + ulnar · Fetlock & digital: palmar + digital nn.",
+      "source": "Sayfa 26 · Innervation of the joints of the forelimb"
+    },
+    {
+      "id": "c04",
+      "type": "card",
+      "front": "Hindlimb eklem innervasyonu",
+      "back": "Hip: sciatic + cranial & caudal gluteal · Knee: femoral, tibial, saphenous · Hock: tibial + superficial & deep fibular · Digital: plantar nn. of tibial + digital nn.",
+      "source": "Table 15.11 · Innervation of the joints of the hindlimb"
+    },
+    {
+      "id": "c05",
+      "type": "card",
+      "front": "Paralysis → etkilenen eklem",
+      "back": "Suprascapular, axillary → shoulder · Radial → elbow · Median → elbow & carpal · Femoral → knee · Tibial → hock · Fibular → hock.",
+      "source": "Paralysis exercise (sayfa 26)"
+    },
+    {
+      "id": "c06",
+      "type": "card",
+      "front": "Radial n. paralysis",
+      "back": "Dirsek ekstansiyonu yok → bacak yük taşıyamaz; dirsek düşük, carpus ve parmaklar bükülü (knuckling).",
+      "source": "Paralysis exercise (sayfa 26)"
+    },
+    {
+      "id": "c07",
+      "type": "card",
+      "front": "Tibial vs fibular paralysis",
+      "back": "Tibial: hock ekstansiyonu yok → dropped hock, fetlock öne bükülür. Fibular: hock fleksiyonu ve parmak ekstansiyonu yok → parmağın/tırnağın dorsal yüzü üstüne basar.",
+      "source": "Paralysis exercise (sayfa 26)"
+    },
+    {
+      "id": "c08",
+      "type": "card",
+      "front": "Long thoracic · thoracodorsal · lateral thoracic n.",
+      "back": "Long thoracic → serratus ventralis · Thoracodorsal → latissimus dorsi · Lateral thoracic → cutaneous trunci.",
+      "source": "Nervous System plate"
+    }
+  ]
+}

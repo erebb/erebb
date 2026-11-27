@@ -114,6 +114,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           updatedAt: now,
           sourceFormat: 'json',
           questions: s.questions,
+          ...(s.lesson ? { lesson: s.lesson } : {}),
         })),
       ]);
       return course.id;

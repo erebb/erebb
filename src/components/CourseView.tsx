@@ -109,13 +109,17 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
       </header>
 
       {sets.length > 1 && (
-        <Card className="border-duo-green">
+        <Card className="border-duo-green" data-course-all>
           <CardContent className="flex flex-col gap-3 p-4">
             <div>
               <p className="font-extrabold text-duo-gray-700">Tüm ders</p>
               <p className="text-xs font-semibold text-duo-gray-300">Bütün setler birlikte · {counts(all)}</p>
             </div>
-            <StudyModeButtons onStudy={(mode) => onStudy(mode, null)} disabled={all.length === 0} />
+            <StudyModeButtons
+              onStudy={(mode) => onStudy(mode, null)}
+              disabled={all.length === 0}
+              hasLesson={sets.some((x) => (x.lesson?.length ?? 0) > 0)}
+            />
           </CardContent>
         </Card>
       )}
@@ -151,7 +155,11 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
                     </Button>
                   </div>
                 </div>
-                <StudyModeButtons onStudy={(mode) => onStudy(mode, set.id)} disabled={set.questions.length === 0} />
+                <StudyModeButtons
+                  onStudy={(mode) => onStudy(mode, set.id)}
+                  disabled={set.questions.length === 0}
+                  hasLesson={(set.lesson?.length ?? 0) > 0}
+                />
               </CardContent>
             </Card>
           </motion.div>

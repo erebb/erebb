@@ -44,6 +44,19 @@ export interface QuestionSet {
   questions: Question[];
   /** Uygulamayla gelen hazır içerikten geldiyse: içerik anahtarı ve yüklenen sürüm. */
   bundle?: { key: string; version: number };
+  /** Konu anlatımı: sınav için okunacak bölümler (isteğe bağlı). */
+  lesson?: LessonSection[];
+}
+
+/**
+ * Konu anlatımının bir bölümü. `body` sade bir biçim kullanır (bkz. components/RichText):
+ * boş satır = yeni blok · "- " = madde · "| a | b |" = tablo (ilk satır başlık) ·
+ * "! " ile başlayan blok = "Sınavda" kutusu · "### " = ara başlık · **kalın**.
+ */
+export interface LessonSection {
+  title: string;
+  body: string;
+  source?: string;
 }
 
 /** Bir çalışma oturumunun hedefi: tek set ya da bir dersin tüm setleri. */
@@ -51,9 +64,11 @@ export interface StudyTarget {
   title: string;
   subtitle?: string;
   questions: Question[];
+  /** Konu anlatımları; tüm ders açıldığında set başına bir grup. */
+  lessons?: { title: string; sections: LessonSection[] }[];
 }
 
-export type StudyMode = 'browse' | 'quiz' | 'flashcards' | 'feed';
+export type StudyMode = 'browse' | 'quiz' | 'flashcards' | 'feed' | 'lesson';
 
 // ---- Aralıklı tekrar (Leitner kutuları) ----
 

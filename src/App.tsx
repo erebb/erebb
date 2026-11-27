@@ -8,6 +8,7 @@ import { BrowseZone } from '@/components/BrowseZone';
 import { FlashcardZone } from '@/components/FlashcardZone';
 import { DuolingoZone } from '@/components/DuolingoZone';
 import { FeedZone } from '@/components/FeedZone';
+import { LessonZone } from '@/components/LessonZone';
 import { Button } from '@/components/ui/button';
 
 type View =
@@ -36,13 +37,21 @@ function Router() {
     const course = courses.find((c) => c.id === view.courseId);
     if (view.setId) {
       const set = getSet(view.setId);
-      return set ? { title: set.name, subtitle: course?.name, questions: set.questions } : null;
+      return set
+        ? {
+            title: set.name,
+            subtitle: course?.name,
+            questions: set.questions,
+            lessons: set.lesson?.length ? [{ title: set.name, sections: set.lesson }] : [],
+          }
+        : null;
     }
     const sets = setsOfCourse(view.courseId);
     return {
       title: `${course?.name ?? 'Ders'} · Tüm ders`,
       subtitle: `${sets.length} set`,
       questions: sets.flatMap((s) => s.questions),
+      lessons: sets.filter((s) => s.lesson?.length).map((s) => ({ title: s.name, sections: s.lesson! })),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [view]);
@@ -92,6 +101,9 @@ function Router() {
         {view.name === 'study' && target && view.mode === 'quiz' && <DuolingoZone target={target} onExit={exitStudy} />}
         {view.name === 'study' && target && view.mode === 'flashcards' && (
           <FlashcardZone target={target} onExit={exitStudy} />
+        )}
+        {view.name === 'study' && target && view.mode === 'lesson' && (
+          <LessonZone target={target} onExit={exitStudy} onStudy={(mode) => setView({ ...view, mode })} />
         )}
       </motion.div>
     </AnimatePresence>

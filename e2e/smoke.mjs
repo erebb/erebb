@@ -38,6 +38,8 @@ const H7_CARDS = count(H7, 'card');
 const H8_MCQ = count(H8, 'mcq');
 const TOTAL_MCQ = H7_MCQ + H8_MCQ;
 const TOTAL_CARDS = H7_CARDS + count(H8, 'card');
+const TOPO_SETS = ['damarlar', 'lenf', 'sinirler', 'govde', 'klinik'].map((k) => readJson(`../content/topografik-${k}.json`));
+const TOPO_DAMAR = TOPO_SETS[0];
 
 // ---------------------------------------------------------------------------
 
@@ -294,11 +296,7 @@ try {
   await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
 
   // ===================== Akış (tüm ders) =====================
-  await page
-    .locator('div', { has: page.getByText('Tüm ders', { exact: true }) })
-    .getByRole('button', { name: /Akış/ })
-    .last()
-    .click();
+  await page.locator('[data-course-all]').getByRole('button', { name: /Akış/ }).click();
   await page.locator('[data-feed-card]').first().waitFor();
   await settle(page, 700);
   const first = await activeCard(page);
@@ -455,6 +453,57 @@ try {
       (await page.getByRole('button', { name: /Mikrobiyoloji/ }).innerText()).includes('2 set')
   );
 
+  // ===================== Konu anlatımı (Topografik Anatomi) =====================
+  await page.getByRole('button', { name: /Topografik Anatomi/ }).click();
+  await page.getByRole('heading', { name: 'Topografik Anatomi' }).waitFor();
+  check(
+    'Topografik Anatomi: 5 set hazır geliyor',
+    (await Promise.all(['Damarlar', 'Lenf', 'Sinirler', 'Gövde', 'Klinik'].map((p) => setCard(page, p).count()))).every((n) => n === 1)
+  );
+  await studySet(page, 'Damarlar', 'Konu anlatımı');
+  await page.getByText('İçindekiler').first().waitFor();
+  check(
+    'Konu anlatımı: tüm bölümler gösteriliyor',
+    (await page.locator('[data-lesson-section]').count()) === TOPO_DAMAR.lesson.length,
+    `${await page.locator('[data-lesson-section]').count()} bölüm`
+  );
+  check('Konu anlatımı: tablo biçimleniyor', (await page.locator('[data-lesson-section] table').count()) > 0);
+  check('Konu anlatımı: “Sınavda” kutuları var', (await page.locator('[data-exam-tip]').count()) > 0);
+  check('Konu anlatımı: **kalın** vurgular biçimleniyor', (await page.locator('[data-lesson-section] strong').count()) > 10);
+  const target = TOPO_DAMAR.lesson.findIndex((x) => x.title.startsWith('Vena cava'));
+  await page.getByRole('navigation', { name: 'İçindekiler' }).getByRole('button', { name: /Vena cava/ }).click();
+  await settle(page, 1000);
+  const jumpTop = await page.locator('[data-lesson-section]').nth(target).evaluate((el) => el.getBoundingClientRect().top);
+  check('Konu anlatımı: içindekiler bölüme götürüyor', Math.abs(jumpTop) < 60, `${Math.round(jumpTop)}px`);
+  await shot(page, '10-konu-anlatimi');
+  await page.getByRole('button', { name: /Soru çöz/ }).last().click();
+  await page.getByText(`${count(TOPO_DAMAR, 'mcq')} sınav sorusu`, { exact: false }).waitFor();
+  check('Konu anlatımı: sonundan aynı setin sorularına geçiliyor', true);
+  await page.getByRole('button', { name: 'Geri' }).first().click();
+  await page.getByRole('heading', { name: 'Topografik Anatomi' }).waitFor();
+  await page.locator('[data-course-all]').getByRole('button', { name: /Konu anlatımı/ }).click();
+  await page.getByText('İçindekiler').first().waitFor();
+  check(
+    'Konu anlatımı: tüm ders açılınca her setin anlatımı kendi başlığıyla',
+    (await page.locator('[data-lesson-group]').count()) === TOPO_SETS.length &&
+      (await page.locator('[data-lesson-section]').count()) === TOPO_SETS.reduce((n, x) => n + x.lesson.length, 0)
+  );
+  await page.keyboard.press('Escape');
+  await page.getByRole('heading', { name: 'Topografik Anatomi' }).waitFor();
+  check('Konu anlatımı: Esc derse döndürüyor', true);
+  check(
+    'Mikrobiyoloji setlerinde konu anlatımı düğmesi yok',
+    await (async () => {
+      await page.getByRole('button', { name: 'Derslere dön' }).click();
+      await page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
+      await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+      const n = await page.getByRole('button', { name: /Konu anlatımı/ }).count();
+      await page.getByRole('button', { name: 'Derslere dön' }).click();
+      await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+      return n === 0;
+    })()
+  );
+
   const csp1 = await page.evaluate(() => window.__cspViolations);
   check('CSP ihlali yok', csp1.length === 0, csp1.slice(0, 3).join(' | '));
   check('Konsol hatası yok', errors.length === 0, errors.slice(0, 3).join(' | '));
@@ -496,7 +545,7 @@ try {
   await up.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
   await up.page.evaluate(() => {
     const sets = JSON.parse(localStorage.getItem('kelime-ustasi.sets'));
-    for (const s of sets) {
+    for (const s of sets.filter((x) => x.name.startsWith('Hafta '))) {
       delete s.bundle;
       s.questions = s.questions.map((q, i) => ({ ...q, id: `eski-${s.name}-${i}` }));
       if (s.name.startsWith('Hafta 7')) {
@@ -507,7 +556,8 @@ try {
       }
     }
     localStorage.setItem('kelime-ustasi.sets', JSON.stringify(sets));
-    localStorage.setItem('kelime-ustasi.seededPacks', JSON.stringify(['mikrobiyoloji-hafta-7-8']));
+    const keep = JSON.parse(localStorage.getItem('kelime-ustasi.seededPacks') ?? '[]').filter((e) => !e.startsWith('mikrobiyoloji'));
+    localStorage.setItem('kelime-ustasi.seededPacks', JSON.stringify([...keep, 'mikrobiyoloji-hafta-7-8']));
   });
   await up.page.reload();
   await up.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
@@ -516,7 +566,7 @@ try {
     const h7 = sets.find((s) => s.name.startsWith('Hafta 7'));
     const h8 = sets.find((s) => s.name.startsWith('Hafta 8'));
     return {
-      count: sets.length,
+      count: sets.filter((s) => s.name.startsWith('Hafta ')).length,
       h7Old: h7.questions.some((q) => q.front === 'ESKİ SÜRÜM SORUSU'),
       h7Len: h7.questions.length,
       h7Id: h7.questions[0].id,

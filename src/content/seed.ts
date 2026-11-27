@@ -1,6 +1,6 @@
 import type { Course, QuestionSet, SRSEntries } from '@/types';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
-import { itemsToQuestions } from '@/lib/parser';
+import { itemsToQuestions, parseLesson } from '@/lib/parser';
 import { newId } from '@/lib/utils';
 
 /**
@@ -20,7 +20,7 @@ interface BundledSet {
   key: string;
   version: number;
   /** İçerik ayrı bir parçada: yalnızca gerektiğinde (yeni ya da güncel değilse) okunur. */
-  load: () => Promise<{ name: string; items: unknown[] }>;
+  load: () => Promise<{ name: string; items: unknown[]; lesson?: unknown }>;
 }
 
 interface BundledPack {
@@ -44,6 +44,36 @@ export const BUNDLED_PACKS: BundledPack[] = [
         key: 'mikrobiyoloji-hafta-8',
         version: 2,
         load: () => import('../../content/mikrobiyoloji-hafta-8.json').then((m) => m.default),
+      },
+    ],
+  },
+  {
+    course: 'Topografik Anatomi',
+    sets: [
+      {
+        key: 'topografik-damarlar',
+        version: 1,
+        load: () => import('../../content/topografik-damarlar.json').then((m) => m.default),
+      },
+      {
+        key: 'topografik-lenf',
+        version: 1,
+        load: () => import('../../content/topografik-lenf.json').then((m) => m.default),
+      },
+      {
+        key: 'topografik-sinirler',
+        version: 1,
+        load: () => import('../../content/topografik-sinirler.json').then((m) => m.default),
+      },
+      {
+        key: 'topografik-govde',
+        version: 1,
+        load: () => import('../../content/topografik-govde.json').then((m) => m.default),
+      },
+      {
+        key: 'topografik-klinik',
+        version: 1,
+        load: () => import('../../content/topografik-klinik.json').then((m) => m.default),
       },
     ],
   },
@@ -134,6 +164,7 @@ export async function prepareStorage(): Promise<void> {
         const parsed = itemsToQuestions(data.items, { idPrefix: `${bs.key}:` });
         if ('error' in parsed) continue;
         const bundle = { key: bs.key, version: bs.version };
+        const lesson = parseLesson(data.lesson);
 
         if (have === 0) {
           const course = ensureCourse(pack.course);
@@ -147,6 +178,7 @@ export async function prepareStorage(): Promise<void> {
               sourceFormat: 'json',
               questions: parsed.questions,
               bundle,
+              ...(lesson ? { lesson } : {}),
             });
             changed = true;
           }
@@ -161,6 +193,8 @@ export async function prepareStorage(): Promise<void> {
             existing.name = data.name;
             existing.questions = parsed.questions;
             existing.bundle = bundle;
+            if (lesson) existing.lesson = lesson;
+            else delete existing.lesson;
             changed = true;
           }
         }
