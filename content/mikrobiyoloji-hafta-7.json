@@ -743,7 +743,7 @@
     {
       "type": "card",
       "front": "Table 3-2 — patojenlerin minimum aw değerleri (yüksekten düşüğe)",
-      "back": "Campylobacter 0.98 · C. botulinum E, Shigella, Yersinia 0.97 · V. vulnificus 0.96 · EHEC 0.95 · Salmonella, V. parahaemolyticus 0.94 · C. perfringens 0.943 · B. cereus, C. botulinum A & B 0.93 · L. monocytogenes 0.92 · S. aureus toxin 0.88, growth 0.83.",
+      "back": "Campylobacter 0.98 · C. botulinum E, Shigella, Yersinia 0.97 · V. vulnificus 0.96 · EHEC 0.95 · C. perfringens 0.943 · Salmonella, V. parahaemolyticus 0.94 · B. cereus, C. botulinum A & B 0.93 · L. monocytogenes 0.92 · S. aureus toxin 0.88, growth 0.83.",
       "source": "Slayt 4 · Table 3-2"
     },
     {
