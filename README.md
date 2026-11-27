@@ -17,47 +17,61 @@ Tüm veriler yalnızca senin bilgisayarında tutulur; uygulama internete bağlan
 
 ### 1. İndir
 
-1. Bu deponun **Actions** sekmesine git → en üstteki yeşil tikli **“Mac uygulaması”** çalışmasını aç.
-2. Sayfanın altındaki **Artifacts** bölümünden **`KelimeUstasi-mac`** dosyasını indir (GitHub'a giriş yapmış olman gerekir).
-3. İnen `.zip`'i aç; içinden `KelimeUstasi-…-universal.dmg` çıkar.
+**[Releases](https://github.com/erebb/erebb/releases/latest)** sayfasından **`KelimeUstasi-…-mac.dmg`** dosyasını indir.
 
-> Bir sürüm etiketi (`v1.0.0` gibi) yayımlandıysa `.dmg`'yi doğrudan **Releases** sayfasından da indirebilirsin.
+Tek dosya hem **Apple Silicon (M1–M4)** hem **Intel** Mac'lerde çalışır. En az **macOS 11 Big Sur** gerekir.
 
-Tek dosya hem **Apple Silicon (M1/M2/M3/M4)** hem **Intel** Mac'lerde çalışır. En az **macOS 11 Big Sur** gerekir.
+> Henüz yayımlanmamış en son derlemeyi denemek istersen: **Actions** sekmesi → en üstteki yeşil tikli
+> **“Mac uygulaması”** çalışması → sayfanın altındaki **Artifacts** → `KelimeUstasi-mac`. Bunun için
+> GitHub'a giriş yapmış olman gerekir ve bu dosyalar 90 gün sonra silinir; kalıcı bağlantı Releases'tir.
 
 ### 2. Kur
 
 `.dmg`'ye çift tıkla ve açılan pencerede **Kelime Ustası**'nı **Uygulamalar** (Applications) klasörüne sürükle.
 
+Uygulamayı **ilk kez açmadan önce mutlaka Uygulamalar'a kopyala.** Doğrudan `.dmg`'nin içinden ya da
+İndirilenler'den açarsan macOS onu geçici, salt okunur bir konumdan çalıştırır ve aşağıdaki onay
+adımı kalıcı olmaz.
+
 ### 3. İlk açılış (yalnızca bir kez)
 
 Uygulama Apple geliştirici sertifikasıyla imzalanmadığı için macOS ilk açılışta
 *“Kelime Ustası açılamadı; Apple, kötü amaçlı yazılım içermediğini doğrulayamıyor”*
-benzeri bir uyarı gösterir. Bu beklenen bir durumdur:
+benzeri bir uyarı gösterir. Bu beklenen bir durumdur.
 
 **macOS 15 Sequoia ve sonrası**
-1. Uygulamayı bir kez açmayı dene, uyarıda **Bitti**'ye bas.
-2. **Sistem Ayarları › Gizlilik ve Güvenlik**'i aç, aşağı kaydır.
-3. *“Kelime Ustası engellendi…”* satırındaki **Yine de Aç**'a bas, parolanı gir.
+1. Uygulamalar'dan Kelime Ustası'nı açmayı dene. Uyarıda **Bitti**'ye bas (**Çöp Sepetine Taşı**'ya değil).
+2. **Sistem Ayarları › Gizlilik ve Güvenlik**'i aç, en alta kaydır.
+3. *“Kelime Ustası, Mac'inizi korumak için engellendi”* satırındaki **Yine de Aç**'a bas ve parolanı gir.
+
+   Bu düğme yalnızca engellenen bir açılış denemesinden sonra, yaklaşık bir saat boyunca görünür.
+   Görmüyorsan 1. adımı tekrarla.
 
 **macOS 11–14**
-- Uygulamalar klasöründe Kelime Ustası'na **sağ tıkla › Aç**, çıkan pencerede yine **Aç**'a bas.
+- Uygulamalar klasöründe Kelime Ustası'na **Control tuşuna basılı tutarak tıkla** (ya da sağ tıkla) **› Aç**,
+  çıkan pencerede yine **Aç**'a bas.
 
-**Alternatif (Terminal):**
+**Alternatif (Terminal, her sürümde):**
 ```bash
-xattr -dr com.apple.quarantine "/Applications/Kelime Ustası.app"
+xattr -dr com.apple.quarantine /Applications/Kelime*.app
 ```
 
 Bundan sonra uygulama Dock'tan ya da Launchpad'den normal şekilde açılır.
 
 > *“Hasar görmüş, Çöp Sepeti'ne taşıyın”* uyarısı alırsan dosya indirme sırasında bozulmuştur;
-> `.dmg`'yi yeniden indir. Bu uyarıyı aşmak için yukarıdaki `xattr` komutu da işe yarar.
+> `.dmg`'yi yeniden indir ya da yukarıdaki `xattr` komutunu çalıştır.
+
+### Güncelleme
+
+Yeni `.dmg`'yi indir, Kelime Ustası'nı Uygulamalar'a sürükle ve **Değiştir**'i seç. Soru setlerin ve
+ilerlemen korunur. Her yeni sürüm macOS için yeni bir uygulama sayıldığından ilk açılış onayını
+(yukarıdaki 3. adım) bir kez daha vermen gerekir.
 
 ### Verilerin nerede?
 
 Soru setlerin, ilerlemen ve serin uygulamanın kendi veri klasöründe saklanır
-(`~/Library/WebKit/com.erebb.kelimeustasi`). Uygulamayı güncellemek (yeni `.dmg` ile üzerine
-kurmak) verilerini silmez. Uygulamayı silip bu klasörü de silersen veriler gider.
+(`~/Library/WebKit/com.erebb.kelimeustasi`). Uygulamayı güncellemek verilerini silmez. Uygulamayı
+silip bu klasörü de silersen veriler gider.
 
 ### Mac'e özel kısayollar
 
@@ -128,8 +142,11 @@ npm run app:build:universal
 
 Her push'ta GitHub Actions (`.github/workflows/macos.yml`) uygulamayı macOS'ta derler, mimarisini
 ve imzasını doğrular, açılışta çökmediğini test eder, uçtan uca testleri Safari motorunda (WebKit)
-çalıştırır ve `.dmg`'yi artefakt olarak yükler. `v*` etiketi atıldığında `.dmg` bir GitHub
-Release'e eklenir.
+çalıştırır ve `.dmg`'yi artefakt olarak yükler.
+
+**Sürüm yayımlamak:** `package.json`'daki `version`'ı artır (uygulamanın sürümü oradan okunur),
+commit'le ve aynı sürümle bir etiket at — `git tag v1.0.1 && git push origin v1.0.1`. İş akışı
+etiketle sürümün eşleştiğini denetler ve `.dmg`'yi bir GitHub Release'e ekler.
 
 ### Yapı
 

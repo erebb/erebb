@@ -17,7 +17,6 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
   },
-  envPrefix: ['VITE_', 'TAURI_ENV_'],
   build: {
     // macOS 11 (uygulamanın asgari sürümü) Safari 14 ile gelir.
     target: ['es2020', 'safari14'],

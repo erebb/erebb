@@ -15,9 +15,10 @@ const APP_NAME: &str = "Kelime Ustası";
 
 /// Türkçe uygulama menüsü.
 ///
-/// Düzen menüsü süs değil: macOS'ta WKWebView içindeki metin kutularında
-/// ⌘C / ⌘V / ⌘X / ⌘A kısayolları ancak bu öğeler menüde varsa çalışır.
-/// Uygulamanın "Metin Yapıştır" ile içe aktarması buna dayanır.
+/// Tauri macOS'ta menü verilmezse İngilizce bir varsayılan menü kurar; bu onun
+/// Türkçe karşılığıdır. Düzen menüsü korunmalı: WKWebView'daki metin kutularında
+/// ⌘C / ⌘V / ⌘X / ⌘A kısayolları bu öğeler aracılığıyla çalışır ve uygulamanın
+/// "Metin Yapıştır" ile içe aktarması buna dayanır.
 ///
 /// Her platformda derlenir (Linux'ta `cargo check` tipleri doğrulasın),
 /// ama yalnızca macOS'ta takılır.
@@ -26,7 +27,8 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
     let about = AboutMetadata {
         name: Some(APP_NAME.into()),
         version: Some(app.package_info().version.to_string()),
-        comments: Some("Kendi kelime listelerinle oyunlaştırılmış öğrenme.".into()),
+        // macOS "Hakkında" penceresi `comments`'i göstermez; `credits` gösterir.
+        credits: Some("Kendi kelime listelerinle oyunlaştırılmış öğrenme.".into()),
         ..Default::default()
     };
 

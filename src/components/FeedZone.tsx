@@ -213,27 +213,56 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     onExit();
   }, [flushXP, onExit]);
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    const tag = (e.target as HTMLElement).tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA') return; // Yazmaya asla karışma.
-    switch (e.key) {
-      case 'ArrowDown':
-      case 'PageDown':
-      case ' ':
-        e.preventDefault();
-        step(1);
-        break;
-      case 'ArrowUp':
-      case 'PageUp':
-        e.preventDefault();
-        step(-1);
-        break;
-      case 'Escape':
-        e.preventDefault();
-        handleExit();
-        break;
-    }
-  };
+  // --- Klavye ---
+  // Pencere düzeyinde dinlenir. Akış kabına bağlı dinleyici kırılgandı: Safari/WebKit'te
+  // düğmeye tıklamak odak vermez ve "Kelimeyi göster" kapanınca odak body'ye düşer —
+  // ok tuşları sessizce çalışmayı bırakırdı.
+  const revealOpenRef = useRef(false);
+  useEffect(() => {
+    revealOpenRef.current = revealCard !== null;
+  }, [revealCard]);
+  const handleExitRef = useRef(handleExit);
+  useEffect(() => {
+    handleExitRef.current = handleExit;
+  }, [handleExit]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      // Tuşu başka bir bileşen zaten işlediyse karışma. Kritik durum: "Kelimeyi göster"
+      // açıkken Esc. Radix pencereyi belge düzeyinde kapatıp olayı preventDefault eder;
+      // React o güncellemeyi bu dinleyici çalışmadan işlediği için aşağıdaki "pencere açık"
+      // bayrağı burada çoktan false olur — tek başına ona güvenilirse Esc hem pencereyi
+      // kapatır hem akıştan çıkardı.
+      if (e.defaultPrevented) return;
+      if (revealOpenRef.current) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return; // ⌘ kısayollarına karışma
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+      switch (e.key) {
+        case ' ':
+          if (t?.tagName === 'BUTTON') return; // Boşluk odaktaki düğmeye basabilsin
+          e.preventDefault();
+          stepRef.current(1);
+          break;
+        case 'ArrowDown':
+        case 'PageDown':
+          e.preventDefault();
+          stepRef.current(1);
+          break;
+        case 'ArrowUp':
+        case 'PageUp':
+          e.preventDefault();
+          stepRef.current(-1);
+          break;
+        case 'Escape':
+          e.preventDefault();
+          handleExitRef.current();
+          break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   if (!set || isEmpty) {
     return (
@@ -252,61 +281,66 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
   const activeCard = cards[currentIndex];
 
   return (
-    // Dış katman tüm pencereyi kaplar; akış ortalanmış telefon genişliğinde bir sütundur.
-    // Masaüstünde (Mac penceresi genişletilince) kartlar ekran boyu yayılmaz ve
-    // üst çubuk / eylem rayı içerikten kopup pencere kenarına kaçmaz.
-    <div className="h-feed w-full overflow-hidden bg-black">
-      <div className="relative mx-auto h-feed w-full max-w-md overflow-hidden bg-duo-gray-900 md:shadow-2xl">
-        <FeedTopBar
-          setName={set.name}
-          dailyXPEarned={progress.dailyXPEarned}
-          dailyGoalXP={progress.dailyGoalXP}
-          onExit={handleExit}
-        />
+    // Kaydırıcı tüm pencere genişliğindedir; her kartın içeriği ortalanmış, telefon
+    // genişliğinde bir sütundur. Böylece Mac penceresi genişletildiğinde kartlar ekran boyu
+    // yayılmaz, ama yandaki siyah boşluklarda da tekerlek/trackpad akışı kaydırır ve
+    // tıklamak odağı akıştan koparmaz. Üst çubuk, ray ve ipucu aynı sütuna hizalı bir
+    // katmanda durur (kök öğeleri pointer-events-none; tıklamalar kartlara geçer).
+    <div className="relative h-feed w-full overflow-hidden bg-black">
+      <div className="pointer-events-none absolute inset-0 z-20 flex justify-center">
+        <div className="relative h-full w-full max-w-md">
+          <FeedTopBar
+            setName={set.name}
+            dailyXPEarned={progress.dailyXPEarned}
+            dailyGoalXP={progress.dailyGoalXP}
+            onExit={handleExit}
+          />
 
-        <FeedActionRail
-          stats={stats}
-          streak={progress.streak}
-          dailyXPEarned={progress.dailyXPEarned}
-          dailyGoalXP={progress.dailyGoalXP}
-          box={activeCard?.box}
-          onReveal={() => {
-            if (!activeCard || activeCard.kind === 'explainer') return;
-            markPeeked(activeCard.id);
-            setRevealCard(activeCard);
-          }}
-          revealDisabled={!activeCard || activeCard.kind === 'explainer'}
-        />
+          <FeedActionRail
+            stats={stats}
+            streak={progress.streak}
+            dailyXPEarned={progress.dailyXPEarned}
+            dailyGoalXP={progress.dailyGoalXP}
+            box={activeCard?.box}
+            onReveal={() => {
+              if (!activeCard || activeCard.kind === 'explainer') return;
+              markPeeked(activeCard.id);
+              setRevealCard(activeCard);
+            }}
+            revealDisabled={!activeCard || activeCard.kind === 'explainer'}
+          />
 
-        <SwipeHint visible={!hintSeen && currentIndex === 0} />
+          <SwipeHint visible={!hintSeen && currentIndex === 0} />
+        </div>
+      </div>
 
-        <div
-          ref={containerRef}
-          tabIndex={0}
-          role="feed"
-          aria-label="Akış modu"
-          onKeyDown={handleKeyDown}
-          className={cn(
-            'no-scrollbar h-feed w-full touch-pan-y overflow-y-auto overscroll-y-contain outline-none',
-            // iOS'ta klavye açıkken 100dvh küçülür; snap zıplamasın diye geçici kapatılır.
-            keyboardOpen ? 'snap-none' : 'snap-y snap-mandatory'
-          )}
-        >
-          {cards.map((card, i) => {
-            const inWindow = Math.abs(i - currentIndex) <= FEED_RENDER_WINDOW;
-            return (
-              <section
-                key={card.id}
-                ref={(el) => {
-                  cardRefs.current[i] = el;
-                }}
-                data-feed-card=""
-                data-index={i}
-                role="article"
-                aria-posinset={i + 1}
-                aria-setsize={-1}
-                className="relative h-feed w-full shrink-0 snap-start snap-always overflow-hidden"
-              >
+      <div
+        ref={containerRef}
+        tabIndex={0}
+        role="feed"
+        aria-label="Akış modu"
+        className={cn(
+          'no-scrollbar h-feed w-full touch-pan-y overflow-y-auto overscroll-y-contain outline-none',
+          // iOS'ta klavye açıkken 100dvh küçülür; snap zıplamasın diye geçici kapatılır.
+          keyboardOpen ? 'snap-none' : 'snap-y snap-mandatory'
+        )}
+      >
+        {cards.map((card, i) => {
+          const inWindow = Math.abs(i - currentIndex) <= FEED_RENDER_WINDOW;
+          return (
+            <section
+              key={card.id}
+              ref={(el) => {
+                cardRefs.current[i] = el;
+              }}
+              data-feed-card=""
+              data-index={i}
+              role="article"
+              aria-posinset={i + 1}
+              aria-setsize={-1}
+              className="relative h-feed w-full shrink-0 snap-start snap-always overflow-hidden"
+            >
+              <div className="relative mx-auto h-full w-full max-w-md overflow-hidden bg-duo-gray-900 md:shadow-2xl">
                 {inWindow && (
                   <>
                     {card.kind === 'explainer' && (
@@ -331,31 +365,31 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
                     )}
                   </>
                 )}
-              </section>
-            );
-          })}
-        </div>
-
-        {/* "Kelimeyi göster" alt sayfası — anlatım içeriğini birebir yeniden kullanır. */}
-        <Dialog open={revealCard !== null} onOpenChange={(open) => !open && setRevealCard(null)}>
-          <DialogContent>
-            <DialogTitle className="sr-only">Kelime açıklaması</DialogTitle>
-            {revealCard && (
-              <ExplainerBody
-                question={revealCard.question}
-                box={revealCard.box}
-                sessionSeenCount={revealCard.sessionSeenCount}
-                lastSeenAt={revealCard.lastSeenAt}
-                compact
-                animate={false}
-              />
-            )}
-            <p className="mt-4 text-center text-xs font-bold text-duo-gray-300">
-              Baktığın için bu kart XP kazandırmaz.
-            </p>
-          </DialogContent>
-        </Dialog>
+              </div>
+            </section>
+          );
+        })}
       </div>
+
+      {/* "Kelimeyi göster" alt sayfası — anlatım içeriğini birebir yeniden kullanır. */}
+      <Dialog open={revealCard !== null} onOpenChange={(open) => !open && setRevealCard(null)}>
+        <DialogContent>
+          <DialogTitle className="sr-only">Kelime açıklaması</DialogTitle>
+          {revealCard && (
+            <ExplainerBody
+              question={revealCard.question}
+              box={revealCard.box}
+              sessionSeenCount={revealCard.sessionSeenCount}
+              lastSeenAt={revealCard.lastSeenAt}
+              compact
+              animate={false}
+            />
+          )}
+          <p className="mt-4 text-center text-xs font-bold text-duo-gray-300">
+            Baktığın için bu kart XP kazandırmaz.
+          </p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

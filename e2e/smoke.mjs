@@ -6,7 +6,7 @@
 //
 // Ortam değişkenleri:
 //   E2E_BROWSER      chromium | webkit | firefox   (varsayılan: chromium)
-//   PW_CHROMIUM_PATH Önyüklü bir Chromium kullanmak için çalıştırılabilir dosya yolu
+//   PW_CHROMIUM_PATH (isteğe bağlı) Belirli bir Chromium çalıştırılabilir dosyası
 //   E2E_SCREENSHOTS  Ekran görüntülerinin yazılacağı klasör (isteğe bağlı)
 //
 // Masaüstü uygulamasının CSP'si tauri.conf.json'dan okunup her belgeye uygulanır;
@@ -330,6 +330,34 @@ try {
   await settle(page, 1200);
   check('İki ayrı geri çentik iki kart geri götürüyor', (await feedIndex(page)) === swipeEnd - 2);
 
+  // "Kelimeyi göster": bir soru kartına gel, pencereyi aç; Esc yalnızca pencereyi kapatmalı,
+  // akıştan çıkmamalı; sonra ok tuşları çalışmaya devam etmeli (odak body'ye düşse bile).
+  let questionFound = false;
+  for (let i = 0; i < 12 && !questionFound; i++) {
+    const c = await activeCard(page);
+    if (c.kind === 'mc' || c.kind === 'ti') {
+      questionFound = true;
+      break;
+    }
+    await page.keyboard.press('ArrowDown');
+    await settle(page, 600);
+  }
+  if (questionFound) {
+    await page.getByRole('button', { name: 'Kelimeyi göster' }).click();
+    await page.getByRole('dialog').waitFor();
+    await page.keyboard.press('Escape');
+    await settle(page, 500);
+    const dialogClosed = (await page.getByRole('dialog').count()) === 0;
+    const stillInFeed = (await page.locator('[role="feed"]').count()) > 0;
+    check('"Göster" penceresinde Esc yalnızca pencereyi kapatıyor', dialogClosed && stillInFeed);
+    const afterDialog = await feedIndex(page);
+    await page.keyboard.press('ArrowDown');
+    await settle(page, 900);
+    check('Pencere kapandıktan sonra ok tuşları çalışıyor', (await feedIndex(page)) === afterDialog + 1);
+  } else {
+    check('"Göster" testi için soru kartı bulundu', false);
+  }
+
   await page.getByRole('button', { name: /Akıştan çık/i }).click();
   await page.getByText('Soru Setlerim').waitFor();
 
@@ -368,6 +396,16 @@ try {
       gameOver = true;
       break;
     }
+    // Geri bildirim şeridi açıksa önce onu geç. Şerit yay animasyonuyla içeri kayar;
+    // WebKit'te hareket hâlindeki düğmeye yapılan tıklama ıskalanabildiği için oturmasını
+    // bekle, tıkla ve kaybolduğunu doğrula — yoksa döngü kilitli kutuya yazmaya çalışır.
+    const cont = page.getByRole('button', { name: /Devam Et/i });
+    if (await cont.isVisible().catch(() => false)) {
+      await page.waitForTimeout(450);
+      await cont.click();
+      await cont.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+      continue;
+    }
     const prompt = (await page.locator('main h2').first().innerText().catch(() => '')).trim();
     const want = prompt.replace('Soru', 'Cevap');
     if ((await page.locator('main input').count()) > 0) {
@@ -394,12 +432,14 @@ try {
         }
       }
     }
-    await settle(page, 350);
-    const cont = page.getByRole('button', { name: /Devam Et/i });
-    if ((await cont.count()) > 0) {
-      await cont.click();
-      await settle(page, 300);
-    }
+    // Cevabın sonucunu bekle: geri bildirim şeridi ya da Oyun Bitti. (Eşleştirmede yanlış çift
+    // şerit açmaz; o durumda kısa beklemeden sonra döngü yeni bir yanlış çift dener.)
+    // Her beklemenin kendi catch'i var: yarışı kaybedenin sonradan gelen zaman aşımı reddi
+    // işlenmemiş kalırsa Node süreci çöker.
+    await Promise.race([
+      cont.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {}),
+      page.getByText('Canların bitti').waitFor({ timeout: 3000 }).catch(() => {}),
+    ]);
   }
   check('Canlar bitince "Oyun Bitti" ekranı geliyor', gameOver);
   if (gameOver) {
@@ -426,17 +466,28 @@ try {
   await wide.page.locator('[data-feed-card]').first().waitFor();
   await settle(wide.page, 700);
   const layout = await wide.page.evaluate(() => {
-    const feedEl = document.querySelector('[role="feed"]').getBoundingClientRect();
+    const col = document.querySelector('[data-feed-card] > div').getBoundingClientRect();
     const rail = document.querySelector('[aria-label="Kelimeyi göster"]').getBoundingClientRect();
     const exit = document.querySelector('[aria-label="Akıştan çık"]').getBoundingClientRect();
-    return { feedW: feedEl.width, feedL: feedEl.left, feedR: feedEl.right, railR: rail.right, exitL: exit.left };
+    return { colW: col.width, colL: col.left, colR: col.right, railR: rail.right, exitL: exit.left };
   });
-  check('Geniş pencerede akış ortalanmış dar sütunda', layout.feedW <= 448 && layout.feedL > 300, `genişlik ${layout.feedW}`);
+  check('Geniş pencerede kart içeriği ortalanmış dar sütunda', layout.colW <= 448 && layout.colL > 300, `genişlik ${layout.colW}`);
   check(
     'Eylem rayı ve çıkış düğmesi sütunun içinde',
-    layout.railR <= layout.feedR + 1 && layout.exitL >= layout.feedL - 1
+    layout.railR <= layout.colR + 1 && layout.exitL >= layout.colL - 1
   );
   await shot(wide.page, '06-genis-pencere');
+
+  // Yandaki siyah boşlukta tekerlek de akışı kaydırmalı; oraya tıklamak ok tuşlarını bozmamalı.
+  const gutterStart = await feedIndex(wide.page);
+  await wide.page.mouse.move(120, 400);
+  await wide.page.mouse.wheel(0, 120);
+  await settle(wide.page, 1200);
+  check('Yan boşlukta tekerlek akışı kaydırıyor', (await feedIndex(wide.page)) === gutterStart + 1);
+  await wide.page.mouse.click(120, 400);
+  await wide.page.keyboard.press('ArrowDown');
+  await settle(wide.page, 1000);
+  check('Yan boşluğa tıkladıktan sonra ok tuşları çalışıyor', (await feedIndex(wide.page)) === gutterStart + 2);
   const csp2 = await wide.page.evaluate(() => window.__cspViolations);
   check('CSP ihlali yok (geniş)', csp2.length === 0, csp2.slice(0, 3).join(' | '));
   check('Konsol hatası yok (geniş)', wide.errors.length === 0, wide.errors.slice(0, 3).join(' | '));

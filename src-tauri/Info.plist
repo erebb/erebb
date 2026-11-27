@@ -2,9 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-  <!-- Uygulama Türkçe: macOS'un sağladığı arayüz parçaları (WKWebView sağ tık menüsü,
-       sistem iletişim kutuları) Türkçe macOS'ta Türkçe görünsün. Tauri bu dosyayı
-       üretilen Info.plist ile birleştirir. -->
+  <!-- Uygulama yalnızca Türkçe: macOS'un sağladığı arayüz parçaları (WKWebView sağ tık
+       menüsü, sistem iletişim kutuları) sistem dili ne olursa olsun Türkçe görünür, böylece
+       uygulamanın kendi Türkçe arayüzüyle tutarlı kalır. Tauri, tauri.conf.json'un yanındaki
+       bu dosyayı üretilen Info.plist ile birleştirir (anahtarlarımız varsayılanları ezer). -->
   <key>CFBundleDevelopmentRegion</key>
   <string>tr</string>
   <key>CFBundleLocalizations</key>
