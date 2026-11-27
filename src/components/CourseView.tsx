@@ -4,7 +4,7 @@ import { ArrowLeft, Pencil, Plus, Trash2 } from 'lucide-react';
 import type { Question, QuestionSet, StudyMode } from '@/types';
 import { isMcq } from '@/types';
 import { useApp } from '@/context/AppContext';
-import { parseInput, serializeForEdit } from '@/lib/parser';
+import { carryOverIds, parseInput, serializeForEdit } from '@/lib/parser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -75,7 +75,8 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
       setEditError('Burada tek bir setin öğeleri bekleniyor, ders paketi değil.');
       return;
     }
-    updateQuestionSet(editTarget.id, editName.trim() || editTarget.name, result.questions);
+    // Değişmeyen sorular kimliğini (ve tekrar ilerlemesini) korur.
+    updateQuestionSet(editTarget.id, editName.trim() || editTarget.name, carryOverIds(editTarget.questions, result.questions));
     setEditTarget(null);
   };
 

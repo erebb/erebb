@@ -47,9 +47,21 @@ function check(name, ok, detail = '') {
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${name}${detail ? ` — ${detail}` : ''}`);
 }
 
+function stopPreview(proc) {
+  try {
+    // npx → vite: yalnızca npx'i öldürmek vite'ı açık bırakır (port dolu kalır, betik kapanmaz).
+    if (process.platform !== 'win32') process.kill(-proc.pid, 'SIGTERM');
+    else proc.kill();
+  } catch {
+    proc.kill();
+  }
+}
+
 async function startPreview() {
   const proc = spawn('npx', ['vite', 'preview', '--port', String(PORT), '--strictPort'], {
     stdio: ['ignore', 'pipe', 'pipe'],
+    // Kendi süreç grubunda: npx'in başlattığı vite alt süreci de birlikte kapatılabilsin.
+    detached: process.platform !== 'win32',
   });
   let log = '';
   proc.stdout.on('data', (d) => (log += d));
@@ -63,7 +75,7 @@ async function startPreview() {
     }
     await new Promise((r) => setTimeout(r, 500));
   }
-  proc.kill();
+  stopPreview(proc);
   throw new Error(`vite preview başlamadı:\n${log}`);
 }
 
@@ -377,6 +389,12 @@ try {
   check('Akış: Esc derse geri döndürüyor', true);
 
   // ===================== Düzenleme kayıpsız mı =====================
+  const h7Snapshot = () =>
+    page.evaluate(() => {
+      const s = JSON.parse(localStorage.getItem('kelime-ustasi.sets')).find((x) => x.name.startsWith('Hafta 7'));
+      return JSON.stringify({ ids: s.questions.map((q) => q.id), updatedAt: s.updatedAt });
+    });
+  const beforeEdit = await h7Snapshot();
   await setCard(page, 'Hafta 7').getByRole('button', { name: 'Düzenle' }).click();
   const editText = await page.getByRole('dialog').locator('textarea').inputValue();
   check('Düzenle: şıklı sorular JSON olarak açılıyor', editText.includes('"type": "mcq"') && editText.includes('"explanation"'));
@@ -385,6 +403,10 @@ try {
   check(
     'Düzenle: değiştirmeden kaydetmek hiçbir şey kaybettirmiyor',
     (await setCard(page, 'Hafta 7').innerText()).includes(`${H7_MCQ} soru · ${H7_CARDS} kart`)
+  );
+  check(
+    'Düzenle: değiştirmeden kaydetmek kimlikleri ve "düzenlenmemiş" durumunu koruyor',
+    (await h7Snapshot()) === beforeEdit
   );
 
   // ===================== İçe aktarma =====================
@@ -465,6 +487,63 @@ try {
   await shot(wide.page, '09-genis-pencere');
   check('Geniş pencere: konsol hatası yok', wide.errors.length === 0, wide.errors.slice(0, 3).join(' | '));
 
+  // ===================== Hazır içerik güncellemesi =====================
+  // Sürümlemeden önceki bir kurulumun depolamasını taklit et: tek paket işareti, `bundle`
+  // alanı olmayan setler, rastgele soru kimlikleri. Hafta 7'ye dokunulmamış (eski içerik),
+  // Hafta 8 kullanıcı tarafından düzenlenmiş.
+  const up = await newPage(browser, { width: 440, height: 780 });
+  await up.page.goto(URL);
+  await up.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  await up.page.evaluate(() => {
+    const sets = JSON.parse(localStorage.getItem('kelime-ustasi.sets'));
+    for (const s of sets) {
+      delete s.bundle;
+      s.questions = s.questions.map((q, i) => ({ ...q, id: `eski-${s.name}-${i}` }));
+      if (s.name.startsWith('Hafta 7')) {
+        s.questions[0] = { ...s.questions[0], front: 'ESKİ SÜRÜM SORUSU' };
+      } else {
+        s.questions[0] = { ...s.questions[0], front: 'BENİM DÜZENLEMEM' };
+        s.updatedAt = new Date(Date.parse(s.createdAt) + 60_000).toISOString();
+      }
+    }
+    localStorage.setItem('kelime-ustasi.sets', JSON.stringify(sets));
+    localStorage.setItem('kelime-ustasi.seededPacks', JSON.stringify(['mikrobiyoloji-hafta-7-8']));
+  });
+  await up.page.reload();
+  await up.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  const upgraded = await up.page.evaluate(() => {
+    const sets = JSON.parse(localStorage.getItem('kelime-ustasi.sets'));
+    const h7 = sets.find((s) => s.name.startsWith('Hafta 7'));
+    const h8 = sets.find((s) => s.name.startsWith('Hafta 8'));
+    return {
+      count: sets.length,
+      h7Old: h7.questions.some((q) => q.front === 'ESKİ SÜRÜM SORUSU'),
+      h7Len: h7.questions.length,
+      h7Id: h7.questions[0].id,
+      h7Bundle: h7.bundle,
+      h8Kept: h8.questions[0].front === 'BENİM DÜZENLEMEM',
+      seeded: JSON.parse(localStorage.getItem('kelime-ustasi.seededPacks')),
+    };
+  });
+  check(
+    'Güncelleme: dokunulmamış hazır set yeni sürümle yenileniyor',
+    !upgraded.h7Old && upgraded.h7Len === H7_MCQ + H7_CARDS && upgraded.h7Bundle?.key === 'mikrobiyoloji-hafta-7',
+    `${upgraded.h7Len} öğe`
+  );
+  check('Güncelleme: soru kimlikleri sabit (tekrar ilerlemesi korunur)', upgraded.h7Id === 'mikrobiyoloji-hafta-7:q01', upgraded.h7Id);
+  check('Güncelleme: kullanıcının düzenlediği set korunuyor', upgraded.h8Kept);
+  check('Güncelleme: set çoğaltılmıyor', upgraded.count === 2, `${upgraded.count} set`);
+  await up.page.reload();
+  await up.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  check(
+    'Güncelleme: ikinci açılışta tekrar uygulanmıyor',
+    await up.page.evaluate(
+      () => JSON.parse(localStorage.getItem('kelime-ustasi.sets')).find((s) => s.name.startsWith('Hafta 8')).questions[0].front === 'BENİM DÜZENLEMEM'
+    ),
+    upgraded.seeded.join(', ')
+  );
+  check('Güncelleme: konsol hatası yok', up.errors.length === 0, up.errors.slice(0, 3).join(' | '));
+
   // ===================== Silinen hazır ders geri gelmez =====================
   await page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
   await page.getByRole('button', { name: 'Dersi sil' }).click();
@@ -475,7 +554,7 @@ try {
   check('Silinen hazır ders yeniden açılışta geri gelmiyor', (await page.getByRole('button', { name: /Mikrobiyoloji/ }).count()) === 0);
 } finally {
   await browser.close();
-  server.kill();
+  stopPreview(server);
 }
 
 const failed = results.filter((r) => !r.ok);
@@ -484,3 +563,4 @@ if (failed.length) {
   console.log('Başarısız:', failed.map((f) => f.name).join('; '));
   process.exit(1);
 }
+process.exit(0);

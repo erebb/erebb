@@ -133,8 +133,15 @@ function isObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v);
 }
 
-/** JSON öğelerini (kart ya da çoktan seçmeli soru) doğrulayıp Question'a çevirir. */
-export function itemsToQuestions(items: unknown[]): RawParse {
+/**
+ * JSON öğelerini (kart ya da çoktan seçmeli soru) doğrulayıp Question'a çevirir.
+ *
+ * `idPrefix` yalnızca uygulamayla gelen içerik için verilir: öğenin kendi `id` alanı varsa
+ * soru kimliği `${idPrefix}${id}` olur. Böylece içerik güncellendiğinde aynı soru aynı
+ * kimliği korur ve tekrar (SRS) ilerlemesi kaybolmaz. Kullanıcı içe aktarımlarında her
+ * soruya yeni kimlik verilir.
+ */
+export function itemsToQuestions(items: unknown[], opts: { idPrefix?: string } = {}): RawParse {
   const warnings: string[] = [];
   const questions: Question[] = [];
 
@@ -144,6 +151,11 @@ export function itemsToQuestions(items: unknown[]): RawParse {
       warnings.push(`${n}. öğe atlandı — bir nesne değil.`);
       return;
     }
+    const ownId = item.id;
+    const makeId = () =>
+      opts.idPrefix !== undefined && (typeof ownId === 'string' || typeof ownId === 'number') && String(ownId).trim()
+        ? `${opts.idPrefix}${String(ownId).trim()}`
+        : newId();
     const front = str(item, FRONT_KEYS);
     const explanation = str(item, EXPLANATION_KEYS);
     const source = str(item, SOURCE_KEYS);
@@ -173,7 +185,7 @@ export function itemsToQuestions(items: unknown[]): RawParse {
         warnings.push(`${n}. soru atlandı — doğru cevap şıklardan biriyle eşleşmiyor: "${front.slice(0, 50)}"`);
         return;
       }
-      questions.push({ id: newId(), kind: 'mcq', front, back: answer, options, ...extras });
+      questions.push({ id: makeId(), kind: 'mcq', front, back: answer, options, ...extras });
       return;
     }
 
@@ -184,7 +196,7 @@ export function itemsToQuestions(items: unknown[]): RawParse {
       );
       return;
     }
-    questions.push({ id: newId(), kind: 'card', front, back, ...extras });
+    questions.push({ id: makeId(), kind: 'card', front, back, ...extras });
   });
 
   if (questions.length === 0) return { error: 'JSON içinde geçerli soru/cevap bulunamadı.' };
@@ -335,6 +347,37 @@ function finalizeSet(result: RawParse): ParseResult {
   }
 
   return { success: true, kind: 'set', questions, warnings };
+}
+
+/**
+ * Düzenlemeden sonra değişmeyen sorulara eski kimliklerini geri verir. Kimlik tekrar (SRS)
+ * kaydının anahtarıdır: önce birebir aynı soru, sonra yalnızca ön yüzü/soru kökü aynı olan
+ * (cevabı ya da şıkları düzeltilmiş) soru eşlenir. Her eski kimlik en fazla bir kez kullanılır.
+ */
+export function carryOverIds(prev: Question[], next: Question[]): Question[] {
+  const exactKey = (q: Question) => JSON.stringify([q.kind, q.front, q.back, q.options ?? []]);
+  const frontKey = (q: Question) => `${q.kind}\u0000${normalizeAnswer(q.front)}`;
+  const byExact = new Map<string, string[]>();
+  const byFront = new Map<string, string[]>();
+  for (const q of prev) {
+    byExact.set(exactKey(q), [...(byExact.get(exactKey(q)) ?? []), q.id]);
+    byFront.set(frontKey(q), [...(byFront.get(frontKey(q)) ?? []), q.id]);
+  }
+  const used = new Set<string>();
+  const take = (ids: string[] | undefined) => ids?.find((id) => !used.has(id));
+  const out = next.map((q) => {
+    const id = take(byExact.get(exactKey(q)));
+    if (!id) return q;
+    used.add(id);
+    return { ...q, id };
+  });
+  return out.map((q, i) => {
+    if (q !== next[i]) return q; // zaten eşlendi
+    const id = take(byFront.get(frontKey(q)));
+    if (!id) return q;
+    used.add(id);
+    return { ...q, id };
+  });
 }
 
 /**

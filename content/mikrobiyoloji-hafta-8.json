@@ -2,165 +2,180 @@
   "name": "Hafta 8 · Antimikrobiyaller",
   "items": [
     {
+      "id": "q01",
       "type": "mcq",
-      "question": "“Antimikrobiyal” (antimicrobial) terimi için hangisi doğrudur?",
+      "question": "“Antimicrobial” terimi için hangisi doğrudur?",
       "options": [
-        "Mikropları inhibe eden veya öldüren her şey için kullanılan şemsiye terimdir: antibiyotikler, antifungaller ve antiviraller dahil",
+        "Mikropları inhibe eden veya öldüren her şey için kullanılan şemsiye terimdir: antibiotics, antifungals ve antivirals dahil",
         "Yalnızca bakterileri hedefleyen ilaçlar için kullanılır",
-        "Yalnızca sentetik olarak üretilen ilaçları kapsar",
+        "Yalnızca synthetic olarak üretilen ilaçları kapsar",
         "Yalnızca virüsleri hedefleyen ilaçlar için kullanılır"
       ],
-      "answer": "Mikropları inhibe eden veya öldüren her şey için kullanılan şemsiye terimdir: antibiyotikler, antifungaller ve antiviraller dahil",
-      "explanation": "Antimikrobiyal (antimicrobial), mikropları inhibe eden veya öldüren her şey için kullanılan şemsiye terimdir: antibiyotikler (bakterileri hedefler), antifungaller (mantarları hedefler) ve antiviraller (virüsleri hedefler).",
-      "source": "Slayt 3 · Antimikrobiyaller (turuncu kutu)"
+      "answer": "Mikropları inhibe eden veya öldüren her şey için kullanılan şemsiye terimdir: antibiotics, antifungals ve antivirals dahil",
+      "explanation": "Antimicrobial, mikropları inhibe eden veya öldüren her şey için kullanılan şemsiye terimdir: antibiotics (bakterileri hedefler), antifungals (mantarları hedefler) ve antivirals (virüsleri hedefler).",
+      "source": "Slayt 3 · Antimicrobials (turuncu kutu)"
     },
     {
+      "id": "q02",
       "type": "mcq",
-      "question": "Slayttaki tanıma göre antibiyotikler hangi mikroorganizmaları hedefler?",
+      "question": "Slayttaki tanıma göre antibiotics hangi mikroorganizmaları hedefler?",
       "options": ["Bakterileri", "Mantarları", "Virüsleri", "Protozoonları"],
       "answer": "Bakterileri",
-      "explanation": "Antibiyotikler (antibiotics) bakterileri, antifungaller (antifungals) mantarları, antiviraller (antivirals) virüsleri hedefler.",
+      "explanation": "Antibiotics bakterileri, antifungals mantarları, antivirals virüsleri hedefler.",
       "source": "Slayt 3"
     },
     {
+      "id": "q03",
       "type": "mcq",
-      "question": "Paul Ehrlich ile birlikte verilen Bileşik 606 (Compound 606) hangi hastalığın tedavisinde etkili olmuştur?",
-      "options": ["Sifiliz", "Tüberküloz", "Tifo", "Menenjit"],
-      "answer": "Sifiliz",
-      "explanation": "Bileşik 606 (Compound 606), sifiliz (syphilis) tedavisinde etkili olduğu kanıtlanan bir antimikrobiyal ajandır.",
+      "question": "Paul Ehrlich ile birlikte verilen Compound 606 hangi hastalığın tedavisinde etkili olmuştur?",
+      "options": ["Syphilis", "Tuberculosis", "Typhoid fever", "Meningitis"],
+      "answer": "Syphilis",
+      "explanation": "Compound 606, syphilis (sifiliz) tedavisinde etkili olduğu kanıtlanan bir antimicrobial agent'tır.",
       "source": "Slayt 3"
     },
     {
+      "id": "q04",
       "type": "mcq",
-      "question": "Fleming'in penisilini keşfine yol açan kontaminant küf hangisidir ve hangi bakterinin üremesini inhibe etmiştir?",
+      "question": "Fleming'in penicillin'i keşfine yol açan kontaminant küf hangisidir ve hangi bakterinin üremesini inhibe etmiştir?",
       "options": [
-        "Penicillium notatum — stafilokok üremesi",
-        "Penicillium notatum — streptokok üremesi",
-        "Streptomyces roseosporus — stafilokok üremesi",
-        "Bacillus polymyxa — gram-negatif bakteriler"
+        "Penicillium notatum — staphylococcal growth",
+        "Penicillium notatum — streptococcal growth",
+        "Streptomyces roseosporus — staphylococcal growth",
+        "Bacillus polymyxa — gram-negative bakteriler"
       ],
-      "answer": "Penicillium notatum — stafilokok üremesi",
-      "explanation": "Kontaminant küf (Penicillium notatum suşu olarak tanımlandı) bir plakta stafilokok üremesini (staphylococcal growth) inhibe etti. Penisilinin keşfi Fleming'e atfedilir: ilk doğal antibiyotik (1928).",
+      "answer": "Penicillium notatum — staphylococcal growth",
+      "explanation": "Kontaminant küf (Penicillium notatum suşu olarak tanımlandı) bir plakta staphylococcal growth'u inhibe etti. Penicillin'in keşfi Fleming'e atfedilir: ilk natural antibiotic (1928).",
       "source": "Slayt 3"
     },
     {
+      "id": "q05",
       "type": "mcq",
-      "question": "Slayta göre ilk doğal antibiyotik hangisidir ve kimin adıyla anılır?",
+      "question": "Slayta göre ilk natural antibiotic hangisidir ve kimin adıyla anılır?",
       "options": [
-        "Penisilin — Alexander Fleming",
-        "Streptomisin — Alexander Fleming",
-        "Bileşik 606 — Howard Florey",
-        "Penisilin — Ernst Chain"
+        "Penicillin — Alexander Fleming",
+        "Streptomycin — Alexander Fleming",
+        "Compound 606 — Howard Florey",
+        "Penicillin — Ernst Chain"
       ],
-      "answer": "Penisilin — Alexander Fleming",
-      "explanation": "Penisilinin keşfi Fleming'e atfedilir: ilk doğal antibiyotik (first natural antibiotic, 1928). Florey ve Chain üretimi ölçeklendirip saflaştırdı.",
+      "answer": "Penicillin — Alexander Fleming",
+      "explanation": "Penicillin'in keşfi Fleming'e atfedilir: ilk natural antibiotic (1928). Florey ve Chain üretimi ölçeklendirip saflaştırdı.",
       "source": "Slayt 3"
     },
     {
+      "id": "q06",
       "type": "mcq",
-      "question": "Howard Florey ve Ernst Chain'in penisilin üzerindeki katkısı nedir?",
+      "question": "Howard Florey ve Ernst Chain'in penicillin üzerindeki katkısı nedir?",
       "options": [
-        "Üretimi ölçeklendirdiler, saflaştırdılar ve 1940'ların başında hayvan ve insan denemelerinde etkinliğini gösterdiler",
-        "Penisilini 1928'de ilk kez keşfettiler",
-        "Bileşik 606'yı geliştirdiler",
-        "İlk yarı sentetik penisilini sentezlediler"
+        "Üretimi ölçeklendirdiler (scale up), saflaştırdılar ve 1940'ların başında hayvan ve insan denemelerinde etkinliğini gösterdiler",
+        "Penicillin'i 1928'de ilk kez keşfettiler",
+        "Compound 606'yı geliştirdiler",
+        "İlk semisynthetic penicillin'i sentezlediler"
       ],
-      "answer": "Üretimi ölçeklendirdiler, saflaştırdılar ve 1940'ların başında hayvan ve insan denemelerinde etkinliğini gösterdiler",
-      "explanation": "Howard Florey ve Ernst Chain penisilin üretimini ölçeklendirmeyi (scale up) ve saflaştırmayı başardılar; 1940'ların başında hayvan ve insan denemelerinde etkinliğini gösterdiler.",
-      "source": "Slayt 3 · Şekil 14.4"
+      "answer": "Üretimi ölçeklendirdiler (scale up), saflaştırdılar ve 1940'ların başında hayvan ve insan denemelerinde etkinliğini gösterdiler",
+      "explanation": "Howard Florey ve Ernst Chain penicillin üretimini ölçeklendirmeyi (scale up) ve saflaştırmayı (purify) başardılar; 1940'ların başında hayvan ve insan denemelerinde etkinliğini (efficacy) gösterdiler.",
+      "source": "Slayt 3 · Figure 14.4"
     },
     {
+      "id": "q07",
       "type": "mcq",
-      "question": "Yarı sentetik (semisynthetic) antimikrobiyal nedir?",
+      "question": "Semisynthetic antimicrobial nedir?",
       "options": [
-        "Doğal bir antibiyotiğin kimyasal olarak modifiye edilmiş türevi",
+        "Natural bir antibiotic'in kimyasal olarak modifiye edilmiş türevi",
         "Tamamen laboratuvarda sıfırdan üretilen ilaç",
         "Mikroorganizmaların doğal olarak ürettiği değişmemiş bileşik",
         "Yalnızca virüslere karşı kullanılan ilaç"
       ],
-      "answer": "Doğal bir antibiyotiğin kimyasal olarak modifiye edilmiş türevi",
-      "explanation": "Yarı sentetik antimikrobiyal, doğal bir antibiyotiğin kimyasal olarak modifiye edilmiş türevidir (chemically modified derivative). Modifikasyonların amacı: hedeflenen bakteri yelpazesini genişletmek, stabiliteyi artırmak, toksisiteyi azaltmak veya başka faydalı özellikler kazandırmak.",
+      "answer": "Natural bir antibiotic'in kimyasal olarak modifiye edilmiş türevi",
+      "explanation": "Semisynthetic antimicrobial, natural bir antibiotic'in kimyasal olarak modifiye edilmiş türevidir (chemically modified derivative). Amaç: hedeflenen bakteri yelpazesini genişletmek, stability'yi artırmak, toxicity'yi azaltmak veya başka faydalı özellikler kazandırmak.",
       "source": "Slayt 4"
     },
     {
+      "id": "q08",
       "type": "mcq",
-      "question": "Aşağıdakilerden hangisi yarı sentetik modifikasyonların amaçlarından biri DEĞİLDİR?",
+      "question": "Aşağıdakilerden hangisi semisynthetic modifikasyonların amaçlarından biri DEĞİLDİR?",
       "options": [
-        "Toksisiteyi artırmak",
+        "Toxicity'yi artırmak",
         "Hedeflenen bakteri yelpazesini genişletmek",
-        "Stabiliteyi artırmak",
-        "Toksisiteyi azaltmak"
+        "Stability'yi artırmak",
+        "Toxicity'yi azaltmak"
       ],
-      "answer": "Toksisiteyi artırmak",
-      "explanation": "Kimyasal modifikasyonlar hedeflenen bakteri yelpazesini genişletmek, stabiliteyi artırmak, toksisiteyi azaltmak veya enfeksiyon tedavisinde faydalı başka özellikler kazandırmak için yapılır. Toksisiteyi artırmak bir amaç değildir.",
+      "answer": "Toxicity'yi artırmak",
+      "explanation": "Kimyasal modifikasyonlar hedeflenen bakteri yelpazesini genişletmek (increase range of bacteria targeted), stability'yi artırmak, toxicity'yi azaltmak veya enfeksiyon tedavisinde faydalı başka özellikler kazandırmak için yapılır.",
       "source": "Slayt 4"
     },
     {
+      "id": "q09",
       "type": "mcq",
-      "question": "Antibiyotik sınıflamasına göre aşağıdakilerden hangisi SENTETİK (synthetic) antibiyotiktir?",
-      "options": ["Florokinolonlar", "Amoksisilin", "Streptomisin", "Sefaleksin"],
-      "answer": "Florokinolonlar",
-      "explanation": "Doğal (natural): penisilin G/V, streptomisin, sefalosporin C · Yarı sentetik (semi-synthetic): amoksisilin, sefaleksin · Sentetik (synthetic): florokinolonlar, sülfonamidler.",
-      "source": "Slayt 4 · Antibiyotik sınıflama şeması"
+      "question": "Antibiotics sınıflamasına göre aşağıdakilerden hangisi SYNTHETIC antibiotic'tir?",
+      "options": ["Fluoroquinolones", "Amoxicillin", "Streptomycin", "Cephalexin"],
+      "answer": "Fluoroquinolones",
+      "explanation": "Natural: penicillins G/V, streptomycin, cephalosporin C · Semi-synthetic: amoxicillin, cephalexin · Synthetic: fluoroquinolones, sulfonamides.",
+      "source": "Slayt 4 · Antibiotics sınıflama şeması"
     },
     {
+      "id": "q10",
       "type": "mcq",
-      "question": "Sınıflamaya göre aşağıdakilerden hangisi DOĞAL (natural) antibiyotiktir?",
-      "options": ["Streptomisin", "Amoksisilin", "Sefaleksin", "Sülfonamidler"],
-      "answer": "Streptomisin",
-      "explanation": "Doğal (mikropların ürettiği bileşikler): penisilin G/V, streptomisin, sefalosporin C.",
-      "source": "Slayt 4 · Antibiyotik sınıflama şeması"
+      "question": "Sınıflamaya göre aşağıdakilerden hangisi NATURAL antibiotic'tir?",
+      "options": ["Streptomycin", "Amoxicillin", "Cephalexin", "Sulfonamides"],
+      "answer": "Streptomycin",
+      "explanation": "Natural (mikropların ürettiği bileşikler): penicillins G/V, streptomycin, cephalosporin C.",
+      "source": "Slayt 4 · Antibiotics sınıflama şeması"
     },
     {
+      "id": "q11",
       "type": "mcq",
-      "question": "Sınıflamaya göre sefaleksin hangi gruptadır?",
-      "options": ["Yarı sentetik", "Doğal", "Sentetik", "Antifungal"],
-      "answer": "Yarı sentetik",
-      "explanation": "Yarı sentetik (semi-synthetic; kimyasal olarak modifiye edilmiş doğal antibiyotikler): amoksisilin, sefaleksin.",
-      "source": "Slayt 4 · Antibiyotik sınıflama şeması"
+      "question": "Sınıflamaya göre cephalexin hangi gruptadır?",
+      "options": ["Semi-synthetic", "Natural", "Synthetic", "Antifungal"],
+      "answer": "Semi-synthetic",
+      "explanation": "Semi-synthetic (chemically-modified natural antibiotics): amoxicillin, cephalexin.",
+      "source": "Slayt 4 · Antibiotics sınıflama şeması"
     },
     {
+      "id": "q12",
       "type": "mcq",
-      "question": "Sınıflama şemasında “sentetik” (synthetic) grubu nasıl tanımlanmıştır?",
+      "question": "Sınıflama şemasında “synthetic” grubu nasıl tanımlanmıştır?",
       "options": [
-        "Doğal antibiyotiklerle kimyasal olarak ilişkili, endüstriyel olarak üretilen ajanlar",
+        "Natural antibiotics ile kimyasal olarak ilişkili, endüstriyel olarak üretilen ajanlar",
         "Mikroplar tarafından üretilen bileşikler",
-        "Kimyasal olarak modifiye edilmiş doğal antibiyotikler",
+        "Kimyasal olarak modifiye edilmiş natural antibiotics",
         "Bitkilerden elde edilen bileşikler"
       ],
-      "answer": "Doğal antibiyotiklerle kimyasal olarak ilişkili, endüstriyel olarak üretilen ajanlar",
-      "explanation": "Sentetik: doğal antibiyotiklerle kimyasal olarak ilişkili, endüstriyel olarak üretilen (industrially manufactured) ajanlar — florokinolonlar, sülfonamidler.",
+      "answer": "Natural antibiotics ile kimyasal olarak ilişkili, endüstriyel olarak üretilen ajanlar",
+      "explanation": "Synthetic: natural antibiotics ile kimyasal olarak ilişkili, endüstriyel olarak üretilen ajanlar (industrially manufactured agents) — fluoroquinolones, sulfonamides.",
       "source": "Slayt 4"
     },
     {
+      "id": "q13",
       "type": "mcq",
-      "question": "Seçici toksisite (selective toxicity) nedir?",
+      "question": "Selective toxicity nedir?",
       "options": [
         "İlacın vücuda zarar vermeden yalnızca etkene özgü etki göstermesi",
         "İlacın hem etkene hem konağa eşit zarar vermesi",
         "İlacın yalnızca yüksek dozda etkili olması",
-        "İlacın yalnızca gram-pozitif bakterilere etki etmesi"
+        "İlacın yalnızca gram-positive bakterilere etki etmesi"
       ],
       "answer": "İlacın vücuda zarar vermeden yalnızca etkene özgü etki göstermesi",
-      "explanation": "Kullanılacak ilaçların vücuda zarar vermeden yalnızca etkene özgü etki göstermesi gerekir; buna “seçici toksisite” (Selective Toxicity) denir. Terapötik doz ve toksik dozların durumuna göre değerlendirilir.",
+      "explanation": "Kullanılacak ilaçların vücuda zarar vermeden yalnızca etkene özgü etki göstermesi gerekir; buna “Selective Toxicity” denir. Therapeutic dose ve toxic dose'ların durumuna göre değerlendirilir.",
       "source": "Slayt 5 (kalın)"
     },
     {
+      "id": "q14",
       "type": "mcq",
-      "question": "Terapötik indeks (therapeutic index, TI) neyi ifade eder?",
+      "question": "Therapeutic index (TI) neyi ifade eder?",
       "options": [
-        "İlacın etkili dozu ile toksik dozu arasındaki güvenlik aralığını (TD50 / ED50)",
-        "İlacın kandaki yarılanma ömrünü",
+        "İlacın effective dose'u ile toxic dose'u arasındaki güvenlik aralığını (TD50 / ED50)",
+        "İlacın kandaki half-life'ını",
         "Bakteriyi öldüren en düşük konsantrasyonu",
-        "İlacın 24 saatlik toplam maruziyetini"
+        "İlacın 24 saatlik toplam drug exposure'ını"
       ],
-      "answer": "İlacın etkili dozu ile toksik dozu arasındaki güvenlik aralığını (TD50 / ED50)",
-      "explanation": "Terapötik indeks (TI), bir ilacın etkili dozu ile toksik dozu arasındaki güvenlik aralığını (safety margin) tanımlar: TI = TD50 / ED50.",
+      "answer": "İlacın effective dose'u ile toxic dose'u arasındaki güvenlik aralığını (TD50 / ED50)",
+      "explanation": "Therapeutic index (TI), bir ilacın effective dose'u ile toxic dose'u arasındaki safety margin'i tanımlar: TI = TD50 / ED50.",
       "source": "Slayt 5"
     },
     {
+      "id": "q15",
       "type": "mcq",
-      "question": "Minimum etkili doz (minimum effective dose) nedir?",
+      "question": "Minimum effective dose nedir?",
       "options": [
         "İstenen etkiyi oluşturan en düşük doz",
         "Zararlı etkilerin başladığı en düşük doz",
@@ -168,80 +183,87 @@
         "Bakterilerin ≥%99.9'unu öldüren konsantrasyon"
       ],
       "answer": "İstenen etkiyi oluşturan en düşük doz",
-      "explanation": "Terapötik doz (therapeutic dose): kabul edilebilir riskle istenen faydayı sağlayan doz. Minimum etkili doz: istenen etkiyi oluşturan en düşük doz. Minimum toksik doz (minimum toxic dose): zararlı etkilerin başladığı en düşük doz.",
+      "explanation": "Therapeutic dose: kabul edilebilir riskle istenen faydayı sağlayan doz. Minimum effective dose: istenen etkiyi oluşturan en düşük doz. Minimum toxic dose: zararlı etkilerin başladığı en düşük doz.",
       "source": "Slayt 5"
     },
     {
+      "id": "q16",
       "type": "mcq",
-      "question": "MİK (minimum inhibitör konsantrasyon, MIC) nedir?",
+      "question": "MIC (minimal inhibitory concentration) nedir?",
       "options": [
         "Görünür bakteri üremesini inhibe eden en düşük ilaç konsantrasyonu",
-        "Başlangıç inokulumunun ≥%99.9'unu öldüren en düşük konsantrasyon",
+        "Başlangıç inoculum'unun ≥%99.9'unu öldüren en düşük konsantrasyon",
         "Toksik etkilerin başladığı en düşük doz",
-        "24 saatlik plazma konsantrasyon eğrisinin altındaki alan"
+        "24 saatlik plasma concentration eğrisinin altındaki alan"
       ],
       "answer": "Görünür bakteri üremesini inhibe eden en düşük ilaç konsantrasyonu",
-      "explanation": "MİK (MIC): görünür bakteri üremesini inhibe eden en düşük ilaç konsantrasyonu. MBK (MBC): başlangıç inokulumunun ≥%99.9'unu öldüren en düşük ilaç konsantrasyonu.",
+      "explanation": "MIC: görünür bakteri üremesini (visible bacterial growth) inhibe eden en düşük ilaç konsantrasyonu. MBC: başlangıç inoculum'unun ≥%99.9'unu öldüren en düşük ilaç konsantrasyonu.",
       "source": "Slayt 6 (kalın)"
     },
     {
+      "id": "q17",
       "type": "mcq",
-      "question": "MBK (minimum bakterisidal konsantrasyon, MBC), başlangıç inokulumunun en az yüzde kaçını öldüren en düşük konsantrasyondur?",
+      "question": "MBC (minimal bactericidal concentration), başlangıç inoculum'unun en az yüzde kaçını öldüren en düşük konsantrasyondur?",
       "options": ["≥ %99.9", "≥ %50", "≥ %90", "%100"],
       "answer": "≥ %99.9",
-      "explanation": "MBK (MBC), başlangıç inokulumunun (starting inoculum) ≥%99.9'unu öldüren en düşük ilaç konsantrasyonudur.",
+      "explanation": "MBC, başlangıç inoculum'unun (starting inoculum) ≥%99.9'unu öldüren en düşük ilaç konsantrasyonudur.",
       "source": "Slayt 6"
     },
     {
+      "id": "q18",
       "type": "mcq",
-      "question": "MLC / MLD (minimum letal konsantrasyon / doz) için hangisi doğrudur?",
+      "question": "MLC / MLD (Minimum Lethal Concentration / Dose) için hangisi doğrudur?",
       "options": [
-        "MBK için daha geniş, şemsiye bir terimdir ve her mikroorganizmaya uygulanır",
+        "MBC için daha geniş, şemsiye bir terimdir ve her mikroorganizmaya uygulanır",
         "Yalnızca virüsler için kullanılır",
-        "MİK ile tamamen aynı anlama gelir",
+        "MIC ile tamamen aynı anlama gelir",
         "Görünür üremeyi inhibe eden en düşük dozdur"
       ],
-      "answer": "MBK için daha geniş, şemsiye bir terimdir ve her mikroorganizmaya uygulanır",
-      "explanation": "MLC / MLD (Minimum Lethal Concentration / Dose), MBK'nin (MBC) daha geniş, şemsiye terimidir; her mikroorganizmaya uygulanır.",
+      "answer": "MBC için daha geniş, şemsiye bir terimdir ve her mikroorganizmaya uygulanır",
+      "explanation": "MLC / MLD (Minimum Lethal Concentration / Dose), MBC'nin daha geniş, şemsiye terimidir (broader, umbrella term); her mikroorganizmaya uygulanır.",
       "source": "Slayt 6"
     },
     {
+      "id": "q19",
       "type": "mcq",
-      "question": "Slayttaki dilüsyon testi örneğinde (2, 4, 8, 16, 32 µg/mL tüpleri) MİK kaç bulunmuştur?",
+      "question": "Slayttaki dilution test örneğinde (2, 4, 8, 16, 32 µg/mL tüpleri) MIC kaç bulunmuştur?",
       "options": ["8 µg/mL", "2 µg/mL", "4 µg/mL", "32 µg/mL"],
       "answer": "8 µg/mL",
-      "explanation": "Dilüsyon testinde bulanıklığı (turbidity) inhibe eden en düşük konsantrasyon MİK'tir. Bu örnekte MİK 8 µg/mL'dir.",
-      "source": "Slayt 6 · Dilüsyon testi"
+      "explanation": "Dilution test'te turbidity'yi (bulanıklık) inhibe eden en düşük konsantrasyon MIC'tir. Bu örnekte MIC 8 µg/mL'dir.",
+      "source": "Slayt 6 · Dilution test"
     },
     {
+      "id": "q20",
       "type": "mcq",
-      "question": "Dilüsyon testinde MBK nasıl belirlenir?",
+      "question": "Dilution test'te MBC nasıl belirlenir?",
       "options": [
-        "Bulanıklık olmayan tüplerdeki sıvı, antimikrobiyal içermeyen plaklara ekilir; ≥%99.9'unu öldüren en düşük dilüsyon MBK'dir",
-        "Bulanıklığın başladığı ilk tüp MBK'dir",
-        "En yüksek konsantrasyonlu tüp her zaman MBK'dir",
-        "MİK değerinin yarısı alınır"
+        "Turbidity olmayan tüplerdeki broth, antimicrobial içermeyen plaklara ekilir; ≥%99.9'unu öldüren en düşük dilution MBC'dir",
+        "Turbidity'nin başladığı ilk tüp MBC'dir",
+        "En yüksek konsantrasyonlu tüp her zaman MBC'dir",
+        "MIC değerinin yarısı alınır"
       ],
-      "answer": "Bulanıklık olmayan tüplerdeki sıvı, antimikrobiyal içermeyen plaklara ekilir; ≥%99.9'unu öldüren en düşük dilüsyon MBK'dir",
-      "explanation": "Bulanıklık olmayan örneklerdeki sıvı besiyeri (broth), antimikrobiyal ilaç içermeyen plaklara ekilir. Plaklarda başlangıç inokulumunun ≥%99.9'unun öldüğü görülen en düşük dilüsyon MBK'dir.",
-      "source": "Slayt 6 · Dilüsyon testi"
+      "answer": "Turbidity olmayan tüplerdeki broth, antimicrobial içermeyen plaklara ekilir; ≥%99.9'unu öldüren en düşük dilution MBC'dir",
+      "explanation": "Turbidity olmayan örneklerdeki broth, antimicrobial drug içermeyen plaklara ekilir. Plaklarda başlangıç inoculum'unun ≥%99.9'unun öldüğü görülen en düşük dilution MBC'dir.",
+      "source": "Slayt 6 · Dilution test"
     },
     {
+      "id": "q21",
       "type": "mcq",
-      "question": "Mikrodilüsyon tepsisi örneğine göre penisilin ve eritromisin için bulunan MİK değerleri hangisidir?",
+      "question": "Microdilution tepsisi örneğine göre penicillin ve erythromycin için bulunan MIC değerleri hangisidir?",
       "options": [
-        "Penisilin 0.06 µg/mL; eritromisin 8 µg/mL",
-        "Penisilin 8 µg/mL; eritromisin 0.06 µg/mL",
-        "Penisilin >32 µg/mL; eritromisin 8 µg/mL",
+        "Penicillin 0.06 µg/mL; erythromycin 8 µg/mL",
+        "Penicillin 8 µg/mL; erythromycin 0.06 µg/mL",
+        "Penicillin >32 µg/mL; erythromycin 8 µg/mL",
         "İkisi de >32 µg/mL"
       ],
-      "answer": "Penisilin 0.06 µg/mL; eritromisin 8 µg/mL",
-      "explanation": "Penisilin MİK 0.06 µg/mL, eritromisin MİK 8 µg/mL. Klindamisin: her konsantrasyonda üreme → MİK >32 µg/mL.",
-      "source": "Slayt 6 · Antimikrobiyal duyarlılık testi (CDC)"
+      "answer": "Penicillin 0.06 µg/mL; erythromycin 8 µg/mL",
+      "explanation": "Penicillin MIC 0.06 µg/mL, erythromycin MIC 8 µg/mL. Clindamycin: her konsantrasyonda üreme → MIC >32 µg/mL.",
+      "source": "Slayt 6 · Antimicrobial susceptibility test (CDC)"
     },
     {
+      "id": "q22",
       "type": "mcq",
-      "question": "Mikrodilüsyon örneğinde klindamisin için MİK neden >32 µg/mL olarak yorumlanmıştır?",
+      "question": "Microdilution örneğinde clindamycin için MIC neden >32 µg/mL olarak yorumlanmıştır?",
       "options": [
         "32 µg/mL'ye kadar her konsantrasyonda görünür üreme gözlendiği için",
         "Hiçbir kuyucukta üreme olmadığı için",
@@ -249,91 +271,99 @@
         "En düşük konsantrasyonda üreme durduğu için"
       ],
       "answer": "32 µg/mL'ye kadar her konsantrasyonda görünür üreme gözlendiği için",
-      "explanation": "Klindamisin için 32 µg/mL'ye kadar her konsantrasyonda görünür bakteri üremesi gözlendi; bu yüzden MİK >32 µg/mL olarak yorumlanır.",
+      "explanation": "Clindamycin için 32 µg/mL'ye kadar her konsantrasyonda visible bacterial growth gözlendi; bu yüzden MIC >32 µg/mL olarak yorumlanır.",
       "source": "Slayt 6"
     },
     {
+      "id": "q23",
       "type": "mcq",
-      "question": "Bakteriyostatik ve bakterisidal ilaçlar için hangisi doğrudur?",
+      "question": "Bacteriostatic ve bactericidal ilaçlar için hangisi doğrudur?",
       "options": [
-        "Bakteriyostatik: üremeyi geri dönüşümlü inhibe eder, ilaç kalkınca üreme yeniden başlar; bakterisidal: hedef bakteriyi öldürür",
-        "Bakteriyostatik: bakteriyi öldürür; bakterisidal: üremeyi geçici durdurur",
+        "Bacteriostatic: üremeyi reversible olarak inhibe eder, ilaç kalkınca üreme yeniden başlar; bactericidal: hedef bakteriyi öldürür",
+        "Bacteriostatic: bakteriyi öldürür; bactericidal: üremeyi geçici durdurur",
         "İkisi de bakteriyi öldürür",
-        "Bakterisidal ilaçların etkisi ilaç kalkınca geri döner"
+        "Bactericidal ilaçların etkisi ilaç kalkınca geri döner"
       ],
-      "answer": "Bakteriyostatik: üremeyi geri dönüşümlü inhibe eder, ilaç kalkınca üreme yeniden başlar; bakterisidal: hedef bakteriyi öldürür",
-      "explanation": "Bakteriyostatik (bacteriostatic) ilaçlar üremeyi geri dönüşümlü olarak inhibe eder; ilaç ortadan kalkınca bakteri üremesi yeniden başlar. Bakterisidal (bactericidal) ilaçlar ise hedef bakteriyi öldürür.",
+      "answer": "Bacteriostatic: üremeyi reversible olarak inhibe eder, ilaç kalkınca üreme yeniden başlar; bactericidal: hedef bakteriyi öldürür",
+      "explanation": "Bacteriostatic ilaçlar üremeyi reversible olarak inhibe eder (reversible inhibition of growth); ilaç ortadan kalkınca bakteri üremesi yeniden başlar. Bactericidal ilaçlar ise hedef bakteriyi öldürür.",
       "source": "Slayt 7"
     },
     {
+      "id": "q24",
       "type": "mcq",
-      "question": "Enfeksiyona neden olan patojen tanımlanmışsa slayta göre hangi tür antimikrobiyal tercih edilmelidir?",
-      "options": ["Dar spektrumlu", "Geniş spektrumlu", "Her zaman iki geniş spektrumlu ilacın kombinasyonu", "Antifungal"],
-      "answer": "Dar spektrumlu",
-      "explanation": "Enfeksiyona neden olan patojen tanımlanmışsa dar spektrumlu (narrow-spectrum) bir antimikrobiyal kullanmak en iyisidir. Dar spektrumlu antimikrobiyal yalnızca belirli bakteriyel patojen alt gruplarını hedefler.",
+      "question": "Enfeksiyona neden olan patojen tanımlanmışsa slayta göre hangi tür antimicrobial tercih edilmelidir?",
+      "options": ["Narrow-spectrum", "Broad-spectrum", "Her zaman iki broad-spectrum ilacın kombinasyonu", "Antifungal"],
+      "answer": "Narrow-spectrum",
+      "explanation": "Enfeksiyona neden olan patojen tanımlanmışsa narrow-spectrum bir antimicrobial kullanmak en iyisidir. Narrow-spectrum antimicrobial yalnızca belirli bakteriyel patojen alt gruplarını hedefler.",
       "source": "Slayt 7"
     },
     {
+      "id": "q25",
       "type": "mcq",
-      "question": "Geniş spektrumlu antibiyotik kullanımından sonra gelişebilen süperenfeksiyonun (superinfection) sırası hangisidir?",
+      "question": "Broad-spectrum antibiotic kullanımından sonra gelişebilen superinfection'ın sırası hangisidir?",
       "options": [
-        "Normal mikrobiyota fırsatçı patojenleri kontrol eder → geniş spektrumlu antibiyotik dirençsiz hücreleri öldürür → ilaca dirençli patojenler çoğalır",
-        "İlaca dirençli patojenler önce ölür → normal mikrobiyota çoğalır",
-        "Geniş spektrumlu antibiyotik yalnızca patojeni öldürür, mikrobiyota etkilenmez",
-        "Dar spektrumlu antibiyotik normal mikrobiyotayı tamamen yok eder"
+        "Normal microbiota opportunistic pathogens'i kontrol eder → broad-spectrum antibiotic nonresistant hücreleri öldürür → drug-resistant patojenler çoğalır",
+        "Drug-resistant patojenler önce ölür → normal microbiota çoğalır",
+        "Broad-spectrum antibiotic yalnızca patojeni öldürür, microbiota etkilenmez",
+        "Narrow-spectrum antibiotic normal microbiota'yı tamamen yok eder"
       ],
-      "answer": "Normal mikrobiyota fırsatçı patojenleri kontrol eder → geniş spektrumlu antibiyotik dirençsiz hücreleri öldürür → ilaca dirençli patojenler çoğalır",
-      "explanation": "1) Normal mikrobiyota fırsatçı patojenleri kontrol altında tutar. 2) Geniş spektrumlu antibiyotikler dirençsiz hücreleri öldürür. 3) İlaca dirençli patojenler çoğalır ve süperenfeksiyona neden olabilir.",
+      "answer": "Normal microbiota opportunistic pathogens'i kontrol eder → broad-spectrum antibiotic nonresistant hücreleri öldürür → drug-resistant patojenler çoğalır",
+      "explanation": "1) Normal microbiota opportunistic pathogens'i kontrol altında tutar. 2) Broad-spectrum antibiotics nonresistant hücreleri öldürür. 3) Drug-resistant patojenler çoğalır ve superinfection'a neden olabilir.",
       "source": "Slayt 7 · şekil"
     },
     {
+      "id": "q26",
       "type": "mcq",
-      "question": "Farmakokinetik (PK) ve farmakodinamik (PD) için hangisi doğrudur?",
+      "question": "Pharmacokinetics (PK) ve pharmacodynamics (PD) için hangisi doğrudur?",
       "options": [
         "PK: vücudun ilaca yaptığı; PD: ilacın mikroorganizmaya yaptığı",
         "PK: ilacın mikroorganizmaya yaptığı; PD: vücudun ilaca yaptığı",
-        "İkisi de yalnızca MİK'i ifade eder",
+        "İkisi de yalnızca MIC'i ifade eder",
         "PK yalnızca laboratuvar koşullarını tanımlar"
       ],
       "answer": "PK: vücudun ilaca yaptığı; PD: ilacın mikroorganizmaya yaptığı",
-      "explanation": "Farmakokinetik (pharmacokinetics, PK): vücudun ilaca yaptığı (zamanla plazmadaki ilaç düzeyi). Farmakodinamik (pharmacodynamics, PD): ilacın mikroorganizmaya yaptığı; MİK, görünür üremeyi durduran en düşük laboratuvar konsantrasyonudur.",
+      "explanation": "Pharmacokinetics (PK): vücudun ilaca yaptığı (zamanla plasma'daki ilaç düzeyi). Pharmacodynamics (PD): ilacın mikroorganizmaya yaptığı; MIC, görünür üremeyi durduran en düşük laboratuvar konsantrasyonudur.",
       "source": "Slayt 8"
     },
     {
+      "id": "q27",
       "type": "mcq",
       "question": "AUC(24) neyi ifade eder?",
       "options": [
-        "24 saatlik plazma konsantrasyon eğrisinin altındaki toplam alan; ilaç maruziyetinin bir ölçüsü",
+        "24 saatlik plasma concentration eğrisinin altındaki toplam alan; drug exposure'ın bir ölçüsü",
         "İlacın 24 saatte ulaştığı en yüksek konsantrasyon",
         "24 saat sonunda kanda kalan ilaç miktarı",
-        "Bakterinin 24 saatteki üreme hızı"
+        "Bakterinin 24 saatteki growth rate'i"
       ],
-      "answer": "24 saatlik plazma konsantrasyon eğrisinin altındaki toplam alan; ilaç maruziyetinin bir ölçüsü",
-      "explanation": "24 saatlik eğri altındaki alan (area under the curve-24h), AUC(24): 24 saat boyunca plazma konsantrasyon eğrisinin altındaki toplam alan; ilaç maruziyetinin (drug exposure) bir ölçüsü.",
+      "answer": "24 saatlik plasma concentration eğrisinin altındaki toplam alan; drug exposure'ın bir ölçüsü",
+      "explanation": "Area under the curve-24h, AUC(24): 24 saat boyunca plasma concentration eğrisinin altındaki toplam alan; drug exposure'ın bir ölçüsü.",
       "source": "Slayt 8"
     },
     {
+      "id": "q28",
       "type": "mcq",
-      "question": "Slayttaki örnekte AUC(24) = 130 mg·h/L ve MİK = 2 mg/L ise AUC(24)/MİK kaçtır?",
-      "options": ["65 saat", "260 saat", "130 saat", "32.5 saat"],
-      "answer": "65 saat",
-      "explanation": "130 mg·h/L ÷ 2 mg/L = 65 saat. Parçalar: 0–2 sa 16 + 2–6 sa 48 + 6–12 sa 36 + 12–24 sa 30 = 130 mg·h/L.",
-      "source": "Slayt 8 · Plazma konsantrasyon–zaman eğrisi"
+      "question": "Slayttaki örnekte AUC(24) = 130 mg·h/L ve MIC = 2 mg/L ise AUC(24)/MIC kaçtır?",
+      "options": ["65 h", "260 h", "130 h", "32.5 h"],
+      "answer": "65 h",
+      "explanation": "130 mg·h/L ÷ 2 mg/L = 65 h. Parçalar: 0–2 h 16 + 2–6 h 48 + 6–12 h 36 + 12–24 h 30 = 130 mg·h/L.",
+      "source": "Slayt 8 · Plasma concentration–time curve"
     },
     {
+      "id": "q29",
       "type": "mcq",
-      "question": "AUC(24)/MİK = 65 saat sonucu için hangisi doğrudur?",
+      "question": "AUC(24)/MIC = 65 h sonucu için hangisi doğrudur?",
       "options": [
-        "İlaç maruziyetinin izolatın MİK'ine göre büyüklüğünü gösterir; inhibisyonun 65 saat sürdüğü anlamına gelmez",
+        "Drug exposure'ın izolatın MIC'ine göre büyüklüğünü gösterir; inhibition'ın 65 saat sürdüğü anlamına gelmez",
         "Bakterinin 65 saat boyunca inhibe edildiğini gösterir",
         "İlacın 65 saatte vücuttan tamamen atıldığını gösterir",
         "Hastada gerçekte ne olduğunu kesin olarak gösterir"
       ],
-      "answer": "İlaç maruziyetinin izolatın MİK'ine göre büyüklüğünü gösterir; inhibisyonun 65 saat sürdüğü anlamına gelmez",
-      "explanation": "AUC(24)/MİK 65 saat bulundu; bu, ilaç maruziyetinin izolatın MİK'ine göre büyüklüğünü gösterir; inhibisyonun 65 saat sürdüğü anlamına gelmez. MİK kontrollü laboratuvar koşullarında ölçülür, vücuttaki ilaç düzeyi ise yükselip düşer.",
+      "answer": "Drug exposure'ın izolatın MIC'ine göre büyüklüğünü gösterir; inhibition'ın 65 saat sürdüğü anlamına gelmez",
+      "explanation": "AUC(24)/MIC 65 h bulundu; bu, drug exposure'ın izolatın MIC'ine göre büyüklüğünü gösterir; inhibition'ın 65 saat sürdüğü anlamına gelmez. MIC kontrollü laboratuvar koşullarında ölçülür, vücuttaki ilaç düzeyi ise yükselip düşer.",
       "source": "Slayt 8 (kalın maddeler)"
     },
     {
+      "id": "q30",
       "type": "mcq",
       "question": "Slayttaki eğride 2–6 saat arasındaki alan (16 mg/L → 8 mg/L) nasıl hesaplanır?",
       "options": [
@@ -343,853 +373,940 @@
         "[(16 + 8) ÷ 2] × 6 = 72 mg·h/L"
       ],
       "answer": "[(16 + 8) ÷ 2] × 4 = 48 mg·h/L",
-      "explanation": "Alan = iki konsantrasyonun ortalaması × ölçümler arasındaki saat: 2–6 sa: [(16 + 8) ÷ 2] × 4 = 48 mg·h/L.",
+      "explanation": "Alan = iki konsantrasyonun ortalaması × ölçümler arasındaki saat: 2–6 h: [(16 + 8) ÷ 2] × 4 = 48 mg·h/L.",
       "source": "Slayt 8"
     },
     {
+      "id": "q31",
       "type": "mcq",
-      "question": "Mekanizma şemasına göre aşağıdakilerden hangisi HÜCRE DUVARI sentezini hedefler?",
-      "options": ["Vankomisin", "Gentamisin", "Siprofloksasin", "Rifampin"],
-      "answer": "Vankomisin",
-      "explanation": "Hücre duvarı: β-laktamlar (penisilinler, sefalosporinler, monobaktamlar, karbapenemler), glikopeptidler (vankomisin), basitrasin. Gentamisin → 30S, siprofloksasin → DNA sentezi, rifampin → RNA sentezi.",
-      "source": "Slayt 9 · Etki mekanizmaları şeması"
+      "question": "Mechanisms şemasına göre aşağıdakilerden hangisi CELL WALL synthesis'i hedefler?",
+      "options": ["Vancomycin", "Gentamicin", "Ciprofloxacin", "Rifampin"],
+      "answer": "Vancomycin",
+      "explanation": "Cell wall: β-lactams (penicillins, cephalosporins, monobactams, carbapenems), glycopeptides (vancomycin), bacitracin. Gentamicin → 30S, ciprofloxacin → DNA synthesis, rifampin → RNA synthesis.",
+      "source": "Slayt 9 · Mechanisms şeması"
     },
     {
+      "id": "q32",
       "type": "mcq",
-      "question": "Mekanizma şemasına göre ribozomun 30S alt birimine bağlanan ilaç grupları hangileridir?",
+      "question": "Mechanisms şemasına göre ribozomun 30S subunit'ine bağlanan ilaç grupları hangileridir?",
       "options": [
-        "Aminoglikozidler ve tetrasiklinler",
-        "Makrolidler ve linkozamidler",
-        "Kloramfenikol ve oksazolidinonlar",
-        "Polimiksinler ve daptomisin"
+        "Aminoglycosides ve tetracyclines",
+        "Macrolides ve lincosamides",
+        "Chloramphenicol ve oxazolidinones",
+        "Polymyxins ve daptomycin"
       ],
-      "answer": "Aminoglikozidler ve tetrasiklinler",
-      "explanation": "30S alt birimi: aminoglikozidler, tetrasiklinler · 50S alt birimi: makrolidler, linkozamidler, kloramfenikol, oksazolidinonlar.",
-      "source": "Slayt 9 · Etki mekanizmaları şeması"
+      "answer": "Aminoglycosides ve tetracyclines",
+      "explanation": "30S subunit: aminoglycosides, tetracyclines · 50S subunit: macrolides, lincosamides, chloramphenicol, oxazolidinones.",
+      "source": "Slayt 9 · Mechanisms şeması"
     },
     {
+      "id": "q33",
       "type": "mcq",
-      "question": "Aşağıdakilerden hangisi 50S alt birimine BAĞLANMAZ?",
-      "options": ["Tetrasiklinler", "Makrolidler", "Linkozamidler", "Kloramfenikol"],
-      "answer": "Tetrasiklinler",
-      "explanation": "Tetrasiklinler 30S'e bağlanır. 50S: makrolidler, linkozamidler, kloramfenikol, oksazolidinonlar.",
-      "source": "Slayt 9 · Etki mekanizmaları şeması"
+      "question": "Aşağıdakilerden hangisi 50S subunit'e BAĞLANMAZ?",
+      "options": ["Tetracyclines", "Macrolides", "Lincosamides", "Chloramphenicol"],
+      "answer": "Tetracyclines",
+      "explanation": "Tetracyclines 30S'e bağlanır. 50S: macrolides, lincosamides, chloramphenicol, oxazolidinones.",
+      "source": "Slayt 9 · Mechanisms şeması"
     },
     {
+      "id": "q34",
       "type": "mcq",
-      "question": "Mekanizma şemasına göre folik asit sentezini hedefleyen ilaçlar hangileridir?",
+      "question": "Mechanisms şemasına göre folic acid synthesis'i hedefleyen ilaçlar hangileridir?",
       "options": [
-        "Sülfonamidler, sülfonlar, trimetoprim",
-        "Florokinolonlar",
-        "Rifamisinler",
-        "Polimiksin B ve kolistin"
+        "Sulfonamides, sulfones, trimethoprim",
+        "Fluoroquinolones",
+        "Rifamycins",
+        "Polymyxin B ve colistin"
       ],
-      "answer": "Sülfonamidler, sülfonlar, trimetoprim",
-      "explanation": "Metabolik yolaklar — folik asit sentezi (folic acid synthesis): sülfonamidler, sülfonlar, trimetoprim · mikolik asit sentezi: izoniazid.",
-      "source": "Slayt 9 · Etki mekanizmaları şeması"
+      "answer": "Sulfonamides, sulfones, trimethoprim",
+      "explanation": "Metabolic pathways — folic acid synthesis: sulfonamides, sulfones, trimethoprim · mycolic acid synthesis: isoniazid.",
+      "source": "Slayt 9 · Mechanisms şeması"
     },
     {
+      "id": "q35",
       "type": "mcq",
-      "question": "Mekanizma şemasına göre mikolik asit sentezini hedefleyen ilaç hangisidir?",
-      "options": ["İzoniazid", "Trimetoprim", "Daptomisin", "Basitrasin"],
-      "answer": "İzoniazid",
-      "explanation": "Metabolik yolaklar — mikolik asit sentezi (mycolic acid synthesis): izoniazid.",
-      "source": "Slayt 9 · Etki mekanizmaları şeması"
+      "question": "Mechanisms şemasına göre mycolic acid synthesis'i hedefleyen ilaç hangisidir?",
+      "options": ["Isoniazid", "Trimethoprim", "Daptomycin", "Bacitracin"],
+      "answer": "Isoniazid",
+      "explanation": "Metabolic pathways — mycolic acid synthesis: isoniazid.",
+      "source": "Slayt 9 · Mechanisms şeması"
     },
     {
+      "id": "q36",
       "type": "mcq",
-      "question": "Mekanizma şemasına göre plazma membranını hedefleyen ilaçlar hangileridir?",
+      "question": "Mechanisms şemasına göre plasma membrane'ı hedefleyen ilaçlar hangileridir?",
       "options": [
-        "Polimiksinler (polimiksin B, kolistin) ve lipopeptid (daptomisin)",
-        "β-laktamlar ve glikopeptidler",
-        "Aminoglikozidler ve tetrasiklinler",
-        "Sülfonamidler ve trimetoprim"
+        "Polymyxins (polymyxin B, colistin) ve lipopeptide (daptomycin)",
+        "β-lactams ve glycopeptides",
+        "Aminoglycosides ve tetracyclines",
+        "Sulfonamides ve trimethoprim"
       ],
-      "answer": "Polimiksinler (polimiksin B, kolistin) ve lipopeptid (daptomisin)",
-      "explanation": "Plazma membranı: polimiksinler (polimiksin B, kolistin), lipopeptid (daptomisin).",
-      "source": "Slayt 9 · Etki mekanizmaları şeması"
+      "answer": "Polymyxins (polymyxin B, colistin) ve lipopeptide (daptomycin)",
+      "explanation": "Plasma membrane: polymyxins (polymyxin B, colistin), lipopeptide (daptomycin).",
+      "source": "Slayt 9 · Mechanisms şeması"
     },
     {
+      "id": "q37",
       "type": "mcq",
-      "question": "DNA sentezini hedefleyen florokinolon grubuna şemada verilen örnekler hangileridir?",
+      "question": "DNA synthesis'i hedefleyen fluoroquinolones grubuna şemada verilen örnekler hangileridir?",
       "options": [
-        "Siprofloksasin, levofloksasin, moksifloksasin",
-        "Rifampin, rifabutin, rifapentin",
-        "Gentamisin, kanamisin, neomisin",
-        "İmipenem, meropenem, doripenem"
+        "Ciprofloxacin, levofloxacin, moxifloxacin",
+        "Rifampin, rifabutin, rifapentine",
+        "Gentamicin, kanamycin, neomycin",
+        "Imipenem, meropenem, doripenem"
       ],
-      "answer": "Siprofloksasin, levofloksasin, moksifloksasin",
-      "explanation": "DNA sentezi — florokinolonlar: siprofloksasin, levofloksasin, moksifloksasin. RNA sentezi — rifamisinler: rifampin.",
-      "source": "Slayt 9 · Etki mekanizmaları şeması"
+      "answer": "Ciprofloxacin, levofloxacin, moxifloxacin",
+      "explanation": "DNA synthesis — fluoroquinolones: ciprofloxacin, levofloxacin, moxifloxacin. RNA synthesis — rifamycins: rifampin.",
+      "source": "Slayt 9 · Mechanisms şeması"
     },
     {
+      "id": "q38",
       "type": "mcq",
-      "question": "Hücre duvarı sentezini inhibe eden antibakteriyeller neden bakterisidaldir?",
+      "question": "Cell wall biosynthesis'i inhibe eden antibacterials neden bactericidal'dir?",
       "options": [
-        "Hücreleri ozmotik lizise daha duyarlı hale getirdikleri için",
-        "Ribozomlara bağlanıp protein sentezini durdurdukları için",
+        "Hücreleri osmotic lysis'e daha duyarlı hale getirdikleri için",
+        "Ribozomlara bağlanıp protein synthesis'i durdurdukları için",
         "Yalnızca üremeyi geçici olarak durdurdukları için",
-        "DNA girazı inhibe ettikleri için"
+        "DNA gyrase'ı inhibe ettikleri için"
       ],
-      "answer": "Hücreleri ozmotik lizise daha duyarlı hale getirdikleri için",
-      "explanation": "Hücreleri ozmotik lizise (osmotic lysis) daha duyarlı hale getirirler. Bu nedenle hücre duvarı biyosentezini hedefleyen antibakteriyeller bakterisidal etkilidir.",
-      "source": "Slayt 10 · Hücre duvarı biyosentezi inhibitörleri"
+      "answer": "Hücreleri osmotic lysis'e daha duyarlı hale getirdikleri için",
+      "explanation": "Hücreleri osmotic lysis'e daha duyarlı hale getirirler. Bu nedenle cell wall biosynthesis'i hedefleyen antibacterials bactericidal etkilidir.",
+      "source": "Slayt 10 · Inhibitors of cell wall biosynthesis"
     },
     {
+      "id": "q39",
       "type": "mcq",
-      "question": "Hücre duvarı sentezini hedeflemenin seçici toksisiteye mükemmel bir örnek olmasının nedeni nedir?",
+      "question": "Cell wall synthesis'i hedeflemenin selective toxicity'ye mükemmel bir örnek olmasının nedeni nedir?",
       "options": [
-        "İnsan hücreleri peptidoglikan yapmaz",
+        "İnsan hücreleri peptidoglycan yapmaz",
         "İnsan hücrelerinde ribozom yoktur",
         "İnsan hücrelerinin membranı yoktur",
-        "İnsan hücreleri DNA giraz içermez"
+        "İnsan hücreleri DNA gyrase içermez"
       ],
-      "answer": "İnsan hücreleri peptidoglikan yapmaz",
-      "explanation": "İnsan hücreleri peptidoglikan (peptidoglycan) yapmadığı için bu etki şekli seçici toksisitenin mükemmel bir örneğidir.",
+      "answer": "İnsan hücreleri peptidoglycan yapmaz",
+      "explanation": "İnsan hücreleri peptidoglycan yapmadığı için bu etki şekli (mode of action) selective toxicity'nin mükemmel bir örneğidir.",
       "source": "Slayt 10"
     },
     {
+      "id": "q40",
       "type": "mcq",
-      "question": "β-laktam ilaçlarında antibakteriyel aktivitenin korunması için hangi yapı DEĞİŞMEDEN kalmalıdır?",
-      "options": ["β-laktam halkası", "R grupları", "Benzen halkası", "Amino grubu"],
-      "answer": "β-laktam halkası",
-      "explanation": "Bu ilaçların antibakteriyel aktivitesini koruması için β-laktam halkası (β-lactam ring) değişmeden kalmalıdır; R gruplarındaki stratejik değişiklikler daha güçlü, daha geniş spektrumlu ve daha uzun yarılanma ömürlü yarı sentetik β-laktamları ortaya çıkarmıştır.",
+      "question": "β-lactam ilaçlarında antibacterial aktivitenin korunması için hangi yapı DEĞİŞMEDEN kalmalıdır?",
+      "options": ["β-lactam ring", "R groups", "Benzene ring", "Amino group"],
+      "answer": "β-lactam ring",
+      "explanation": "Bu ilaçların antibacterial aktivitesini koruması için β-lactam ring değişmeden kalmalıdır; R groups'taki stratejik değişiklikler daha güçlü (increased potency), expanded spectrum ve daha uzun half-life'lı semisynthetic β-lactams'ı ortaya çıkarmıştır.",
       "source": "Slayt 10"
     },
     {
+      "id": "q41",
       "type": "mcq",
-      "question": "Vankomisinin etki mekanizması için hangisi doğrudur?",
+      "question": "Vancomycin'in etki mekanizması için hangisi doğrudur?",
       "options": [
-        "Hücre duvarı öncüllerinin peptid zincirinin ucuna bağlanarak alt birimlerin NAM-NAG omurgasına katılmasını engeller",
-        "Penisilin bağlayan proteinleri (PBP) doğrudan inaktive eder",
-        "30S ribozom alt birimine bağlanır",
-        "Lipopolisakkarite bağlanarak dış membranı bozar"
+        "Cell wall precursor'larının peptide zincirinin ucuna bağlanarak alt birimlerin NAM-NAG omurgasına katılmasını engeller",
+        "Penicillin-binding protein'leri (PBP) doğrudan inaktive eder",
+        "30S subunit'e bağlanır",
+        "Lipopolysaccharide'a bağlanarak outer membrane'ı bozar"
       ],
-      "answer": "Hücre duvarı öncüllerinin peptid zincirinin ucuna bağlanarak alt birimlerin NAM-NAG omurgasına katılmasını engeller",
-      "explanation": "Vankomisin (glikopeptid) penisilin bağlayan proteinleri (PBP) doğrudan inaktive etmez. Hücre duvarı öncüllerinin peptid zincirinin ucuna (D-Ala-D-Ala uçları) bağlanarak yapısal bir engel oluşturur.",
+      "answer": "Cell wall precursor'larının peptide zincirinin ucuna bağlanarak alt birimlerin NAM-NAG omurgasına katılmasını engeller",
+      "explanation": "Vancomycin (glycopeptide) penicillin-binding protein'leri doğrudan inaktive etmez. Cell wall precursor'larının peptide zincirinin ucuna (D-Ala-D-Ala termini) bağlanarak yapısal bir engel (structural blockage) oluşturur.",
       "source": "Slayt 10 ve Slayt 12 tablosu"
     },
     {
+      "id": "q42",
       "type": "mcq",
-      "question": "Vankomisin hangi ilaç sınıfının üyesidir?",
-      "options": ["Glikopeptidler", "β-laktamlar", "Aminoglikozidler", "Lipopeptidler"],
-      "answer": "Glikopeptidler",
-      "explanation": "Vankomisin, glikopeptidler (glycopeptides) adı verilen bileşik sınıfının üyesidir. Tabloya göre doğal; dar spektrum: çoklu ilaca dirençli suşlar dahil gram-pozitifler.",
+      "question": "Vancomycin hangi ilaç sınıfının üyesidir?",
+      "options": ["Glycopeptides", "β-lactams", "Aminoglycosides", "Lipopeptides"],
+      "answer": "Glycopeptides",
+      "explanation": "Vancomycin, glycopeptides sınıfının üyesidir. Tabloya göre natural; narrow: multidrug-resistant suşlar dahil gram-positive bakteriler.",
       "source": "Slayt 10 · Slayt 12"
     },
     {
+      "id": "q43",
       "type": "mcq",
-      "question": "Tabloya göre penisilin V'nin yan zinciri (R grubu) hangisidir?",
+      "question": "Tabloya göre penicillin V'nin side chain'i (R group) hangisidir?",
       "options": [
-        "Fenoksimetil — benzen halkası O–CH₂ üzerinden bağlı",
-        "Benzil — benzen halkası CH₂ üzerinden bağlı",
-        "α-aminobenzil — benzen halkası CH(NH₂) üzerinden bağlı",
-        "Metil — benzen halkası yok"
+        "Phenoxymethyl — benzene ring O–CH₂ üzerinden bağlı",
+        "Benzyl — benzene ring CH₂ üzerinden bağlı",
+        "α-aminobenzyl — benzene ring CH(NH₂) üzerinden bağlı",
+        "Methyl — benzene ring yok"
       ],
-      "answer": "Fenoksimetil — benzen halkası O–CH₂ üzerinden bağlı",
-      "explanation": "Penisilin G: benzil (benzyl; CH₂) · Penisilin V: fenoksimetil (phenoxymethyl; O–CH₂) · Ampisilin: α-aminobenzil (α-aminobenzyl; CH(NH₂); NH₂ amino grubudur).",
-      "source": "Slayt 10 · yan zincir tablosu"
+      "answer": "Phenoxymethyl — benzene ring O–CH₂ üzerinden bağlı",
+      "explanation": "Penicillin G: benzyl (CH₂) · Penicillin V: phenoxymethyl (O–CH₂) · Ampicillin: α-aminobenzyl (CH(NH₂); NH₂ amino group'tur).",
+      "source": "Slayt 10 · side chain tablosu"
     },
     {
+      "id": "q44",
       "type": "mcq",
-      "question": "Tabloya göre ampisilinin yan zinciri hangisidir?",
+      "question": "Tabloya göre ampicillin'in side chain'i hangisidir?",
       "options": [
-        "α-aminobenzil — benzen halkası CH(NH₂) üzerinden bağlı",
-        "Benzil — benzen halkası CH₂ üzerinden bağlı",
-        "Fenoksimetil — benzen halkası O–CH₂ üzerinden bağlı",
-        "Metoksi — benzen halkası OCH₃ üzerinden bağlı"
+        "α-aminobenzyl — benzene ring CH(NH₂) üzerinden bağlı",
+        "Benzyl — benzene ring CH₂ üzerinden bağlı",
+        "Phenoxymethyl — benzene ring O–CH₂ üzerinden bağlı",
+        "Methoxy — benzene ring OCH₃ üzerinden bağlı"
       ],
-      "answer": "α-aminobenzil — benzen halkası CH(NH₂) üzerinden bağlı",
-      "explanation": "Ampisilin: α-aminobenzil (α-aminobenzyl) — CH(NH₂) üzerinden bağlı bir benzen halkası; NH₂ bir amino grubudur.",
-      "source": "Slayt 10 · yan zincir tablosu"
+      "answer": "α-aminobenzyl — benzene ring CH(NH₂) üzerinden bağlı",
+      "explanation": "Ampicillin: α-aminobenzyl — CH(NH₂) üzerinden bağlı bir benzene ring; NH₂ bir amino group'tur.",
+      "source": "Slayt 10 · side chain tablosu"
     },
     {
+      "id": "q45",
       "type": "mcq",
-      "question": "Penisilin G ve V için hangisi doğrudur?",
+      "question": "Penicillin G ve V için hangisi doğrudur?",
       "options": [
-        "Mantarlardan elde edilen doğal antibiyotiklerdir; esas olarak gram-pozitiflere ve Pasteurella multocida gibi birkaç gram-negatife etkilidir",
-        "Yarı sentetiktir ve yalnızca gram-negatiflere etkilidir",
-        "Sentetiktir ve MRSA'ya etkilidir",
+        "Mantarlardan elde edilen natural antibiotics'tir; esas olarak gram-positive'lere ve Pasteurella multocida gibi birkaç gram-negative'e etkilidir",
+        "Semisynthetic'tir ve yalnızca gram-negative'lere etkilidir",
+        "Synthetic'tir ve MRSA'ya etkilidir",
         "Bacillus polymyxa'dan elde edilir"
       ],
-      "answer": "Mantarlardan elde edilen doğal antibiyotiklerdir; esas olarak gram-pozitiflere ve Pasteurella multocida gibi birkaç gram-negatife etkilidir",
-      "explanation": "Penisilin G ve penisilin V mantarlardan elde edilen doğal antibiyotiklerdir; esas olarak gram-pozitif bakteriyel patojenlere ve Pasteurella multocida gibi birkaç gram-negatif patojene etkilidir.",
+      "answer": "Mantarlardan elde edilen natural antibiotics'tir; esas olarak gram-positive'lere ve Pasteurella multocida gibi birkaç gram-negative'e etkilidir",
+      "explanation": "Penicillin G ve penicillin V mantarlardan elde edilen natural antibiotics'tir; esas olarak gram-positive bakteriyel patojenlere ve Pasteurella multocida gibi birkaç gram-negative patojene etkilidir.",
       "source": "Slayt 11"
     },
     {
+      "id": "q46",
       "type": "mcq",
-      "question": "Klinik olarak kullanılan TEK monobaktam hangisidir?",
-      "options": ["Aztreonam", "İmipenem", "Meropenem", "Metisilin"],
+      "question": "Klinik olarak kullanılan TEK monobactam hangisidir?",
+      "options": ["Aztreonam", "Imipenem", "Meropenem", "Methicillin"],
       "answer": "Aztreonam",
-      "explanation": "Klinikte kullanılan tek monobaktam (monobactam) aztreonamdır. Yalnızca gram-negatif bakterilere etkili, dar spektrumlu bir antibakteriyeldir.",
+      "explanation": "Klinikte kullanılan tek monobactam aztreonam'dır. Yalnızca gram-negative bakterilere etkili, narrow-spectrum bir antibacterial'dir.",
       "source": "Slayt 11 (kalın)"
     },
     {
+      "id": "q47",
       "type": "mcq",
-      "question": "Aztreonamın etki spektrumu nedir?",
+      "question": "Aztreonam'ın etki spektrumu nedir?",
       "options": [
-        "Dar spektrum; yalnızca gram-negatif bakterilere (β-laktamaz üreticileri dahil)",
-        "Çok geniş spektrum; gram-pozitif ve gram-negatif",
-        "Dar spektrum; yalnızca gram-pozitif",
+        "Narrow-spectrum; yalnızca gram-negative bakterilere (β-lactamase producer'lar dahil)",
+        "Çok broad-spectrum; gram-positive ve gram-negative",
+        "Narrow-spectrum; yalnızca gram-positive",
         "Yalnızca mantarlara"
       ],
-      "answer": "Dar spektrum; yalnızca gram-negatif bakterilere (β-laktamaz üreticileri dahil)",
-      "explanation": "Aztreonam: dar spektrum, yalnızca gram-negatif bakterilere etkili. Tabloda: dar — β-laktamaz üreticileri dahil gram-negatif bakteriler; yarı sentetik.",
+      "answer": "Narrow-spectrum; yalnızca gram-negative bakterilere (β-lactamase producer'lar dahil)",
+      "explanation": "Aztreonam: narrow-spectrum, yalnızca gram-negative bakterilere etkili. Tabloda: narrow — β-lactamase producer'lar dahil gram-negative bakteriler; semisynthetic.",
       "source": "Slayt 11 · Slayt 12 tablosu"
     },
     {
+      "id": "q48",
       "type": "mcq",
-      "question": "En geniş β-laktam spektrumuna sahip olarak verilen sınıf ve örnekleri hangisidir?",
+      "question": "En geniş β-lactam spektrumuna sahip olarak verilen sınıf ve örnekleri hangisidir?",
       "options": [
-        "Karbapenemler — imipenem, meropenem, doripenem",
-        "Monobaktamlar — aztreonam",
-        "Glikopeptidler — vankomisin",
-        "Doğal penisilinler — penisilin G, penisilin V"
+        "Carbapenems — imipenem, meropenem, doripenem",
+        "Monobactams — aztreonam",
+        "Glycopeptides — vancomycin",
+        "Natural penicillins — penicillin G, penicillin V"
       ],
-      "answer": "Karbapenemler — imipenem, meropenem, doripenem",
-      "explanation": "Karbapenemler (carbapenems): hücre duvarı çapraz bağlanmasını inhibe eder; yarı sentetik; en geniş β-laktam spektrumu: birçok β-laktamaz üreticisi dahil gram-pozitif ve gram-negatifler.",
+      "answer": "Carbapenems — imipenem, meropenem, doripenem",
+      "explanation": "Carbapenems: cell wall cross-linking'i inhibe eder; semisynthetic; broadest β-lactam spectrum: birçok β-lactamase producer dahil gram-positive ve gram-negative'ler.",
       "source": "Slayt 11 · Slayt 12 tablosu"
     },
     {
+      "id": "q49",
       "type": "mcq",
-      "question": "Penisilin bağlayan protein (PBP) nedir?",
+      "question": "Penicillin-binding protein (PBP) nedir?",
       "options": [
-        "Peptidoglikan alt birimlerini çapraz bağlayan transpeptidaz enzimi",
-        "Penisilini parçalayan β-laktamaz enzimi",
-        "Ribozomun 30S alt birimindeki bir protein",
-        "Dış membrandaki bir porin"
+        "Peptidoglycan alt birimlerini cross-link eden transpeptidase enzimi",
+        "Penicillin'i parçalayan β-lactamase enzimi",
+        "30S subunit'teki bir protein",
+        "Outer membrane'daki bir porin"
       ],
-      "answer": "Peptidoglikan alt birimlerini çapraz bağlayan transpeptidaz enzimi",
-      "explanation": "β-laktam yapısı, çapraz bağlayan transpeptidaz enziminin tanıdığı peptidoglikan alt birimine benzer; bu enzim penisilin bağlayan protein (penicillin-binding protein, PBP) olarak da bilinir.",
+      "answer": "Peptidoglycan alt birimlerini cross-link eden transpeptidase enzimi",
+      "explanation": "β-lactam yapısı, cross-linking yapan transpeptidase enziminin tanıdığı peptidoglycan alt birimine benzer; bu enzim penicillin-binding protein (PBP) olarak da bilinir.",
       "source": "Slayt 11 (kalın)"
     },
     {
+      "id": "q50",
       "type": "mcq",
-      "question": "Tabloya göre metisilin için hangisi doğrudur?",
+      "question": "Tabloya göre methicillin için hangisi doğrudur?",
       "options": [
-        "Yarı sentetik; dar spektrum — penisilinaz üreten suşlar dahil gram-pozitif bakteriler",
-        "Doğal; geniş spektrum — gram-negatifler",
-        "Yarı sentetik; geniş spektrum — MRSA dahil",
-        "Sentetik; yalnızca gram-negatif"
+        "Semisynthetic; narrow — penicillinase üreten suşlar dahil gram-positive bakteriler",
+        "Natural; broad-spectrum — gram-negative'ler",
+        "Semisynthetic; broad-spectrum — MRSA dahil",
+        "Synthetic; yalnızca gram-negative"
       ],
-      "answer": "Yarı sentetik; dar spektrum — penisilinaz üreten suşlar dahil gram-pozitif bakteriler",
-      "explanation": "Penisilinler — metisilin — yarı sentetik — dar: penisilinaz üreten (penicillinase-producing) suşlar dahil gram-pozitif bakteriler.",
-      "source": "Slayt 12 · Penisilinler / sefalosporinler tablosu"
+      "answer": "Semisynthetic; narrow — penicillinase üreten suşlar dahil gram-positive bakteriler",
+      "explanation": "Penicillins — methicillin — semisynthetic — narrow: penicillinase-producing suşlar dahil gram-positive bakteriler.",
+      "source": "Slayt 12 · Penicillins / cephalosporins tablosu"
     },
     {
+      "id": "q51",
       "type": "mcq",
-      "question": "Tabloya göre ampisilin ve amoksisilin için hangisi doğrudur?",
+      "question": "Tabloya göre ampicillin ve amoxicillin için hangisi doğrudur?",
       "options": [
-        "Yarı sentetik; daha geniş spektrum — gram-pozitifler artı artmış gram-negatif aktivite",
-        "Doğal; dar spektrum — yalnızca gram-pozitif",
-        "Yarı sentetik; dar spektrum — penisilinaz üreten suşlar",
-        "Doğal; geniş spektrum — MRSA dahil"
+        "Semisynthetic; broader spectrum — gram-positive'ler artı artmış gram-negative aktivite",
+        "Natural; narrow — yalnızca gram-positive",
+        "Semisynthetic; narrow — penicillinase üreten suşlar",
+        "Natural; broad-spectrum — MRSA dahil"
       ],
-      "answer": "Yarı sentetik; daha geniş spektrum — gram-pozitifler artı artmış gram-negatif aktivite",
-      "explanation": "Penisilinler — ampisilin, amoksisilin — yarı sentetik — daha geniş spektrum (broader spectrum): gram-pozitif bakteriler artı artmış gram-negatif aktivite.",
+      "answer": "Semisynthetic; broader spectrum — gram-positive'ler artı artmış gram-negative aktivite",
+      "explanation": "Penicillins — ampicillin, amoxicillin — semisynthetic — broader spectrum: gram-positive bakteriler artı artmış gram-negative aktivite.",
       "source": "Slayt 12 · tablo"
     },
     {
+      "id": "q52",
       "type": "mcq",
-      "question": "Tabloya göre MRSA'yı da kapsayan geniş spektrumlu sefalosporin kuşağı hangisidir?",
-      "options": ["Beşinci kuşak", "Birinci kuşak", "İkinci kuşak", "Sefalosporin C"],
-      "answer": "Beşinci kuşak",
-      "explanation": "Sefalosporinler — beşinci kuşak (fifth generation) — yarı sentetik — MRSA dahil geniş spektrum.",
+      "question": "Tabloya göre MRSA'yı da kapsayan broad-spectrum cephalosporin generation'ı hangisidir?",
+      "options": ["Fifth generation", "First generation", "Second generation", "Cephalosporin C"],
+      "answer": "Fifth generation",
+      "explanation": "Cephalosporins — fifth generation — semisynthetic — broad spectrum, MRSA dahil.",
       "source": "Slayt 12 · tablo"
     },
     {
+      "id": "q53",
       "type": "mcq",
-      "question": "Tabloya göre ikinci kuşak sefalosporinlerin özelliği nedir?",
+      "question": "Tabloya göre second generation cephalosporins'in özelliği nedir?",
       "options": [
-        "Birinci kuşağa göre daha geniş gram-negatif aktivite",
-        "MRSA dahil geniş spektrum",
-        "Penisiline benzer, yalnızca gram-pozitif",
-        "Doğal kaynaklıdır"
+        "First generation'a göre daha geniş gram-negative aktivite",
+        "MRSA dahil broad-spectrum",
+        "Penicillin'e benzer, yalnızca gram-positive",
+        "Natural kaynaklıdır"
       ],
-      "answer": "Birinci kuşağa göre daha geniş gram-negatif aktivite",
-      "explanation": "İkinci kuşak (second generation) — yarı sentetik — birinci kuşak ilaçlardan daha geniş gram-negatif aktivite. Üçüncü ve dördüncü: geniş, bazı β-laktamaz üreticileri dahil. Beşinci: MRSA dahil.",
+      "answer": "First generation'a göre daha geniş gram-negative aktivite",
+      "explanation": "Second generation — semisynthetic — first-generation ilaçlardan daha geniş gram-negative aktivite. Third ve fourth: broad, bazı β-lactamase producer'lar dahil. Fifth: MRSA dahil.",
       "source": "Slayt 12 · tablo"
     },
     {
+      "id": "q54",
       "type": "mcq",
-      "question": "Tabloya göre bazı β-laktamaz üreticileri dahil gram-pozitif ve gram-negatiflere etkili sefalosporin kuşakları hangileridir?",
-      "options": ["Üçüncü ve dördüncü kuşak", "Birinci kuşak", "İkinci kuşak", "Sefalosporin C (doğal)"],
-      "answer": "Üçüncü ve dördüncü kuşak",
-      "explanation": "Üçüncü ve dördüncü kuşak — yarı sentetik — geniş spektrum: bazı β-laktamaz üreticileri dahil gram-pozitif ve gram-negatif bakteriler.",
+      "question": "Tabloya göre bazı β-lactamase producer'lar dahil gram-positive ve gram-negative'lere etkili cephalosporin generation'ları hangileridir?",
+      "options": ["Third and fourth generation", "First generation", "Second generation", "Cephalosporin C (natural)"],
+      "answer": "Third and fourth generation",
+      "explanation": "Third and fourth generation — semisynthetic — broad spectrum: bazı β-lactamase producer'lar dahil gram-positive ve gram-negative bakteriler.",
       "source": "Slayt 12 · tablo"
     },
     {
+      "id": "q55",
       "type": "mcq",
-      "question": "Tabloya göre sefalosporin C için hangisi doğrudur?",
+      "question": "Tabloya göre cephalosporin C için hangisi doğrudur?",
       "options": [
-        "Doğal; dar spektrum — penisiline benzer, artmış gram-negatif aktivite",
-        "Yarı sentetik; MRSA dahil geniş spektrum",
-        "Sentetik; yalnızca gram-negatif",
-        "Doğal; yalnızca mantarlara etkili"
+        "Natural; narrow — penicillin'e benzer, artmış gram-negative aktivite",
+        "Semisynthetic; MRSA dahil broad-spectrum",
+        "Synthetic; yalnızca gram-negative",
+        "Natural; yalnızca mantarlara etkili"
       ],
-      "answer": "Doğal; dar spektrum — penisiline benzer, artmış gram-negatif aktivite",
-      "explanation": "Sefalosporinler — sefalosporin C — doğal — dar: penisiline benzer, artmış gram-negatif aktivite.",
+      "answer": "Natural; narrow — penicillin'e benzer, artmış gram-negative aktivite",
+      "explanation": "Cephalosporins — cephalosporin C — natural — narrow: penicillin'e benzer, artmış gram-negative aktivite.",
       "source": "Slayt 12 · tablo"
     },
     {
+      "id": "q56",
       "type": "mcq",
-      "question": "Tabloya göre basitrasinin hedefi/mekanizması hangisidir?",
+      "question": "Tabloya göre bacitracin'in hedefi/mekanizması hangisidir?",
       "options": [
-        "Peptidoglikan alt birimlerinin sitoplazmik membrandan taşınmasını bloke eder",
+        "Peptidoglycan alt birimlerinin cytoplasmic membrane'dan taşınmasını bloke eder",
         "D-Ala-D-Ala uçlarına bağlanır",
-        "Hücre duvarı çapraz bağlanmasını inhibe eder",
-        "RNA polimerazı bloke eder"
+        "Cell wall cross-linking'i inhibe eder",
+        "RNA polymerase'ı bloke eder"
       ],
-      "answer": "Peptidoglikan alt birimlerinin sitoplazmik membrandan taşınmasını bloke eder",
-      "explanation": "Basitrasin — peptidoglikan alt birimlerinin sitoplazmik membrandan taşınmasını bloke eder (block transport of peptidoglycan subunits) — doğal — geniş spektrum: gram-pozitif ve gram-negatif bakteriler (slayttaki tabloya göre).",
+      "answer": "Peptidoglycan alt birimlerinin cytoplasmic membrane'dan taşınmasını bloke eder",
+      "explanation": "Bacitracin — block transport of peptidoglycan subunits across the cytoplasmic membrane — natural — broad spectrum: gram-positive ve gram-negative bakteriler (slayttaki tabloya göre).",
       "source": "Slayt 12 · ikinci tablo"
     },
     {
+      "id": "q57",
       "type": "mcq",
-      "question": "Slayt 12'deki hücre duvarı ilaçları listesinde “antifungal aktivite” ile işaretlenen ilaç hangisidir?",
-      "options": ["Griseofulvin", "Sikloserin", "Karbenisilin", "Oksasilin"],
+      "question": "Slayt 12'deki cell wall ilaçları listesinde “antifungal activity” ile işaretlenen ilaç hangisidir?",
+      "options": ["Griseofulvin", "Cycloserine", "Carbenicillin", "Oxacillin"],
       "answer": "Griseofulvin",
-      "explanation": "Liste: penisilin, oksasilin, ampisilin, sefalosporin, karbenisilin, vankomisin, metisilin, basitrasin, sikloserin, griseofulvin *antifungal aktivite (antifungal activity).",
+      "explanation": "Liste: penicillin, oxacillin, ampicillin, cephalosporine, carbenicillin, vancomycin, methicillin, bacitracin, cycloserine, griseofulvin *antifungal activity.",
       "source": "Slayt 12 · ilaç listesi"
     },
     {
+      "id": "q58",
       "type": "mcq",
-      "question": "Polimiksinler için hangisi doğrudur?",
+      "question": "Polymyxins için hangisi doğrudur?",
       "options": [
-        "1947'de Bacillus polymyxa ürünü olarak keşfedilen doğal polipeptid antibiyotiklerdir; klinikte yalnızca polimiksin B ve polimiksin E (kolistin) kullanılır",
-        "Streptomyces roseosporus'tan elde edilen siklik lipopeptidlerdir",
-        "Gram-pozitif bakterilerin peptidoglikanını hedeflerler",
-        "Seçici toksisiteye mükemmel bir örnektirler"
+        "1947'de Bacillus polymyxa ürünü olarak keşfedilen natural polypeptide antibiotics'tir; klinikte yalnızca polymyxin B ve polymyxin E (colistin) kullanılır",
+        "Streptomyces roseosporus'tan elde edilen cyclic lipopeptide'lerdir",
+        "Gram-positive bakterilerin peptidoglycan'ını hedeflerler",
+        "Selective toxicity'ye mükemmel bir örnektirler"
       ],
-      "answer": "1947'de Bacillus polymyxa ürünü olarak keşfedilen doğal polipeptid antibiyotiklerdir; klinikte yalnızca polimiksin B ve polimiksin E (kolistin) kullanılır",
-      "explanation": "Polimiksinler (polymyxins), ilk kez 1947'de Bacillus polymyxa ürünleri olarak keşfedilen doğal polipeptid antibiyotiklerdir; klinikte yalnızca polimiksin B ve polimiksin E (kolistin, colistin) kullanılmıştır.",
+      "answer": "1947'de Bacillus polymyxa ürünü olarak keşfedilen natural polypeptide antibiotics'tir; klinikte yalnızca polymyxin B ve polymyxin E (colistin) kullanılır",
+      "explanation": "Polymyxins, ilk kez 1947'de Bacillus polymyxa ürünleri olarak keşfedilen natural polypeptide antibiotics'tir; klinikte yalnızca polymyxin B ve polymyxin E (colistin) kullanılmıştır.",
       "source": "Slayt 13 (kalın)"
     },
     {
+      "id": "q59",
       "type": "mcq",
-      "question": "Polimiksinler hangi yapıyla etkileşerek etki gösterir?",
+      "question": "Polymyxins hangi yapıyla etkileşerek etki gösterir?",
       "options": [
-        "Gram-negatif bakterilerin dış membranındaki lipopolisakkarit (LPS)",
-        "Gram-pozitif bakterilerin teikoik asitleri",
-        "Ribozomun 50S alt birimi",
-        "DNA giraz"
+        "Gram-negative bakterilerin outer membrane'ındaki lipopolysaccharide (LPS)",
+        "Gram-positive bakterilerin teichoic acid'leri",
+        "Ribozomun 50S subunit'i",
+        "DNA gyrase"
       ],
-      "answer": "Gram-negatif bakterilerin dış membranındaki lipopolisakkarit (LPS)",
-      "explanation": "Lipofilik ve deterjan benzeri özelliklere sahiptirler; gram-negatif bakterilerin dış membranındaki lipopolisakkarit (lipopolysaccharide, LPS) bileşeniyle etkileşir, sonunda hem dış hem iç membranı bozarlar.",
+      "answer": "Gram-negative bakterilerin outer membrane'ındaki lipopolysaccharide (LPS)",
+      "explanation": "Lipophilic ve detergent-like özelliklere sahiptirler; gram-negative bakterilerin outer membrane'ındaki lipopolysaccharide bileşeniyle etkileşir, sonunda hem outer hem inner membrane'ı bozarlar.",
       "source": "Slayt 13"
     },
     {
+      "id": "q60",
       "type": "mcq",
-      "question": "Polimiksinler sistemik kullanıldığında hangi organların hücre membranlarına zarar verebilir?",
+      "question": "Polymyxins sistemik kullanıldığında hangi organların hücre membranlarına zarar verebilir?",
       "options": ["Böbrek ve sinir sistemi", "Karaciğer ve kemik iliği", "Kulak ve diş", "Deri ve kas"],
       "answer": "Böbrek ve sinir sistemi",
-      "explanation": "Membranı hedefleyen bu mekanizma seçici toksisite değildir (not a selective toxicity); bu ilaçlar sistemik verildiğinde böbrek ve sinir sistemi hücrelerinin membranına da zarar verir.",
+      "explanation": "Membranı hedefleyen bu mekanizma selective toxicity değildir; bu ilaçlar sistemik verildiğinde böbrek ve sinir sistemi hücrelerinin membranına da zarar verir.",
       "source": "Slayt 13"
     },
     {
+      "id": "q61",
       "type": "mcq",
-      "question": "Polimiksin B neden reçetesiz topikal antibiyotik merhemlerinde (örn. Neosporin) kullanılır?",
+      "question": "Polymyxin B neden over-the-counter topical antibiotic merhemlerinde (örn. Neosporin) kullanılır?",
       "options": [
         "Ciddi yan etkileri ve sindirim kanalından zayıf emilimi nedeniyle",
-        "Yalnızca gram-pozitiflere etkili olduğu için",
+        "Yalnızca gram-positive'lere etkili olduğu için",
         "Ağızdan alındığında çok iyi emildiği için",
         "Hiç yan etkisi olmadığı için"
       ],
       "answer": "Ciddi yan etkileri ve sindirim kanalından zayıf emilimi nedeniyle",
-      "explanation": "Bu ciddi yan etkiler ve sindirim kanalından zayıf emilim nedeniyle polimiksin B reçetesiz (over-the-counter) topikal antibiyotik merhemlerinde (örn. Neosporin) kullanılır.",
+      "explanation": "Bu ciddi yan etkiler ve sindirim kanalından zayıf emilim (poor absorption) nedeniyle polymyxin B over-the-counter topical antibiotic merhemlerinde (örn. Neosporin) kullanılır.",
       "source": "Slayt 13"
     },
     {
+      "id": "q62",
       "type": "mcq",
-      "question": "Daptomisin için hangisi doğrudur?",
+      "question": "Daptomycin için hangisi doğrudur?",
       "options": [
-        "Streptomyces roseosporus'un ürettiği siklik lipopeptiddir; polimiksinlerden farklı olarak gram-pozitifleri hedefler",
-        "Bacillus polymyxa'nın ürettiği polipeptiddir; yalnızca gram-negatifleri hedefler",
-        "30S alt birimine bağlanan bir aminoglikoziddir",
-        "Ağızdan alınan bir bağırsak dekontaminasyon ilacıdır"
+        "Streptomyces roseosporus'un ürettiği cyclic lipopeptide'dir; polymyxins'ten farklı olarak gram-positive'leri hedefler",
+        "Bacillus polymyxa'nın ürettiği polypeptide'dir; yalnızca gram-negative'leri hedefler",
+        "30S subunit'e bağlanan bir aminoglycoside'dir",
+        "Ağızdan alınan bir bowel decontamination ilacıdır"
       ],
-      "answer": "Streptomyces roseosporus'un ürettiği siklik lipopeptiddir; polimiksinlerden farklı olarak gram-pozitifleri hedefler",
-      "explanation": "Daptomisin, Streptomyces roseosporus'un ürettiği siklik lipopeptiddir (cyclic lipopeptide); bakteri hücre membranına girip onu bozar. Yalnızca gram-negatiflere etkili polimiksin B ve kolistinin aksine özellikle gram-pozitifleri hedefler. Genellikle IV verilir; iskelet kasında geri dönüşümlü toksisite.",
+      "answer": "Streptomyces roseosporus'un ürettiği cyclic lipopeptide'dir; polymyxins'ten farklı olarak gram-positive'leri hedefler",
+      "explanation": "Daptomycin, Streptomyces roseosporus'un ürettiği cyclic lipopeptide'dir; bakteri hücre membranına girip onu bozar. Yalnızca gram-negative'lere etkili polymyxin B ve colistin'in aksine özellikle gram-positive'leri hedefler. Genellikle IV verilir; skeletal muscle'da reversible toxicity.",
       "source": "Slayt 14 (kalın)"
     },
     {
+      "id": "q63",
       "type": "mcq",
-      "question": "Daptomisin için slaytta belirtilen geri dönüşümlü toksisite hangi dokudadır?",
-      "options": ["İskelet kası", "Böbrek", "Kulak", "Karaciğer"],
-      "answer": "İskelet kası",
-      "explanation": "Genellikle intravenöz verilir ve iyi tolere ediliyor görünür; iskelet kaslarında geri dönüşümlü toksisite (reversible toxicity) gösterir.",
+      "question": "Daptomycin için slaytta belirtilen reversible toxicity hangi dokudadır?",
+      "options": ["Skeletal muscle (iskelet kası)", "Böbrek", "Kulak", "Karaciğer"],
+      "answer": "Skeletal muscle (iskelet kası)",
+      "explanation": "Genellikle intravenous verilir ve iyi tolere ediliyor görünür; skeletal muscle'da reversible toxicity gösterir.",
       "source": "Slayt 14"
     },
     {
+      "id": "q64",
       "type": "mcq",
-      "question": "Tabloya göre polimiksin E (kolistin) ORAL formunun klinik kullanımı nedir?",
+      "question": "Tabloya göre polymyxin E (colistin) ORAL formunun klinik kullanımı nedir?",
       "options": [
-        "Seçilmiş yüksek riskli hastalarda veya invaziv işlemler öncesinde oral bağırsak dekontaminasyonu",
-        "Yaralarda enfeksiyonu önlemek için topikal preparatlar",
-        "Çoklu ilaca dirençli patojenlerin ciddi sistemik enfeksiyonları",
-        "MRSA bakteriyemisi"
+        "Seçilmiş high-risk hastalarda veya invasive procedure öncesinde oral bowel decontamination",
+        "Yaralarda enfeksiyonu önlemek için topical preparatlar",
+        "Multidrug-resistant patojenlerin ciddi sistemik enfeksiyonları",
+        "MRSA bacteremia"
       ],
-      "answer": "Seçilmiş yüksek riskli hastalarda veya invaziv işlemler öncesinde oral bağırsak dekontaminasyonu",
-      "explanation": "Polimiksin B: topikal (yaralar) · Kolistin oral: seçilmiş yüksek riskli hastalarda veya invaziv işlemler öncesinde oral bağırsak dekontaminasyonu (bowel decontamination) · Kolistin IV: çoklu ilaca dirençli patojenlerin ciddi sistemik enfeksiyonları · Daptomisin: MRSA dahil gram-pozitiflerin komplike deri/deri yapısı enfeksiyonları ve bakteriyemi.",
+      "answer": "Seçilmiş high-risk hastalarda veya invasive procedure öncesinde oral bowel decontamination",
+      "explanation": "Polymyxin B: topical (yaralar) · Colistin oral: seçilmiş high-risk hastalarda veya invasive procedure öncesinde oral bowel decontamination · Colistin IV: multidrug-resistant patojenlerin ciddi sistemik enfeksiyonları · Daptomycin: MRSA dahil gram-positive'lerin complicated skin/skin-structure infections ve bacteremia.",
       "source": "Slayt 14 · tablo"
     },
     {
+      "id": "q65",
       "type": "mcq",
-      "question": "Tabloya göre daptomisinin klinik kullanımı nedir?",
+      "question": "Tabloya göre daptomycin'in klinik kullanımı nedir?",
       "options": [
-        "MRSA dahil gram-pozitif patojenlerin neden olduğu komplike deri/deri yapısı enfeksiyonları ve bakteriyemi",
-        "Oral bağırsak dekontaminasyonu",
-        "Yaralar için topikal preparatlar",
-        "Tüberküloz kombinasyon tedavisi"
+        "MRSA dahil gram-positive patojenlerin neden olduğu complicated skin/skin-structure infections ve bacteremia",
+        "Oral bowel decontamination",
+        "Yaralar için topical preparatlar",
+        "Tuberculosis combination therapy"
       ],
-      "answer": "MRSA dahil gram-pozitif patojenlerin neden olduğu komplike deri/deri yapısı enfeksiyonları ve bakteriyemi",
-      "explanation": "Daptomisin — lipopeptid — sitoplazmik membrana girip onu bozar ve hücreyi öldürür — dar: çoklu ilaca dirençli suşlar dahil gram-pozitifler — MRSA dahil komplike deri ve deri yapısı enfeksiyonları ile bakteriyemi.",
+      "answer": "MRSA dahil gram-positive patojenlerin neden olduğu complicated skin/skin-structure infections ve bacteremia",
+      "explanation": "Daptomycin — lipopeptide — cytoplasmic membrane'a girip onu bozar ve hücreyi öldürür — narrow: multidrug-resistant suşlar dahil gram-positive'ler — MRSA dahil complicated skin and skin-structure infections ve bacteremia.",
       "source": "Slayt 14 · tablo"
     },
     {
+      "id": "q66",
       "type": "mcq",
-      "question": "Slayt 14'teki membran fonksiyonu inhibitörleri listesinde “antifungal aktivite” ile işaretlenenler hangileridir?",
-      "options": ["Nistatin ve amfoterisin B", "Polimiksin ve gramisidin", "Gramisidin ve tirozidin", "Polimiksin ve tirozidin"],
-      "answer": "Nistatin ve amfoterisin B",
-      "explanation": "Liste: polimiksin, gramisidin, tirozidin, nistatin *antifungal aktivite, amfoterisin B *antifungal aktivite.",
+      "question": "Slayt 14'teki membrane function inhibitörleri listesinde “antifungal activity” ile işaretlenenler hangileridir?",
+      "options": ["Nystatin ve amphotericin B", "Polymyxin ve gramicidin", "Gramicidin ve tyrocidine", "Polymyxin ve tyrocidine"],
+      "answer": "Nystatin ve amphotericin B",
+      "explanation": "Liste: polymyxin, gramicidin, tyrocidine, nystatin *antifungal activity, amphotericin B *antifungal activity.",
       "source": "Slayt 14 · ilaç listesi"
     },
     {
+      "id": "q67",
       "type": "mcq",
-      "question": "Protein sentezinin antibakteriyel ilaçlar için iyi bir seçici hedef olmasının nedeni nedir?",
+      "question": "Protein synthesis'in antibacterial ilaçlar için iyi bir selective target olmasının nedeni nedir?",
       "options": [
-        "Hayvan hücrelerinin sitoplazmik ribozomları 80S, bakterilerinki 70S'dir ve yapısal olarak farklıdır",
+        "Hayvan hücrelerinin cytoplasmic ribosome'ları 80S, bakterilerinki 70S'tir ve yapısal olarak farklıdır",
         "Bakterilerde ribozom yoktur",
         "Hayvan hücreleri protein sentezlemez",
-        "Bakteri ribozomları 80S'dir"
+        "Bakteri ribozomları 80S'tir"
       ],
-      "answer": "Hayvan hücrelerinin sitoplazmik ribozomları 80S, bakterilerinki 70S'dir ve yapısal olarak farklıdır",
-      "explanation": "Hayvan hücrelerindeki sitoplazmik ribozomlar (80S), bakteri hücrelerindekilerden (70S) yapısal olarak farklıdır; bu da protein biyosentezini iyi bir seçici hedef yapar.",
+      "answer": "Hayvan hücrelerinin cytoplasmic ribosome'ları 80S, bakterilerinki 70S'tir ve yapısal olarak farklıdır",
+      "explanation": "Hayvan hücrelerindeki cytoplasmic ribosome'lar (80S), bakteri hücrelerindekilerden (70S) yapısal olarak farklıdır; bu da protein biosynthesis'i iyi bir selective target yapar.",
       "source": "Slayt 15"
     },
     {
+      "id": "q68",
       "type": "mcq",
-      "question": "Aminoglikozidlerin etki mekanizması hangisidir?",
+      "question": "Aminoglycosides'in etki mekanizması hangisidir?",
       "options": [
-        "30S alt birimine bağlanıp ribozomun düzeltme okuması (proofreading) yeteneğini bozar; yanlış/kısalmış proteinler membrana girip hücreyi öldürür",
-        "30S'e bağlanıp tRNA'nın ribozoma bağlanmasını engeller; bakteriyostatiktir",
-        "50S'e bağlanıp peptid bağı oluşumunu engeller",
-        "RNA polimerazı bloke eder"
+        "30S subunit'e bağlanıp ribozomun proofreading yeteneğini bozar; yanlış/kısalmış proteinler membrana girip hücreyi öldürür",
+        "30S'e bağlanıp tRNA'nın ribozoma bağlanmasını engeller; bacteriostatic'tir",
+        "50S'e bağlanıp peptide bond formation'ı engeller",
+        "RNA polymerase'ı bloke eder"
       ],
-      "answer": "30S alt birimine bağlanıp ribozomun düzeltme okuması (proofreading) yeteneğini bozar; yanlış/kısalmış proteinler membrana girip hücreyi öldürür",
-      "explanation": "Aminoglikozidler büyük, oldukça polar ilaçlardır; 30S alt birimine bağlanıp düzeltme okumasını (proofreading) bozarlar → kodon–antikodon uyumsuzlukları → yanlış ve kısalmış proteinler sitoplazmik membrana girer → membranın bozulması hücreyi öldürür.",
+      "answer": "30S subunit'e bağlanıp ribozomun proofreading yeteneğini bozar; yanlış/kısalmış proteinler membrana girip hücreyi öldürür",
+      "explanation": "Aminoglycosides büyük, highly polar ilaçlardır; 30S subunit'e bağlanıp proofreading'i (düzeltme okuması) bozarlar → codon–anticodon mismatch → yanlış ve kısalmış proteinler cytoplasmic membrane'a girer → membranın bozulması hücreyi öldürür.",
       "source": "Slayt 15"
     },
     {
+      "id": "q69",
       "type": "mcq",
-      "question": "Slaytta aminoglikozid örneği olarak (kalın) verilen ilaçlar hangileridir?",
+      "question": "Slaytta aminoglycoside örneği olarak (kalın) verilen ilaçlar hangileridir?",
       "options": [
-        "Streptomisin, gentamisin, neomisin, kanamisin",
-        "Eritromisin, azitromisin, telitromisin",
-        "Linkomisin, klindamisin",
-        "Siprofloksasin, ofloksasin, moksifloksasin"
+        "Streptomycin, gentamicin, neomycin, kanamycin",
+        "Erythromycin, azithromycin, telithromycin",
+        "Lincomycin, clindamycin",
+        "Ciprofloxacin, ofloxacin, moxifloxacin"
       ],
-      "answer": "Streptomisin, gentamisin, neomisin, kanamisin",
-      "explanation": "Bunlar arasında streptomisin, gentamisin, neomisin ve kanamisin gibi ilaçlar bulunur — güçlü, geniş spektrumlu antibakteriyeller.",
+      "answer": "Streptomycin, gentamicin, neomycin, kanamycin",
+      "explanation": "Bunlar arasında streptomycin, gentamicin, neomycin ve kanamycin gibi ilaçlar bulunur — potent, broad-spectrum antibacterials.",
       "source": "Slayt 15 (kalın)"
     },
     {
+      "id": "q70",
       "type": "mcq",
-      "question": "Aminoglikozidlerin slaytta belirtilen toksisiteleri hangileridir?",
+      "question": "Aminoglycosides'in slaytta belirtilen toksisiteleri hangileridir?",
       "options": [
-        "Nefrotoksik, nörotoksik ve ototoksik",
-        "Fototoksisite ve dişlerde renk değişikliği",
-        "Gri bebek sendromu ve kemik iliği baskılanması",
-        "Hepatotoksisite"
+        "Nephrotoxic, neurotoxic ve ototoxic",
+        "Phototoxicity ve dişlerde renk değişikliği",
+        "Gray baby syndrome ve bone marrow suppression",
+        "Hepatotoxicity"
       ],
-      "answer": "Nefrotoksik, nörotoksik ve ototoksik",
-      "explanation": "Aminoglikozidlerin nefrotoksik (böbrek; nephrotoxic), nörotoksik (sinir sistemi; neurotoxic) ve ototoksik (kulak; ototoxic) olduğu gösterilmiştir.",
+      "answer": "Nephrotoxic, neurotoxic ve ototoxic",
+      "explanation": "Aminoglycosides'in nephrotoxic (böbrek), neurotoxic (sinir sistemi) ve ototoxic (kulak) olduğu gösterilmiştir.",
       "source": "Slayt 15"
     },
     {
+      "id": "q71",
       "type": "mcq",
-      "question": "Tetrasiklinler için hangisi doğrudur?",
+      "question": "Tetracyclines için hangisi doğrudur?",
       "options": [
-        "30S'e bağlanır, bakteriyostatiktir ve tRNA'ların ribozomla birleşmesini engeller",
-        "30S'e bağlanır, bakterisidaldir ve düzeltme okumasını bozar",
-        "50S'e bağlanır ve peptid bağı oluşumunu engeller",
-        "Hücre duvarı sentezini inhibe eder"
+        "30S'e bağlanır, bacteriostatic'tir ve tRNA'ların ribozomla birleşmesini engeller",
+        "30S'e bağlanır, bactericidal'dir ve proofreading'i bozar",
+        "50S'e bağlanır ve peptide bond formation'ı engeller",
+        "Cell wall synthesis'i inhibe eder"
       ],
-      "answer": "30S'e bağlanır, bakteriyostatiktir ve tRNA'ların ribozomla birleşmesini engeller",
-      "explanation": "Tetrasiklinler (tetracyclines) 30S alt birimine bağlanır. Aminoglikozidlerin aksine bakteriyostatiktirler ve tRNA'ların ribozomla birleşmesini engelleyerek protein sentezini inhibe ederler; geniş spektrum.",
+      "answer": "30S'e bağlanır, bacteriostatic'tir ve tRNA'ların ribozomla birleşmesini engeller",
+      "explanation": "Tetracyclines 30S subunit'e bağlanır. Aminoglycosides'in aksine bacteriostatic'tirler ve tRNA'ların ribozomla birleşmesini engelleyerek protein synthesis'i inhibe ederler; broad-spectrum.",
       "source": "Slayt 15 (kalın)"
     },
     {
+      "id": "q72",
       "type": "mcq",
-      "question": "Tetrasiklinlerin kullanımını sınırlayan yan etkiler hangileridir?",
+      "question": "Tetracyclines'in kullanımını sınırlayan yan etkiler hangileridir?",
       "options": [
-        "Fototoksisite, gelişen dişlerde kalıcı renk değişikliği, yüksek doz veya böbrek yetmezliğinde karaciğer toksisitesi",
-        "Nefrotoksisite, nörotoksisite, ototoksisite",
-        "Gri bebek sendromu ve kemik iliği baskılanması",
-        "İskelet kasında geri dönüşümlü toksisite"
+        "Phototoxicity, gelişen dişlerde kalıcı renk değişikliği, yüksek doz veya böbrek yetmezliğinde liver toxicity",
+        "Nephrotoxicity, neurotoxicity, ototoxicity",
+        "Gray baby syndrome ve bone marrow suppression",
+        "Skeletal muscle'da reversible toxicity"
       ],
-      "answer": "Fototoksisite, gelişen dişlerde kalıcı renk değişikliği, yüksek doz veya böbrek yetmezliğinde karaciğer toksisitesi",
-      "explanation": "Kullanımlarını sınırlayabilen yan etkiler: fototoksisite (phototoxicity), gelişen dişlerde kalıcı renk değişikliği ve yüksek dozlarda ya da böbrek yetmezliği olan hastalarda karaciğer toksisitesi.",
+      "answer": "Phototoxicity, gelişen dişlerde kalıcı renk değişikliği, yüksek doz veya böbrek yetmezliğinde liver toxicity",
+      "explanation": "Kullanımlarını sınırlayabilen yan etkiler: phototoxicity, gelişen dişlerde kalıcı renk değişikliği (permanent discoloration of developing teeth) ve yüksek dozlarda ya da böbrek yetmezliği olan hastalarda liver toxicity.",
       "source": "Slayt 15"
     },
     {
+      "id": "q73",
       "type": "mcq",
-      "question": "Makrolidler için hangisi doğrudur?",
+      "question": "Macrolides için hangisi doğrudur?",
       "options": [
-        "Geniş spektrumlu, bakteriyostatik; 50S'e bağlanıp peptid bağı oluşumunu inhibe ederek uzamayı bloke eder",
-        "Dar spektrumlu, bakterisidal; 30S'e bağlanır",
-        "Hücre duvarı sentezini inhibe eder",
-        "DNA girazı inhibe eder"
+        "Broad-spectrum, bacteriostatic; 50S'e bağlanıp peptide bond formation'ı inhibe ederek elongation'ı bloke eder",
+        "Narrow-spectrum, bactericidal; 30S'e bağlanır",
+        "Cell wall synthesis'i inhibe eder",
+        "DNA gyrase'ı inhibe eder"
       ],
-      "answer": "Geniş spektrumlu, bakteriyostatik; 50S'e bağlanıp peptid bağı oluşumunu inhibe ederek uzamayı bloke eder",
-      "explanation": "Makrolidler (macrolides) geniş spektrumlu, bakteriyostatik ilaçlardır; belirli amino asit kombinasyonları arasındaki peptid bağı oluşumunu inhibe ederek protein uzamasını (elongation) bloke ederler.",
+      "answer": "Broad-spectrum, bacteriostatic; 50S'e bağlanıp peptide bond formation'ı inhibe ederek elongation'ı bloke eder",
+      "explanation": "Macrolides broad-spectrum, bacteriostatic ilaçlardır; belirli amino asit kombinasyonları arasındaki peptide bond formation'ı inhibe ederek protein elongation'ını bloke ederler.",
       "source": "Slayt 16"
     },
     {
+      "id": "q74",
       "type": "mcq",
-      "question": "İlk makrolid hangisidir?",
-      "options": ["Eritromisin", "Azitromisin", "Telitromisin", "Klindamisin"],
-      "answer": "Eritromisin",
-      "explanation": "İlk makrolid eritromisindir (erythromycin). Yarı sentetik makrolidler arasında azitromisin ve telitromisin bulunur.",
+      "question": "İlk macrolide hangisidir?",
+      "options": ["Erythromycin", "Azithromycin", "Telithromycin", "Clindamycin"],
+      "answer": "Erythromycin",
+      "explanation": "İlk macrolide erythromycin'dir. Semisynthetic macrolides arasında azithromycin ve telithromycin bulunur.",
       "source": "Slayt 16 (kalın)"
     },
     {
+      "id": "q75",
       "type": "mcq",
-      "question": "Slayta göre eritromisin ve azitromisinin yarılanma ömürleri hangisidir?",
+      "question": "Slayta göre erythromycin ve azithromycin'in half-life'ları hangisidir?",
       "options": [
-        "Eritromisin 1.5 saat; azitromisin 68 saat",
-        "Eritromisin 68 saat; azitromisin 1.5 saat",
-        "Eritromisin 20 saat; azitromisin 20 gün",
+        "Erythromycin 1.5 saat; azithromycin 68 saat",
+        "Erythromycin 68 saat; azithromycin 1.5 saat",
+        "Erythromycin 20 saat; azithromycin 20 gün",
         "İkisi de 24 saat"
       ],
-      "answer": "Eritromisin 1.5 saat; azitromisin 68 saat",
-      "explanation": "Azitromisinin spektrumu daha geniş, yan etkileri daha azdır ve yarılanma ömrü belirgin şekilde daha uzundur (eritromisin 1.5 saat, azitromisin 68 saat) → günde tek doz ve kısa, 3 günlük tedavi.",
+      "answer": "Erythromycin 1.5 saat; azithromycin 68 saat",
+      "explanation": "Azithromycin'in spektrumu daha geniş, yan etkileri daha azdır ve half-life'ı belirgin şekilde daha uzundur (erythromycin 1.5 saat, azithromycin 68 saat) → günde tek doz ve kısa, 3 günlük tedavi.",
       "source": "Slayt 16"
     },
     {
+      "id": "q76",
       "type": "mcq",
-      "question": "Aşağıdakilerden hangisi azitromisinin eritromisine göre avantajlarından biri DEĞİLDİR?",
+      "question": "Aşağıdakilerden hangisi azithromycin'in erythromycin'e göre avantajlarından biri DEĞİLDİR?",
       "options": [
-        "Daha kısa yarılanma ömrü",
+        "Daha kısa half-life",
         "Daha geniş spektrum",
         "Daha az yan etki",
         "Günde tek doz ve kısa (3 günlük) tedavi"
       ],
-      "answer": "Daha kısa yarılanma ömrü",
-      "explanation": "Azitromisinin yarılanma ömrü daha UZUNDUR (68 saat vs 1.5 saat); bu da günde tek doz ve 3 günlük tedaviye olanak sağlar.",
+      "answer": "Daha kısa half-life",
+      "explanation": "Azithromycin'in half-life'ı daha UZUNDUR (68 saat vs 1.5 saat); bu da günde tek doz ve 3 günlük tedaviye olanak sağlar.",
       "source": "Slayt 16"
     },
     {
+      "id": "q77",
       "type": "mcq",
-      "question": "Makrolide dirençli patojenlere karşı kullanılan ancak ciddi şekilde hepatotoksik olan yarı sentetik ilaç hangisidir?",
-      "options": ["Telitromisin", "Azitromisin", "Eritromisin", "Linkomisin"],
-      "answer": "Telitromisin",
-      "explanation": "Yarı sentetik telitromisin makrolide dirençli patojenlere karşı etkilidir ancak ciddi şekilde hepatotoksiktir (seriously hepatotoxic).",
+      "question": "Macrolide-resistant patojenlere karşı kullanılan ancak seriously hepatotoxic olan semisynthetic ilaç hangisidir?",
+      "options": ["Telithromycin", "Azithromycin", "Erythromycin", "Lincomycin"],
+      "answer": "Telithromycin",
+      "explanation": "Semisynthetic telithromycin macrolide-resistant patojenlere karşı etkilidir ancak seriously hepatotoxic'tir.",
       "source": "Slayt 16 (kalın)"
     },
     {
+      "id": "q78",
       "type": "mcq",
-      "question": "Linkozamidler için hangisi doğrudur?",
+      "question": "Lincosamides için hangisi doğrudur?",
       "options": [
-        "Doğal linkomisin ve yarı sentetik klindamisini içerir; 50S'e bağlanır; özellikle streptokok ve stafilokok enfeksiyonlarına etkilidir",
-        "Doğal klindamisin ve yarı sentetik linkomisini içerir; 30S'e bağlanır",
-        "Yalnızca gram-negatiflere etkilidir",
-        "DNA replikasyonunu engeller"
+        "Natural lincomycin ve semisynthetic clindamycin'i içerir; 50S'e bağlanır; özellikle streptococcal ve staphylococcal enfeksiyonlara etkilidir",
+        "Natural clindamycin ve semisynthetic lincomycin'i içerir; 30S'e bağlanır",
+        "Yalnızca gram-negative'lere etkilidir",
+        "DNA replication'ı engeller"
       ],
-      "answer": "Doğal linkomisin ve yarı sentetik klindamisini içerir; 50S'e bağlanır; özellikle streptokok ve stafilokok enfeksiyonlarına etkilidir",
-      "explanation": "Linkozamidler (lincosamides) doğal olarak üretilen linkomisini ve yarı sentetik klindamisini içerir. 50S alt birimine bağlanıp peptid bağı oluşumunu engellerler; özellikle streptokok ve stafilokok enfeksiyonlarına etkilidirler.",
+      "answer": "Natural lincomycin ve semisynthetic clindamycin'i içerir; 50S'e bağlanır; özellikle streptococcal ve staphylococcal enfeksiyonlara etkilidir",
+      "explanation": "Lincosamides doğal olarak üretilen lincomycin'i ve semisynthetic clindamycin'i içerir. 50S subunit'e bağlanıp peptide bond formation'ı engellerler; özellikle streptococcal ve staphylococcal enfeksiyonlara etkilidirler.",
       "source": "Slayt 16 (kalın)"
     },
     {
+      "id": "q79",
       "type": "mcq",
-      "question": "Sentetik olarak seri üretilen ilk antibakteriyel ilaç hangisidir?",
-      "options": ["Kloramfenikol", "Penisilin", "Eritromisin", "Streptomisin"],
-      "answer": "Kloramfenikol",
-      "explanation": "Kloramfenikol 50S ribozoma bağlanıp peptid bağı oluşumunu inhibe eder; sentetik olarak seri üretilen (synthetically mass produced) ilk antibakteriyel ilaçtır.",
+      "question": "Synthetically mass produced ilk antibacterial ilaç hangisidir?",
+      "options": ["Chloramphenicol", "Penicillin", "Erythromycin", "Streptomycin"],
+      "answer": "Chloramphenicol",
+      "explanation": "Chloramphenicol 50S ribozoma bağlanıp peptide bond formation'ı inhibe eder; synthetically mass produced ilk antibacterial ilaçtır.",
       "source": "Slayt 16 (kalın)"
     },
     {
+      "id": "q80",
       "type": "mcq",
-      "question": "Kloramfenikolün klinik rolünü sınırlayan ciddi yan etkiler hangileridir?",
+      "question": "Chloramphenicol'ün klinik rolünü sınırlayan ciddi yan etkiler hangileridir?",
       "options": [
-        "Ölümcül gri bebek sendromu (gray baby syndrome) ve kemik iliği baskılanması",
-        "Nefrotoksisite ve ototoksisite",
-        "Dişlerde renk değişikliği ve fototoksisite",
-        "İskelet kasında geri dönüşümlü toksisite"
+        "Lethal gray baby syndrome ve bone marrow suppression",
+        "Nephrotoxicity ve ototoxicity",
+        "Dişlerde renk değişikliği ve phototoxicity",
+        "Skeletal muscle'da reversible toxicity"
       ],
-      "answer": "Ölümcül gri bebek sendromu (gray baby syndrome) ve kemik iliği baskılanması",
-      "explanation": "Ölümcül gri bebek sendromu (gray baby syndrome) ve kemik iliği üretiminin baskılanması gibi ciddi yan etkiler klinik rolünü sınırlamıştır. Tarihsel olarak menenjit, tifo ve konjonktivitte kullanıldı.",
+      "answer": "Lethal gray baby syndrome ve bone marrow suppression",
+      "explanation": "Lethal gray baby syndrome ve bone marrow üretiminin baskılanması (suppression of bone marrow production) gibi ciddi yan etkiler klinik rolünü sınırlamıştır. Tarihsel olarak meningitis, typhoid ve conjunctivitis'te kullanıldı.",
       "source": "Slayt 16"
     },
     {
+      "id": "q81",
       "type": "mcq",
-      "question": "Oksazolidinonlar (örn. linezolid) için hangisi doğrudur?",
+      "question": "Oxazolidinones (örn. linezolid) için hangisi doğrudur?",
       "options": [
-        "Sentetik, geniş spektrumlu; 50S'e bağlanır, başlatma kompleksinin oluşumunu ve A bölgesinden P bölgesine translokasyonu engeller",
-        "Doğal; 30S'e bağlanır ve düzeltme okumasını bozar",
-        "Yalnızca gram-negatiflere etkili bir hücre duvarı inhibitörüdür",
-        "RNA polimerazı bloke eder"
+        "Synthetic, broad-spectrum; 50S'e bağlanır, initiation complex oluşumunu ve A site'tan P site'a translocation'ı engeller",
+        "Natural; 30S'e bağlanır ve proofreading'i bozar",
+        "Yalnızca gram-negative'lere etkili bir cell wall inhibitörüdür",
+        "RNA polymerase'ı bloke eder"
       ],
-      "answer": "Sentetik, geniş spektrumlu; 50S'e bağlanır, başlatma kompleksinin oluşumunu ve A bölgesinden P bölgesine translokasyonu engeller",
-      "explanation": "Linezolid dahil oksazolidinonlar (oxazolidinones), yeni ve geniş spektrumlu sentetik protein sentezi inhibitörleri sınıfıdır; hem gram-pozitif hem gram-negatif bakterilerin 50S alt birimine bağlanırlar; başlatma kompleksinin (initiation complex) oluşumunu bozar ve A bölgesinden P bölgesine translokasyonu engellerler.",
+      "answer": "Synthetic, broad-spectrum; 50S'e bağlanır, initiation complex oluşumunu ve A site'tan P site'a translocation'ı engeller",
+      "explanation": "Linezolid dahil oxazolidinones, yeni ve broad-spectrum synthetic protein synthesis inhibitörleri sınıfıdır; hem gram-positive hem gram-negative bakterilerin 50S subunit'ine bağlanırlar; initiation complex oluşumunu bozar ve A site'tan P site'a translocation'ı engellerler.",
       "source": "Slayt 17 (kalın)"
     },
     {
+      "id": "q82",
       "type": "mcq",
-      "question": "Protein sentezi inhibitörleri özet kutusuna göre “50S'e bağlanır, peptid bağı oluşumunu engeller” grubu hangisidir?",
+      "question": "Protein synthesis inhibitörleri özet kutusuna göre “50S'e bağlanır, peptide bond formation'ı engeller” grubu hangisidir?",
       "options": [
-        "Kloramfenikol, makrolidler ve linkozamidler",
-        "Aminoglikozidler",
-        "Tetrasiklinler",
-        "Florokinolonlar"
+        "Chloramphenicol, macrolides ve lincosamides",
+        "Aminoglycosides",
+        "Tetracyclines",
+        "Fluoroquinolones"
       ],
-      "answer": "Kloramfenikol, makrolidler ve linkozamidler",
-      "explanation": "Kloramfenikol, makrolidler, linkozamidler: 50S'e bağlanır, peptid bağı oluşumunu engeller · Aminoglikozidler: 30S'e bağlanır, düzeltme okumasını bozar → hatalı proteinler · Tetrasiklinler: 30S'e bağlanır, tRNA bağlanmasını engeller.",
-      "source": "Slayt 17 · Protein sentezini inhibe eden başlıca antibakteriyel sınıflar"
+      "answer": "Chloramphenicol, macrolides ve lincosamides",
+      "explanation": "Chloramphenicol, macrolides, lincosamides: 50S'e bağlanır, peptide bond formation'ı engeller · Aminoglycosides: 30S'e bağlanır, proofreading bozulur → faulty proteins · Tetracyclines: 30S'e bağlanır, tRNA bağlanmasını engeller.",
+      "source": "Slayt 17 · Major classes of protein synthesis–inhibiting antibacterials"
     },
     {
+      "id": "q83",
       "type": "mcq",
-      "question": "Metronidazol için hangisi doğrudur?",
+      "question": "Metronidazole için hangisi doğrudur?",
       "options": [
-        "Nitroimidazol ailesinin yarı sentetik üyesidir, aynı zamanda antiprotozoaldir ve DNA replikasyonunu engeller",
-        "RNA polimerazı bloke eden bir rifamisindir",
-        "50S'e bağlanan bir makroliddir",
-        "Hücre duvarı sentezini inhibe eden bir β-laktamdır"
+        "Nitroimidazole ailesinin semisynthetic üyesidir, aynı zamanda antiprotozoan'dır ve DNA replication'ı engeller",
+        "RNA polymerase'ı bloke eden bir rifamycin'dir",
+        "50S'e bağlanan bir macrolide'dir",
+        "Cell wall synthesis'i inhibe eden bir β-lactam'dır"
       ],
-      "answer": "Nitroimidazol ailesinin yarı sentetik üyesidir, aynı zamanda antiprotozoaldir ve DNA replikasyonunu engeller",
-      "explanation": "Metronidazol, nitroimidazol ailesinin yarı sentetik bir üyesidir ve aynı zamanda antiprotozoaldir (antiprotozoan). Hedef hücrelerde DNA replikasyonunu engeller.",
+      "answer": "Nitroimidazole ailesinin semisynthetic üyesidir, aynı zamanda antiprotozoan'dır ve DNA replication'ı engeller",
+      "explanation": "Metronidazole, nitroimidazole ailesinin semisynthetic bir üyesidir ve aynı zamanda antiprotozoan'dır. Hedef hücrelerde DNA replication'ı engeller.",
       "source": "Slayt 18 (kalın)"
     },
     {
+      "id": "q84",
       "type": "mcq",
-      "question": "Rifampinin etki mekanizması nedir?",
+      "question": "Rifampin'in etki mekanizması nedir?",
       "options": [
-        "Bakteriyel RNA polimeraz aktivitesini bloke ederek transkripsiyonu durdurur",
-        "DNA girazı inhibe eder",
-        "30S alt birimine bağlanır",
-        "Mikolik asit sentezini inhibe eder"
+        "Bakteriyel RNA polymerase aktivitesini bloke ederek transcription'ı durdurur",
+        "DNA gyrase'ı inhibe eder",
+        "30S subunit'e bağlanır",
+        "Mycolic acid synthesis'i inhibe eder"
       ],
-      "answer": "Bakteriyel RNA polimeraz aktivitesini bloke ederek transkripsiyonu durdurur",
-      "explanation": "Rifampin, rifamisin ailesinin yarı sentetik bir üyesidir; bakterilerde RNA polimeraz aktivitesini bloke ederek çalışır. Bakteriyel RNA polimerazlar ökaryotik olanlardan yapısal olarak farklıdır → seçici toksisite.",
+      "answer": "Bakteriyel RNA polymerase aktivitesini bloke ederek transcription'ı durdurur",
+      "explanation": "Rifampin, rifamycin ailesinin semisynthetic bir üyesidir; bakterilerde RNA polymerase aktivitesini bloke ederek çalışır. Bakteriyel RNA polymerase'lar ökaryotik olanlardan yapısal olarak farklıdır → selective toxicity.",
       "source": "Slayt 18 (kalın)"
     },
     {
+      "id": "q85",
       "type": "mcq",
-      "question": "Rifampinin hepatotoksisite ve diğer ilaçlarla antagonizmaya yol açmasının nedeni nedir?",
+      "question": "Rifampin'in hepatotoxicity ve diğer ilaçlarla antagonism'e yol açmasının nedeni nedir?",
       "options": [
-        "Karaciğer enzimlerini indükleyerek birlikte verilen diğer ilaçların metabolizmasını artırması",
+        "Liver enzyme'leri indükleyerek birlikte verilen diğer ilaçların metabolizmasını artırması",
         "Böbreklerden atılımı engellemesi",
-        "Kemik iliğini baskılaması",
+        "Bone marrow'u baskılaması",
         "Bağırsak florasını yok etmesi"
       ],
-      "answer": "Karaciğer enzimlerini indükleyerek birlikte verilen diğer ilaçların metabolizmasını artırması",
-      "explanation": "Rifampin karaciğer enzimlerini indükleyerek birlikte verilen diğer ilaçların metabolizmasını artırabilir (antagonizma); bu da hepatotoksisiteye yol açar.",
+      "answer": "Liver enzyme'leri indükleyerek birlikte verilen diğer ilaçların metabolizmasını artırması",
+      "explanation": "Rifampin liver enzyme'leri indükleyerek birlikte verilen diğer ilaçların metabolizmasını artırabilir (antagonism); bu da hepatotoxicity'ye yol açar.",
       "source": "Slayt 18"
     },
     {
+      "id": "q86",
       "type": "mcq",
-      "question": "Tabloya göre rifampinin klinik kullanımı ve spektrumu hangisidir?",
+      "question": "Tabloya göre rifampin'in klinik kullanımı ve spektrumu hangisidir?",
       "options": [
-        "Tüberküloz kombinasyon tedavisi; gram-pozitifler ve sınırlı gram-negatiflere dar spektrum, ayrıca M. tuberculosis",
-        "Deri ve sistemik enfeksiyonlar; geniş spektrum",
-        "Topikal yara enfeksiyonları; yalnızca gram-negatif",
-        "MRSA bakteriyemisi; yalnızca gram-pozitif"
+        "Tuberculosis combination therapy; gram-positive'ler ve sınırlı gram-negative'lere narrow-spectrum, ayrıca M. tuberculosis",
+        "Skin ve sistemik enfeksiyonlar; broad-spectrum",
+        "Topical yara enfeksiyonları; yalnızca gram-negative",
+        "MRSA bacteremia; yalnızca gram-positive"
       ],
-      "answer": "Tüberküloz kombinasyon tedavisi; gram-pozitifler ve sınırlı gram-negatiflere dar spektrum, ayrıca M. tuberculosis",
-      "explanation": "Rifamisin — rifampin — bakteriyel RNA polimerazı inhibe eder, transkripsiyonu bloke eder, hücreyi öldürür — dar spektrum (gram-pozitifler ve sınırlı gram-negatifler; ayrıca Mycobacterium tuberculosis) — tüberkülozda kombinasyon tedavisi.",
+      "answer": "Tuberculosis combination therapy; gram-positive'ler ve sınırlı gram-negative'lere narrow-spectrum, ayrıca M. tuberculosis",
+      "explanation": "Rifamycin — rifampin — bakteriyel RNA polymerase'ı inhibe eder, transcription'ı bloke eder, hücreyi öldürür — narrow spectrum (gram-positive ve limited gram-negative; ayrıca Mycobacterium tuberculosis) — tuberculosis için combination therapy.",
       "source": "Slayt 18 · tablo"
     },
     {
+      "id": "q87",
       "type": "mcq",
-      "question": "Tabloya göre florokinolonların etki mekanizması ve spektrumu nedir?",
+      "question": "Tabloya göre fluoroquinolones'un etki mekanizması ve spektrumu nedir?",
       "options": [
-        "DNA giraz aktivitesini inhibe edip DNA replikasyonunu bloke eder, hücreyi öldürür; gram-pozitif ve gram-negatiflere geniş spektrum",
-        "RNA polimerazı inhibe eder; dar spektrum",
-        "30S'e bağlanır; bakteriyostatik",
-        "Hücre duvarı çapraz bağlanmasını inhibe eder; yalnızca gram-negatif"
+        "DNA gyrase aktivitesini inhibe edip DNA replication'ı bloke eder, hücreyi öldürür; gram-positive ve gram-negative'lere broad-spectrum",
+        "RNA polymerase'ı inhibe eder; narrow-spectrum",
+        "30S'e bağlanır; bacteriostatic",
+        "Cell wall cross-linking'i inhibe eder; yalnızca gram-negative"
       ],
-      "answer": "DNA giraz aktivitesini inhibe edip DNA replikasyonunu bloke eder, hücreyi öldürür; gram-pozitif ve gram-negatiflere geniş spektrum",
-      "explanation": "Florokinolonlar — siprofloksasin, ofloksasin, moksifloksasin — DNA giraz (DNA gyrase) aktivitesini inhibe edip DNA replikasyonunu bloke eder, hücreyi öldürür — gram-pozitif ve gram-negatiflere geniş spektrum — çok çeşitli deri ve sistemik enfeksiyonlar.",
+      "answer": "DNA gyrase aktivitesini inhibe edip DNA replication'ı bloke eder, hücreyi öldürür; gram-positive ve gram-negative'lere broad-spectrum",
+      "explanation": "Fluoroquinolones — ciprofloxacin, ofloxacin, moxifloxacin — DNA gyrase aktivitesini inhibe edip DNA replication'ı bloke eder, hücreyi öldürür — gram-positive ve gram-negative'lere broad spectrum — çok çeşitli skin ve sistemik enfeksiyonlar.",
       "source": "Slayt 18 · tablo"
     },
     {
+      "id": "c01",
       "type": "card",
-      "front": "Antimikrobiyal (şemsiye terim)",
-      "back": "Mikropları inhibe eden veya öldüren her şey: antibiyotikler (bakteri), antifungaller (mantar), antiviraller (virüs).",
+      "front": "Antimicrobial (şemsiye terim)",
+      "back": "Mikropları inhibe eden veya öldüren her şey: antibiotics (bakteri), antifungals (mantar), antivirals (virüs).",
       "source": "Slayt 3"
     },
     {
+      "id": "c02",
       "type": "card",
-      "front": "Tarihçe: Bileşik 606 · Fleming · Florey ve Chain",
-      "back": "Bileşik 606 (Paul Ehrlich): sifiliz tedavisi · Fleming (1928): Penicillium notatum stafilokok üremesini inhibe etti → penisilin, ilk doğal antibiyotik · Florey ve Chain: üretimi ölçeklendirdi, saflaştırdı, 1940'ların başında etkinliğini gösterdi.",
+      "front": "Tarihçe: Compound 606 · Fleming · Florey & Chain",
+      "back": "Compound 606 (Paul Ehrlich): syphilis tedavisi · Fleming (1928): Penicillium notatum staphylococcal growth'u inhibe etti → penicillin, ilk natural antibiotic · Florey & Chain: üretimi ölçeklendirdi, saflaştırdı, 1940'ların başında etkinliğini gösterdi.",
       "source": "Slayt 3"
     },
     {
+      "id": "c03",
       "type": "card",
-      "front": "Doğal / yarı sentetik / sentetik antibiyotikler",
-      "back": "Doğal (mikropların ürettiği): penisilin G/V, streptomisin, sefalosporin C · Yarı sentetik (modifiye doğal): amoksisilin, sefaleksin · Sentetik (endüstriyel, doğala kimyasal olarak benzer): florokinolonlar, sülfonamidler.",
+      "front": "Natural / semi-synthetic / synthetic antibiotics",
+      "back": "Natural (mikropların ürettiği): penicillins G/V, streptomycin, cephalosporin C · Semi-synthetic (modifiye natural): amoxicillin, cephalexin · Synthetic (endüstriyel, natural'a kimyasal olarak benzer): fluoroquinolones, sulfonamides.",
       "source": "Slayt 4 · şema"
     },
     {
+      "id": "c04",
       "type": "card",
-      "front": "Yarı sentetik antimikrobiyal",
-      "back": "Doğal bir antibiyotiğin kimyasal olarak modifiye edilmiş türevi. Amaç: hedef bakteri yelpazesini genişletmek, stabiliteyi artırmak, toksisiteyi azaltmak veya başka faydalı özellik kazandırmak.",
+      "front": "Semisynthetic antimicrobial",
+      "back": "Natural bir antibiotic'in kimyasal olarak modifiye edilmiş türevi. Amaç: hedef bakteri yelpazesini genişletmek, stability'yi artırmak, toxicity'yi azaltmak veya başka faydalı özellik kazandırmak.",
       "source": "Slayt 4"
     },
     {
+      "id": "c05",
       "type": "card",
-      "front": "Seçici toksisite · terapötik indeks",
-      "back": "Seçici toksisite: ilacın vücuda zarar vermeden yalnızca etkene etkisi. Terapötik doz: kabul edilebilir riskle istenen fayda · minimum etkili doz: istenen etkiyi veren en düşük doz · minimum toksik doz: zararın başladığı en düşük doz · TI = TD50 / ED50 (güvenlik aralığı).",
+      "front": "Selective toxicity · therapeutic index",
+      "back": "Selective toxicity: ilacın vücuda zarar vermeden yalnızca etkene etkisi. Therapeutic dose: kabul edilebilir riskle istenen fayda · minimum effective dose: istenen etkiyi veren en düşük doz · minimum toxic dose: zararın başladığı en düşük doz · TI = TD50 / ED50 (safety margin).",
       "source": "Slayt 5"
     },
     {
+      "id": "c06",
       "type": "card",
-      "front": "MİK · MBK · MLC/MLD",
-      "back": "MİK (MIC): görünür üremeyi inhibe eden en düşük konsantrasyon · MBK (MBC): başlangıç inokulumunun ≥%99.9'unu öldüren en düşük konsantrasyon · MLC/MLD: MBK'nin şemsiye terimi, her mikroorganizmaya uygulanır.",
+      "front": "MIC · MBC · MLC/MLD",
+      "back": "MIC: görünür üremeyi inhibe eden en düşük konsantrasyon · MBC: başlangıç inoculum'unun ≥%99.9'unu öldüren en düşük konsantrasyon · MLC/MLD: MBC'nin şemsiye terimi, her mikroorganizmaya uygulanır.",
       "source": "Slayt 6"
     },
     {
+      "id": "c07",
       "type": "card",
-      "front": "Dilüsyon ve mikrodilüsyon örnekleri",
-      "back": "Tüp dilüsyonu (2–32 µg/mL): MİK = 8 µg/mL; MBK için bulanık olmayan tüpler ilaçsız plaklara ekilir. Mikrodilüsyon: penisilin 0.06 µg/mL · eritromisin 8 µg/mL · klindamisin >32 µg/mL.",
+      "front": "Dilution test ve microdilution örnekleri",
+      "back": "Tüp dilution (2–32 µg/mL): MIC = 8 µg/mL; MBC için turbidity olmayan tüpler ilaçsız plaklara ekilir. Microdilution: penicillin 0.06 µg/mL · erythromycin 8 µg/mL · clindamycin >32 µg/mL.",
       "source": "Slayt 6"
     },
     {
+      "id": "c08",
       "type": "card",
-      "front": "Bakteriyostatik ve bakterisidal",
-      "back": "Bakteriyostatik: üremeyi geri dönüşümlü inhibe eder, ilaç kalkınca üreme yeniden başlar. Bakterisidal: hedef bakteriyi öldürür.",
+      "front": "Bacteriostatic vs bactericidal",
+      "back": "Bacteriostatic: üremeyi reversible olarak inhibe eder, ilaç kalkınca üreme yeniden başlar. Bactericidal: hedef bakteriyi öldürür.",
       "source": "Slayt 7"
     },
     {
+      "id": "c09",
       "type": "card",
-      "front": "Dar ve geniş spektrum · süperenfeksiyon",
-      "back": "Dar spektrum: yalnızca belirli patojen alt grupları (örn. yalnız gram-pozitif ya da yalnız gram-negatif); patojen biliniyorsa tercih edilir. Geniş spektrumlu ilaç normal mikrobiyotayı (dirençsiz hücreleri) öldürür → dirençli patojenler çoğalır → süperenfeksiyon.",
+      "front": "Narrow vs broad spectrum · superinfection",
+      "back": "Narrow-spectrum: yalnızca belirli patojen alt grupları (örn. yalnız gram-positive ya da yalnız gram-negative); patojen biliniyorsa tercih edilir. Broad-spectrum ilaç normal microbiota'yı (nonresistant hücreleri) öldürür → drug-resistant patojenler çoğalır → superinfection.",
       "source": "Slayt 7"
     },
     {
+      "id": "c10",
       "type": "card",
-      "front": "PK · PD · AUC(24) · AUC(24)/MİK",
-      "back": "PK: vücudun ilaca yaptığı (plazma düzeyi–zaman) · PD: ilacın mikroorganizmaya yaptığı (MİK) · AUC(24): 24 saatlik plazma eğrisi altındaki alan = maruziyet · AUC/MİK: maruziyetin duyarlılıkla karşılaştırılması. Örnek: 130 ÷ 2 = 65 saat (inhibisyonun 65 saat sürdüğü anlamına gelmez).",
+      "front": "PK · PD · AUC(24) · AUC(24)/MIC",
+      "back": "PK: vücudun ilaca yaptığı (plasma düzeyi–zaman) · PD: ilacın mikroorganizmaya yaptığı (MIC) · AUC(24): 24 saatlik plasma eğrisi altındaki alan = drug exposure · AUC/MIC: exposure'ın susceptibility ile karşılaştırılması. Örnek: 130 ÷ 2 = 65 h (inhibition'ın 65 saat sürdüğü anlamına gelmez).",
       "source": "Slayt 8"
     },
     {
+      "id": "c11",
       "type": "card",
-      "front": "Etki mekanizmaları şeması",
-      "back": "Hücre duvarı: β-laktamlar, vankomisin, basitrasin · Membran: polimiksin B, kolistin, daptomisin · 30S: aminoglikozidler, tetrasiklinler · 50S: makrolidler, linkozamidler, kloramfenikol, oksazolidinonlar · DNA: florokinolonlar · RNA: rifampin · Folik asit: sülfonamidler, sülfonlar, trimetoprim · Mikolik asit: izoniazid.",
+      "front": "Mechanisms şeması",
+      "back": "Cell wall: β-lactams, vancomycin, bacitracin · Plasma membrane: polymyxin B, colistin, daptomycin · 30S: aminoglycosides, tetracyclines · 50S: macrolides, lincosamides, chloramphenicol, oxazolidinones · DNA synthesis: fluoroquinolones · RNA synthesis: rifampin · Folic acid synthesis: sulfonamides, sulfones, trimethoprim · Mycolic acid synthesis: isoniazid.",
       "source": "Slayt 9"
     },
     {
+      "id": "c12",
       "type": "card",
-      "front": "Hücre duvarı inhibitörleri — neden bakterisidal, neden seçici?",
-      "back": "Hücreleri ozmotik lizise duyarlı hale getirir → bakterisidal. İnsan hücreleri peptidoglikan yapmaz → seçici toksisitenin mükemmel örneği. β-laktam halkası değişmeden kalmalı; R grubu değişiklikleri yarı sentetik β-laktamları verir.",
+      "front": "Cell wall inhibitörleri — neden bactericidal, neden selective?",
+      "back": "Hücreleri osmotic lysis'e duyarlı hale getirir → bactericidal. İnsan hücreleri peptidoglycan yapmaz → selective toxicity'nin mükemmel örneği. β-lactam ring değişmeden kalmalı; R group değişiklikleri semisynthetic β-lactams'ı verir.",
       "source": "Slayt 10"
     },
     {
+      "id": "c13",
       "type": "card",
-      "front": "Penisilin G / V / ampisilin yan zincirleri",
-      "back": "Penisilin G: benzil (benzen halkası CH₂ ile) · Penisilin V: fenoksimetil (O–CH₂ ile) · Ampisilin: α-aminobenzil (CH(NH₂) ile).",
+      "front": "Penicillin G / V / ampicillin side chain'leri",
+      "back": "Penicillin G: benzyl (benzene ring CH₂ ile) · Penicillin V: phenoxymethyl (O–CH₂ ile) · Ampicillin: α-aminobenzyl (CH(NH₂) ile).",
       "source": "Slayt 10 · tablo"
     },
     {
+      "id": "c14",
       "type": "card",
-      "front": "Vankomisin",
-      "back": "Glikopeptid; doğal; PBP'leri doğrudan inaktive etmez — hücre duvarı öncüllerinin peptid ucuna (D-Ala-D-Ala) bağlanıp NAM-NAG omurgasına katılımı engeller. Dar spektrum: çoklu dirençli suşlar dahil gram-pozitifler.",
+      "front": "Vancomycin",
+      "back": "Glycopeptide; natural; PBP'leri doğrudan inaktive etmez — cell wall precursor'larının peptide ucuna (D-Ala-D-Ala) bağlanıp NAM-NAG omurgasına katılımı engeller. Narrow: multidrug-resistant suşlar dahil gram-positive'ler.",
       "source": "Slayt 10 · Slayt 12"
     },
     {
+      "id": "c15",
       "type": "card",
-      "front": "PBP · aztreonam · karbapenemler",
-      "back": "PBP: çapraz bağlayan transpeptidaz; β-laktam yapısı peptidoglikan alt birimine benzediği için bloke edilir. Aztreonam: klinikte kullanılan tek monobaktam, dar spektrum, yalnızca gram-negatif. Karbapenemler (imipenem, meropenem, doripenem): yarı sentetik, en geniş β-laktam spektrumu.",
+      "front": "PBP · aztreonam · carbapenems",
+      "back": "PBP: cross-linking yapan transpeptidase; β-lactam yapısı peptidoglycan alt birimine benzediği için bloke edilir. Aztreonam: klinikte kullanılan tek monobactam, narrow-spectrum, yalnızca gram-negative. Carbapenems (imipenem, meropenem, doripenem): semisynthetic, broadest β-lactam spectrum.",
       "source": "Slayt 11 · Slayt 12"
     },
     {
+      "id": "c16",
       "type": "card",
-      "front": "Penisilinler tablosu",
-      "back": "Penisilin G, V: doğal · dar — esas gram-pozitif, birkaç gram-negatif (Pasteurella multocida) · Ampisilin, amoksisilin: yarı sentetik · daha geniş — gram-pozitif + artmış gram-negatif · Metisilin: yarı sentetik · dar — penisilinaz üreten suşlar dahil gram-pozitif.",
+      "front": "Penicillins tablosu",
+      "back": "Penicillin G, V: natural · narrow — esas gram-positive, birkaç gram-negative (Pasteurella multocida) · Ampicillin, amoxicillin: semisynthetic · broader — gram-positive + artmış gram-negative · Methicillin: semisynthetic · narrow — penicillinase-producing suşlar dahil gram-positive.",
       "source": "Slayt 11 · Slayt 12 tablosu"
     },
     {
+      "id": "c17",
       "type": "card",
-      "front": "Sefalosporinler tablosu",
-      "back": "Sefalosporin C: doğal · dar, penisiline benzer + artmış gram-negatif · 1. kuşak: dar, bir miktar gram-negatif · 2. kuşak: 1.'den geniş gram-negatif · 3. ve 4. kuşak: geniş, bazı β-laktamaz üreticileri dahil · 5. kuşak: geniş, MRSA dahil. (Kuşakların hepsi yarı sentetik.)",
+      "front": "Cephalosporins tablosu",
+      "back": "Cephalosporin C: natural · narrow, penicillin'e benzer + artmış gram-negative · 1st generation: narrow, bir miktar gram-negative · 2nd generation: 1st'ten geniş gram-negative · 3rd ve 4th generation: broad, bazı β-lactamase producer'lar dahil · 5th generation: broad, MRSA dahil. (Generation'ların hepsi semisynthetic.)",
       "source": "Slayt 12 · tablo"
     },
     {
+      "id": "c18",
       "type": "card",
-      "front": "Basitrasin · griseofulvin",
-      "back": "Basitrasin: doğal; peptidoglikan alt birimlerinin sitoplazmik membrandan taşınmasını bloke eder; slayt tablosuna göre geniş spektrum (gram-pozitif ve gram-negatif). Griseofulvin: listede antifungal aktivite ile işaretli.",
+      "front": "Bacitracin · griseofulvin",
+      "back": "Bacitracin: natural; peptidoglycan alt birimlerinin cytoplasmic membrane'dan taşınmasını bloke eder; slayt tablosuna göre broad spectrum (gram-positive ve gram-negative). Griseofulvin: listede antifungal activity ile işaretli.",
       "source": "Slayt 12"
     },
     {
+      "id": "c19",
       "type": "card",
-      "front": "Polimiksinler",
-      "back": "Doğal polipeptid; 1947, Bacillus polymyxa; klinikte yalnızca polimiksin B ve polimiksin E (kolistin). Deterjan benzeri, gram-negatif dış membran LPS'ine bağlanır, dış ve iç membranı bozar. Seçici değil: böbrek ve sinir sistemi toksisitesi. Polimiksin B → topikal merhemler (Neosporin).",
+      "front": "Polymyxins",
+      "back": "Natural polypeptide; 1947, Bacillus polymyxa; klinikte yalnızca polymyxin B ve polymyxin E (colistin). Detergent-like, gram-negative outer membrane LPS'ine bağlanır, outer ve inner membrane'ı bozar. Selective değil: böbrek ve sinir sistemi toksisitesi. Polymyxin B → topical merhemler (Neosporin).",
       "source": "Slayt 13"
     },
     {
+      "id": "c20",
       "type": "card",
-      "front": "Daptomisin",
-      "back": "Siklik lipopeptid; Streptomyces roseosporus. Membrana girip bozar; polimiksinlerin aksine gram-pozitifleri hedefler. IV; iyi tolere edilir; iskelet kasında geri dönüşümlü toksisite. Kullanım: MRSA dahil komplike deri enfeksiyonları ve bakteriyemi.",
+      "front": "Daptomycin",
+      "back": "Cyclic lipopeptide; Streptomyces roseosporus. Membrana girip bozar; polymyxins'in aksine gram-positive'leri hedefler. IV; iyi tolere edilir; skeletal muscle'da reversible toxicity. Kullanım: MRSA dahil complicated skin infections ve bacteremia.",
       "source": "Slayt 14"
     },
     {
+      "id": "c21",
       "type": "card",
-      "front": "Membran inhibitörleri tablosu — klinik kullanım",
-      "back": "Polimiksin B: yaralarda topikal · Kolistin oral: yüksek riskli hastalarda/invaziv işlem öncesi bağırsak dekontaminasyonu · Kolistin IV: çoklu dirençli patojenlerin ciddi sistemik enfeksiyonları · Daptomisin: MRSA dahil gram-pozitif deri enfeksiyonları ve bakteriyemi. Antifungal: nistatin, amfoterisin B.",
+      "front": "Membrane inhibitörleri tablosu — klinik kullanım",
+      "back": "Polymyxin B: yaralarda topical · Colistin oral: high-risk hastalarda/invasive procedure öncesi bowel decontamination · Colistin IV: multidrug-resistant patojenlerin ciddi sistemik enfeksiyonları · Daptomycin: MRSA dahil gram-positive skin infections ve bacteremia. Antifungal: nystatin, amphotericin B.",
       "source": "Slayt 14 · tablo"
     },
     {
+      "id": "c22",
       "type": "card",
-      "front": "80S ve 70S ribozom",
-      "back": "Hayvan hücresi sitoplazmik ribozomu 80S, bakterininki 70S; yapısal fark protein sentezini seçici bir hedef yapar.",
+      "front": "80S vs 70S ribosome",
+      "back": "Hayvan hücresi cytoplasmic ribosome'u 80S, bakterininki 70S; yapısal fark protein synthesis'i selective bir hedef yapar.",
       "source": "Slayt 15"
     },
     {
+      "id": "c23",
       "type": "card",
-      "front": "Aminoglikozidler",
-      "back": "30S'e bağlanır, düzeltme okumasını (proofreading) bozar → yanlış/kısa proteinler membranı bozar, hücre ölür. Streptomisin, gentamisin, neomisin, kanamisin; güçlü, geniş spektrum. Toksisite: nefro-, nöro-, ototoksik.",
+      "front": "Aminoglycosides",
+      "back": "30S'e bağlanır, proofreading'i bozar → yanlış/kısa proteinler membranı bozar, hücre ölür (bactericidal). Streptomycin, gentamicin, neomycin, kanamycin; potent, broad-spectrum. Toksisite: nephrotoxic, neurotoxic, ototoxic.",
       "source": "Slayt 15"
     },
     {
+      "id": "c24",
       "type": "card",
-      "front": "Tetrasiklinler",
-      "back": "30S'e bağlanır; bakteriyostatik; tRNA'nın ribozomla birleşmesini engeller; geniş spektrum. Yan etki: fototoksisite, gelişen dişlerde kalıcı renk değişikliği, yüksek doz/böbrek yetmezliğinde karaciğer toksisitesi.",
+      "front": "Tetracyclines",
+      "back": "30S'e bağlanır; bacteriostatic; tRNA'nın ribozomla birleşmesini engeller; broad-spectrum. Yan etki: phototoxicity, gelişen dişlerde kalıcı renk değişikliği, yüksek doz/böbrek yetmezliğinde liver toxicity.",
       "source": "Slayt 15"
     },
     {
+      "id": "c25",
       "type": "card",
-      "front": "Makrolidler (eritromisin, azitromisin, telitromisin)",
-      "back": "50S; geniş spektrum, bakteriyostatik; peptid bağı oluşumunu inhibe edip uzamayı bloke eder. İlk: eritromisin (t½ 1.5 sa). Azitromisin: daha geniş spektrum, az yan etki, t½ 68 sa → günde tek doz, 3 gün. Telitromisin: makrolid dirençlilere etkili, ciddi hepatotoksik.",
+      "front": "Macrolides (erythromycin, azithromycin, telithromycin)",
+      "back": "50S; broad-spectrum, bacteriostatic; peptide bond formation'ı inhibe edip elongation'ı bloke eder. İlk: erythromycin (half-life 1.5 saat). Azithromycin: daha geniş spektrum, az yan etki, half-life 68 saat → günde tek doz, 3 gün. Telithromycin: macrolide-resistant'lara etkili, seriously hepatotoxic.",
       "source": "Slayt 16"
     },
     {
+      "id": "c26",
       "type": "card",
-      "front": "Linkozamidler · kloramfenikol",
-      "back": "Linkozamidler: doğal linkomisin, yarı sentetik klindamisin; 50S; özellikle streptokok/stafilokok. Kloramfenikol: 50S; sentetik olarak seri üretilen ilk antibakteriyel; geniş spektrum, dokulara iyi geçer (menenjit, tifo, konjonktivit); gri bebek sendromu, kemik iliği baskılanması.",
+      "front": "Lincosamides · chloramphenicol",
+      "back": "Lincosamides: natural lincomycin, semisynthetic clindamycin; 50S; özellikle streptococcal/staphylococcal. Chloramphenicol: 50S; synthetically mass produced ilk antibacterial; broad-spectrum, dokulara iyi geçer (meningitis, typhoid, conjunctivitis); gray baby syndrome, bone marrow suppression.",
       "source": "Slayt 16"
     },
     {
+      "id": "c27",
       "type": "card",
-      "front": "Oksazolidinonlar (linezolid)",
-      "back": "Yeni, geniş spektrumlu, sentetik protein sentezi inhibitörleri; gram-pozitif ve gram-negatiflerde 50S'e bağlanır; başlatma kompleksinin oluşumunu ve A → P bölgesi translokasyonunu engeller.",
+      "front": "Oxazolidinones (linezolid)",
+      "back": "Yeni, broad-spectrum, synthetic protein synthesis inhibitörleri; gram-positive ve gram-negative'lerde 50S'e bağlanır; initiation complex oluşumunu ve A site → P site translocation'ı engeller.",
       "source": "Slayt 17"
     },
     {
+      "id": "c28",
       "type": "card",
-      "front": "Protein sentezi inhibitörleri özeti",
-      "back": "Kloramfenikol, makrolidler, linkozamidler: 50S, peptid bağı oluşumunu engeller · Aminoglikozidler: 30S, düzeltme okuması bozulur → hatalı proteinler · Tetrasiklinler: 30S, tRNA bağlanmasını engeller.",
+      "front": "Protein synthesis inhibitörleri özeti",
+      "back": "Chloramphenicol, macrolides, lincosamides: 50S, peptide bond formation'ı engeller · Aminoglycosides: 30S, proofreading bozulur → faulty proteins · Tetracyclines: 30S, tRNA bağlanmasını engeller.",
       "source": "Slayt 17 · özet kutusu"
     },
     {
+      "id": "c29",
       "type": "card",
-      "front": "Metronidazol · rifampin",
-      "back": "Metronidazol: yarı sentetik nitroimidazol, antiprotozoal; DNA replikasyonunu engeller. Rifampin: yarı sentetik rifamisin; bakteriyel RNA polimerazı bloke eder; tüberkülozda kombinasyon; karaciğer enzimlerini indükler (antagonizma) → hepatotoksisite; dar spektrum + M. tuberculosis.",
+      "front": "Metronidazole · rifampin",
+      "back": "Metronidazole: semisynthetic nitroimidazole, antiprotozoan; DNA replication'ı engeller. Rifampin: semisynthetic rifamycin; bakteriyel RNA polymerase'ı bloke eder; tuberculosis'te combination therapy; liver enzyme'leri indükler (antagonism) → hepatotoxicity; narrow-spectrum + M. tuberculosis.",
       "source": "Slayt 18"
     },
     {
+      "id": "c30",
       "type": "card",
-      "front": "Florokinolonlar",
-      "back": "Siprofloksasin, ofloksasin, moksifloksasin (şemada levofloksasin de); DNA girazı inhibe eder, DNA replikasyonunu bloke eder, hücreyi öldürür; gram-pozitif ve gram-negatiflere geniş spektrum; çok çeşitli deri ve sistemik enfeksiyonlar. Sınıflamada sentetik.",
+      "front": "Fluoroquinolones",
+      "back": "Ciprofloxacin, ofloxacin, moxifloxacin (şemada levofloxacin de); DNA gyrase'ı inhibe eder, DNA replication'ı bloke eder, hücreyi öldürür; gram-positive ve gram-negative'lere broad-spectrum; çok çeşitli skin ve sistemik enfeksiyonlar. Sınıflamada synthetic.",
       "source": "Slayt 9 · Slayt 18 tablosu"
     }
   ]

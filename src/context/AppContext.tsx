@@ -124,7 +124,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const updateQuestionSet = useCallback(
     (id: string, name: string, questions: Question[]) => {
       setSets((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, name, questions, updatedAt: new Date().toISOString() } : s))
+        prev.map((s) => {
+          if (s.id !== id) return s;
+          // Değişiklik yoksa dokunma: hazır içerik "düzenlenmemiş" sayılmaya devam etsin ki
+          // uygulama güncellemeleri bu seti yenileyebilsin (bkz. content/seed.ts).
+          if (s.name === name && JSON.stringify(s.questions) === JSON.stringify(questions)) return s;
+          return { ...s, name, questions, updatedAt: new Date().toISOString() };
+        })
       );
     },
     [setSets]

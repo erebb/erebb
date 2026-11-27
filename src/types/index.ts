@@ -42,6 +42,8 @@ export interface QuestionSet {
   updatedAt: string;
   sourceFormat: SourceFormat;
   questions: Question[];
+  /** Uygulamayla gelen hazır içerikten geldiyse: içerik anahtarı ve yüklenen sürüm. */
+  bundle?: { key: string; version: number };
 }
 
 /** Bir çalışma oturumunun hedefi: tek set ya da bir dersin tüm setleri. */

@@ -4,29 +4,48 @@ import { itemsToQuestions } from '@/lib/parser';
 import { newId } from '@/lib/utils';
 
 /**
- * Uygulamayla birlikte gelen içerik paketleri. Her paket ilk açılışta bir kez
- * LocalStorage'a eklenir ve kimliği `seededPacks` listesine yazılır; kullanıcı
- * sonradan silerse geri gelmez. İçerik `content/` klasöründeki JSON dosyalarıdır —
+ * Uygulamayla birlikte gelen hazır içerik. İçerik `content/` klasöründeki JSON dosyalarıdır —
  * uygulama kodunda soru yoktur.
+ *
+ * Her set ayrı izlenir ve LocalStorage'daki `seededPacks` listesine `anahtar@sürüm` olarak
+ * yazılır:
+ * - Hiç yüklenmemişse eklenir.
+ * - Daha eski bir sürümü yüklüyse ve kullanıcı o seti düzenlememişse içeriği yenilenir
+ *   (soru kimlikleri JSON'daki `id` alanından geldiği için tekrar ilerlemesi korunur).
+ * - Kullanıcı seti düzenlediyse ya da sildiyse dokunulmaz; silinen set geri gelmez.
+ *
+ * İÇERİK DEĞİŞTİĞİNDE: o setin `version` değerini bir artır. Yeni hafta = yeni set girdisi.
  */
+interface BundledSet {
+  key: string;
+  version: number;
+  /** İçerik ayrı bir parçada: yalnızca gerektiğinde (yeni ya da güncel değilse) okunur. */
+  load: () => Promise<{ name: string; items: unknown[] }>;
+}
+
 interface BundledPack {
-  id: string;
   course: string;
-  /** İçerik ayrı bir parçada: yalnızca paket henüz tohumlanmadıysa indirilir/okunur. */
-  load: () => Promise<{ name: string; items: unknown[] }[]>;
+  /** Sürümlemeden önceki paket kimlikleri: listede varsa bu paketin setleri 1. sürüm sayılır. */
+  legacyIds?: string[];
+  sets: BundledSet[];
 }
 
 export const BUNDLED_PACKS: BundledPack[] = [
   {
-    id: 'mikrobiyoloji-hafta-7-8',
     course: 'Mikrobiyoloji',
-    load: async () => {
-      const [h7, h8] = await Promise.all([
-        import('../../content/mikrobiyoloji-hafta-7.json'),
-        import('../../content/mikrobiyoloji-hafta-8.json'),
-      ]);
-      return [h7.default, h8.default];
-    },
+    legacyIds: ['mikrobiyoloji-hafta-7-8'],
+    sets: [
+      {
+        key: 'mikrobiyoloji-hafta-7',
+        version: 2,
+        load: () => import('../../content/mikrobiyoloji-hafta-7.json').then((m) => m.default),
+      },
+      {
+        key: 'mikrobiyoloji-hafta-8',
+        version: 2,
+        load: () => import('../../content/mikrobiyoloji-hafta-8.json').then((m) => m.default),
+      },
+    ],
   },
 ];
 
@@ -45,9 +64,20 @@ function write(key: string, value: unknown) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
+/** Bu setin yüklü olduğu kaydedilmiş en yüksek sürüm (0 = hiç yüklenmemiş). */
+function seededVersion(seeded: string[], key: string, legacyIds: string[] = []): number {
+  let version = 0;
+  for (const entry of seeded) {
+    const at = entry.lastIndexOf('@');
+    if (at > 0 && entry.slice(0, at) === key) version = Math.max(version, Number(entry.slice(at + 1)) || 0);
+  }
+  if (version === 0 && legacyIds.some((id) => seeded.includes(id))) version = 1;
+  return version;
+}
+
 /**
  * React çizilmeden önce bir kez çalışır (main.tsx bekler): eski biçimdeki verileri taşır ve
- * paketleri tohumlar. Sağlayıcılar başlangıç durumunu doğrudan LocalStorage'dan
+ * hazır içeriği ekler/günceller. Sağlayıcılar başlangıç durumunu doğrudan LocalStorage'dan
  * okuduğu için burada yazılan her şey ilk çizimde hazırdır (StrictMode'un çift
  * çalıştırdığı efektlerle yarış da olmaz).
  */
@@ -58,10 +88,10 @@ export async function prepareStorage(): Promise<void> {
     const sets = read<QuestionSet[]>(STORAGE_KEYS.questionSets, []);
     let changed = false;
 
+    const findCourse = (name: string) =>
+      courses.find((c) => c.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr'));
     const ensureCourse = (name: string): Course => {
-      const existing = courses.find(
-        (c) => c.name.toLocaleLowerCase('tr') === name.toLocaleLowerCase('tr')
-      );
+      const existing = findCourse(name);
       if (existing) return existing;
       const course: Course = { id: newId(), name, createdAt: now };
       courses.push(course);
@@ -93,36 +123,56 @@ export async function prepareStorage(): Promise<void> {
       window.localStorage.removeItem(STORAGE_KEYS.legacySrs);
     }
 
-    // 3) Paketleri tohumla.
-    const seeded = read<string[]>(STORAGE_KEYS.seededPacks, []);
+    // 3) Hazır içeriği ekle / güncelle.
+    let seeded = read<string[]>(STORAGE_KEYS.seededPacks, []);
     for (const pack of BUNDLED_PACKS) {
-      if (seeded.includes(pack.id)) continue;
-      const packSets = await pack.load();
-      const course = ensureCourse(pack.course);
-      for (const s of packSets) {
-        const duplicate = sets.some((x) => x.courseId === course.id && x.name === s.name);
-        if (duplicate) continue;
-        const parsed = itemsToQuestions(s.items);
+      for (const bs of pack.sets) {
+        const have = seededVersion(seeded, bs.key, pack.legacyIds);
+        if (have >= bs.version) continue;
+
+        const data = await bs.load();
+        const parsed = itemsToQuestions(data.items, { idPrefix: `${bs.key}:` });
         if ('error' in parsed) continue;
-        sets.push({
-          id: newId(),
-          name: s.name,
-          courseId: course.id,
-          createdAt: now,
-          updatedAt: now,
-          sourceFormat: 'json',
-          questions: parsed.questions,
-        });
-        changed = true;
+        const bundle = { key: bs.key, version: bs.version };
+
+        if (have === 0) {
+          const course = ensureCourse(pack.course);
+          if (!sets.some((x) => x.courseId === course.id && x.name === data.name)) {
+            sets.push({
+              id: newId(),
+              name: data.name,
+              courseId: course.id,
+              createdAt: now,
+              updatedAt: now,
+              sourceFormat: 'json',
+              questions: parsed.questions,
+              bundle,
+            });
+            changed = true;
+          }
+        } else {
+          // Eski sürüm yüklü: kullanıcının hiç dokunmadığı kopyayı yenile. Sürümlemeden önce
+          // eklenen setlerde `bundle` alanı yoktur; onları dersteki adından tanırız.
+          const course = findCourse(pack.course);
+          const existing =
+            sets.find((x) => x.bundle?.key === bs.key) ??
+            (course ? sets.find((x) => !x.bundle && x.courseId === course.id && x.name === data.name) : undefined);
+          if (existing && existing.updatedAt === existing.createdAt) {
+            existing.name = data.name;
+            existing.questions = parsed.questions;
+            existing.bundle = bundle;
+            changed = true;
+          }
+        }
+        seeded = [...seeded.filter((e) => !e.startsWith(`${bs.key}@`)), `${bs.key}@${bs.version}`];
       }
-      seeded.push(pack.id);
     }
 
     if (changed) {
       write(STORAGE_KEYS.courses, courses);
       write(STORAGE_KEYS.questionSets, sets);
     }
-    // Paket "yüklendi" işareti ancak setler yazıldıktan sonra: yazım başarısız olursa
+    // "Yüklendi" işareti ancak setler yazıldıktan sonra: yazım başarısız olursa
     // (örn. depolama dolu) bir sonraki açılışta yeniden denenir, içerik sessizce kaybolmaz.
     write(STORAGE_KEYS.seededPacks, seeded);
   } catch {

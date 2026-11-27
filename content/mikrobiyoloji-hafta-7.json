@@ -2,45 +2,50 @@
   "name": "Hafta 7 · Mikrobiyal büyümeyi etkileyen faktörler",
   "items": [
     {
+      "id": "q01",
       "type": "mcq",
-      "question": "Jenerasyon süresi nedir?",
+      "question": "Generation time nedir?",
       "options": [
         "Optimum koşullarda bir bakterinin iki yavru hücre oluşturması için gereken süre",
-        "Bir bakteri popülasyonunun lag fazından çıkması için gereken süre",
+        "Bir bakteri popülasyonunun lag phase'den çıkması için gereken süre",
         "Bakteri sayısının 24 saatte ulaştığı en yüksek değer",
-        "Bir popülasyonun durağan faza ulaşması için gereken süre"
+        "Bir popülasyonun stationary phase'e ulaşması için gereken süre"
       ],
       "answer": "Optimum koşullarda bir bakterinin iki yavru hücre oluşturması için gereken süre",
-      "explanation": "Jenerasyon süresi (generation time), optimum koşullarda bir bakterinin iki yavru hücre oluşturması için gereken süredir.",
-      "source": "Slayt 3 · Bakteriyel büyüme"
+      "explanation": "Generation time, optimum koşullarda bir bakterinin iki yavru hücre oluşturması için gereken süredir.",
+      "source": "Slayt 3 · Bacterial growth"
     },
     {
+      "id": "q02",
       "type": "mcq",
-      "question": "Slayta göre E. coli gibi patojen bakterilerin çoğunda jenerasyon süresi yaklaşık ne kadardır?",
+      "question": "Slayta göre E. coli gibi patojen bakterilerin çoğunda generation time yaklaşık ne kadardır?",
       "options": ["20 dakika", "20 saat", "20 gün", "2 dakika"],
       "answer": "20 dakika",
-      "explanation": "E. coli gibi çoğu patojen bakteri için yaklaşık 20 dakika; Mycobacterium tuberculosis için yaklaşık 20 saat, M. leprae için yaklaşık 20 gün.",
-      "source": "Slayt 3 · Bakteriyel büyüme"
+      "explanation": "E. coli gibi çoğu patojen bakteri için generation time yaklaşık 20 dakika; Mycobacterium tuberculosis için yaklaşık 20 saat, M. leprae için yaklaşık 20 gün.",
+      "source": "Slayt 3 · Bacterial growth"
     },
     {
+      "id": "q03",
       "type": "mcq",
-      "question": "Slaytta jenerasyon süresi EN UZUN (yaklaşık 20 gün) olarak verilen bakteri hangisidir?",
+      "question": "Slaytta generation time'ı EN UZUN (yaklaşık 20 gün) olarak verilen bakteri hangisidir?",
       "options": ["Mycobacterium leprae", "Mycobacterium tuberculosis", "Escherichia coli", "Salmonella spp."],
       "answer": "Mycobacterium leprae",
       "explanation": "M. tuberculosis yaklaşık 20 saat (daha uzun), M. leprae yaklaşık 20 gün (en uzun).",
-      "source": "Slayt 3 · Bakteriyel büyüme"
+      "source": "Slayt 3 · Bacterial growth"
     },
     {
+      "id": "q04",
       "type": "mcq",
-      "question": "Mycobacterium tuberculosis için verilen jenerasyon süresi yaklaşık kaçtır?",
+      "question": "Mycobacterium tuberculosis için verilen generation time yaklaşık kaçtır?",
       "options": ["20 saat", "20 dakika", "20 gün", "2 saat"],
       "answer": "20 saat",
-      "explanation": "Jenerasyon süresi M. tuberculosis için daha uzun (yaklaşık 20 saat), M. leprae için en uzundur (yaklaşık 20 gün).",
-      "source": "Slayt 3 · Bakteriyel büyüme"
+      "explanation": "Generation time M. tuberculosis için daha uzun (yaklaşık 20 saat), M. leprae için en uzundur (yaklaşık 20 gün).",
+      "source": "Slayt 3 · Bacterial growth"
     },
     {
+      "id": "q05",
       "type": "mcq",
-      "question": "Bir bakterinin büyüme hızı nasıl ölçülür?",
+      "question": "Bir bakterinin growth rate'i nasıl ölçülür?",
       "options": [
         "Birim zamandaki bakteri sayısı değişimi ölçülerek",
         "Besiyerinin pH değişimi ölçülerek",
@@ -48,49 +53,54 @@
         "Bakteri hücresinin boyutu ölçülerek"
       ],
       "answer": "Birim zamandaki bakteri sayısı değişimi ölçülerek",
-      "explanation": "Büyüme hızı (growth rate), birim zamandaki bakteri sayısı değişimi ölçülerek belirlenir. Bir bakteri 24 saat içinde milyonlarca hücre oluşturabilir.",
-      "source": "Slayt 3 · Bakteriyel büyüme"
+      "explanation": "Growth rate, birim zamandaki bakteri sayısı değişimi ölçülerek belirlenir. Bir bakteri 24 saat içinde milyonlarca hücre oluşturabilir.",
+      "source": "Slayt 3 · Bacterial growth"
     },
     {
+      "id": "q06",
       "type": "mcq",
-      "question": "“Mikroorganizmaları etkileyen faktörler” tablosuna göre aşağıdakilerden hangisi KİMYASAL bir faktördür?",
-      "options": ["pH", "Hidrostatik basınç", "Radyasyon", "Santrifüj"],
+      "question": "“Mikroorganizmaları etkileyen faktörler” tablosuna göre aşağıdakilerden hangisi CHEMICAL bir faktördür?",
+      "options": ["pH", "Hydrostatic pressure", "Radiation", "Centrifugation"],
       "answer": "pH",
-      "explanation": "Kimyasal faktörler: oksijen, oksidasyon-redüksiyon (O-R) potansiyeli, pH. Hidrostatik basınç ve radyasyon fiziksel, santrifüj mekanik faktördür.",
+      "explanation": "Chemical factors: oxygen, oxidation-reduction (O-R) potential, pH. Hydrostatic pressure ve radiation physical, centrifugation mechanical faktördür.",
       "source": "Slayt 3 · Mikroorganizmaları etkileyen faktörler tablosu"
     },
     {
+      "id": "q07",
       "type": "mcq",
-      "question": "Tabloya göre aşağıdakilerden hangisi MEKANİK bir faktördür?",
-      "options": ["Titreşim", "Yüzey gerilimi", "Oksijen", "Ozmotik basınç"],
-      "answer": "Titreşim",
-      "explanation": "Mekanik faktörler: çalkalama, ezme, titreşim, santrifüj, basınç. Yüzey gerilimi ve ozmotik basınç fiziksel, oksijen kimyasaldır.",
+      "question": "Tabloya göre aşağıdakilerden hangisi MECHANICAL bir faktördür?",
+      "options": ["Vibration", "Surface tension", "Oxygen", "Osmotic pressure"],
+      "answer": "Vibration",
+      "explanation": "Mechanical factors: shaking, crushing, vibration, centrifugation, pressure. Surface tension ve osmotic pressure physical, oxygen chemical faktördür.",
       "source": "Slayt 3 · Mikroorganizmaları etkileyen faktörler tablosu"
     },
     {
+      "id": "q08",
       "type": "mcq",
-      "question": "Tabloda ozmotik basınç hangi faktör grubunda yer alır?",
-      "options": ["Fiziksel faktörler", "Kimyasal faktörler", "Biyolojik faktörler", "Mekanik faktörler"],
-      "answer": "Fiziksel faktörler",
-      "explanation": "Fiziksel faktörler: ısı, hidrostatik basınç, ozmotik basınç, kurutma, radyasyon, elektrik akımı, yüzey gerilimi, nem.",
+      "question": "Tabloda osmotic pressure hangi faktör grubunda yer alır?",
+      "options": ["Physical factors", "Chemical factors", "Biological factors", "Mechanical factors"],
+      "answer": "Physical factors",
+      "explanation": "Physical factors: heat, hydrostatic pressure, osmotic pressure, drying, radiation, electric current, surface tension, humidity.",
       "source": "Slayt 3 · Mikroorganizmaları etkileyen faktörler tablosu"
     },
     {
+      "id": "q09",
       "type": "mcq",
-      "question": "Su aktivitesi (aw) nasıl tanımlanır?",
+      "question": "Water activity (aw) nasıl tanımlanır?",
       "options": [
-        "Aynı sıcaklıkta gıdanın (substratın) su buharı basıncının saf suyun su buharı basıncına oranı",
-        "Aynı sıcaklıkta saf suyun su buharı basıncının gıdanın su buharı basıncına oranı",
+        "Aynı sıcaklıkta gıdanın (substratın) vapor pressure'ının saf suyun vapor pressure'ına oranı",
+        "Aynı sıcaklıkta saf suyun vapor pressure'ının gıdanın vapor pressure'ına oranı",
         "Gıdadaki toplam su miktarının kuru maddeye oranı",
         "Gıdanın nem içeriğinin yüzde olarak ifadesi"
       ],
-      "answer": "Aynı sıcaklıkta gıdanın (substratın) su buharı basıncının saf suyun su buharı basıncına oranı",
+      "answer": "Aynı sıcaklıkta gıdanın (substratın) vapor pressure'ının saf suyun vapor pressure'ına oranı",
       "explanation": "aw = P(gıda) / P(saf su), aynı sıcaklıkta (Jay 2000).",
-      "source": "Slayt 4 · Su aktivitesi"
+      "source": "Slayt 4 · Water activity"
     },
     {
+      "id": "q10",
       "type": "mcq",
-      "question": "Su aktivitesi için hangisi doğrudur?",
+      "question": "Water activity için hangisi doğrudur?",
       "options": [
         "0 ile 1 arasında değişir; 1 saf suyu, düşük değerler daha az kullanılabilir suyu gösterir",
         "0 ile 14 arasında değişir; 7 nötrdür",
@@ -98,10 +108,11 @@
         "1'den büyük değerler daha fazla kullanılabilir suyu gösterir"
       ],
       "answer": "0 ile 1 arasında değişir; 1 saf suyu, düşük değerler daha az kullanılabilir suyu gösterir",
-      "explanation": "Ana fikir: su aktivitesi 0 ile 1 arasındadır; 1 saf su demektir, düşük değerler gıdada daha az kullanılabilir su olduğunu gösterir.",
-      "source": "Slayt 4 · Ana fikir kutusu"
+      "explanation": "Key idea: water activity 0 ile 1 arasındadır; 1 saf su demektir, düşük değerler gıdada daha az kullanılabilir su olduğunu gösterir.",
+      "source": "Slayt 4 · Key idea kutusu"
     },
     {
+      "id": "q11",
       "type": "mcq",
       "question": "Kuru üzüm ve taze domates için verilen aw aralıkları hangisidir?",
       "options": [
@@ -111,58 +122,65 @@
         "İkisi de ≈ 0.95–1.0"
       ],
       "answer": "Kuru üzüm ≈ 0.2–0.6; taze domates ≈ 0.95–1.0",
-      "explanation": "Düşük nemli kuru üzümde su buharı basıncı daha düşüktür (aw ≈ 0.2–0.6); yüksek nemli taze domateste daha yüksektir (aw ≈ 0.95–1.0).",
-      "source": "Slayt 4 · Su aktivitesi görseli"
+      "explanation": "Düşük nemli kuru üzümde vapor pressure daha düşüktür (aw ≈ 0.2–0.6); yüksek nemli taze domateste daha yüksektir (aw ≈ 0.95–1.0).",
+      "source": "Slayt 4 · Water activity görseli"
     },
     {
+      "id": "q12",
       "type": "mcq",
-      "question": "Tablo 3-2'ye göre üreme için MİNİMUM aw değeri EN DÜŞÜK olan patojen hangisidir?",
+      "question": "Tablo 3-2'ye göre growth için MİNİMUM aw değeri EN DÜŞÜK olan patojen hangisidir?",
       "options": ["Staphylococcus aureus", "Listeria monocytogenes", "Salmonella spp.", "Campylobacter spp."],
       "answer": "Staphylococcus aureus",
-      "explanation": "S. aureus üreme için minimum aw 0.83 (tablodaki en düşük). L. monocytogenes 0.92, Salmonella 0.94, Campylobacter 0.98.",
-      "source": "Slayt 4 · Tablo 3-2 (patojenlerin üremesi için aw değerleri)"
+      "explanation": "S. aureus growth için minimum aw 0.83 (tablodaki en düşük). L. monocytogenes 0.92, Salmonella 0.94, Campylobacter 0.98.",
+      "source": "Slayt 4 · Tablo 3-2 (patojenlerin growth için aw değerleri)"
     },
     {
+      "id": "q13",
       "type": "mcq",
-      "question": "Tablo 3-2'ye göre üreme için MİNİMUM aw değeri EN YÜKSEK olan patojen hangisidir?",
+      "question": "Tablo 3-2'ye göre growth için MİNİMUM aw değeri EN YÜKSEK olan patojen hangisidir?",
       "options": ["Campylobacter spp.", "Bacillus cereus", "Staphylococcus aureus", "Listeria monocytogenes"],
       "answer": "Campylobacter spp.",
       "explanation": "Campylobacter spp. minimum 0.98, optimum 0.99 — en fazla suya ihtiyaç duyan. B. cereus 0.93, L. monocytogenes 0.92, S. aureus 0.83.",
       "source": "Slayt 4 · Tablo 3-2"
     },
     {
+      "id": "q14",
       "type": "mcq",
       "question": "Tablo 3-2'ye göre Listeria monocytogenes'in üreyebildiği minimum aw değeri kaçtır?",
       "options": ["0.92", "0.83", "0.97", "0.94"],
       "answer": "0.92",
-      "explanation": "L. monocytogenes minimum aw 0.92. (0.83 = S. aureus; 0.97 = Shigella, Yersinia, C. botulinum tip E; 0.94 = Salmonella, V. parahaemolyticus.)",
+      "explanation": "L. monocytogenes minimum aw 0.92. (0.83 = S. aureus; 0.97 = Shigella, Yersinia, C. botulinum type E; 0.94 = Salmonella, V. parahaemolyticus.)",
       "source": "Slayt 4 · Tablo 3-2"
     },
     {
+      "id": "q15",
       "type": "mcq",
-      "question": "Tablo 3-2'ye göre Staphylococcus aureus'un TOKSİN üretimi için minimum aw değeri kaçtır?",
+      "question": "Tablo 3-2'ye göre Staphylococcus aureus'un toxin production için minimum aw değeri kaçtır?",
       "options": ["0.88", "0.83", "0.92", "0.98"],
       "answer": "0.88",
-      "explanation": "S. aureus — üreme: min 0.83, opt 0.98, maks 0.99; toksin: min 0.88, opt 0.98, maks 0.99. Toksin üretimi üremeden daha yüksek aw ister.",
+      "explanation": "S. aureus — growth: min 0.83, opt 0.98, maks 0.99; toxin production: min 0.88, opt 0.98, maks 0.99. Toxin production, growth'tan daha yüksek aw ister.",
       "source": "Slayt 4 · Tablo 3-2"
     },
     {
+      "id": "q16",
       "type": "mcq",
-      "question": "Tablo 3-2'ye göre Clostridium botulinum tip A ve B (proteolitik) için minimum aw kaçtır?",
+      "question": "Tablo 3-2'ye göre Clostridium botulinum type A ve B (proteolytic) için minimum aw kaçtır?",
       "options": ["0.93", "0.97", "0.83", "0.99"],
       "answer": "0.93",
-      "explanation": "C. botulinum tip A ve B (** proteolitik): 0.93. C. botulinum tip E (* proteolitik olmayan): 0.97.",
-      "source": "Slayt 4 · Tablo 3-2 (dipnotlar: ** proteolitik, * proteolitik olmayan)"
+      "explanation": "C. botulinum type A ve B (** proteolytic): 0.93. C. botulinum type E (* nonproteolytic): 0.97.",
+      "source": "Slayt 4 · Tablo 3-2 (dipnotlar: ** proteolytic, * nonproteolytic)"
     },
     {
+      "id": "q17",
       "type": "mcq",
       "question": "Tablo 3-2'de minimum aw değeri 0.97 olarak verilen C. botulinum tipi hangisidir?",
-      "options": ["Tip E (proteolitik olmayan)", "Tip A (proteolitik)", "Tip B (proteolitik)", "Tabloda hiçbir C. botulinum tipi yoktur"],
-      "answer": "Tip E (proteolitik olmayan)",
-      "explanation": "C. botulinum tip E* — 0.97; * = proteolitik olmayan (nonproteolytic). Tip A ve B** — 0.93; ** = proteolitik (proteolytic).",
+      "options": ["Type E (nonproteolytic)", "Type A (proteolytic)", "Type B (proteolytic)", "Tabloda hiçbir C. botulinum tipi yoktur"],
+      "answer": "Type E (nonproteolytic)",
+      "explanation": "C. botulinum type E* — 0.97; * = nonproteolytic. Type A ve B** — 0.93; ** = proteolytic.",
       "source": "Slayt 4 · Tablo 3-2"
     },
     {
+      "id": "q18",
       "type": "mcq",
       "question": "Hayvansal ürünler tablosuna göre balın aw değeri kaçtır?",
       "options": ["0.75", "0.97", "0.40", "0.20"],
@@ -171,6 +189,7 @@
       "source": "Slayt 4 · Hayvansal ürünler aw tablosu"
     },
     {
+      "id": "q19",
       "type": "mcq",
       "question": "Tablolara göre aşağıdaki gıdalardan hangisinin aw değeri EN YÜKSEKTİR?",
       "options": ["Taze et, kanatlı ve balık", "Bal", "Reçel", "Un"],
@@ -179,6 +198,7 @@
       "source": "Slayt 4 · Hayvansal ve bitkisel ürünler aw tabloları"
     },
     {
+      "id": "q20",
       "type": "mcq",
       "question": "Bitkisel ürünler tablosuna göre ekmek kabuğunun aw değeri kaçtır?",
       "options": ["0.30", "0.94–0.97", "0.75–0.80", "0.85"],
@@ -187,6 +207,7 @@
       "source": "Slayt 4 · Bitkisel ürünler aw tablosu"
     },
     {
+      "id": "q21",
       "type": "mcq",
       "question": "Hayvansal ürünler tablosunda aw değeri EN DÜŞÜK olan ürün hangisidir?",
       "options": ["Kurutulmuş tam yağlı süt", "Parmesan peyniri", "Şekerli koyulaştırılmış süt", "Kürlenmiş et"],
@@ -195,30 +216,34 @@
       "source": "Slayt 4 · Hayvansal ürünler aw tablosu"
     },
     {
+      "id": "q22",
       "type": "mcq",
       "question": "Slayta göre patojenler genel olarak hangi pH değerinin altında üremez ya da çok yavaş ürer?",
       "options": ["4.6", "7.0", "5.5", "3.0"],
       "answer": "4.6",
-      "explanation": "Patojenler genel olarak pH 4.6'nın altında üremez ya da çok yavaş ürer; ancak istisnalar vardır. Birçok patojen üreme minimumunun altındaki pH'larda gıdada hayatta kalabilir.",
-      "source": "Slayt 5 · pH ve asitlik"
+      "explanation": "Patojenler genel olarak pH 4.6'nın altında üremez ya da çok yavaş ürer; ancak istisnalar vardır. Birçok patojen growth minimumunun altındaki pH'larda gıdada survive edebilir.",
+      "source": "Slayt 5 · pH and acidity"
     },
     {
+      "id": "q23",
       "type": "mcq",
-      "question": "Slayta göre C. botulinum'un toksin üretebildiği bildirilen en düşük pH kaçtır?",
+      "question": "Slayta göre C. botulinum'un toxin üretebildiği bildirilen en düşük pH kaçtır?",
       "options": ["4.2", "4.6", "5.5", "3.8"],
       "answer": "4.2",
-      "explanation": "C. botulinum'un pH 4.2 gibi düşük bir değerde bile toksin üretebildiği bildirilmiştir.",
-      "source": "Slayt 5 · pH ve asitlik"
+      "explanation": "C. botulinum'un pH 4.2 gibi düşük bir değerde bile toxin üretebildiği bildirilmiştir.",
+      "source": "Slayt 5 · pH and acidity"
     },
     {
+      "id": "q24",
       "type": "mcq",
-      "question": "pH tablosuna göre üreme için MİNİMUM pH değeri EN DÜŞÜK olan mikroorganizma hangisidir?",
-      "options": ["Staphylococcus aureus (üreme)", "Clostridium perfringens", "Vibrio vulnificus", "Bacillus cereus"],
-      "answer": "Staphylococcus aureus (üreme)",
-      "explanation": "S. aureus üreme için minimum pH 4.0 (toksin için 4.5). C. perfringens 5.5–5.8, V. vulnificus 5.0, B. cereus 4.9.",
+      "question": "pH tablosuna göre growth için MİNİMUM pH değeri EN DÜŞÜK olan mikroorganizma hangisidir?",
+      "options": ["Staphylococcus aureus (growth)", "Clostridium perfringens", "Vibrio vulnificus", "Bacillus cereus"],
+      "answer": "Staphylococcus aureus (growth)",
+      "explanation": "S. aureus growth için minimum pH 4.0 (toxin için 4.5). C. perfringens 5.5–5.8, V. vulnificus 5.0, B. cereus 4.9.",
       "source": "Slayt 5 · pH tablosu (ICMSF 1980)"
     },
     {
+      "id": "q25",
       "type": "mcq",
       "question": "pH tablosuna göre MİNİMUM pH değeri EN YÜKSEK olan mikroorganizma hangisidir?",
       "options": ["Clostridium perfringens", "Staphylococcus aureus", "Salmonella spp.", "Yersinia enterocolitica"],
@@ -227,22 +252,25 @@
       "source": "Slayt 5 · pH tablosu"
     },
     {
+      "id": "q26",
       "type": "mcq",
       "question": "pH tablosuna göre MAKSİMUM pH değeri EN YÜKSEK olan mikroorganizma hangisidir?",
-      "options": ["Vibrio parahaemolyticus", "Listeria monocytogenes", "Enterohemorajik E. coli", "Bacillus cereus"],
+      "options": ["Vibrio parahaemolyticus", "Listeria monocytogenes", "Enterohemorrhagic E. coli", "Bacillus cereus"],
       "answer": "Vibrio parahaemolyticus",
       "explanation": "V. parahaemolyticus: min 4.8, opt 7.8–8.6, maks 11.0. L. monocytogenes maks 9.4, EHEC 9.0, B. cereus 8.8.",
       "source": "Slayt 5 · pH tablosu"
     },
     {
+      "id": "q27",
       "type": "mcq",
-      "question": "pH tablosunun dipnotuna göre asetik asit dışındaki asitlendiriciler kullanıldığında Salmonella için bildirilen minimum pH kaçtır?",
+      "question": "pH tablosunun dipnotuna göre acetic acid dışındaki acidulant'lar kullanıldığında Salmonella için bildirilen minimum pH kaçtır?",
       "options": ["3.8", "4.2", "4.6", "5.0"],
       "answer": "3.8",
-      "explanation": "Tabloda Salmonella spp. minimum pH 4.2¹; dipnot ¹: asetik asit dışındaki asitlendiriciler kullanıldığında minimum pH'nın 3.8'e kadar indiği bildirilmiştir.",
+      "explanation": "Tabloda Salmonella spp. minimum pH 4.2¹; dipnot ¹: acetic acid dışındaki acidulant'lar kullanıldığında minimum pH'nın 3.8'e kadar indiği bildirilmiştir.",
       "source": "Slayt 5 · pH tablosu dipnotu"
     },
     {
+      "id": "q28",
       "type": "mcq",
       "question": "pH tablosuna göre Listeria monocytogenes'in minimum pH değeri kaçtır?",
       "options": ["4.39", "4.0", "4.9", "5.5"],
@@ -251,79 +279,87 @@
       "source": "Slayt 5 · pH tablosu"
     },
     {
+      "id": "q29",
       "type": "mcq",
       "question": "25 °C'de pH değeri 7 olan bir çözelti için hangisi doğrudur?",
-      "options": ["Nötrdür", "Asidiktir", "Baziktir", "Hidrojen iyonu içermez"],
-      "answer": "Nötrdür",
-      "explanation": "pH < 7 asidik, pH > 7 bazik (0–14); 25 °C'de pH 7 nötrdür. Düşük pH daha asidik, yüksek pH daha alkali demektir.",
-      "source": "Slayt 5 · pH ve asitlik"
+      "options": ["Neutral", "Acidic", "Basic", "Hidrojen iyonu içermez"],
+      "answer": "Neutral",
+      "explanation": "pH < 7 acidic, pH > 7 basic (0–14); 25 °C'de pH 7 neutral. Düşük pH daha asidik, yüksek pH daha alkali demektir.",
+      "source": "Slayt 5 · pH and acidity"
     },
     {
+      "id": "q30",
       "type": "mcq",
-      "question": "Redoks potansiyeli nasıl tanımlanır?",
+      "question": "Redox potential nasıl tanımlanır?",
       "options": [
-        "Bir maddenin toplam oksitleyici (elektron alan) gücünün toplam indirgeyici (elektron veren) gücüne oranı",
+        "Bir maddenin toplam oxidizing (elektron alan) gücünün toplam reducing (elektron veren) gücüne oranı",
         "Bir maddenin hidrojen iyonu konsantrasyonunun bir fonksiyonu",
-        "Gıdanın su buharı basıncının saf suyun su buharı basıncına oranı",
+        "Gıdanın vapor pressure'ının saf suyun vapor pressure'ına oranı",
         "Bir çözeltinin saf çözücüsünün içeri akışını durdurmak için gereken basınç"
       ],
-      "answer": "Bir maddenin toplam oksitleyici (elektron alan) gücünün toplam indirgeyici (elektron veren) gücüne oranı",
-      "explanation": "Redoks potansiyeli, bir maddenin toplam oksitleyici (elektron alan) gücünün toplam indirgeyici (elektron veren) gücüne oranıdır; yani elektron kazanma ya da kaybetme eğilimidir.",
-      "source": "Slayt 6 · Redoks potansiyeli"
+      "answer": "Bir maddenin toplam oxidizing (elektron alan) gücünün toplam reducing (elektron veren) gücüne oranı",
+      "explanation": "Redox potential, bir maddenin toplam oxidizing (elektron alan) gücünün toplam reducing (elektron veren) gücüne oranıdır; yani elektron kazanma ya da kaybetme eğilimidir.",
+      "source": "Slayt 6 · Redox potential"
     },
     {
+      "id": "q31",
       "type": "mcq",
-      "question": "Redoks potansiyeli hangi birimle ifade edilir ve hangi sembolle gösterilir?",
-      "options": ["Volt (V) — Eh", "Volt (V) — pH", "Paskal (Pa) — aw", "Molar (M) — Eh"],
+      "question": "Redox potential hangi birimle ifade edilir ve hangi sembolle gösterilir?",
+      "options": ["Volt (V) — Eh", "Volt (V) — pH", "Pascal (Pa) — aw", "Molar (M) — Eh"],
       "answer": "Volt (V) — Eh",
-      "explanation": "Redoks potansiyeli volt (V) ile ifade edilir ve Eh ile gösterilir.",
-      "source": "Slayt 6 · Redoks potansiyeli (kalın: Eh)"
+      "explanation": "Redox potential volt (V) ile ifade edilir ve Eh ile gösterilir.",
+      "source": "Slayt 6 · Redox potential (kalın: Eh)"
     },
     {
+      "id": "q32",
       "type": "mcq",
       "question": "2 Na + Cl₂ → 2 NaCl tepkimesi için hangisi doğrudur?",
       "options": [
-        "Na yükseltgenir (elektron verir); Cl indirgenir (elektron alır)",
-        "Na indirgenir (elektron alır); Cl yükseltgenir (elektron verir)",
+        "Na oxidized olur (elektron verir); Cl reduced olur (elektron alır)",
+        "Na reduced olur (elektron alır); Cl oxidized olur (elektron verir)",
         "Her ikisi de elektron kaybeder",
         "Elektron alışverişi olmaz"
       ],
-      "answer": "Na yükseltgenir (elektron verir); Cl indirgenir (elektron alır)",
-      "explanation": "Yükseltgenme (oksidasyon) elektron kaybı, indirgenme (redüksiyon) elektron kazancıdır. Na elektronlarını Cl atomuna aktarır.",
-      "source": "Slayt 6 · Redoks örneği"
+      "answer": "Na oxidized olur (elektron verir); Cl reduced olur (elektron alır)",
+      "explanation": "Oxidation elektron kaybı, reduction elektron kazancıdır. Na elektronlarını Cl atomuna aktarır.",
+      "source": "Slayt 6 · Redox örneği"
     },
     {
+      "id": "q33",
       "type": "mcq",
-      "question": "Aerobik solunumda hangisi doğrudur?",
+      "question": "Aerobic respiration'da hangisi doğrudur?",
       "options": [
-        "Glukoz oksitlenir; oksijen elektronları alır ve suya indirgenir",
-        "Oksijen oksitlenir; glukoz indirgenir",
+        "Glukoz oxidized olur; oksijen elektronları alır ve suya reduced olur",
+        "Oksijen oxidized olur; glukoz reduced olur",
         "Elektronlar nitrat veya sülfata aktarılır",
         "Elektronlar yalnızca hücre içindeki moleküller arasında aktarılır"
       ],
-      "answer": "Glukoz oksitlenir; oksijen elektronları alır ve suya indirgenir",
-      "explanation": "Aerobik solunumda bakteri glukoz gibi besin moleküllerinden elektron alıp oksijene aktarır. Glukoz oksitlenir; oksijen elektronları alır ve suya indirgenir.",
-      "source": "Slayt 6 · Redoks potansiyeli"
+      "answer": "Glukoz oxidized olur; oksijen elektronları alır ve suya reduced olur",
+      "explanation": "Aerobic respiration'da bakteri glukoz gibi besin moleküllerinden elektron alıp oksijene aktarır. Glukoz oxidized olur; oksijen elektronları alır ve suya reduced olur.",
+      "source": "Slayt 6 · Redox potential"
     },
     {
+      "id": "q34",
       "type": "mcq",
-      "question": "Anaerobik solunumda oksijen yerine elektron alıcısı olarak verilen örnek hangisidir?",
+      "question": "Anaerobic respiration'da oksijen yerine electron acceptor olarak verilen örnek hangisidir?",
       "options": ["Nitrat veya sülfat", "Glukoz", "Su", "Laktoz"],
       "answer": "Nitrat veya sülfat",
-      "explanation": "Anaerobik solunumda bakteri elektronları oksijen yerine nitrat veya sülfat gibi farklı bir alıcıya aktarır. Bazı anaeroblar fermentasyon kullanır; elektronlar hücre içindeki moleküller arasında aktarılır.",
-      "source": "Slayt 6 · Redoks potansiyeli"
+      "explanation": "Anaerobic respiration'da bakteri elektronları oksijen yerine nitrat veya sülfat gibi farklı bir alıcıya aktarır. Bazı anaeroblar fermentation kullanır; elektronlar hücre içindeki moleküller arasında aktarılır.",
+      "source": "Slayt 6 · Redox potential"
     },
     {
+      "id": "q35",
       "type": "mcq",
       "question": "Bir mikroorganizmanın EN YÜKSEK HIZDA ürediği sıcaklığa ne ad verilir?",
-      "options": ["Optimum sıcaklık", "Minimum sıcaklık", "Maksimum sıcaklık", "Denatürasyon sıcaklığı"],
-      "answer": "Optimum sıcaklık",
-      "explanation": "Minimum: üreyebildiği en düşük sıcaklık. Optimum: en yüksek hızda ürediği sıcaklık. Maksimum: üreyebildiği en yüksek sıcaklık.",
-      "source": "Slayt 7 · Sıcaklık (kalın tanımlar)"
+      "options": ["Optimum temperature", "Minimum temperature", "Maximum temperature", "Denaturation temperature"],
+      "answer": "Optimum temperature",
+      "explanation": "Minimum temperature: üreyebildiği en düşük sıcaklık. Optimum temperature: en yüksek hızda ürediği sıcaklık. Maximum temperature: üreyebildiği en yüksek sıcaklık.",
+      "source": "Slayt 7 · Temperature (kalın tanımlar)"
     },
     {
+      "id": "q36",
       "type": "mcq",
-      "question": "Sıcaklık minimum ve maksimum üreme sıcaklıklarının dışına çıktığında ne olur?",
+      "question": "Sıcaklık minimum ve maximum temperature sınırlarının dışına çıktığında ne olur?",
       "options": [
         "Üreme durur; ancak bu mikroorganizmanın öldüğü anlamına gelmez",
         "Mikroorganizma her zaman ölür",
@@ -331,105 +367,116 @@
         "Mikroorganizma spor oluşturmak zorundadır"
       ],
       "answer": "Üreme durur; ancak bu mikroorganizmanın öldüğü anlamına gelmez",
-      "explanation": "Minimum ve maksimum sıcaklıkların dışında üreme durur; ancak üremenin durması mikroorganizmaların öldüğü anlamına gelmez.",
-      "source": "Slayt 7 · Sıcaklık"
+      "explanation": "Minimum ve maximum temperature'ın dışında üreme durur; ancak üremenin durması mikroorganizmaların öldüğü anlamına gelmez.",
+      "source": "Slayt 7 · Temperature"
     },
     {
+      "id": "q37",
       "type": "mcq",
-      "question": "Psikrotroflar için verilen sıcaklık aralığı hangisidir?",
+      "question": "Psychrotrophs için verilen sıcaklık aralığı hangisidir?",
       "options": ["0 – 30 °C", "−20 – 20 °C", "10 – 48 °C", "40 – 72 °C"],
       "answer": "0 – 30 °C",
-      "explanation": "Psikrofiller −20–20 °C · Psikrotroflar 0–30 °C · Mezofiller 10–48 °C · Termofiller 40–72 °C · Hipertermofiller 65–110 °C.",
+      "explanation": "Psychrophiles −20–20 °C · Psychrotrophs 0–30 °C · Mesophiles 10–48 °C · Thermophiles 40–72 °C · Hyperthermophiles 65–110 °C.",
       "source": "Slayt 8 · Sıcaklık aralıkları kutusu"
     },
     {
+      "id": "q38",
       "type": "mcq",
       "question": "65 – 110 °C aralığında üreyen mikroorganizma grubu hangisidir?",
-      "options": ["Hipertermofiller", "Termofiller", "Mezofiller", "Psikrotroflar"],
-      "answer": "Hipertermofiller",
-      "explanation": "Hipertermofiller 65–110 °C; termofiller 40–72 °C.",
+      "options": ["Hyperthermophiles", "Thermophiles", "Mesophiles", "Psychrotrophs"],
+      "answer": "Hyperthermophiles",
+      "explanation": "Hyperthermophiles 65–110 °C; thermophiles 40–72 °C.",
       "source": "Slayt 8 · Sıcaklık aralıkları kutusu"
     },
     {
+      "id": "q39",
       "type": "mcq",
-      "question": "Mezofiller için verilen sıcaklık aralığı hangisidir?",
+      "question": "Mesophiles için verilen sıcaklık aralığı hangisidir?",
       "options": ["10 – 48 °C", "0 – 30 °C", "40 – 72 °C", "−20 – 20 °C"],
       "answer": "10 – 48 °C",
-      "explanation": "Mezofiller 10–48 °C; örnekler: Escherichia coli, Salmonella spp.",
+      "explanation": "Mesophiles 10–48 °C; örnekler: Escherichia coli, Salmonella spp.",
       "source": "Slayt 8 · Sıcaklık aralıkları kutusu"
     },
     {
+      "id": "q40",
       "type": "mcq",
       "question": "Slayta göre Listeria monocytogenes ve Pseudomonas fluorescens hangi gruba örnektir?",
-      "options": ["Psikrotroflar", "Psikrofiller", "Mezofiller", "Termofiller"],
-      "answer": "Psikrotroflar",
-      "explanation": "Psikrotroflar: Listeria monocytogenes, Pseudomonas fluorescens.",
+      "options": ["Psychrotrophs", "Psychrophiles", "Mesophiles", "Thermophiles"],
+      "answer": "Psychrotrophs",
+      "explanation": "Psychrotrophs: Listeria monocytogenes, Pseudomonas fluorescens.",
       "source": "Slayt 8 · Örnek organizmalar"
     },
     {
+      "id": "q41",
       "type": "mcq",
       "question": "Thermus aquaticus ve Geobacillus stearothermophilus hangi gruba örnek olarak verilmiştir?",
-      "options": ["Termofiller", "Hipertermofiller", "Mezofiller", "Psikrofiller"],
-      "answer": "Termofiller",
-      "explanation": "Termofiller: Thermus aquaticus, Geobacillus stearothermophilus. Hipertermofiller: Pyrolobus fumarii, Pyrococcus furiosus.",
+      "options": ["Thermophiles", "Hyperthermophiles", "Mesophiles", "Psychrophiles"],
+      "answer": "Thermophiles",
+      "explanation": "Thermophiles: Thermus aquaticus, Geobacillus stearothermophilus. Hyperthermophiles: Pyrolobus fumarii, Pyrococcus furiosus.",
       "source": "Slayt 8 · Örnek organizmalar"
     },
     {
+      "id": "q42",
       "type": "mcq",
       "question": "Pyrolobus fumarii ve Pyrococcus furiosus hangi gruba örnektir?",
-      "options": ["Hipertermofiller", "Termofiller", "Psikrofiller", "Psikrotroflar"],
-      "answer": "Hipertermofiller",
-      "explanation": "Hipertermofiller: Pyrolobus fumarii, Pyrococcus furiosus.",
+      "options": ["Hyperthermophiles", "Thermophiles", "Psychrophiles", "Psychrotrophs"],
+      "answer": "Hyperthermophiles",
+      "explanation": "Hyperthermophiles: Pyrolobus fumarii, Pyrococcus furiosus.",
       "source": "Slayt 8 · Örnek organizmalar"
     },
     {
+      "id": "q43",
       "type": "mcq",
       "question": "Colwellia psychrerythraea ve Desulfotalea psychrophila hangi gruba örnektir?",
-      "options": ["Psikrofiller", "Psikrotroflar", "Mezofiller", "Hipertermofiller"],
-      "answer": "Psikrofiller",
-      "explanation": "Psikrofiller (−20–20 °C): Colwellia psychrerythraea, Desulfotalea psychrophila.",
+      "options": ["Psychrophiles", "Psychrotrophs", "Mesophiles", "Hyperthermophiles"],
+      "answer": "Psychrophiles",
+      "explanation": "Psychrophiles (−20–20 °C): Colwellia psychrerythraea, Desulfotalea psychrophila.",
       "source": "Slayt 8 · Örnek organizmalar"
     },
     {
+      "id": "q44",
       "type": "mcq",
-      "question": "Psikrotrof – mezofil karşılaştırma tablosuna göre PSİKROTROFLAR için hangisi doğrudur?",
+      "question": "Psychrotrophs – mesophiles karşılaştırma tablosuna göre PSYCHROTROPHS için hangisi doğrudur?",
       "options": [
-        "Membran lipidlerinde doymamış yağ asidi oranı yüksektir",
+        "Membran lipidlerinde unsaturated fatty acid oranı yüksektir",
         "Metabolizmaları hızlıdır",
-        "Enzimlerinin denatürasyon sıcaklığı yüksektir",
-        "Hücre membranı düşük sıcaklıkta aktif değildir"
+        "Enzyme denaturation temperature'ları yüksektir",
+        "Membrane permeability düşük sıcaklıkta aktif değildir"
       ],
-      "answer": "Membran lipidlerinde doymamış yağ asidi oranı yüksektir",
-      "explanation": "Psikrotroflar: membran geçirgenliği düşük sıcaklıkta aktif · metabolizma yavaş · protein üretimi için optimum sıcaklık düşük · enzim denatürasyon sıcaklığı düşük · doymamış yağ asidi oranı yüksek.",
-      "source": "Slayt 8 · Psikrotrof – mezofil tablosu"
+      "answer": "Membran lipidlerinde unsaturated fatty acid oranı yüksektir",
+      "explanation": "Psychrotrophs: membrane permeability düşük sıcaklıkta aktif · metabolizma yavaş · protein production için optimum sıcaklık düşük · enzyme denaturation temperature düşük · unsaturated fatty acid oranı yüksek.",
+      "source": "Slayt 8 · Psychrotrophs – mesophiles tablosu"
     },
     {
+      "id": "q45",
       "type": "mcq",
-      "question": "Psikrotrof – mezofil tablosuna göre MEZOFİLLER için hangisi doğrudur?",
+      "question": "Psychrotrophs – mesophiles tablosuna göre MESOPHILES için hangisi doğrudur?",
       "options": [
-        "Protein üretimi için optimum sıcaklık yüksektir",
-        "Membran lipidlerinde doymamış yağ asidi oranı yüksektir",
+        "Protein production için optimum sıcaklık yüksektir",
+        "Membran lipidlerinde unsaturated fatty acid oranı yüksektir",
         "Metabolizmaları yavaştır",
-        "Hücre membranı düşük sıcaklıkta aktiftir"
+        "Membrane permeability düşük sıcaklıkta aktiftir"
       ],
-      "answer": "Protein üretimi için optimum sıcaklık yüksektir",
-      "explanation": "Mezofiller: membran düşük sıcaklıkta aktif değil · metabolizma hızlı · protein üretimi için optimum sıcaklık yüksek · enzim denatürasyon sıcaklığı yüksek · doymamış yağ asidi oranı düşük.",
-      "source": "Slayt 8 · Psikrotrof – mezofil tablosu"
+      "answer": "Protein production için optimum sıcaklık yüksektir",
+      "explanation": "Mesophiles: membrane permeability düşük sıcaklıkta aktif değil · metabolizma hızlı · protein production için optimum sıcaklık yüksek · enzyme denaturation temperature yüksek · unsaturated fatty acid oranı düşük.",
+      "source": "Slayt 8 · Psychrotrophs – mesophiles tablosu"
     },
     {
+      "id": "q46",
       "type": "mcq",
       "question": "Düşük sıcaklığın enzimler üzerindeki etkisi için hangisi doğrudur?",
       "options": [
-        "Enzimler denatüre olmaz, yavaşlar; sıcaklık uygun olunca yeniden çalışır",
-        "Enzimler kalıcı olarak denatüre olur",
+        "Enzimler denature olmaz, yavaşlar; sıcaklık uygun olunca yeniden çalışır",
+        "Enzimler kalıcı olarak denature olur",
         "Enzimler hızlanır",
         "Enzimler yalnızca ısıtılınca tekrar sentezlenebilir"
       ],
-      "answer": "Enzimler denatüre olmaz, yavaşlar; sıcaklık uygun olunca yeniden çalışır",
-      "explanation": "Enzimler düşük sıcaklıkta denatüre olmaz; yavaşlar ve sıcaklık uygun olunca yeniden çalışır. Isıyla denatüre olan enzimde hasar kalıcıdır.",
-      "source": "Slayt 9 · Sıcaklık"
+      "answer": "Enzimler denature olmaz, yavaşlar; sıcaklık uygun olunca yeniden çalışır",
+      "explanation": "Enzimler düşük sıcaklıkta denature olmaz; yavaşlar ve sıcaklık uygun olunca yeniden çalışır. Isıyla denature olan enzimde hasar kalıcıdır.",
+      "source": "Slayt 9 · Temperature"
     },
     {
+      "id": "q47",
       "type": "mcq",
       "question": "Sıcaklık – aw tablosuna göre −20 °C'de aw değeri kaçtır?",
       "options": ["0.823", "0.907", "0.68", "1"],
@@ -438,6 +485,7 @@
       "source": "Slayt 9 · Sıcaklık – aw tablosu"
     },
     {
+      "id": "q48",
       "type": "mcq",
       "question": "Sıcaklık – aw tablosuna göre −40 °C'de aw değeri kaçtır?",
       "options": ["0.68", "0.823", "0.953", "0.864"],
@@ -446,98 +494,109 @@
       "source": "Slayt 9 · Sıcaklık – aw tablosu"
     },
     {
+      "id": "q49",
       "type": "mcq",
-      "question": "37 °C'den 20 °C'nin altına inildiğinde soğuk şok proteinleri (CSP) hangi fazda en yüksek düzeye çıkar?",
-      "options": ["Aklimasyon (uyum) fazı", "Durağan faz", "Optimal üreme (37 °C)", "Düşük sıcaklıkta kararlı üreme"],
-      "answer": "Aklimasyon (uyum) fazı",
-      "explanation": "20 °C'nin altındaki aklimasyon fazında (acclimation phase) CSP'ler keskin biçimde yükselir, CSP olmayan proteinler düşer; ardından uyum sağlamış hücrelerle düşük sıcaklıkta kararlı üreme gelir.",
-      "source": "Slayt 9–10 · Soğuk şok grafiği"
+      "question": "37 °C'den 20 °C'nin altına inildiğinde cold shock proteins (CSP) hangi fazda en yüksek düzeye çıkar?",
+      "options": ["Acclimation phase", "Stationary phase", "Optimal growth (37 °C)", "Stable low-temperature growth"],
+      "answer": "Acclimation phase",
+      "explanation": "20 °C'nin altındaki acclimation phase'de CSP'ler keskin biçimde yükselir, non-CSP proteinler düşer; ardından uyum sağlamış hücrelerle stable low-temperature growth gelir.",
+      "source": "Slayt 9–10 · Cold shock grafiği"
     },
     {
+      "id": "q50",
       "type": "mcq",
-      "question": "Tabloya göre optimum üreme sıcaklığı 5 – 25 °C olarak verilen mikroorganizma hangisidir?",
+      "question": "Tabloya göre optimum growth sıcaklığı 5 – 25 °C olarak verilen mikroorganizma hangisidir?",
       "options": ["Aeromonas hydrophila", "Campylobacter jejuni", "Plesiomonas shigelloides", "Pseudomonas spp."],
       "answer": "Aeromonas hydrophila",
-      "explanation": "Aeromonas hydrophila: istiridye dahil deniz ürünleri, su · canlı kalma −2–45 °C · optimum 5–25 °C. C. jejuni 37–42, Plesiomonas 37–38, Pseudomonas 37–38.",
+      "explanation": "Aeromonas hydrophila: istiridye dahil deniz ürünleri, su · survival −2–45 °C · optimum 5–25 °C. C. jejuni 37–42, Plesiomonas 37–38, Pseudomonas 37–38.",
       "source": "Slayt 10 · Mikroorganizma / gıda kaynağı / sıcaklık tablosu"
     },
     {
+      "id": "q51",
       "type": "mcq",
-      "question": "Çiğ tavuk, çiğ tavukla kontamine gıdalar, pastörize edilmemiş süt ve arıtılmamış su ile ilişkilendirilen ve optimum üremesi 37 – 42 °C olan mikroorganizma hangisidir?",
+      "question": "Çiğ tavuk, çiğ tavukla kontamine gıdalar, pastörize edilmemiş süt ve arıtılmamış su ile ilişkilendirilen ve optimum growth sıcaklığı 37 – 42 °C olan mikroorganizma hangisidir?",
       "options": ["Campylobacter jejuni", "Yersinia enterocolitica", "Listeria monocytogenes", "Aeromonas hydrophila"],
       "answer": "Campylobacter jejuni",
-      "explanation": "Campylobacter jejuni: canlı kalma 0–45 °C, optimum üreme 37–42 °C.",
+      "explanation": "Campylobacter jejuni: survival 0–45 °C, optimum growth 37–42 °C.",
       "source": "Slayt 10 · Sıcaklık tablosu"
     },
     {
+      "id": "q52",
       "type": "mcq",
-      "question": "Tabloda tek gıda kaynağı çiğ istiridye olarak verilen ve canlı kalma sıcaklığı 8 – 44 °C olan mikroorganizma hangisidir?",
+      "question": "Tabloda tek gıda kaynağı çiğ istiridye olarak verilen ve survival sıcaklığı 8 – 44 °C olan mikroorganizma hangisidir?",
       "options": ["Plesiomonas shigelloides", "Aeromonas hydrophila", "Pseudomonas spp.", "Campylobacter jejuni"],
       "answer": "Plesiomonas shigelloides",
-      "explanation": "Plesiomonas shigelloides: çiğ istiridye · canlı kalma 8–44 °C · optimum 37–38 °C.",
+      "explanation": "Plesiomonas shigelloides: çiğ istiridye · survival 8–44 °C · optimum 37–38 °C.",
       "source": "Slayt 10 · Sıcaklık tablosu"
     },
     {
+      "id": "q53",
       "type": "mcq",
-      "question": "Tabloya göre Penicillium ve Cladosporium için optimum üreme sıcaklığı kaçtır?",
+      "question": "Tabloya göre Penicillium ve Cladosporium için optimum growth sıcaklığı kaçtır?",
       "options": ["25 – 26 °C", "37 – 38 °C", "5 – 25 °C", "37 – 42 °C"],
       "answer": "25 – 26 °C",
-      "explanation": "Penicillium, Cladosporium: canlı kalma −3–35 °C, optimum 25–26 °C.",
+      "explanation": "Penicillium, Cladosporium: survival −3–35 °C, optimum 25–26 °C.",
       "source": "Slayt 10 · Sıcaklık tablosu"
     },
     {
+      "id": "q54",
       "type": "mcq",
-      "question": "Tabloda hazır tüketilen gıdalar, çiğ süt, peynir, dondurma ve füme balıkla ilişkilendirilen; canlı kalma ve optimum üreme aralığı −1.5 – 45 °C verilen mikroorganizma hangisidir?",
+      "question": "Tabloda hazır tüketilen gıdalar, çiğ süt, peynir, dondurma ve füme balıkla ilişkilendirilen; survival ve optimum growth aralığı −1.5 – 45 °C verilen mikroorganizma hangisidir?",
       "options": ["Listeria monocytogenes", "Yersinia enterocolitica", "Campylobacter jejuni", "Plesiomonas shigelloides"],
       "answer": "Listeria monocytogenes",
       "explanation": "Listeria monocytogenes: hazır tüketilen gıdalar, çiğ süt, peynirler, dondurma, çiğ sebzeler, fermente çiğ sucuklar, kanatlı, çiğ et, çiğ ve füme balık · −1.5–45 °C. (Yersinia: çiğ süt, çikolatalı süt, su, domuz eti · −1.5–44 °C.)",
       "source": "Slayt 10 · Sıcaklık tablosu"
     },
     {
+      "id": "q55",
       "type": "mcq",
-      "question": "Slayta göre bakteri sporlarını güvenilir şekilde inaktive etmek için ne gerekir?",
+      "question": "Slayta göre bacterial spores'u güvenilir şekilde inactivate etmek için ne gerekir?",
       "options": [
-        "Doğrulanmış bir nemli ısı sterilizasyon döngüsü",
+        "Validated bir moist heat sterilization cycle",
         "100 °C'de kısa süre kaynatmak",
         "Dondurmak",
-        "Kuru ısıyı daha düşük sıcaklıkta uygulamak"
+        "Dry heat'i daha düşük sıcaklıkta uygulamak"
       ],
-      "answer": "Doğrulanmış bir nemli ısı sterilizasyon döngüsü",
-      "explanation": "Bakteri sporları ısıya özellikle dirençlidir ve 100 °C'de kaynatmaya dayanabilir. Onları güvenilir şekilde inaktive etmek için doğrulanmış (validated) bir nemli ısı sterilizasyon döngüsü gerekir.",
-      "source": "Slayt 11 · Isıl inaktivasyonu etkileyen faktörler — 1"
+      "answer": "Validated bir moist heat sterilization cycle",
+      "explanation": "Bacterial spores ısıya özellikle dirençlidir ve 100 °C'de kaynatmaya dayanabilir. Onları güvenilir şekilde inactivate etmek için validated bir moist heat sterilization cycle gerekir.",
+      "source": "Slayt 11 · Thermal inactivation'ı etkileyen faktörler — 1"
     },
     {
+      "id": "q56",
       "type": "mcq",
-      "question": "“Kapsül bir mikroorganizmayı otomatik olarak ısıya daha dirençli yapar.” ifadesi doğru mu?",
+      "question": "“Capsule bir mikroorganizmayı otomatik olarak ısıya daha dirençli yapar.” ifadesi doğru mu?",
       "options": ["Yanlış", "Doğru"],
       "answer": "Yanlış",
-      "explanation": "Kapsül bir mikroorganizmayı otomatik olarak ısıya daha dirençli yapmaz. Bakteri sporları genellikle vejetatif hücrelerden daha dirençlidir.",
+      "explanation": "Capsule bir mikroorganizmayı otomatik olarak ısıya daha dirençli yapmaz. Bacterial spores genellikle vegetative cells'ten daha dirençlidir.",
       "source": "Slayt 11 · 2. Mikroorganizmanın türü"
     },
     {
+      "id": "q57",
       "type": "mcq",
-      "question": "“Psikrofil, mezofil ve termofillerin her birinin tek bir evrensel öldürme sıcaklığı vardır.” ifadesi doğru mu?",
+      "question": "“Psychrophiles, mesophiles ve thermophiles'ın her birinin tek bir evrensel öldürme sıcaklığı vardır.” ifadesi doğru mu?",
       "options": ["Yanlış", "Doğru"],
       "answer": "Yanlış",
-      "explanation": "Psikrofil, mezofil ve termofillerin her birinin tek bir evrensel öldürme sıcaklığı yoktur. Kesin sıcaklık ve süreler türe, suşa ve koşullara göre değişir.",
+      "explanation": "Psychrophiles, mesophiles ve thermophiles'ın her birinin tek bir evrensel öldürme sıcaklığı yoktur. Kesin sıcaklık ve süreler türe, suşa ve koşullara göre değişir.",
       "source": "Slayt 11 · 1. Sıcaklık ve maruz kalma süresi"
     },
     {
+      "id": "q58",
       "type": "mcq",
-      "question": "Isıl inaktivasyonda başlangıç mikroorganizma sayısının etkisi nedir?",
+      "question": "Thermal inactivation'da başlangıç mikroorganizma sayısının etkisi nedir?",
       "options": [
         "Daha büyük başlangıç popülasyonunun aynı hedef düzeye inmesi genellikle daha uzun sürer",
         "Başlangıç sayısının hiçbir etkisi yoktur",
-        "Daha büyük popülasyon daha hızlı inaktive olur",
+        "Daha büyük popülasyon daha hızlı inactivate olur",
         "Yalnızca sporlarda etkilidir"
       ],
       "answer": "Daha büyük başlangıç popülasyonunun aynı hedef düzeye inmesi genellikle daha uzun sürer",
-      "explanation": "Daha büyük bir başlangıç popülasyonunun aynı hedef düzeye inmesi genellikle daha uzun sürer, çünkü daha fazla organizmanın inaktive edilmesi gerekir.",
+      "explanation": "Daha büyük bir başlangıç popülasyonunun aynı hedef düzeye inmesi genellikle daha uzun sürer, çünkü daha fazla organizmanın inactivate edilmesi gerekir.",
       "source": "Slayt 11 · 3. Mikroorganizma sayısı"
     },
     {
+      "id": "q59",
       "type": "mcq",
-      "question": "Isıl inaktivasyonda materyalin bileşimi (yağlar, proteinler) nasıl bir etki yapar?",
+      "question": "Thermal inactivation'da materyalin bileşimi (yağlar, proteinler) nasıl bir etki yapar?",
       "options": [
         "Mikroorganizmaları ısıdan koruyabilir veya ısı transferini yavaşlatabilir",
         "Isı transferini her zaman hızlandırır",
@@ -549,365 +608,411 @@
       "source": "Slayt 11 · 4. Materyalin bileşimi"
     },
     {
+      "id": "q60",
       "type": "mcq",
-      "question": "Slayta göre bazı mikroorganizmalar, özellikle bakteri sporları, hangi pH koşulunda ısıya daha dirençli olabilir?",
+      "question": "Slayta göre bazı mikroorganizmalar, özellikle bacterial spores, hangi pH koşulunda ısıya daha dirençli olabilir?",
       "options": ["Nötr pH civarında", "Güçlü asidik pH'da", "Güçlü alkali pH'da", "pH'nın ısı direncine etkisi yoktur"],
       "answer": "Nötr pH civarında",
-      "explanation": "Bazı mikroorganizmalar, özellikle bakteri sporları, nötr pH civarında ısıya daha dirençli, asidik ya da alkali koşullarda daha az dirençli olabilir. Bu her mikroorganizma için geçerli bir kural değildir.",
+      "explanation": "Bazı mikroorganizmalar, özellikle bacterial spores, nötr pH civarında ısıya daha dirençli, asidik ya da alkali koşullarda daha az dirençli olabilir. Bu her mikroorganizma için geçerli bir kural değildir.",
       "source": "Slayt 12 · 5. Materyalin pH'sı"
     },
     {
+      "id": "q61",
       "type": "mcq",
-      "question": "Büyüme fazının ısıya duyarlılığa etkisi için hangisi doğrudur?",
+      "question": "Growth phase'in ısıya duyarlılığa etkisi için hangisi doğrudur?",
       "options": [
-        "Aktif olarak büyüyen hücreler, durağan fazdaki hücrelere göre genellikle ısıya daha duyarlıdır",
-        "Durağan fazdaki hücreler ısıya daha duyarlıdır",
-        "Büyüme fazının ısıya duyarlılığa hiçbir etkisi yoktur",
-        "Yalnızca lag fazındaki hücreler ısıdan etkilenir"
+        "Aktif olarak büyüyen hücreler, stationary phase'deki hücrelere göre genellikle ısıya daha duyarlıdır",
+        "Stationary phase'deki hücreler ısıya daha duyarlıdır",
+        "Growth phase'in ısıya duyarlılığa hiçbir etkisi yoktur",
+        "Yalnızca lag phase'deki hücreler ısıdan etkilenir"
       ],
-      "answer": "Aktif olarak büyüyen hücreler, durağan fazdaki hücrelere göre genellikle ısıya daha duyarlıdır",
-      "explanation": "Aktif olarak büyüyen hücreler genellikle durağan fazdaki (stationary) hücrelerden ısıya daha duyarlıdır; ancak etki organizmaya ve koşullara göre değişir.",
-      "source": "Slayt 12 · 6. Büyüme fazı"
+      "answer": "Aktif olarak büyüyen hücreler, stationary phase'deki hücrelere göre genellikle ısıya daha duyarlıdır",
+      "explanation": "Aktif olarak büyüyen hücreler genellikle stationary phase'deki hücrelerden ısıya daha duyarlıdır; ancak etki organizmaya ve koşullara göre değişir.",
+      "source": "Slayt 12 · 6. Growth phase"
     },
     {
+      "id": "q62",
       "type": "mcq",
-      "question": "Nemli ısı ile kuru ısı karşılaştırıldığında hangisi doğrudur?",
+      "question": "Moist heat ile dry heat karşılaştırıldığında hangisi doğrudur?",
       "options": [
-        "Aynı sıcaklıkta nemli ısı daha etkilidir; kuru ısı sterilizasyonu daha yüksek sıcaklık ve daha uzun süre gerektirir",
-        "Aynı sıcaklıkta kuru ısı daha etkilidir",
+        "Aynı sıcaklıkta moist heat daha etkilidir; dry heat sterilization daha yüksek sıcaklık ve daha uzun süre gerektirir",
+        "Aynı sıcaklıkta dry heat daha etkilidir",
         "İkisi aynı sıcaklıkta eşit etkilidir",
-        "Kuru ısı daha düşük sıcaklıkta ve daha kısa sürede steril eder"
+        "Dry heat daha düşük sıcaklıkta ve daha kısa sürede steril eder"
       ],
-      "answer": "Aynı sıcaklıkta nemli ısı daha etkilidir; kuru ısı sterilizasyonu daha yüksek sıcaklık ve daha uzun süre gerektirir",
-      "explanation": "Aynı sıcaklıkta nemli ısı genellikle kuru ısıdan daha etkilidir, çünkü ısıyı verimli aktarır ve proteinlere zarar verir.",
-      "source": "Slayt 12 · 7. Nem"
+      "answer": "Aynı sıcaklıkta moist heat daha etkilidir; dry heat sterilization daha yüksek sıcaklık ve daha uzun süre gerektirir",
+      "explanation": "Aynı sıcaklıkta moist heat genellikle dry heat'ten daha etkilidir, çünkü ısıyı verimli aktarır ve proteinlere zarar verir.",
+      "source": "Slayt 12 · 7. Moisture"
     },
     {
+      "id": "q63",
       "type": "mcq",
-      "question": "Isıl ölüm hızı grafiğinde D-değeri neyi gösterir?",
+      "question": "Thermal death rate grafiğinde D-value neyi gösterir?",
       "options": [
-        "Hayatta kalan sayısının 10 kat (1 log, örn. 100.000 → 10.000) azalması için geçen süre",
+        "Survivor sayısının 10 kat (1 log, örn. 100.000 → 10.000) azalması için geçen süre",
         "Tüm mikroorganizmaların öldüğü sıcaklık",
         "Sporların çimlenmeye başladığı süre",
         "Mikroorganizma sayısının iki katına çıkması için geçen süre"
       ],
-      "answer": "Hayatta kalan sayısının 10 kat (1 log, örn. 100.000 → 10.000) azalması için geçen süre",
-      "explanation": "Grafikte D-değeri, C. botulinum sporları eğrisinde hayatta kalan sayısı 100.000'den 10.000'e düşerken geçen süre aralığı olarak işaretlenmiştir.",
-      "source": "Slayt 11 · Isıl ölüm hızı eğrileri"
+      "answer": "Survivor sayısının 10 kat (1 log, örn. 100.000 → 10.000) azalması için geçen süre",
+      "explanation": "Grafikte D-value, C. botulinum spores eğrisinde survivor sayısı 100.000'den 10.000'e düşerken geçen süre aralığı olarak işaretlenmiştir.",
+      "source": "Slayt 11 · Thermal death rate eğrileri"
     },
     {
+      "id": "q64",
       "type": "mcq",
-      "question": "Isıl ölüm hızı grafiğinde ısıya EN DİRENÇLİ (en yavaş azalan) grup hangisidir?",
-      "options": ["Termofil sporları", "Vejetatif hücreler", "C. botulinum sporları", "Hepsi aynı hızda azalır"],
-      "answer": "Termofil sporları",
-      "explanation": "En düz eğri termofil sporlarına aittir; vejetatif hücreler en dik (en hızlı) azalır, C. botulinum sporları arada yer alır.",
-      "source": "Slayt 11 · Isıl ölüm hızı eğrileri"
+      "question": "Thermal death rate grafiğinde ısıya EN DİRENÇLİ (en yavaş azalan) grup hangisidir?",
+      "options": ["Thermophile spores", "Vegetative cells", "C. botulinum spores", "Hepsi aynı hızda azalır"],
+      "answer": "Thermophile spores",
+      "explanation": "En düz eğri thermophile spores'a aittir; vegetative cells en dik (en hızlı) azalır, C. botulinum spores arada yer alır.",
+      "source": "Slayt 11 · Thermal death rate eğrileri"
     },
     {
+      "id": "q65",
       "type": "mcq",
-      "question": "Ozmotik basınç nasıl tanımlanır?",
+      "question": "Osmotic pressure nasıl tanımlanır?",
       "options": [
-        "Saf çözücünün yarı geçirgen zardan çözeltiye içeri akışını önlemek için uygulanması gereken minimum basınç",
+        "Saf çözücünün semipermeable membrane'dan çözeltiye içeri akışını önlemek için uygulanması gereken minimum basınç",
         "Bir maddenin elektron kazanma ya da kaybetme eğilimi",
-        "Gıdanın su buharı basıncının saf suyunkine oranı",
+        "Gıdanın vapor pressure'ının saf suyunkine oranı",
         "Hidrojen iyonu konsantrasyonunun bir fonksiyonu"
       ],
-      "answer": "Saf çözücünün yarı geçirgen zardan çözeltiye içeri akışını önlemek için uygulanması gereken minimum basınç",
-      "explanation": "Ozmotik basınç, saf çözücünün yarı geçirgen bir zardan çözeltiye içeri akışını önlemek için çözeltiye uygulanması gereken minimum basınçtır.",
-      "source": "Slayt 13 · Ozmotik basınç"
+      "answer": "Saf çözücünün semipermeable membrane'dan çözeltiye içeri akışını önlemek için uygulanması gereken minimum basınç",
+      "explanation": "Osmotic pressure, saf çözücünün semipermeable membrane'dan çözeltiye içeri akışını önlemek için çözeltiye uygulanması gereken minimum basınçtır.",
+      "source": "Slayt 13 · Osmotic pressure"
     },
     {
+      "id": "q66",
       "type": "mcq",
-      "question": "Ozmozda su net olarak hangi yöne hareket eder?",
+      "question": "Osmosis'te su net olarak hangi yöne hareket eder?",
       "options": [
-        "Çözünen madde konsantrasyonu düşük (hipotonik) taraftan yüksek (hipertonik) tarafa",
+        "Çözünen madde konsantrasyonu düşük (hypotonic) taraftan yüksek (hypertonic) tarafa",
         "Çözünen madde konsantrasyonu yüksek taraftan düşük tarafa",
-        "İzotonik ortamda tek yönlü olarak içeri",
-        "Su yarı geçirgen zardan geçemez"
+        "Isotonic ortamda tek yönlü olarak içeri",
+        "Su semipermeable membrane'dan geçemez"
       ],
-      "answer": "Çözünen madde konsantrasyonu düşük (hipotonik) taraftan yüksek (hipertonik) tarafa",
-      "explanation": "Ozmoz, suyun yarı geçirgen bir zardan difüzyonudur. Suyun net akışı: çözüneni az olan taraftan çok olan tarafa. Çok çözünen = az su.",
-      "source": "Slayt 13 · Ozmotik basınç görselleri"
+      "answer": "Çözünen madde konsantrasyonu düşük (hypotonic) taraftan yüksek (hypertonic) tarafa",
+      "explanation": "Osmosis, suyun semipermeable membrane'dan difüzyonudur. Suyun net akışı: çözüneni az olan taraftan çok olan tarafa. Çok çözünen = az su.",
+      "source": "Slayt 13 · Osmotic pressure görselleri"
     },
     {
+      "id": "q67",
       "type": "mcq",
-      "question": "Bir bitki hücresi hipertonik ortama konduğunda hangi durum oluşur?",
-      "options": ["Plazmoliz", "Turgor (şişkinlik)", "Gevşeklik (flaccid)", "Hiçbir değişiklik olmaz"],
-      "answer": "Plazmoliz",
-      "explanation": "Hipertonik → plazmoliz · İzotonik → gevşek (flaccid) · Hipotonik → turgor (turgid).",
-      "source": "Slayt 14 · Ozmotik basınç"
+      "question": "Bir bitki hücresi hypertonic ortama konduğunda hangi durum oluşur?",
+      "options": ["Plasmolyzed", "Turgid", "Flaccid", "Hiçbir değişiklik olmaz"],
+      "answer": "Plasmolyzed",
+      "explanation": "Hypertonic → plasmolyzed (plasmolysis) · Isotonic → flaccid · Hypotonic → turgid.",
+      "source": "Slayt 14 · Osmotic pressure"
     },
     {
+      "id": "q68",
       "type": "mcq",
-      "question": "Bir bitki hücresi hipotonik ortamda hangi duruma geçer?",
-      "options": ["Turgor (şişkinlik)", "Plazmoliz", "Gevşeklik (flaccid)", "Parçalanma (liziz)"],
-      "answer": "Turgor (şişkinlik)",
-      "explanation": "Hipotonik ortamda su hücreye girer → turgor. İzotonikte gevşek, hipertonikte plazmoliz.",
-      "source": "Slayt 14 · Ozmotik basınç"
+      "question": "Bir bitki hücresi hypotonic ortamda hangi duruma geçer?",
+      "options": ["Turgid", "Plasmolyzed", "Flaccid", "Lysed"],
+      "answer": "Turgid",
+      "explanation": "Hypotonic ortamda su hücreye girer → turgid. Isotonic'te flaccid, hypertonic'te plasmolyzed.",
+      "source": "Slayt 14 · Osmotic pressure"
     },
     {
+      "id": "q69",
       "type": "mcq",
       "question": "Üremek için YÜKSEK tuz konsantrasyonu (%30–35) GEREKTİREN bakterilere ne ad verilir?",
-      "options": ["Halofiller", "Halotolerantlar", "Ozmofilikler", "Psikrotroflar"],
-      "answer": "Halofiller",
-      "explanation": "Halofiller: üremek için yüksek tuz konsantrasyonu (%30–35 tuz) gerektiren bakteriler — örnek Halobacterium salinarum.",
-      "source": "Slayt 14 · Halotolerant / halofil / ozmofilik"
+      "options": ["Halophiles", "Halotolerant", "Osmophilic", "Psychrotrophs"],
+      "answer": "Halophiles",
+      "explanation": "Halophiles: üremek için yüksek tuz konsantrasyonu (%30–35 tuz) gerektiren bakteriler — örnek Halobacterium salinarum.",
+      "source": "Slayt 14 · Halotolerant / halophile / osmophilic"
     },
     {
+      "id": "q70",
       "type": "mcq",
       "question": "Orta düzey tuz konsantrasyonunda üreyebilen ancak tuz yokluğunda daha iyi üreyen bakterilere ne ad verilir ve slayttaki örnek nedir?",
       "options": [
         "Halotolerant — Staphylococcus aureus",
-        "Halofil — Halobacterium salinarum",
-        "Ozmofilik — Zygosaccharomyces bailii",
-        "Halofil — Staphylococcus aureus"
+        "Halophile — Halobacterium salinarum",
+        "Osmophilic — Zygosaccharomyces bailii",
+        "Halophile — Staphylococcus aureus"
       ],
       "answer": "Halotolerant — Staphylococcus aureus",
       "explanation": "Halotolerant: orta düzey tuz konsantrasyonunda üreyebilen ama tuz yokluğunda daha iyi üreyen bakteriler — Staphylococcus aureus.",
-      "source": "Slayt 14 · Halotolerant / halofil / ozmofilik"
+      "source": "Slayt 14 · Halotolerant / halophile / osmophilic"
     },
     {
+      "id": "q71",
       "type": "mcq",
       "question": "Yüksek şeker konsantrasyonunda üreyebilen mikroorganizmalara ne ad verilir?",
-      "options": ["Ozmofilik", "Halofil", "Halotolerant", "Termofil"],
-      "answer": "Ozmofilik",
-      "explanation": "Ozmofilik: yüksek şeker konsantrasyonunda üreyebilen — örnek Zygosaccharomyces bailii.",
-      "source": "Slayt 14 · Halotolerant / halofil / ozmofilik"
+      "options": ["Osmophilic", "Halophile", "Halotolerant", "Thermophile"],
+      "answer": "Osmophilic",
+      "explanation": "Osmophilic: yüksek şeker konsantrasyonunda üreyebilen — örnek Zygosaccharomyces bailii.",
+      "source": "Slayt 14 · Halotolerant / halophile / osmophilic"
     },
     {
+      "id": "q72",
       "type": "mcq",
       "question": "Paket kapatılırken paket içindeki havanın seçilmiş bir gaz karışımıyla (örn. CO₂ + N₂) değiştirildiği yöntem hangisidir?",
       "options": [
-        "MAP — Modifiye atmosfer paketleme",
-        "CAP — Kontrollü atmosfer paketleme",
-        "CAS — Kontrollü atmosferde depolama",
-        "DAC — Karbondioksitin doğrudan eklenmesi"
+        "MAP — Modified Atmosphere Packaging",
+        "CAP — Controlled Atmosphere Packaging",
+        "CAS — Controlled Atmosphere Storage",
+        "DAC — Direct Addition of Carbon dioxide"
       ],
-      "answer": "MAP — Modifiye atmosfer paketleme",
+      "answer": "MAP — Modified Atmosphere Packaging",
       "explanation": "MAP: paket kapatılırken içindeki hava seçilmiş bir gaz karışımıyla değiştirilir. Örnek: soğutulmuş balık paketi.",
-      "source": "Slayt 16 · Gazlar tablosu"
+      "source": "Slayt 16 · Gases tablosu"
     },
     {
+      "id": "q73",
       "type": "mcq",
       "question": "Depolama odası ya da haznesinde O₂ ve CO₂'yi izleyip ayarlayan, örneği soğuk elma depolaması olan yöntem hangisidir?",
       "options": [
-        "CAS — Kontrollü atmosferde depolama",
-        "MAP — Modifiye atmosfer paketleme",
-        "CAP — Kontrollü atmosfer paketleme",
-        "DAC — Karbondioksitin doğrudan eklenmesi"
+        "CAS — Controlled Atmosphere Storage",
+        "MAP — Modified Atmosphere Packaging",
+        "CAP — Controlled Atmosphere Packaging",
+        "DAC — Direct Addition of Carbon dioxide"
       ],
-      "answer": "CAS — Kontrollü atmosferde depolama",
+      "answer": "CAS — Controlled Atmosphere Storage",
       "explanation": "CAS: depolama odası ya da haznesindeki O₂ ve CO₂ izlenir ve ayarlanır. Örnek: soğuk elma depolaması.",
-      "source": "Slayt 16 · Gazlar tablosu"
+      "source": "Slayt 16 · Gases tablosu"
     },
     {
+      "id": "q74",
       "type": "mcq",
       "question": "CO₂'nin doğrudan gıdaya eklendiği ve bir kısmının çözündüğü, örneği soğutulmuş süt olan yöntem hangisidir?",
       "options": [
-        "DAC — Karbondioksitin doğrudan eklenmesi",
-        "MAP — Modifiye atmosfer paketleme",
-        "CAS — Kontrollü atmosferde depolama",
-        "CAP — Kontrollü atmosfer paketleme"
+        "DAC — Direct Addition of Carbon dioxide",
+        "MAP — Modified Atmosphere Packaging",
+        "CAS — Controlled Atmosphere Storage",
+        "CAP — Controlled Atmosphere Packaging"
       ],
-      "answer": "DAC — Karbondioksitin doğrudan eklenmesi",
+      "answer": "DAC — Direct Addition of Carbon dioxide",
       "explanation": "DAC: CO₂ doğrudan gıdaya eklenir; gazın bir kısmı çözünür. Örnek: soğutulmuş süt.",
-      "source": "Slayt 16 · Gazlar tablosu"
+      "source": "Slayt 16 · Gases tablosu"
     },
     {
+      "id": "q75",
       "type": "mcq",
       "question": "Depolama süresince ambalaj içinde hedef bir gaz dengesini koruyan, örneği gaz yönetimli taze ürün paketi olan yöntem hangisidir?",
       "options": [
-        "CAP — Kontrollü atmosfer paketleme",
-        "MAP — Modifiye atmosfer paketleme",
-        "CAS — Kontrollü atmosferde depolama",
-        "DAC — Karbondioksitin doğrudan eklenmesi"
+        "CAP — Controlled Atmosphere Packaging",
+        "MAP — Modified Atmosphere Packaging",
+        "CAS — Controlled Atmosphere Storage",
+        "DAC — Direct Addition of Carbon dioxide"
       ],
-      "answer": "CAP — Kontrollü atmosfer paketleme",
+      "answer": "CAP — Controlled Atmosphere Packaging",
       "explanation": "CAP: depolama boyunca ambalaj içinde hedef bir gaz dengesi korunur. Örnek: gaz yönetimli taze ürün paketi.",
-      "source": "Slayt 16 · Gazlar tablosu"
+      "source": "Slayt 16 · Gases tablosu"
     },
     {
+      "id": "q76",
       "type": "mcq",
       "question": "Slayta göre karbondioksit (CO₂) özellikle hangi gruba karşı etkilidir?",
-      "options": ["Zorunlu aeroblar", "Zorunlu anaeroblar", "Yalnızca sporlar", "Yalnızca halofiller"],
-      "answer": "Zorunlu aeroblar",
-      "explanation": "Karbondioksit zorunlu aeroblara (obligate aerobes) karşı etkilidir ve yüksek düzeylerde diğer mikroorganizmaları da engelleyebilir.",
-      "source": "Slayt 16 · Gazlar"
+      "options": ["Obligate aerobes", "Obligate anaerobes", "Yalnızca sporlar", "Yalnızca halophiles"],
+      "answer": "Obligate aerobes",
+      "explanation": "Karbondioksit obligate aerobes'a karşı etkilidir ve yüksek düzeylerde diğer mikroorganizmaları da inhibe edebilir.",
+      "source": "Slayt 16 · Gases"
     },
     {
+      "id": "q77",
       "type": "mcq",
-      "question": "Slayta göre belirli mikroorganizmalar için doğrudan toksik olan gazlar hangileridir?",
+      "question": "Slayta göre belirli mikroorganizmalar için direct toxic effect gösteren gazlar hangileridir?",
       "options": ["CO₂, O₃ ve O₂", "Yalnızca N₂", "N₂ ve argon", "Yalnızca su buharı"],
       "answer": "CO₂, O₃ ve O₂",
-      "explanation": "Gazlar mikroorganizmaları iki mekanizmayla inhibe eder. Birincisi doğrudan toksik etkidir: karbondioksit (CO₂), ozon (O₃) ve oksijen (O₂) belirli mikroorganizmalar için doğrudan toksiktir.",
-      "source": "Slayt 16 · Gazlar"
+      "explanation": "Gazlar mikroorganizmaları iki mekanizmayla inhibe eder. Birincisi direct toxic effect'tir: karbondioksit (CO₂), ozon (O₃) ve oksijen (O₂) belirli mikroorganizmalar için doğrudan toksiktir.",
+      "source": "Slayt 16 · Gases"
     },
     {
+      "id": "c01",
       "type": "card",
-      "front": "Jenerasyon süresi",
+      "front": "Generation time",
       "back": "Optimum koşullarda bir bakterinin iki yavru hücre oluşturması için gereken süre. E. coli ≈ 20 dk · M. tuberculosis ≈ 20 saat · M. leprae ≈ 20 gün (en uzun).",
       "source": "Slayt 3"
     },
     {
+      "id": "c02",
       "type": "card",
       "front": "Mikroorganizmaları etkileyen faktörler — 4 grup",
-      "back": "Fiziksel: ısı, hidrostatik basınç, ozmotik basınç, kurutma, radyasyon, elektrik akımı, yüzey gerilimi, nem · Kimyasal: oksijen, O-R potansiyeli, pH · Biyolojik · Mekanik: çalkalama, ezme, titreşim, santrifüj, basınç.",
+      "back": "Physical: heat, hydrostatic pressure, osmotic pressure, drying, radiation, electric current, surface tension, humidity · Chemical: oxygen, O-R potential, pH · Biological · Mechanical: shaking, crushing, vibration, centrifugation, pressure.",
       "source": "Slayt 3 · tablo"
     },
     {
+      "id": "c03",
       "type": "card",
-      "front": "Su aktivitesi (aw) — tanım ve formül",
-      "back": "Aynı sıcaklıkta gıdanın su buharı basıncı / saf suyun su buharı basıncı. aw = P(gıda) / P(saf su). 0–1 arası; 1 = saf su.",
+      "front": "Water activity (aw) — tanım ve formül",
+      "back": "Aynı sıcaklıkta gıdanın vapor pressure'ı / saf suyun vapor pressure'ı. aw = P(gıda) / P(saf su). 0–1 arası; 1 = saf su.",
       "source": "Slayt 4"
     },
     {
+      "id": "c04",
       "type": "card",
       "front": "Tablo 3-2 — patojenlerin minimum aw değerleri (yüksekten düşüğe)",
-      "back": "Campylobacter 0.98 · C. botulinum tip E, Shigella, Yersinia 0.97 · V. vulnificus 0.96 · EHEC 0.95 · C. perfringens 0.943 · Salmonella, V. parahaemolyticus 0.94 · B. cereus, C. botulinum tip A ve B 0.93 · L. monocytogenes 0.92 · S. aureus toksin 0.88, üreme 0.83.",
+      "back": "Campylobacter 0.98 · C. botulinum type E, Shigella, Yersinia 0.97 · V. vulnificus 0.96 · EHEC 0.95 · C. perfringens 0.943 · Salmonella, V. parahaemolyticus 0.94 · B. cereus, C. botulinum type A ve B 0.93 · L. monocytogenes 0.92 · S. aureus toxin 0.88, growth 0.83.",
       "source": "Slayt 4 · Tablo 3-2"
     },
     {
+      "id": "c05",
       "type": "card",
-      "front": "Staphylococcus aureus — aw (üreme / toksin)",
-      "back": "Üreme: min 0.83, opt 0.98, maks 0.99 · Toksin: min 0.88, opt 0.98, maks 0.99. Patojenler arasında en düşük minimum aw.",
+      "front": "Staphylococcus aureus — aw (growth / toxin production)",
+      "back": "Growth: min 0.83, opt 0.98, maks 0.99 · Toxin production: min 0.88, opt 0.98, maks 0.99. Patojenler arasında en düşük minimum aw.",
       "source": "Slayt 4 · Tablo 3-2"
     },
     {
+      "id": "c06",
       "type": "card",
       "front": "Hayvansal ürünlerin aw değerleri",
       "back": "Taze et/kanatlı/balık 0.99–1.00 · doğal peynirler 0.95–1.00 · puding 0.97–0.99 · yumurta 0.97 · kürlenmiş et 0.87–0.95 · şekerli koyulaştırılmış süt 0.83 · parmesan 0.68–0.76 · bal 0.75 · kurutulmuş tam yumurta 0.40 · kurutulmuş tam yağlı süt 0.20.",
       "source": "Slayt 4 · Hayvansal ürünler tablosu"
     },
     {
+      "id": "c07",
       "type": "card",
       "front": "Bitkisel ürünlerin aw değerleri",
       "back": "Taze meyve/sebze 0.97–1.00 · ekmek ~0.96 (beyaz kısım 0.94–0.97, kabuk 0.30) · pişmiş kek 0.90–0.94 · akçaağaç şurubu 0.85 · reçel 0.75–0.80 · jöleler 0.82–0.94 · pişmemiş pirinç 0.80–0.87 · meyve suyu konsantreleri 0.79–0.84 · meyveli kek 0.73–0.83 · kek kreması 0.76–0.84 · un 0.67–0.87 · kuru meyve 0.55–0.80 · tahıl gevreği 0.10–0.20.",
       "source": "Slayt 4 · Bitkisel ürünler tablosu"
     },
     {
+      "id": "c08",
       "type": "card",
       "front": "pH 4.6 kuralı",
-      "back": "Patojenler genel olarak pH 4.6'nın altında üremez ya da çok yavaş ürer; istisnalar var ve çoğu üreme minimumunun altında hayatta kalabilir. C. botulinum pH 4.2'de toksin üretebilmiştir.",
+      "back": "Patojenler genel olarak pH 4.6'nın altında üremez ya da çok yavaş ürer; istisnalar var ve çoğu growth minimumunun altında survive edebilir. C. botulinum pH 4.2'de toxin üretebilmiştir.",
       "source": "Slayt 5"
     },
     {
+      "id": "c09",
       "type": "card",
       "front": "pH tablosu — uç değerler",
-      "back": "En düşük minimum: S. aureus üreme 4.0 (toksin 4.5) · en yüksek minimum: C. perfringens 5.5–5.8 · en yüksek maksimum: V. parahaemolyticus 11.0 · Salmonella min 4.2 (asetik asit dışı asitlendiricilerle 3.8) · L. monocytogenes 4.39 / 7.0 / 9.4.",
+      "back": "En düşük minimum: S. aureus growth 4.0 (toxin 4.5) · en yüksek minimum: C. perfringens 5.5–5.8 · en yüksek maksimum: V. parahaemolyticus 11.0 · Salmonella min 4.2 (acetic acid dışı acidulant'larla 3.8) · L. monocytogenes 4.39 / 7.0 / 9.4.",
       "source": "Slayt 5 · pH tablosu"
     },
     {
+      "id": "c10",
       "type": "card",
-      "front": "Redoks potansiyeli (Eh)",
-      "back": "Toplam oksitleyici (elektron alan) gücün toplam indirgeyici (elektron veren) güce oranı; elektron kazanma ya da kaybetme eğilimi. Birimi volt (V), sembolü Eh. Yükseltgenme = elektron kaybı, indirgenme = elektron kazancı.",
+      "front": "Redox potential (Eh)",
+      "back": "Toplam oxidizing (elektron alan) gücün toplam reducing (elektron veren) güce oranı; elektron kazanma ya da kaybetme eğilimi. Birimi volt (V), sembolü Eh. Oxidation = elektron kaybı, reduction = elektron kazancı.",
       "source": "Slayt 6"
     },
     {
+      "id": "c11",
       "type": "card",
-      "front": "Aerobik ve anaerobik solunum — elektron alıcısı",
-      "back": "Aerobik: glukoz oksitlenir, oksijen elektronları alır ve suya indirgenir. Anaerobik: nitrat veya sülfat gibi farklı bir alıcı. Fermentasyon: elektronlar hücre içindeki moleküller arasında aktarılır.",
+      "front": "Aerobic / anaerobic respiration — electron acceptor",
+      "back": "Aerobic: glukoz oxidized olur, oksijen elektronları alır ve suya reduced olur. Anaerobic: nitrat veya sülfat gibi farklı bir alıcı. Fermentation: elektronlar hücre içindeki moleküller arasında aktarılır.",
       "source": "Slayt 6"
     },
     {
+      "id": "c12",
       "type": "card",
-      "front": "Minimum / optimum / maksimum sıcaklık",
-      "back": "Minimum: üreyebildiği en düşük sıcaklık · Optimum: en yüksek hızda ürediği sıcaklık · Maksimum: üreyebildiği en yüksek sıcaklık. Bu sınırların dışında üreme durur ama ölüm şart değildir.",
+      "front": "Minimum / optimum / maximum temperature",
+      "back": "Minimum: üreyebildiği en düşük sıcaklık · Optimum: en yüksek hızda ürediği sıcaklık · Maximum: üreyebildiği en yüksek sıcaklık. Bu sınırların dışında üreme durur ama ölüm şart değildir.",
       "source": "Slayt 7"
     },
     {
+      "id": "c13",
       "type": "card",
-      "front": "Sıcaklık grupları ve aralıkları",
-      "back": "Psikrofiller −20–20 °C · Psikrotroflar 0–30 °C · Mezofiller 10–48 °C · Termofiller 40–72 °C · Hipertermofiller 65–110 °C.",
+      "front": "Psychrophiles · psychrotrophs · mesophiles · thermophiles · hyperthermophiles",
+      "back": "Psychrophiles −20–20 °C · Psychrotrophs 0–30 °C · Mesophiles 10–48 °C · Thermophiles 40–72 °C · Hyperthermophiles 65–110 °C.",
       "source": "Slayt 8"
     },
     {
+      "id": "c14",
       "type": "card",
       "front": "Sıcaklık gruplarına örnek organizmalar",
-      "back": "Psikrofiller: Colwellia psychrerythraea, Desulfotalea psychrophila · Psikrotroflar: Listeria monocytogenes, Pseudomonas fluorescens · Mezofiller: E. coli, Salmonella spp. · Termofiller: Thermus aquaticus, Geobacillus stearothermophilus · Hipertermofiller: Pyrolobus fumarii, Pyrococcus furiosus.",
+      "back": "Psychrophiles: Colwellia psychrerythraea, Desulfotalea psychrophila · Psychrotrophs: Listeria monocytogenes, Pseudomonas fluorescens · Mesophiles: E. coli, Salmonella spp. · Thermophiles: Thermus aquaticus, Geobacillus stearothermophilus · Hyperthermophiles: Pyrolobus fumarii, Pyrococcus furiosus.",
       "source": "Slayt 8"
     },
     {
+      "id": "c15",
       "type": "card",
-      "front": "Psikrotrof – mezofil tablosu",
-      "back": "Membran geçirgenliği: düşük sıcaklıkta aktif / aktif değil · Metabolizma: yavaş / hızlı · Protein üretimi optimum sıcaklığı: düşük / yüksek · Enzim denatürasyon sıcaklığı: düşük / yüksek · Doymamış yağ asidi: yüksek / düşük.",
+      "front": "Psychrotrophs – mesophiles tablosu",
+      "back": "Membrane permeability: düşük sıcaklıkta aktif / aktif değil · Metabolizma: yavaş / hızlı · Protein production optimum sıcaklığı: düşük / yüksek · Enzyme denaturation temperature: düşük / yüksek · Unsaturated fatty acids: yüksek / düşük.",
       "source": "Slayt 8 · tablo"
     },
     {
+      "id": "c16",
       "type": "card",
       "front": "Düşük sıcaklık ve enzimler",
-      "back": "Düşük sıcaklık enzimleri denatüre etmez; yavaşlarlar ve uygun sıcaklıkta yeniden çalışırlar. Isıyla denatüre olan enzimde hasar kalıcıdır.",
+      "back": "Düşük sıcaklık enzimleri denature etmez; yavaşlarlar ve uygun sıcaklıkta yeniden çalışırlar. Isıyla denature olan enzimde hasar kalıcıdır.",
       "source": "Slayt 9"
     },
     {
+      "id": "c17",
       "type": "card",
       "front": "Sıcaklık – aw (buz) tablosu",
       "back": "0 °C → 1 · −5 → 0.953 · −10 → 0.907 · −15 → 0.864 · −20 → 0.823 · −40 → 0.68.",
       "source": "Slayt 9 · tablo"
     },
     {
+      "id": "c18",
       "type": "card",
-      "front": "Soğuk şok proteinleri (CSP)",
-      "back": "37 °C'den 20 °C'nin altına inince aklimasyon fazında CSP'ler keskin artar, CSP olmayan proteinler düşer; sonra uyum sağlamış hücrelerle düşük sıcaklıkta kararlı üreme ve durağan faz gelir.",
+      "front": "Cold shock proteins (CSP)",
+      "back": "37 °C'den 20 °C'nin altına inince acclimation phase'de CSP'ler keskin artar, non-CSP proteinler düşer; sonra uyum sağlamış hücrelerle stable low-temperature growth ve stationary phase gelir.",
       "source": "Slayt 9–10 · grafik"
     },
     {
+      "id": "c19",
       "type": "card",
       "front": "Sıcaklık tablosu — gıda kaynakları ve sıcaklıklar",
       "back": "C. jejuni: çiğ tavuk, pastörize edilmemiş süt, su · 0–45 / opt 37–42 · L. monocytogenes: hazır gıdalar, çiğ süt, peynir, dondurma… · −1.5–45 · Y. enterocolitica: çiğ süt, çikolatalı süt, su, domuz · −1.5–44 · A. hydrophila: deniz ürünleri, istiridye, su · −2–45 / opt 5–25 · P. shigelloides: çiğ istiridye · 8–44 / 37–38 · Pseudomonas: et, balık, kabuklu, süt ürünleri · 4–43 / 37–38 · Penicillium, Cladosporium · −3–35 / 25–26.",
       "source": "Slayt 10 · tablo"
     },
     {
+      "id": "c20",
       "type": "card",
-      "front": "Isıl inaktivasyonu etkileyen 8 faktör",
-      "back": "1 Sıcaklık ve maruz kalma süresi · 2 Mikroorganizmanın türü · 3 Mikroorganizma sayısı · 4 Materyalin bileşimi · 5 Materyalin pH'sı · 6 Büyüme fazı · 7 Nem · 8 Isıtma süresi.",
+      "front": "Thermal inactivation'ı etkileyen 8 faktör",
+      "back": "1 Sıcaklık ve maruz kalma süresi · 2 Mikroorganizmanın türü · 3 Mikroorganizma sayısı · 4 Materyalin bileşimi · 5 Materyalin pH'sı · 6 Growth phase · 7 Moisture · 8 Isıtma süresi.",
       "source": "Slayt 11–12"
     },
     {
+      "id": "c21",
       "type": "card",
-      "front": "Sporlar ve ısı",
-      "back": "Bakteri sporları vejetatif hücrelerden daha dirençlidir, 100 °C'de kaynatmaya dayanabilir; güvenilir inaktivasyon için doğrulanmış nemli ısı sterilizasyon döngüsü gerekir. Kapsül otomatik olarak ısı direnci sağlamaz. Sporlar nötr pH civarında daha dirençli olabilir.",
+      "front": "Bacterial spores ve ısı",
+      "back": "Bacterial spores vegetative cells'ten daha dirençlidir, 100 °C'de kaynatmaya dayanabilir; güvenilir inactivation için validated moist heat sterilization cycle gerekir. Capsule otomatik olarak ısı direnci sağlamaz. Spores nötr pH civarında daha dirençli olabilir.",
       "source": "Slayt 11–12"
     },
     {
+      "id": "c22",
       "type": "card",
-      "front": "Nemli ısı ve kuru ısı",
-      "back": "Aynı sıcaklıkta nemli ısı daha etkilidir (ısıyı verimli aktarır, proteinlere zarar verir). Kuru ısı sterilizasyonu daha yüksek sıcaklık ve daha uzun süre gerektirir.",
+      "front": "Moist heat vs dry heat",
+      "back": "Aynı sıcaklıkta moist heat daha etkilidir (ısıyı verimli aktarır, proteinlere zarar verir). Dry heat sterilization daha yüksek sıcaklık ve daha uzun süre gerektirir.",
       "source": "Slayt 12"
     },
     {
+      "id": "c23",
       "type": "card",
-      "front": "D-değeri",
-      "back": "Isıl ölüm eğrisinde hayatta kalan sayısının 10 kat (1 log; grafikte 100.000 → 10.000) azalması için geçen süre. Termofil sporları en dirençli, vejetatif hücreler en duyarlı.",
-      "source": "Slayt 11 · Isıl ölüm hızı eğrileri"
+      "front": "D-value",
+      "back": "Thermal death rate eğrisinde survivor sayısının 10 kat (1 log; grafikte 100.000 → 10.000) azalması için geçen süre. Thermophile spores en dirençli, vegetative cells en duyarlı.",
+      "source": "Slayt 11 · Thermal death rate eğrileri"
     },
     {
+      "id": "c24",
       "type": "card",
-      "front": "Ozmotik basınç ve ozmoz",
-      "back": "Ozmotik basınç: saf çözücünün yarı geçirgen zardan içeri akışını durdurmak için gereken minimum basınç. Ozmoz: suyun yarı geçirgen zardan difüzyonu; su az çözünenli (hipotonik) taraftan çok çözünenli (hipertonik) tarafa geçer.",
+      "front": "Osmotic pressure · osmosis",
+      "back": "Osmotic pressure: saf çözücünün semipermeable membrane'dan içeri akışını durdurmak için gereken minimum basınç. Osmosis: suyun semipermeable membrane'dan difüzyonu; su az çözünenli (hypotonic) taraftan çok çözünenli (hypertonic) tarafa geçer.",
       "source": "Slayt 13"
     },
     {
+      "id": "c25",
       "type": "card",
-      "front": "Hipertonik / izotonik / hipotonik (bitki hücresi)",
-      "back": "Hipertonik → plazmoliz · İzotonik → gevşek (flaccid) · Hipotonik → turgor (turgid).",
+      "front": "Hypertonic / isotonic / hypotonic (bitki hücresi)",
+      "back": "Hypertonic → plasmolyzed · Isotonic → flaccid · Hypotonic → turgid.",
       "source": "Slayt 14"
     },
     {
+      "id": "c26",
       "type": "card",
-      "front": "Halotolerant / halofil / ozmofilik",
-      "back": "Halotolerant: orta tuzda ürer, tuzsuz daha iyi — Staphylococcus aureus · Halofil: yüksek tuz (%30–35) gerektirir — Halobacterium salinarum · Ozmofilik: yüksek şekerde ürer — Zygosaccharomyces bailii.",
+      "front": "Halotolerant · halophile · osmophilic",
+      "back": "Halotolerant: orta tuzda ürer, tuzsuz daha iyi — Staphylococcus aureus · Halophile: yüksek tuz (%30–35) gerektirir — Halobacterium salinarum · Osmophilic: yüksek şekerde ürer — Zygosaccharomyces bailii.",
       "source": "Slayt 14"
     },
     {
+      "id": "c27",
       "type": "card",
       "front": "MAP · CAP · CAS · DAC",
-      "back": "MAP (modifiye atmosfer paketleme): paket kapatılırken hava seçilmiş gaz karışımıyla değiştirilir — soğutulmuş balık paketi · CAP (kontrollü atmosfer paketleme): depolamada ambalaj içinde hedef gaz dengesi korunur — gaz yönetimli taze ürün paketi · CAS (kontrollü atmosferde depolama): depo odasında O₂/CO₂ izlenip ayarlanır — soğuk elma depolaması · DAC: CO₂ doğrudan gıdaya eklenir — soğutulmuş süt.",
+      "back": "MAP (Modified Atmosphere Packaging): paket kapatılırken hava seçilmiş gaz karışımıyla değiştirilir — soğutulmuş balık paketi · CAP (Controlled Atmosphere Packaging): depolamada ambalaj içinde hedef gaz dengesi korunur — gaz yönetimli taze ürün paketi · CAS (Controlled Atmosphere Storage): depo odasında O₂/CO₂ izlenip ayarlanır — soğuk elma depolaması · DAC (Direct Addition of Carbon dioxide): CO₂ doğrudan gıdaya eklenir — soğutulmuş süt.",
       "source": "Slayt 16"
     },
     {
+      "id": "c28",
       "type": "card",
-      "front": "Gazların mikroorganizmalara etkisi",
-      "back": "İki mekanizma; ilki doğrudan toksik etki. CO₂, O₃ ve O₂ belirli mikroorganizmalar için doğrudan toksiktir. CO₂ zorunlu aeroblara karşı etkilidir, yüksek düzeyde diğerlerini de engeller.",
+      "front": "Gases — mikroorganizmalara etkisi",
+      "back": "İki mekanizma; ilki direct toxic effect. CO₂, O₃ ve O₂ belirli mikroorganizmalar için doğrudan toksiktir. CO₂ obligate aerobes'a karşı etkilidir, yüksek düzeyde diğerlerini de inhibe eder.",
       "source": "Slayt 16"
     }
   ]
