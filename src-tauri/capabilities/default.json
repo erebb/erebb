@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Ana pencere. Ön uç hiçbir Tauri komutu çağırmaz; yalnızca çekirdek varsayılanlar.",
+  "windows": ["main"],
+  "permissions": ["core:default"]
+}

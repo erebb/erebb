@@ -1,0 +1,20 @@
+[package]
+name = "kelime-ustasi"
+version = "1.0.0"
+description = "Kelime Ustası — oyunlaştırılmış kelime öğrenme uygulaması"
+edition = "2021"
+publish = false
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+
+[profile.release]
+# Küçük ve hızlı açılan bir uygulama paketi için.
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

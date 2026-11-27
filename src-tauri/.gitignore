@@ -1,0 +1,5 @@
+# Cargo derleme çıktıları
+/target/
+
+# Tauri'nin her derlemede ürettiği şemalar
+/gen/schemas

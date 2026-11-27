@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 @layer base {
+  html,
+  body {
+    /* Yerel macOS penceresinde sayfanın lastik bant gibi esnemesini kapatır. */
+    overscroll-behavior: none;
+  }
   html {
     @apply antialiased;
   }
@@ -28,5 +33,11 @@
   }
   .no-scrollbar::-webkit-scrollbar {
     display: none;
+  }
+  /* Akış kartı yüksekliği. dvh bilmeyen eski Safari/WebKit (macOS 11–12.2)
+     ikinci satırı yok sayar ve vh'ye düşer; masaüstü penceresinde ikisi zaten eşittir. */
+  .h-feed {
+    height: 100vh;
+    height: 100dvh;
   }
 }

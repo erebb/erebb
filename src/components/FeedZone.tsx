@@ -17,6 +17,12 @@ import { SwipeHint } from '@/components/feed/SwipeHint';
 import { cn } from '@/lib/utils';
 
 const AUTO_ADVANCE_MS = 900;
+/** Bu kadar süre tekerlek olayı gelmezse hareket bitmiş sayılır. */
+const WHEEL_QUIET_MS = 180;
+/** Bir adım için gereken birikmiş tekerlek mesafesi (trackpad'in minik titremeleri sayılmasın). */
+const WHEEL_THRESHOLD_PX = 20;
+/** Programatik gezinme hedefinin geçerli kaldığı süre. */
+const PENDING_TARGET_TTL_MS = 1000;
 
 export interface FeedZoneProps {
   setId: string;
@@ -49,8 +55,15 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
   const [revealCard, setRevealCard] = useState<FeedCard | null>(null);
   const [hintSeen, setHintSeen] = useLocalStorage(STORAGE_KEYS.feedSwipeHintSeen, false);
 
+  // Programatik gezinmenin son hedefi. Yumuşak kaydırma sürerken IntersectionObserver
+  // yeni kartı henüz aktif saymamış olabilir; art arda gelen tuş/tekerlek adımları eski
+  // indekse göre hesaplanırsa biri yutulur. Hedef kısa süre geçerlidir: kullanıcı bu
+  // arada parmağıyla başka yere kaydırırsa eskimiş hedef onu geri çekmesin.
+  const pendingTargetRef = useRef<{ index: number; at: number } | null>(null);
+
   useEffect(() => {
     indexRef.current = currentIndex;
+    if (pendingTargetRef.current?.index === currentIndex) pendingTargetRef.current = null;
   }, [currentIndex]);
 
   // Sayfa arkasının kaymasını engelle.
@@ -103,6 +116,7 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     prevHeadRef.current = headOffset;
     const el = containerRef.current;
     if (d > 0 && el) el.scrollTop -= d * el.clientHeight;
+    if (d > 0) pendingTargetRef.current = null; // indeksler kaydı, eski hedef anlamsız
   }, [headOffset]);
 
   const goTo = useCallback(
@@ -113,6 +127,62 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     },
     [reduced]
   );
+
+  /** Bir kart ileri/geri. Klavye ve tekerlek bunu kullanır. */
+  const step = useCallback(
+    (dir: 1 | -1) => {
+      const pending = pendingTargetRef.current;
+      const base =
+        pending && performance.now() - pending.at < PENDING_TARGET_TTL_MS
+          ? pending.index
+          : indexRef.current;
+      const next = base + dir;
+      if (next < 0 || !cardRefs.current[next]) return;
+      pendingTargetRef.current = { index: next, at: performance.now() };
+      goTo(next);
+    },
+    [goTo]
+  );
+  const stepRef = useRef(step);
+  useEffect(() => {
+    stepRef.current = step;
+  }, [step]);
+
+  // --- Masaüstü: fare tekerleği ve trackpad ---
+  // Yerel scroll-snap'te tek tekerlek çentiği (~100 px) kartın yarısını geçemez ve aynı
+  // karta geri oturur; klasik fareyle her kart için 4–5 çentik gerekir. TikTok'un masaüstü
+  // sürümündeki gibi "bir hareket = bir kart": ilk anlamlı olayda bir adım atılır, sonra
+  // olaylar kesilene kadar (trackpad'in atalet kuyruğu dahil) yenisi yok sayılır.
+  // Dokunmatik kaydırma tekerlek olayı üretmez; telefonda yerel snap aynen çalışır.
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    let gestureActive = false;
+    let accum = 0;
+    let quietTimer: number | undefined;
+
+    const onWheel = (e: WheelEvent) => {
+      if (e.ctrlKey) return; // trackpad ile yakınlaştırma hareketi
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // yatay kaydırma
+      e.preventDefault();
+      window.clearTimeout(quietTimer);
+      quietTimer = window.setTimeout(() => {
+        gestureActive = false;
+        accum = 0;
+      }, WHEEL_QUIET_MS);
+      if (gestureActive) return;
+      accum += e.deltaMode === 1 ? e.deltaY * 40 : e.deltaY; // satır kipi → piksel
+      if (Math.abs(accum) < WHEEL_THRESHOLD_PX) return;
+      gestureActive = true;
+      stepRef.current(accum > 0 ? 1 : -1);
+    };
+
+    el.addEventListener('wheel', onWheel, { passive: false });
+    return () => {
+      el.removeEventListener('wheel', onWheel);
+      window.clearTimeout(quietTimer);
+    };
+  }, [isEmpty]);
 
   // Kart değişince bekleyen otomatik ilerlemeyi iptal et.
   useEffect(() => {
@@ -151,12 +221,12 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
       case 'PageDown':
       case ' ':
         e.preventDefault();
-        goTo(currentIndex + 1);
+        step(1);
         break;
       case 'ArrowUp':
       case 'PageUp':
         e.preventDefault();
-        goTo(currentIndex - 1);
+        step(-1);
         break;
       case 'Escape':
         e.preventDefault();
@@ -167,7 +237,7 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
 
   if (!set || isEmpty) {
     return (
-      <div className="flex h-[100dvh] flex-col items-center justify-center gap-4 bg-duo-gray-900 p-6 text-center">
+      <div className="flex h-feed flex-col items-center justify-center gap-4 bg-duo-gray-900 p-6 text-center">
         <p className="text-lg font-extrabold text-white">
           {set ? 'Bu sette henüz soru yok.' : 'Soru seti bulunamadı.'}
         </p>
@@ -182,105 +252,110 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
   const activeCard = cards[currentIndex];
 
   return (
-    <div className="relative h-[100dvh] w-full overflow-hidden bg-duo-gray-900">
-      <FeedTopBar
-        setName={set.name}
-        dailyXPEarned={progress.dailyXPEarned}
-        dailyGoalXP={progress.dailyGoalXP}
-        onExit={handleExit}
-      />
+    // Dış katman tüm pencereyi kaplar; akış ortalanmış telefon genişliğinde bir sütundur.
+    // Masaüstünde (Mac penceresi genişletilince) kartlar ekran boyu yayılmaz ve
+    // üst çubuk / eylem rayı içerikten kopup pencere kenarına kaçmaz.
+    <div className="h-feed w-full overflow-hidden bg-black">
+      <div className="relative mx-auto h-feed w-full max-w-md overflow-hidden bg-duo-gray-900 md:shadow-2xl">
+        <FeedTopBar
+          setName={set.name}
+          dailyXPEarned={progress.dailyXPEarned}
+          dailyGoalXP={progress.dailyGoalXP}
+          onExit={handleExit}
+        />
 
-      <FeedActionRail
-        stats={stats}
-        streak={progress.streak}
-        dailyXPEarned={progress.dailyXPEarned}
-        dailyGoalXP={progress.dailyGoalXP}
-        box={activeCard?.box}
-        onReveal={() => {
-          if (!activeCard || activeCard.kind === 'explainer') return;
-          markPeeked(activeCard.id);
-          setRevealCard(activeCard);
-        }}
-        revealDisabled={!activeCard || activeCard.kind === 'explainer'}
-      />
+        <FeedActionRail
+          stats={stats}
+          streak={progress.streak}
+          dailyXPEarned={progress.dailyXPEarned}
+          dailyGoalXP={progress.dailyGoalXP}
+          box={activeCard?.box}
+          onReveal={() => {
+            if (!activeCard || activeCard.kind === 'explainer') return;
+            markPeeked(activeCard.id);
+            setRevealCard(activeCard);
+          }}
+          revealDisabled={!activeCard || activeCard.kind === 'explainer'}
+        />
 
-      <SwipeHint visible={!hintSeen && currentIndex === 0} />
+        <SwipeHint visible={!hintSeen && currentIndex === 0} />
 
-      <div
-        ref={containerRef}
-        tabIndex={0}
-        role="feed"
-        aria-label="Akış modu"
-        onKeyDown={handleKeyDown}
-        className={cn(
-          'no-scrollbar h-[100dvh] w-full touch-pan-y overflow-y-auto overscroll-y-contain outline-none',
-          // iOS'ta klavye açıkken 100dvh küçülür; snap zıplamasın diye geçici kapatılır.
-          keyboardOpen ? 'snap-none' : 'snap-y snap-mandatory'
-        )}
-      >
-        {cards.map((card, i) => {
-          const inWindow = Math.abs(i - currentIndex) <= FEED_RENDER_WINDOW;
-          return (
-            <section
-              key={card.id}
-              ref={(el) => {
-                cardRefs.current[i] = el;
-              }}
-              data-feed-card=""
-              data-index={i}
-              role="article"
-              aria-posinset={i + 1}
-              aria-setsize={-1}
-              className="relative h-[100dvh] w-full shrink-0 snap-start snap-always overflow-hidden"
-            >
-              {inWindow && (
-                <>
-                  {card.kind === 'explainer' && (
-                    <ExplainerCard card={card} isActive={i === currentIndex} />
-                  )}
-                  {card.kind === 'multiple-choice' && (
-                    <MultipleChoiceCard
-                      card={card}
-                      isActive={i === currentIndex}
-                      result={answers[card.id]}
-                      onAnswer={(raw) => handleAnswer(card, raw)}
-                    />
-                  )}
-                  {card.kind === 'text-input' && (
-                    <TextInputCard
-                      card={card}
-                      isActive={i === currentIndex}
-                      result={answers[card.id]}
-                      onAnswer={(raw) => handleAnswer(card, raw)}
-                      onKeyboardToggle={setKeyboardOpen}
-                    />
-                  )}
-                </>
-              )}
-            </section>
-          );
-        })}
-      </div>
-
-      {/* "Kelimeyi göster" alt sayfası — anlatım içeriğini birebir yeniden kullanır. */}
-      <Dialog open={revealCard !== null} onOpenChange={(open) => !open && setRevealCard(null)}>
-        <DialogContent>
-          <DialogTitle className="sr-only">Kelime açıklaması</DialogTitle>
-          {revealCard && (
-            <ExplainerBody
-              question={revealCard.question}
-              box={revealCard.box}
-              sessionSeenCount={revealCard.sessionSeenCount}
-              lastSeenAt={revealCard.lastSeenAt}
-              compact
-              animate={false}
-            />
+        <div
+          ref={containerRef}
+          tabIndex={0}
+          role="feed"
+          aria-label="Akış modu"
+          onKeyDown={handleKeyDown}
+          className={cn(
+            'no-scrollbar h-feed w-full touch-pan-y overflow-y-auto overscroll-y-contain outline-none',
+            // iOS'ta klavye açıkken 100dvh küçülür; snap zıplamasın diye geçici kapatılır.
+            keyboardOpen ? 'snap-none' : 'snap-y snap-mandatory'
           )}
-          <p className="mt-4 text-center text-xs font-bold text-duo-gray-300">
-            Baktığın için bu kart XP kazandırmaz.
-          </p>
-        </DialogContent>
-      </Dialog>
+        >
+          {cards.map((card, i) => {
+            const inWindow = Math.abs(i - currentIndex) <= FEED_RENDER_WINDOW;
+            return (
+              <section
+                key={card.id}
+                ref={(el) => {
+                  cardRefs.current[i] = el;
+                }}
+                data-feed-card=""
+                data-index={i}
+                role="article"
+                aria-posinset={i + 1}
+                aria-setsize={-1}
+                className="relative h-feed w-full shrink-0 snap-start snap-always overflow-hidden"
+              >
+                {inWindow && (
+                  <>
+                    {card.kind === 'explainer' && (
+                      <ExplainerCard card={card} isActive={i === currentIndex} />
+                    )}
+                    {card.kind === 'multiple-choice' && (
+                      <MultipleChoiceCard
+                        card={card}
+                        isActive={i === currentIndex}
+                        result={answers[card.id]}
+                        onAnswer={(raw) => handleAnswer(card, raw)}
+                      />
+                    )}
+                    {card.kind === 'text-input' && (
+                      <TextInputCard
+                        card={card}
+                        isActive={i === currentIndex}
+                        result={answers[card.id]}
+                        onAnswer={(raw) => handleAnswer(card, raw)}
+                        onKeyboardToggle={setKeyboardOpen}
+                      />
+                    )}
+                  </>
+                )}
+              </section>
+            );
+          })}
+        </div>
+
+        {/* "Kelimeyi göster" alt sayfası — anlatım içeriğini birebir yeniden kullanır. */}
+        <Dialog open={revealCard !== null} onOpenChange={(open) => !open && setRevealCard(null)}>
+          <DialogContent>
+            <DialogTitle className="sr-only">Kelime açıklaması</DialogTitle>
+            {revealCard && (
+              <ExplainerBody
+                question={revealCard.question}
+                box={revealCard.box}
+                sessionSeenCount={revealCard.sessionSeenCount}
+                lastSeenAt={revealCard.lastSeenAt}
+                compact
+                animate={false}
+              />
+            )}
+            <p className="mt-4 text-center text-xs font-bold text-duo-gray-300">
+              Baktığın için bu kart XP kazandırmaz.
+            </p>
+          </DialogContent>
+        </Dialog>
+      </div>
     </div>
   );
 }
