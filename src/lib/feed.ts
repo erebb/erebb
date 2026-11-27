@@ -1,5 +1,6 @@
 import type { FeedCard, FeedCardKind, FlashcardSRSEntry, LeitnerBox, Question } from '@/types';
-import { newId } from '@/lib/utils';
+import { isMcq } from '@/types';
+import { newId, shuffle } from '@/lib/utils';
 import { buildChoices } from '@/hooks/useLearningEngine';
 
 export const FEED_BATCH_SIZE = 8;
@@ -60,9 +61,19 @@ export function rollKind(w: KindWeights, exclude?: FeedCardKind): FeedCardKind {
   return entries[entries.length - 1][0];
 }
 
+/** Bundan uzun cevaplar akışta yazılı soru olarak sorulmaz. */
+export const FEED_TEXT_INPUT_MAX_LEN = 30;
+
+/**
+ * Şıklı sınav soruları için ağırlıklar: önce sorulur (cevaptan sonra açıklama zaten
+ * gösterilir), ara sıra cevaplı anlatım kartı olarak tekrar edilir. Yazılı soru yok.
+ */
+const MCQ_WEIGHTS: KindWeights = { explainer: 0.25, mc: 0.75, ti: 0 };
+
 export interface BuildCardArgs {
   question: Question;
-  allQuestions: Question[];
+  /** Kartlar için çeldirici havuzu (yalnızca kart türündeki öğeler). */
+  cardPool: Question[];
   entry: FlashcardSRSEntry | undefined;
   /** Bu oturumda anlatım kartı almış soru id'leri. */
   taught: Set<string>;
@@ -74,8 +85,10 @@ export interface BuildCardArgs {
 }
 
 export function buildFeedCard(a: BuildCardArgs): FeedCard {
+  const q = a.question;
+  const mcq = isMcq(q);
   const box = a.entry?.box;
-  const w = weightsForBox(box, a.taught.has(a.question.id));
+  const w = mcq ? MCQ_WEIGHTS : weightsForBox(box, a.taught.has(q.id));
 
   let kind = a.forceKind ?? rollKind(w);
 
@@ -84,26 +97,30 @@ export function buildFeedCard(a: BuildCardArgs): FeedCard {
     if (a.recentKinds.length === 2 && a.recentKinds[0] === kind && a.recentKinds[1] === kind) {
       kind = rollKind(w, kind);
     }
-    // Öğret-sonra-test: hiç görülmemiş kelime önce anlatım kartı alır.
-    if (kind !== 'explainer' && box === undefined && !a.taught.has(a.question.id)) {
+    // Öğret-sonra-test: hiç görülmemiş bilgi kartı önce anlatım kartı alır.
+    // (Sınav sorularında tersi: önce sorulur.)
+    if (!mcq && kind !== 'explainer' && box === undefined && !a.taught.has(q.id)) {
       kind = 'explainer';
     }
   }
 
   const base = {
     id: newId(),
-    question: a.question,
+    question: q,
     box,
     sessionSeenCount: a.sessionSeenCount,
     lastSeenAt: a.entry?.lastSeenAt ?? null,
   };
 
-  if (kind === 'multiple-choice') {
-    const choices = buildChoices(a.question, a.allQuestions);
-    // Küçük set koruması: tek seçenekli "çoktan seçmeli" soru değildir.
-    if (choices.length < 2) return { ...base, kind: 'text-input' };
-    return { ...base, kind: 'multiple-choice', choices };
-  }
-  if (kind === 'text-input') return { ...base, kind: 'text-input' };
-  return { ...base, kind: 'explainer', isNew: box === undefined };
+  if (kind === 'explainer') return { ...base, kind: 'explainer', isNew: box === undefined };
+
+  if (mcq) return { ...base, kind: 'multiple-choice', choices: shuffle(q.options ?? [q.back]) };
+
+  const shortAnswer = q.back.length <= FEED_TEXT_INPUT_MAX_LEN;
+  if (kind === 'text-input' && shortAnswer) return { ...base, kind: 'text-input' };
+
+  const choices = buildChoices(q, a.cardPool);
+  if (choices.length >= 2) return { ...base, kind: 'multiple-choice', choices };
+  // Küçük havuz: tek seçenekli "çoktan seçmeli" soru değildir.
+  return shortAnswer ? { ...base, kind: 'text-input' } : { ...base, kind: 'explainer', isNew: box === undefined };
 }

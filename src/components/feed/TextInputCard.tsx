@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import type { FeedAnswerResult, TextInputFeedCard } from '@/types';
 import { Button } from '@/components/ui/button';
+import { cn, fitText } from '@/lib/utils';
 import { FeedAnswerBanner } from '@/components/feed/FeedAnswerBanner';
 
 export interface TextInputCardProps {
@@ -31,16 +32,19 @@ export function TextInputCard({
 
   return (
     // pr-20: sağdaki eylem rayının (w-10 + right-3) üstüne binmesini önler.
-    <div className="flex h-full w-full flex-col justify-between bg-duo-gray-900 pb-28 pl-6 pr-20 pt-24">
+    <div className="no-scrollbar flex h-full w-full flex-col overflow-y-auto bg-duo-gray-900 pb-24 pl-6 pr-20 pt-20">
       <motion.div
         initial={isActive && !reduced ? { opacity: 0, y: 16 } : false}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-1 flex-col items-center justify-center gap-3 text-center"
+        className="flex flex-1 flex-col items-center justify-center gap-3 py-4 text-center"
       >
-        <span className="text-xs font-extrabold tracking-[0.2em] text-white/50">
-          ANLAMINI YAZ
-        </span>
-        <h2 className="break-words text-4xl font-extrabold leading-tight text-white sm:text-5xl">
+        <span className="text-xs font-extrabold tracking-[0.2em] text-white/50">CEVABI YAZ</span>
+        <h2
+          className={cn(
+            'break-words font-extrabold leading-tight text-white',
+            fitText(card.question.front, ['text-4xl sm:text-5xl', 'text-2xl', 'text-xl', 'text-lg'])
+          )}
+        >
           {card.question.front}
         </h2>
         {card.question.hint && (
@@ -72,7 +76,7 @@ export function TextInputCard({
         </Button>
       </form>
 
-      <FeedAnswerBanner result={result} />
+      <FeedAnswerBanner result={result} question={card.question} />
     </div>
   );
 }

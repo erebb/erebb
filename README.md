@@ -1,13 +1,23 @@
 # Kelime Ustası
 
-Kendi kelime listelerinle çalıştığın, oyunlaştırılmış bir öğrenme uygulaması. Hiçbir soru
-uygulamaya gömülü değildir: listeni JSON/CSV dosyası olarak yüklersin ya da `Kelime - Tanım`
-satırları halinde yapıştırırsın.
+Derslerini kendin düzenlediğin bir çalışma uygulaması: her dersin altında haftalık setler,
+her sette sınav tipi sorular ve bilgi kartları. Puan, seri ya da can yok — yalnızca sorular,
+cevaplar ve açıklamalar.
 
-- **Akış** — TikTok tarzı dikey kaydırma: anlatım kartları ve sorular karışık gelir, can yok, akış bitmez.
-- **Kartlar** — 3D çevrilen kartlar, Leitner kutularıyla aralıklı tekrar.
-- **Test** — 5 can; çoktan seçmeli, yazılı ve eşleştirme soruları.
-- XP, günlük hedef ve seri (art arda çalışılan gün) takibi.
+- **Soru çöz** — şıklı sınav soruları; her cevaptan sonra doğru şık, açıklama ve slayt kaynağı.
+  Sonunda puan, yanlışların listesi ve **“Yanlışları tekrar çöz”**. Soru sayısı seçilebilir (10/20/40/tümü).
+- **Göz at** — tüm soru ve kartlar listede (filtre + arama); birine tıklayıp tek tek, önceki/sonraki ile
+  gezersin. Cevap “Cevabı göster” ile ya da bir şıkka dokununca açılır; istersen “Cevaplar açık”.
+- **Kartlar** — bilgi kartları (ya da soru → cevap kartları) 3D çevrilir; Leitner kutularıyla aralıklı tekrar,
+  “Zor” işaretlenen kart aynı oturumda geri gelir.
+- **Akış** — TikTok tarzı dikey kaydırma; anlatım kartları ve sorular karışık, bitmez.
+
+Her mod tek bir sette ya da **“Tüm ders”** ile dersin bütün setlerinde çalışır.
+
+**Hazır içerik:** Uygulama ilk açılışta **Mikrobiyoloji** dersini getirir — Hafta 7 (mikrobiyal büyümeyi
+etkileyen faktörler) ve Hafta 8 (antimikrobiyaller) slaytlarından hazırlanmış 164 sınav sorusu ve 58 bilgi
+kartı; tablolara ve kalın yazılmış kavramlara ağırlık verildi, her sorunun açıklaması ve slayt numarası var.
+İçerik `content/` klasöründeki JSON dosyalarıdır; dersi silersen geri gelmez.
 
 Tüm veriler yalnızca senin bilgisayarında tutulur; uygulama internete bağlanmaz.
 
@@ -77,9 +87,11 @@ silip bu klasörü de silersen veriler gider.
 
 | Kısayol | İşlev |
 | --- | --- |
+| 1–4 ya da A–D · Enter | Soru çözerken şık seç · devam et |
+| ← / → · Boşluk | Göz atarken önceki / sonraki · cevabı aç/kapat |
 | ↓ / ↑, Boşluk, Page Down / Up | Akışta sonraki / önceki kart |
 | Trackpad'de iki parmakla kaydırma, fare tekerleği | Akışta bir hareket = bir kart |
-| Esc | Akıştan çık |
+| Esc | Akıştan çık · göz atmada listeye dön |
 | ⌘C / ⌘V / ⌘X / ⌘A | Metin kutularında kopyala / yapıştır / kes / tümünü seç |
 | ⌘M | Pencereyi küçült |
 | ⌘W | Pencereyi kapat |
@@ -87,20 +99,14 @@ silip bu klasörü de silersen veriler gider.
 
 ---
 
-## Soru seti biçimleri
+## İçe aktarma biçimleri
 
-**Düz metin** (her satıra bir çift; ayraç ` - `, sekme ya da `: `):
+Ana ekrandaki **İçe aktar** ya da bir dersin içindeki **Bu derse set ekle** ile:
+
+**Düz metin** (bilgi kartı; her satıra bir çift, ayraç ` - `, sekme ya da `: `):
 ```
 Ephemeral - Kısa süreli, geçici
 Ubiquitous - Her yerde bulunan
-```
-
-**JSON** (anahtar adları esnek: `question`/`word`/`front`/`soru`/`kelime` ve `answer`/`definition`/`back`/`cevap`/`tanim`; isteğe bağlı `hint`/`ipucu`):
-```json
-[
-  { "kelime": "Ephemeral", "tanim": "Kısa süreli, geçici", "ipucu": "Kelebeklerin ömrü" },
-  { "word": "Ubiquitous", "definition": "Her yerde bulunan" }
-]
 ```
 
 **CSV** (başlık satırıyla):
@@ -108,6 +114,34 @@ Ubiquitous - Her yerde bulunan
 Soru,Cevap
 Ephemeral,"Kısa süreli, geçici"
 ```
+
+**JSON — kart ve şıklı sorular karışık** (anahtar adları esnek: `question`/`soru`/`front`/`kelime`,
+`answer`/`cevap`/`back`/`tanim`, `options`/`secenekler`, `explanation`/`aciklama`, `source`/`kaynak`):
+```json
+[
+  { "type": "card", "front": "D-value", "back": "Canlı sayısının 10 kat azalması için geçen süre", "source": "Slayt 11" },
+  {
+    "type": "mcq",
+    "question": "Klinik olarak kullanılan tek monobactam hangisidir?",
+    "options": ["Aztreonam", "Imipenem", "Meropenem", "Methicillin"],
+    "answer": "Aztreonam",
+    "explanation": "The only monobactam used clinically is aztreonam.",
+    "source": "Slayt 11"
+  }
+]
+```
+`answer` şıklardan birinin metni, `"B"` gibi bir harf ya da sıfırdan başlayan bir sıra numarası olabilir.
+
+**JSON — ders paketi** (bir dersi tüm setleriyle tek seferde ekler; aynı adlı ders varsa setler ona eklenir):
+```json
+{
+  "course": "Mikrobiyoloji",
+  "sets": [
+    { "name": "Hafta 9", "items": [] }
+  ]
+}
+```
+(`items` dizisine yukarıdaki gibi kart ve soru öğeleri gelir.)
 
 ---
 
@@ -152,6 +186,7 @@ etiketle sürümün eşleştiğini denetler ve `.dmg`'yi bir GitHub Release'e ek
 
 ```
 src/                 React ön ucu (tüm uygulama burada)
+content/             Uygulamayla gelen ders içeriği (JSON) — kodda soru yok
 src-tauri/           macOS kabuğu (Tauri 2): pencere, Türkçe menü, ikon, paketleme
 e2e/smoke.mjs        Uçtan uca test
 scripts/             İkon üretimi

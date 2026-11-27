@@ -1,10 +1,35 @@
-// ---- Soru / Soru Seti ----
+// ---- Ders / Soru Seti / Soru ----
+
+/**
+ * Bir çalışma öğesi. İki türü vardır:
+ * - `card` (bilgi kartı): `front` → `back`.
+ * - `mcq` (sınav sorusu): `front` soru kökü, `options` tüm şıklar, `back` doğru şıkkın metni.
+ *
+ * MCQ'da da `front`/`back` dolu tutulur; böylece kartlar, akış ve göz atma modları her iki
+ * türü aynı alanlardan okuyabilir.
+ */
+export type QuestionKind = 'card' | 'mcq';
 
 export interface Question {
   id: string;
-  front: string; // soru / kelime
-  back: string; // cevap / tanım
+  front: string;
+  back: string;
+  kind?: QuestionKind; // yoksa 'card'
+  /** Yalnızca mcq: doğru cevap dahil tüm şıklar. */
+  options?: string[];
+  /** Neden doğru — cevaptan sonra gösterilir. */
+  explanation?: string;
+  /** Örn. "Slayt 4 · Table 3-2". */
+  source?: string;
   hint?: string;
+}
+
+export const isMcq = (q: Question): boolean => q.kind === 'mcq' && (q.options?.length ?? 0) >= 2;
+
+export interface Course {
+  id: string;
+  name: string;
+  createdAt: string;
 }
 
 export type SourceFormat = 'json' | 'csv' | 'text';
@@ -12,33 +37,23 @@ export type SourceFormat = 'json' | 'csv' | 'text';
 export interface QuestionSet {
   id: string;
   name: string;
+  courseId: string;
   createdAt: string; // ISO zaman damgası
   updatedAt: string;
   sourceFormat: SourceFormat;
   questions: Question[];
 }
 
-// ---- Kullanıcı ilerlemesi / oyunlaştırma ----
-
-export interface UserProgress {
-  totalXP: number;
-  streak: number;
-  lastPracticedDate: string | null; // 'YYYY-MM-DD' (yerel tarih)
-  dailyGoalXP: number;
-  dailyXPEarned: number;
-  dailyXPDate: string; // dailyXPEarned sayacının ait olduğu gün
+/** Bir çalışma oturumunun hedefi: tek set ya da bir dersin tüm setleri. */
+export interface StudyTarget {
+  title: string;
+  subtitle?: string;
+  questions: Question[];
 }
 
-export const DEFAULT_PROGRESS: UserProgress = {
-  totalXP: 0,
-  streak: 0,
-  lastPracticedDate: null,
-  dailyGoalXP: 50,
-  dailyXPEarned: 0,
-  dailyXPDate: '',
-};
+export type StudyMode = 'browse' | 'quiz' | 'flashcards' | 'feed';
 
-// ---- Aralıklı tekrar (Flashcard modu, Leitner kutuları) ----
+// ---- Aralıklı tekrar (Leitner kutuları) ----
 
 export type LeitnerBox = 1 | 2 | 3 | 4 | 5;
 
@@ -49,12 +64,10 @@ export interface FlashcardSRSEntry {
   lastSeenAt: string | null; // ISO zaman damgası
 }
 
-export interface FlashcardDeckState {
-  setId: string;
-  entries: Record<string, FlashcardSRSEntry>; // questionId ile anahtarlı
-}
+/** questionId → kayıt. Soru id'leri tüm setlerde benzersiz olduğu için tek bir harita yeter. */
+export type SRSEntries = Record<string, FlashcardSRSEntry>;
 
-// ---- Quiz oturumu (Duolingo modu) ----
+// ---- Soru çözme oturumu ----
 
 export type QuizMode = 'multiple-choice' | 'text-input' | 'matching-pairs';
 
@@ -70,24 +83,22 @@ export interface QuizAnswerRecord {
   mode: QuizMode;
 }
 
-export type QuizStatus = 'in-progress' | 'game-over' | 'completed';
+export type QuizStatus = 'in-progress' | 'completed';
 
 export interface QuizSession {
-  setId: string;
   items: QuizItem[];
   currentIndex: number;
-  hearts: number;
-  maxHearts: number;
-  score: number;
-  totalAnswerable: number; // toplam cevaplanabilir birim (eşleştirmede çift başına 1)
-  xpEarned: number;
   answers: QuizAnswerRecord[];
   status: QuizStatus;
+  /** Toplam cevaplanabilir birim (eşleştirmede çift başına 1). */
+  totalAnswerable: number;
 }
 
 export interface QuizFeedback {
   type: 'correct' | 'incorrect';
-  correctAnswer?: string;
+  correctAnswer: string;
+  explanation?: string;
+  source?: string;
 }
 
 // ---- Akış modu (TikTok tarzı dikey kaydırma) ----
@@ -126,13 +137,13 @@ export interface FeedAnswerResult {
   correct: boolean;
   /** Daima birebir `question.back`; yanlışta gösterilir. */
   correctAnswer: string;
-  xpEarned: number;
-  /** Kullanıcı cevaplamadan önce "Kelimeyi göster" ile baktıysa true. */
+  /** Kullanıcının verdiği cevap (seçtiği şık ya da yazdığı metin). */
+  userAnswer: string;
+  /** Kullanıcı cevaplamadan önce "Göster" ile baktıysa true. */
   peeked: boolean;
 }
 
 export interface FeedSessionStats {
-  xpEarned: number;
   correct: number;
   answered: number;
 }

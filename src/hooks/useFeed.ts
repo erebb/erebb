@@ -1,13 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type {
-  FeedAnswerResult,
-  FeedCard,
-  FeedCardKind,
-  FeedSessionStats,
-  Question,
-} from '@/types';
+import type { FeedAnswerResult, FeedCard, FeedCardKind, FeedSessionStats, Question } from '@/types';
+import { isMcq } from '@/types';
 import { useApp } from '@/context/AppContext';
-import { XP_TABLE } from '@/hooks/useLearningEngine';
 import { markEasyEntry, markHardEntry, newEntry, touchEntry } from '@/lib/srs';
 import {
   FEED_BATCH_SIZE,
@@ -18,8 +12,6 @@ import {
 } from '@/lib/feed';
 import { normalizeAnswer, shuffle } from '@/lib/utils';
 
-const FLUSH_EVERY_CORRECT = 3;
-
 export interface UseFeedResult {
   cards: FeedCard[];
   currentIndex: number;
@@ -27,21 +19,18 @@ export interface UseFeedResult {
   /** FeedCard.id ile anahtarlı — aynı soru tekrar belirdiğinde sonuçlar bağımsız kalır. */
   answers: Record<string, FeedAnswerResult>;
   submitAnswer: (card: FeedCard, raw: string) => FeedAnswerResult;
-  /** "Kelimeyi göster" ile bakıldığını işaretler (sonraki doğru cevap kutuyu terfi ettirmez). */
+  /** "Göster" ile bakıldığını işaretler (sonraki doğru cevap kutuyu terfi ettirmez). */
   markPeeked: (cardId: string) => void;
-  peekedIds: Set<string>;
   stats: FeedSessionStats;
   isEmpty: boolean;
   /** Baştan kalıcı olarak atılan kart sayısı; FeedZone scrollTop telafisi yapar. */
   headOffset: number;
-  flushXP: () => void;
 }
 
-export function useFeed(setId: string): UseFeedResult {
-  const { getSet, getDeckState, updateDeckEntry, recordSessionResult } = useApp();
-  const set = getSet(setId);
-  const questions = useMemo(() => set?.questions ?? [], [set]);
+export function useFeed(questions: Question[]): UseFeedResult {
+  const { srsEntries, updateSrsEntry } = useApp();
   const isEmpty = questions.length === 0;
+  const cardPool = useMemo(() => questions.filter((q) => !isMcq(q)), [questions]);
 
   // --- Üretim durumu (render'ı tetiklemeyen referanslar) ---
   const poolRef = useRef<Question[]>([]);
@@ -50,17 +39,14 @@ export function useFeed(setId: string): UseFeedResult {
   const taughtRef = useRef<Set<string>>(new Set());
   const seenCountRef = useRef<Map<string, number>>(new Map());
 
-  // getDeckState her render'da yeni kimlik alabildiği için ref üzerinden okunur;
-  // böylece generateBatch stabil kalır ve prefetch effect'i döngüye girmez.
-  const deckRef = useRef(getDeckState);
-  useEffect(() => {
-    deckRef.current = getDeckState;
-  }, [getDeckState]);
-
+  // Güncel değerler ref'ten okunur; böylece generateBatch stabil kalır ve
+  // her cevapta (SRS yazımı bağlamı yeniler) prefetch effect'i döngüye girmez.
+  const entriesRef = useRef(srsEntries);
+  entriesRef.current = srsEntries;
   const questionsRef = useRef(questions);
-  useEffect(() => {
-    questionsRef.current = questions;
-  }, [questions]);
+  questionsRef.current = questions;
+  const cardPoolRef = useRef(cardPool);
+  cardPoolRef.current = cardPool;
 
   const nextQuestion = useCallback((all: Question[]): Question => {
     if (poolRef.current.length === 0) {
@@ -81,7 +67,7 @@ export function useFeed(setId: string): UseFeedResult {
       const all = questionsRef.current;
       if (all.length === 0) return [];
       const out: FeedCard[] = [];
-      const entries = deckRef.current(setId).entries;
+      const entries = entriesRef.current;
 
       for (let i = 0; i < n; i++) {
         const q = nextQuestion(all);
@@ -90,7 +76,7 @@ export function useFeed(setId: string): UseFeedResult {
 
         const card = buildFeedCard({
           question: q,
-          allQuestions: all,
+          cardPool: cardPoolRef.current,
           entry: entries[q.id],
           taught: taughtRef.current,
           recentKinds: recentKindsRef.current,
@@ -104,7 +90,7 @@ export function useFeed(setId: string): UseFeedResult {
       }
       return out;
     },
-    [nextQuestion, setId]
+    [nextQuestion]
   );
 
   const [cards, setCards] = useState<FeedCard[]>(() =>
@@ -114,7 +100,7 @@ export function useFeed(setId: string): UseFeedResult {
   const [headOffset, setHeadOffset] = useState(0);
   const [answers, setAnswers] = useState<Record<string, FeedAnswerResult>>({});
   const [peekedIds, setPeekedIds] = useState<Set<string>>(new Set());
-  const [stats, setStats] = useState<FeedSessionStats>({ xpEarned: 0, correct: 0, answered: 0 });
+  const [stats, setStats] = useState<FeedSessionStats>({ correct: 0, answered: 0 });
 
   // --- Sonsuz üretim: sona yaklaşınca yeni parti ekle ---
   useEffect(() => {
@@ -132,40 +118,6 @@ export function useFeed(setId: string): UseFeedResult {
     }
   }, [currentIndex, cards.length, isEmpty, generateBatch]);
 
-  // --- XP toplu yazımı ---
-  const pendingXpRef = useRef(0);
-  const pendingCorrectRef = useRef(0);
-
-  const flushXP = useCallback(() => {
-    const xp = pendingXpRef.current;
-    // recordSessionResult'tan ÖNCE sıfırla: StrictMode çift unmount'unda
-    // ikinci çağrı 0 yazar, XP iki kez sayılmaz.
-    pendingXpRef.current = 0;
-    pendingCorrectRef.current = 0;
-    if (xp > 0) recordSessionResult(xp);
-  }, [recordSessionResult]);
-
-  // Cleanup [] bağımlılıklı ama güncel flush'ı çağırmalı.
-  const flushRef = useRef(flushXP);
-  useEffect(() => {
-    flushRef.current = flushXP;
-  }, [flushXP]);
-
-  useEffect(() => {
-    const onVisibility = () => {
-      if (document.visibilityState === 'hidden') flushRef.current();
-    };
-    // Sabit sarmalayıcı: flushRef.current doğrudan verilirse removeEventListener eşleşmez.
-    const onPageHide = () => flushRef.current();
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('pagehide', onPageHide);
-    return () => {
-      document.removeEventListener('visibilitychange', onVisibility);
-      window.removeEventListener('pagehide', onPageHide);
-      flushRef.current();
-    };
-  }, []);
-
   const markPeeked = useCallback((cardId: string) => {
     setPeekedIds((prev) => {
       if (prev.has(cardId)) return prev;
@@ -180,45 +132,26 @@ export function useFeed(setId: string): UseFeedResult {
       const existing = answers[card.id];
       if (existing) return existing;
 
-      const mode = card.kind === 'explainer' ? 'text-input' : card.kind;
       const correct = normalizeAnswer(raw) === normalizeAnswer(card.question.back);
       const peeked = peekedIds.has(card.id);
-      const xpEarned = correct && !peeked ? XP_TABLE[mode] : 0;
 
-      // --- SRS geri yazımı: anında, kart başına bir yazma ---
-      const entries = deckRef.current(setId).entries;
-      const entry = entries[card.question.id] ?? newEntry(card.question.id);
+      // --- Tekrar kaydı: anında, kart başına bir yazma ---
+      const entry = entriesRef.current[card.question.id] ?? newEntry(card.question.id);
       if (correct) {
-        // Çoktan seçmeli tanımadır, hatırlama değil: 1/4 şans kelimeyi
-        // 14 günlük aralığa taşımasın. Bakılan cevap da terfi ettirmez.
+        // Çoktan seçmeli tanımadır, hatırlama değil: 1/4 şans bir öğeyi 14 günlük
+        // aralığa taşımasın. Bakılarak verilen cevap da terfi ettirmez.
         const promote = !peeked && (card.kind === 'text-input' || entry.box <= 3);
-        updateDeckEntry(setId, promote ? markEasyEntry(entry) : touchEntry(entry));
+        updateSrsEntry(promote ? markEasyEntry(entry) : touchEntry(entry));
       } else {
-        updateDeckEntry(setId, markHardEntry(entry));
+        updateSrsEntry(markHardEntry(entry));
       }
 
-      const result: FeedAnswerResult = {
-        correct,
-        correctAnswer: card.question.back,
-        xpEarned,
-        peeked,
-      };
+      const result: FeedAnswerResult = { correct, correctAnswer: card.question.back, userAnswer: raw, peeked };
       setAnswers((prev) => ({ ...prev, [card.id]: result }));
-      setStats((prev) => ({
-        xpEarned: prev.xpEarned + xpEarned,
-        correct: prev.correct + (correct ? 1 : 0),
-        answered: prev.answered + 1,
-      }));
-
-      if (xpEarned > 0) {
-        pendingXpRef.current += xpEarned;
-        pendingCorrectRef.current += 1;
-        if (pendingCorrectRef.current >= FLUSH_EVERY_CORRECT) flushXP();
-      }
-
+      setStats((prev) => ({ correct: prev.correct + (correct ? 1 : 0), answered: prev.answered + 1 }));
       return result;
     },
-    [answers, peekedIds, setId, updateDeckEntry, flushXP]
+    [answers, peekedIds, updateSrsEntry]
   );
 
   return {
@@ -228,10 +161,8 @@ export function useFeed(setId: string): UseFeedResult {
     answers,
     submitAnswer,
     markPeeked,
-    peekedIds,
     stats,
     isEmpty,
     headOffset,
-    flushXP,
   };
 }

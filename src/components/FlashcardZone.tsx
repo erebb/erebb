@@ -1,20 +1,76 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, Check, PartyPopper, RotateCcw, X } from 'lucide-react';
-import { useApp } from '@/context/AppContext';
+import { ArrowLeft, BookOpen, Check, PartyPopper, RotateCcw, X } from 'lucide-react';
+import type { Question, StudyTarget } from '@/types';
+import { isMcq } from '@/types';
 import { useSpacedRepetition } from '@/hooks/useSpacedRepetition';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { cn, fitText } from '@/lib/utils';
 
 interface Props {
-  setId: string;
+  target: StudyTarget;
   onExit: () => void;
 }
 
-export function FlashcardZone({ setId, onExit }: Props) {
-  const { getSet } = useApp();
-  const set = getSet(setId);
+type Deck = 'cards' | 'mcq' | 'all';
+
+/**
+ * Hangi öğelerle çalışılacağını seçtirir: bilgi kartları (varsayılan), sorular
+ * (soru → cevap) ya da hepsi. Seçim değişince tekrar oturumu sıfırdan kurulur.
+ */
+export function FlashcardZone({ target, onExit }: Props) {
+  const cards = useMemo(() => target.questions.filter((q) => !isMcq(q)), [target.questions]);
+  const mcqs = useMemo(() => target.questions.filter(isMcq), [target.questions]);
+  const [deck, setDeck] = useState<Deck>(cards.length > 0 ? 'cards' : 'all');
+  const questions = deck === 'cards' ? cards : deck === 'mcq' ? mcqs : target.questions;
+  const showPicker = cards.length > 0 && mcqs.length > 0;
+
+  return (
+    <FlashcardSession
+      key={deck}
+      target={target}
+      questions={questions}
+      onExit={onExit}
+      picker={
+        showPicker ? (
+          <div className="flex justify-center gap-1.5 pb-1" role="tablist" aria-label="Kart destesi">
+            {(
+              [
+                ['cards', `Bilgi kartları (${cards.length})`],
+                ['mcq', `Sorular (${mcqs.length})`],
+                ['all', `Hepsi (${target.questions.length})`],
+              ] as const
+            ).map(([key, label]) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={deck === key}
+                onClick={() => setDeck(key)}
+                className={cn(
+                  'h-8 rounded-lg border-2 px-2.5 text-xs font-extrabold transition-colors',
+                  deck === key
+                    ? 'border-duo-blue bg-duo-blue-light text-duo-blue-dark'
+                    : 'border-duo-gray-100 bg-white text-duo-gray-500 hover:border-duo-blue'
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null
+      }
+    />
+  );
+}
+
+interface SessionProps extends Props {
+  questions: Question[];
+  picker: React.ReactNode;
+}
+
+function FlashcardSession({ target, questions, onExit, picker }: SessionProps) {
   const {
     currentCard,
     remaining,
@@ -27,20 +83,9 @@ export function FlashcardZone({ setId, onExit }: Props) {
     markEasy,
     markHard,
     restart,
-  } = useSpacedRepetition(setId);
+  } = useSpacedRepetition(questions);
 
   const [isFlipped, setIsFlipped] = useState(false);
-
-  if (!set) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-        <p className="font-bold text-duo-gray-500">Soru seti bulunamadı.</p>
-        <Button variant="blue" onClick={onExit}>
-          Panoya Dön
-        </Button>
-      </div>
-    );
-  }
 
   const answer = (fn: () => void) => {
     setIsFlipped(false);
@@ -48,6 +93,7 @@ export function FlashcardZone({ setId, onExit }: Props) {
   };
 
   const progressPercent = total > 0 ? (reviewed / total) * 100 : 0;
+  const mcq = currentCard ? isMcq(currentCard) : false;
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-md flex-col p-4">
@@ -55,13 +101,18 @@ export function FlashcardZone({ setId, onExit }: Props) {
         <Button variant="ghost" size="icon" onClick={onExit} aria-label="Geri">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <Progress value={progressPercent} className="flex-1" />
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-xs font-extrabold text-duo-gray-500">{target.title}</p>
+          <Progress value={progressPercent} className="mt-1 h-3" />
+        </div>
         <Badge variant="blue">{remaining} kart</Badge>
       </header>
 
+      {picker}
+
       {isEarlyReview && !isDone && (
         <p className="py-1 text-center text-xs font-bold text-duo-gray-300">
-          Bugün vadesi gelen kart yok — erken tekrar yapıyorsun. 💪
+          Bugün vadesi gelen kart yok — erken tekrar yapıyorsun.
         </p>
       )}
 
@@ -72,9 +123,9 @@ export function FlashcardZone({ setId, onExit }: Props) {
           className="flex flex-1 flex-col items-center justify-center gap-4 text-center"
         >
           <PartyPopper className="h-16 w-16 text-duo-gold" />
-          <h2 className="text-2xl font-extrabold">Oturum tamamlandı!</h2>
+          <h2 className="text-2xl font-extrabold">Tekrar tamamlandı</h2>
           <p className="font-semibold text-duo-gray-500">
-            {reviewed} kart öğrenildi · {easyCount} kolay · {hardCount} zor işaretleme
+            {reviewed} kart · {easyCount} kolay · {hardCount} kez zor işaretlendi
           </p>
           <div className="mt-4 flex w-full flex-col gap-3">
             <Button
@@ -86,13 +137,13 @@ export function FlashcardZone({ setId, onExit }: Props) {
               <RotateCcw className="h-4 w-4" /> Tekrar Çalış
             </Button>
             <Button variant="outline" onClick={onExit}>
-              Panoya Dön
+              Geri dön
             </Button>
           </div>
         </motion.div>
       ) : (
         <>
-          <div className="flex flex-1 items-center justify-center py-6">
+          <div className="flex flex-1 items-center justify-center py-4">
             <div className="perspective-1000 w-full">
               <AnimatePresence mode="wait">
                 {currentCard && (
@@ -104,29 +155,53 @@ export function FlashcardZone({ setId, onExit }: Props) {
                     transition={{ duration: 0.2 }}
                   >
                     <motion.div
-                      className="preserve-3d relative h-72 w-full cursor-pointer select-none"
+                      className="preserve-3d relative h-[26rem] w-full cursor-pointer select-none"
                       onClick={() => setIsFlipped((f) => !f)}
                       animate={{ rotateY: isFlipped ? 180 : 0 }}
                       transition={{ duration: 0.5, ease: [0.4, 0.2, 0.2, 1] }}
                     >
-                      {/* Ön yüz: soru */}
-                      <div className="backface-hidden absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-duo-gray-100 bg-white p-6 text-center shadow-duo-card">
-                        <Badge variant="gray">SORU</Badge>
-                        <p className="text-2xl font-extrabold text-duo-gray-700">
-                          {currentCard.front}
-                        </p>
-                        <p className="text-xs font-bold text-duo-gray-300">Çevirmek için dokun</p>
+                      {/* Ön yüz */}
+                      <div className="backface-hidden absolute inset-0 flex flex-col items-center gap-3 overflow-y-auto rounded-2xl border-2 border-duo-gray-100 bg-white p-6 text-center shadow-duo-card">
+                        <div className="my-auto flex flex-col items-center gap-3">
+                          <Badge variant="gray">{mcq ? 'SORU' : 'KART'}</Badge>
+                          <p
+                            data-card-front=""
+                            className={cn(
+                              'font-extrabold text-duo-gray-700',
+                              fitText(currentCard.front, ['text-3xl', 'text-2xl', 'text-lg', 'text-base'])
+                            )}
+                          >
+                            {currentCard.front}
+                          </p>
+                          <p className="text-xs font-bold text-duo-gray-300">Çevirmek için dokun</p>
+                        </div>
                       </div>
-                      {/* Arka yüz: cevap */}
+                      {/* Arka yüz */}
                       <div
-                        className="backface-hidden absolute inset-0 flex flex-col items-center justify-center gap-3 rounded-2xl border-2 border-duo-blue bg-duo-blue-light p-6 text-center"
+                        className="backface-hidden absolute inset-0 flex flex-col items-center gap-3 overflow-y-auto rounded-2xl border-2 border-duo-blue bg-duo-blue-light p-6 text-center"
                         style={{ transform: 'rotateY(180deg)' }}
                       >
-                        <Badge variant="blue">CEVAP</Badge>
-                        <p className="text-2xl font-extrabold text-duo-gray-700">
-                          {currentCard.back}
-                        </p>
-                        <p className="text-xs font-bold text-duo-gray-300">Çevirmek için dokun</p>
+                        <div className="my-auto flex flex-col items-center gap-3">
+                          <Badge variant="blue">CEVAP</Badge>
+                          <p
+                            className={cn(
+                              'font-extrabold text-duo-gray-700',
+                              fitText(currentCard.back, ['text-3xl', 'text-2xl', 'text-lg', 'text-base'])
+                            )}
+                          >
+                            {currentCard.back}
+                          </p>
+                          {currentCard.explanation && (
+                            <p className="text-sm font-semibold leading-relaxed text-duo-gray-500">
+                              {currentCard.explanation}
+                            </p>
+                          )}
+                          {currentCard.source && (
+                            <p className="inline-flex items-center gap-1 text-xs font-bold text-duo-blue-dark">
+                              <BookOpen className="h-3.5 w-3.5" /> {currentCard.source}
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </motion.div>
                   </motion.div>

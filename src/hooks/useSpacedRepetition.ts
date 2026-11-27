@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import type { Question } from '@/types';
 import { useApp } from '@/context/AppContext';
 import {
@@ -24,20 +24,21 @@ export interface UseSpacedRepetitionReturn {
 }
 
 /**
- * Flashcard modunun kalp atışı: Leitner kutularına göre oturum kuyruğu kurar,
+ * Kart modunun kalbi: Leitner kutularına göre oturum kuyruğu kurar,
  * "Zor" kartları aynı oturumda birkaç kart ileride yeniden gösterir,
  * "Kolay" kartları kuyruktan çıkarıp bir üst kutuya taşır.
  */
-export function useSpacedRepetition(setId: string): UseSpacedRepetitionReturn {
-  const { getSet, getDeckState, updateDeckEntry } = useApp();
+export function useSpacedRepetition(questions: Question[]): UseSpacedRepetitionReturn {
+  const { srsEntries, updateSrsEntry } = useApp();
 
-  const set = getSet(setId);
-  const questions = useMemo(() => set?.questions ?? [], [set]);
+  // Güncel kayıtları ref'ten oku: her işaretleme bağlamı yeniler, ama kuyruk
+  // yalnızca oturum başında kurulmalı.
+  const entriesRef = useRef(srsEntries);
+  entriesRef.current = srsEntries;
 
-  // Kuyruk oturum başında bir kez kurulur; sonrası oturum içi durumdur.
   const initial = useRef<{ queue: Question[]; isEarlyReview: boolean } | null>(null);
   if (initial.current === null) {
-    initial.current = buildSessionQueue(questions, getDeckState(setId).entries);
+    initial.current = buildSessionQueue(questions, srsEntries);
   }
 
   const [queue, setQueue] = useState<Question[]>(initial.current.queue);
@@ -49,39 +50,36 @@ export function useSpacedRepetition(setId: string): UseSpacedRepetitionReturn {
 
   const currentCard = queue[0] ?? null;
 
-  const entryFor = useCallback(
-    (questionId: string) => getDeckState(setId).entries[questionId] ?? newEntry(questionId),
-    [getDeckState, setId]
-  );
+  const entryFor = (questionId: string) => entriesRef.current[questionId] ?? newEntry(questionId);
 
   const markEasy = useCallback(() => {
     if (!currentCard) return;
-    updateDeckEntry(setId, markEasyEntry(entryFor(currentCard.id)));
+    updateSrsEntry(markEasyEntry(entryFor(currentCard.id)));
     setQueue((prev) => prev.slice(1));
     setReviewed((n) => n + 1);
     setEasyCount((n) => n + 1);
-  }, [currentCard, entryFor, setId, updateDeckEntry]);
+  }, [currentCard, updateSrsEntry]);
 
   const markHard = useCallback(() => {
     if (!currentCard) return;
-    updateDeckEntry(setId, markHardEntry(entryFor(currentCard.id)));
+    updateSrsEntry(markHardEntry(entryFor(currentCard.id)));
     setQueue((prev) => {
       const rest = prev.slice(1);
       const insertAt = Math.min(REQUEUE_OFFSET, rest.length);
       return [...rest.slice(0, insertAt), prev[0], ...rest.slice(insertAt)];
     });
     setHardCount((n) => n + 1);
-  }, [currentCard, entryFor, setId, updateDeckEntry]);
+  }, [currentCard, updateSrsEntry]);
 
   const restart = useCallback(() => {
-    const next = buildSessionQueue(questions, getDeckState(setId).entries);
+    const next = buildSessionQueue(questions, entriesRef.current);
     setQueue(next.queue);
     setIsEarlyReview(next.isEarlyReview);
     setTotal(next.queue.length);
     setReviewed(0);
     setHardCount(0);
     setEasyCount(0);
-  }, [questions, getDeckState, setId]);
+  }, [questions]);
 
   return {
     currentCard,

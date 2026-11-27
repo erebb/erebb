@@ -58,6 +58,19 @@ export function addDays(dateISO: string, days: number): string {
   return `${yy}-${mm}-${dd}`;
 }
 
+/**
+ * Metin uzunluğuna göre okunaklı bir yazı boyutu sınıfı seçer: kısa bir terim büyük,
+ * bir sınav sorusu kökü ya da tablo özeti küçük yazılır. Sınıflar çağıran yerde
+ * düz metin olarak yazıldığı için Tailwind onları derlemeye dahil eder.
+ */
+export function fitText(text: string, sizes: [string, string, string, string]): string {
+  const n = text.length;
+  if (n <= 24) return sizes[0];
+  if (n <= 70) return sizes[1];
+  if (n <= 150) return sizes[2];
+  return sizes[3];
+}
+
 /** İki tarih arasındaki tam gün farkı (ISO zaman damgası veya 'YYYY-MM-DD' kabul eder). */
 export function daysSince(iso: string): number {
   const then = new Date(iso);

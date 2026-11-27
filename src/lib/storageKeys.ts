@@ -1,6 +1,13 @@
 export const STORAGE_KEYS = {
+  courses: 'kelime-ustasi.courses',
   questionSets: 'kelime-ustasi.sets',
-  userProgress: 'kelime-ustasi.progress',
-  srs: 'kelime-ustasi.srs',
+  /** questionId → Leitner kaydı (tüm setler için tek harita). */
+  srs: 'kelime-ustasi.srs.v2',
+  /** Eski biçim: setId → { entries }. Yalnızca taşıma için okunur. */
+  legacySrs: 'kelime-ustasi.srs',
+  /** Uygulamayla gelen içerik paketlerinden hangilerinin bir kez yüklendiği. */
+  seededPacks: 'kelime-ustasi.seededPacks',
   feedSwipeHintSeen: 'kelime-ustasi.feed.swipeHintSeen',
+  browseRevealAll: 'kelime-ustasi.browse.revealAll',
+  quizCount: 'kelime-ustasi.quiz.count',
 } as const;

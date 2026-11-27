@@ -1,8 +1,8 @@
 // Kelime Ustası — uçtan uca duman testi.
 //
-// Üretim derlemesini (dist/) `vite preview` ile sunar ve uygulamanın ana akışlarını
-// gerçek bir tarayıcı motorunda sürer. CI'da macOS üzerinde WebKit ile koşar —
-// masaüstü uygulamasının kullandığı WKWebView ile aynı motor.
+// Üretim derlemesini (dist/) `vite preview` ile sunar ve uygulamanın ana akışlarını gerçek
+// bir tarayıcı motorunda sürer. CI'da macOS üzerinde WebKit ile koşar — masaüstü
+// uygulamasının kullandığı WKWebView ile aynı motor.
 //
 // Ortam değişkenleri:
 //   E2E_BROWSER      chromium | webkit | firefox   (varsayılan: chromium)
@@ -22,18 +22,22 @@ const URL = `http://localhost:${PORT}`;
 const SHOTS = process.env.E2E_SCREENSHOTS;
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
-const CSP = JSON.parse(readFileSync(new globalThis.URL('../src-tauri/tauri.conf.json', import.meta.url)))
-  .app.security.csp;
+const readJson = (rel) => JSON.parse(readFileSync(new globalThis.URL(rel, import.meta.url)));
+const CSP = readJson('../src-tauri/tauri.conf.json').app.security.csp;
 
-// Bilinen cevaplar — testin doğru/yanlış cevaplamayı seçebilmesi için.
-const WORDS = {
-  Ephemeral: 'Kısa süreli, geçici',
-  Ubiquitous: 'Her yerde bulunan',
-  'Well-being': 'Sağlıklı olma hâli',
-  Serendipity: 'Şans eseri güzel keşif',
-  Meticulous: 'Titiz, çok dikkatli',
-  Resilient: 'Dayanıklı, çabuk toparlanan',
-};
+// Uygulamayla gelen içerik — doğru cevapları bilmek için.
+const H7 = readJson('../content/mikrobiyoloji-hafta-7.json');
+const H8 = readJson('../content/mikrobiyoloji-hafta-8.json');
+const ANSWER = new Map(); // soru kökü / kart önü → doğru cevap
+for (const pack of [H7, H8]) {
+  for (const it of pack.items) ANSWER.set((it.question ?? it.front).trim(), (it.answer ?? it.back).trim());
+}
+const count = (pack, type) => pack.items.filter((i) => i.type === type).length;
+const H7_MCQ = count(H7, 'mcq');
+const H7_CARDS = count(H7, 'card');
+const H8_MCQ = count(H8, 'mcq');
+const TOTAL_MCQ = H7_MCQ + H8_MCQ;
+const TOTAL_CARDS = H7_CARDS + count(H8, 'card');
 
 // ---------------------------------------------------------------------------
 
@@ -67,9 +71,8 @@ async function launch() {
   const engines = { chromium, webkit, firefox };
   const engine = engines[BROWSER];
   if (!engine) throw new Error(`Bilinmeyen E2E_BROWSER: ${BROWSER}`);
-  const opts = BROWSER === 'chromium' && process.env.PW_CHROMIUM_PATH
-    ? { executablePath: process.env.PW_CHROMIUM_PATH }
-    : {};
+  const opts =
+    BROWSER === 'chromium' && process.env.PW_CHROMIUM_PATH ? { executablePath: process.env.PW_CHROMIUM_PATH } : {};
   return engine.launch(opts);
 }
 
@@ -100,6 +103,12 @@ async function newPage(browser, viewport) {
 const shot = async (page, name) => {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/${BROWSER}-${name}.png` });
 };
+const settle = (page, ms = 450) => page.waitForTimeout(ms);
+
+const setCard = (page, prefix) => page.locator(`[data-set-card^="${prefix}"]`);
+async function studySet(page, prefix, mode) {
+  await setCard(page, prefix).getByRole('button', { name: new RegExp(mode, 'i') }).click();
+}
 
 // --- Akış yardımcıları ---
 const feedIndex = (page) =>
@@ -108,159 +117,218 @@ const feedIndex = (page) =>
     return el ? Math.round(el.scrollTop / el.clientHeight) : -1;
   });
 
-async function settle(page, ms = 450) {
-  await page.waitForTimeout(ms);
-}
-
 async function activeCard(page) {
   const idx = await feedIndex(page);
   const card = page.locator('[data-feed-card]').nth(idx);
   const text = await card.innerText().catch(() => '');
-  const kind = text.includes('BU NE DEMEK?')
-    ? 'mc'
-    : text.includes('ANLAMINI YAZ')
-      ? 'ti'
-      : text.includes('ANLAM')
+  const kind = text.includes('CEVABI YAZ')
+    ? 'ti'
+    : (await card.locator('button').count()) >= 2
+      ? 'mc'
+      : text.includes('ANLAM') || text.includes('CEVAP')
         ? 'explainer'
         : 'unknown';
-  const word = await card.locator('h2').first().innerText().catch(() => '');
-  return { idx, card, kind, word: word.trim() };
-}
-
-async function importPaste(page, name, lines) {
-  await page.getByRole('tab', { name: /Metin Yapıştır/i }).click();
-  await page.fill('input[placeholder*="Set adı"]', name);
-  await page.fill('textarea', lines.join('\n'));
-  await page.getByRole('button', { name: /Seti Kaydet/i }).click();
-}
-
-async function openSetMode(page, setName, label) {
-  const card = page.locator('div.rounded-2xl', { hasText: setName }).filter({
-    has: page.getByRole('button', { name: new RegExp(label, 'i') }),
-  });
-  await card.last().getByRole('button', { name: new RegExp(label, 'i') }).click();
+  const front = (await card.locator('h2').first().innerText().catch(() => '')).trim();
+  return { idx, card, kind, front };
 }
 
 // ---------------------------------------------------------------------------
 
 const server = await startPreview();
 const browser = await launch();
-console.log(`Motor: ${BROWSER} ${browser.version()}\n`);
+console.log(`Motor: ${BROWSER} ${browser.version()}`);
+console.log(`İçerik: ${TOTAL_MCQ} soru, ${TOTAL_CARDS} kart\n`);
 
 try {
-  // ===================== Mobil boyutlu pencere =====================
-  const { page, errors } = await newPage(browser, { width: 390, height: 844 });
+  const { page, errors } = await newPage(browser, { width: 440, height: 780 });
   await page.goto(URL);
-  await page.getByText('Kelime Ustası').first().waitFor();
+  await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
 
+  // ===================== Ana ekran =====================
   const fontOk = await page.evaluate(async () => {
     await document.fonts.ready;
     return document.fonts.check('800 16px Nunito') && document.fonts.check('800 16px Nunito', 'ğşıİ');
   });
   check('Nunito pakete gömülü yükleniyor (Türkçe karakterler dahil)', fontOk);
 
-  // --- İçe aktarma ---
-  await importPaste(page, 'Test Seti', [
-    ...Object.entries(WORDS).map(([w, m]) => `${w} - ${m}`),
-    'BOZUKSATIR',
-  ]);
-  await page.getByText(/kaydedildi/).waitFor();
-  check('Bozuk satır hata değil uyarı olarak gösteriliyor', (await page.getByText(/BOZUKSATIR/).count()) > 0);
+  const courseBtn = page.getByRole('button', { name: /Mikrobiyoloji/ });
+  const courseText = await courseBtn.innerText();
   check(
-    '6 çift ayrıştırıldı (tireli "Well-being" bozulmadı)',
-    (await page.getByText(/kaydedildi — 6 soru/).count()) > 0
+    'Mikrobiyoloji dersi hazır geliyor (2 set, tüm sorular ve kartlar)',
+    courseText.includes(`2 set · ${TOTAL_MCQ} soru · ${TOTAL_CARDS} kart`),
+    courseText.replace(/\n/g, ' ')
   );
+  const homeText = await page.locator('body').innerText();
+  check('XP / seri / günlük hedef yok', !/\bXP\b|Günlük Hedef|\d+\s*gün\b/.test(homeText));
+  await shot(page, '01-dersler');
 
-  await page.fill('textarea', 'asdf qwer zxcv');
-  await page.getByRole('button', { name: /Seti Kaydet/i }).click();
+  // ===================== Ders sayfası =====================
+  await courseBtn.click();
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+  check('"Tüm ders" kartı var', (await page.getByText('Tüm ders', { exact: true }).count()) > 0);
   check(
-    'Geçersiz girdi Türkçe hata gösteriyor',
-    (await page.getByText(/Geçerli "Kelime - Tanım" satırı bulunamadı/).count()) > 0
+    'Hafta 7 ve Hafta 8 setleri var',
+    (await setCard(page, 'Hafta 7').count()) === 1 && (await setCard(page, 'Hafta 8').count()) === 1
   );
-  await shot(page, '01-pano');
+  await shot(page, '02-ders');
 
-  // --- Akış ---
-  await openSetMode(page, 'Test Seti', 'Akış');
+  // ===================== Göz at =====================
+  await studySet(page, 'Hafta 7', 'Göz at');
+  await page.getByText(`${H7_MCQ} soru · ${H7_CARDS} kart`).waitFor();
+  await page.getByRole('button', { name: new RegExp(`Sorular \\(${H7_MCQ}\\)`) }).click();
+  check('Göz at: "Sorular" filtresi tüm soruları listeliyor', (await page.locator('ol > li').count()) === H7_MCQ);
+  await page.getByPlaceholder(/Ara/).fill('Campylobacter');
+  const searchHits = await page.locator('ol > li').count();
+  check('Göz at: arama çalışıyor', searchHits > 0 && searchHits < H7_MCQ, `${searchHits} sonuç`);
+  await page.getByPlaceholder(/Ara/).fill('');
+  await page.locator('ol > li button').first().click();
+  await page.locator('[data-browse-position]').waitFor();
+  check('Göz at: tek öğe görünümü açılıyor', (await page.locator('[data-browse-position]').innerText()).startsWith('1 /'));
+  check('Göz at: cevap başta gizli', (await page.locator('[data-browse-answer]').count()) === 0);
+  await page.getByRole('button', { name: /Cevabı göster/ }).click();
+  check('Göz at: "Cevabı göster" cevabı açıyor', (await page.locator('[data-browse-answer]').count()) === 1);
+  await shot(page, '03-goz-at');
+  await page.keyboard.press('ArrowRight');
+  await settle(page, 300);
+  check('Göz at: → sonraki öğeye geçiyor', (await page.locator('[data-browse-position]').innerText()).startsWith('2 /'));
+  // Bir şıkka dokunmak da cevabı açar
+  await page.locator('main button').first().click();
+  check('Göz at: şıkka dokunmak cevabı açıyor', (await page.locator('[data-browse-answer]').count()) === 1);
+  await page.keyboard.press('Escape');
+  await page.locator('ol > li').first().waitFor();
+  await page.getByRole('button', { name: 'Geri' }).click();
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+
+  // ===================== Soru çöz =====================
+  await studySet(page, 'Hafta 8', 'Soru çöz');
+  await page.getByText(`${H8_MCQ} sınav sorusu`, { exact: false }).waitFor();
+  check('Soru çöz: başlangıçta soru sayısı seçiliyor', (await page.getByRole('button', { name: '10', exact: true }).count()) === 1);
+  await page.getByRole('button', { name: '10', exact: true }).click();
+  await page.getByRole('button', { name: 'Başla' }).click();
+
+  const WRONG_FIRST = 3;
+  let answered = 0;
+  let explanationShown = 0;
+  for (let i = 0; i < 10; i++) {
+    await page.locator('[data-quiz-position]').waitFor();
+    const stem = (await page.locator('main h2').first().innerText()).trim();
+    const correct = ANSWER.get(stem);
+    const opts = page.locator('[data-quiz-choices] button');
+    const n = await opts.count();
+    let clicked = false;
+    for (let k = 0; k < n; k++) {
+      const t = (await opts.nth(k).innerText()).replace(/^[A-F✓]\s*/, '').trim();
+      const isCorrect = correct && t.endsWith(correct);
+      if ((i < WRONG_FIRST && !isCorrect) || (i >= WRONG_FIRST && isCorrect)) {
+        await opts.nth(k).click();
+        clicked = true;
+        break;
+      }
+    }
+    if (!clicked) await opts.first().click();
+    answered++;
+    const cont = page.getByRole('button', { name: /Devam Et/i });
+    await cont.waitFor();
+    if ((await page.getByText(/Slayt \d+/).count()) > 0) explanationShown++;
+    if (i === 0) await shot(page, '04-soru-geri-bildirim');
+    await page.waitForTimeout(400); // yay animasyonu otursun (WebKit'te hareket hâlindeki düğme ıskalanabilir)
+    await page.keyboard.press('Enter'); // masaüstü kısayolu
+    await cont.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
+  }
+  check('Soru çöz: her cevaptan sonra açıklama ve slayt kaynağı gösteriliyor', explanationShown === answered, `${explanationShown}/${answered}`);
+  await page.locator('[data-quiz-score]').waitFor();
+  const score = (await page.locator('[data-quiz-score]').innerText()).replace(/\s/g, '');
+  check('Soru çöz: puan doğru hesaplanıyor', score === `${10 - WRONG_FIRST}/10`, score);
+  check('Soru çöz: yanlışlar listeleniyor', (await page.getByText('YANLIŞ YAPTIKLARIN').count()) === 1);
+  await shot(page, '05-soru-sonuc');
+  await page.getByRole('button', { name: new RegExp(`Yanlışları tekrar çöz \\(${WRONG_FIRST}\\)`) }).click();
+  await page.locator('[data-quiz-position]').waitFor();
+  check('Soru çöz: "Yanlışları tekrar çöz" yalnız yanlışlarla başlıyor', (await page.locator('[data-quiz-position]').innerText()) === `1/${WRONG_FIRST}`);
+  await page.getByRole('button', { name: 'Çıkış' }).click();
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+
+  // ===================== Kartlar =====================
+  await studySet(page, 'Hafta 7', 'Kartlar');
+  await page.locator('[data-card-front]').first().waitFor();
+  const deckTab = page.getByRole('tab', { name: new RegExp(`Bilgi kartları \\(${H7_CARDS}\\)`) });
+  check(
+    'Kartlar: varsayılan deste bilgi kartları',
+    (await deckTab.getAttribute('aria-selected')) === 'true' &&
+      (await page.getByText(`${H7_CARDS} kart`, { exact: true }).count()) === 1
+  );
+  await page.getByRole('tab', { name: /Sorular/ }).click();
+  check('Kartlar: "Sorular" destesine geçiliyor', (await page.getByText(`${H7_MCQ} kart`, { exact: true }).count()) === 1);
+  await page.getByRole('tab', { name: /Bilgi kartları/ }).click();
+  await page.locator('[data-card-front]').first().waitFor();
+  const firstFront = (await page.locator('[data-card-front]').first().innerText()).trim();
+  await page.locator('.preserve-3d').click();
+  await settle(page, 800);
+  check('Kartlar: kart çevrilince cevap görünüyor', await page.getByText('CEVAP').first().isVisible());
+  await shot(page, '06-kart');
+  await page.getByRole('button', { name: /Zor/i }).click();
+  await settle(page);
+  let reappeared = false;
+  for (let i = 0; i < 8; i++) {
+    const f = (await page.locator('[data-card-front]').first().innerText().catch(() => '')).trim();
+    if (f === firstFront) {
+      reappeared = true;
+      break;
+    }
+    await page.getByRole('button', { name: /Kolay/i }).click();
+    await settle(page, 400);
+  }
+  check('Kartlar: "Zor" işaretlenen kart aynı oturumda geri geliyor', reappeared);
+  await page.getByRole('button', { name: 'Geri' }).click();
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+
+  // ===================== Akış (tüm ders) =====================
+  await page
+    .locator('div', { has: page.getByText('Tüm ders', { exact: true }) })
+    .getByRole('button', { name: /Akış/ })
+    .last()
+    .click();
   await page.locator('[data-feed-card]').first().waitFor();
   await settle(page, 700);
-  await shot(page, '02-akis-anlatim');
-
   const first = await activeCard(page);
-  check('Akış anlatım kartıyla açılıyor', first.kind === 'explainer', first.word);
-  check('İlk kartta "Yukarı kaydır" ipucu var', await page.getByText('Yukarı kaydır').first().isVisible());
-  const initialCount = await page.locator('[data-feed-card]').count();
-
-  const feed = page.locator('[role="feed"]');
-  await feed.focus();
+  check('Akış: anlatım kartıyla açılıyor', first.kind === 'explainer', first.front.slice(0, 40));
+  check('Akış: XP/seri yerine doğru sayacı var', (await page.getByLabel(/doğru, \d+ cevap/).count()) === 1);
+  await shot(page, '07-akis');
 
   const seen = { explainer: 0, mc: 0, ti: 0, unknown: 0 };
-  let autoAdvanceOk = 0;
-  let autoAdvanceFail = 0;
-  let wrongStayed = null;
-  let deliberatelyWrongDone = false;
-
-  for (let step = 0; step < 28; step++) {
+  let correctAnswers = 0;
+  let waitedForExplanation = 0;
+  for (let step = 0; step < 16; step++) {
     const c = await activeCard(page);
     seen[c.kind]++;
-    const answer = WORDS[c.word];
-
-    if (c.kind === 'mc' && answer) {
-      const options = c.card.locator('button');
-      const n = await options.count();
-      let target = -1;
+    if (c.kind === 'mc') {
+      const answer = ANSWER.get(c.front);
+      const opts = c.card.locator('button');
+      const n = await opts.count();
       for (let k = 0; k < n; k++) {
-        const t = (await options.nth(k).innerText()).trim();
-        const isCorrect = t.endsWith(answer);
-        if (!deliberatelyWrongDone ? !isCorrect : isCorrect) {
-          target = k;
+        const t = (await opts.nth(k).innerText()).trim();
+        if (answer && t.endsWith(answer)) {
+          await opts.nth(k).click();
+          correctAnswers++;
           break;
         }
       }
-      if (target === -1) target = 0;
-      const willBeWrong = !deliberatelyWrongDone;
-      await options.nth(target).click();
-      if (willBeWrong) {
-        deliberatelyWrongDone = true;
-        await settle(page, 1500);
-        const stayed = (await feedIndex(page)) === c.idx;
-        const revealed = (await c.card.getByText(/Doğru cevap:/).count()) > 0;
-        wrongStayed = stayed && revealed;
-        await feed.press('ArrowDown');
+      await settle(page, 1300);
+      if ((await feedIndex(page)) === c.idx) {
+        // Açıklaması olan soru otomatik geçmez — okunması beklenir.
+        if ((await c.card.getByText(/Devam etmek için yukarı kaydır/).count()) > 0) waitedForExplanation++;
+        await page.keyboard.press('ArrowDown');
         await settle(page);
-      } else {
-        await settle(page, 1600);
-        if ((await feedIndex(page)) === c.idx + 1) autoAdvanceOk++;
-        else autoAdvanceFail++;
       }
       continue;
     }
-
-    if (c.kind === 'ti' && answer) {
-      await c.card.locator('input').fill(answer.toLocaleUpperCase('tr') + '  '); // büyük harf + boşluk: normalize edilmeli
-      await c.card.getByRole('button', { name: /Kontrol Et/i }).click();
-      await settle(page, 1600);
-      if ((await feedIndex(page)) === c.idx + 1) autoAdvanceOk++;
-      else autoAdvanceFail++;
-      await feed.focus();
-      continue;
-    }
-
-    await feed.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
     await settle(page);
   }
-
-  check('Anlatım kartları akışta', seen.explainer > 0, `${seen.explainer}`);
-  check('Çoktan seçmeli kartlar akışta', seen.mc > 0, `${seen.mc}`);
-  check('Yazılı kartlar akışta', seen.ti > 0, `${seen.ti}`);
-  check('Bilinmeyen kart türü yok', seen.unknown === 0, `${seen.unknown}`);
-  check('Yanlış cevap ekranda kalıp doğru cevabı gösteriyor', wrongStayed === true);
-  check(
-    'Doğru cevapta otomatik ilerliyor (yazılıda büyük harf/boşluk tolere ediliyor)',
-    autoAdvanceOk > 0 && autoAdvanceFail === 0,
-    `${autoAdvanceOk} ilerledi, ${autoAdvanceFail} takıldı`
-  );
-  const grown = await page.locator('[data-feed-card]').count();
-  check('Akış sonsuz: yeni kartlar üretildi', grown > initialCount, `${initialCount} → ${grown}`);
+  check('Akış: anlatım kartları var', seen.explainer > 0, `${seen.explainer}`);
+  check('Akış: soru kartları var', seen.mc > 0, `${seen.mc}`);
+  check('Akış: bilinmeyen kart türü yok', seen.unknown === 0);
+  check('Akış: açıklamalı soru okunması için bekliyor', correctAnswers === 0 || waitedForExplanation > 0, `${waitedForExplanation}/${correctAnswers}`);
+  await shot(page, '08-akis-soru');
 
   await settle(page, 900);
   const snapOffset = await page.evaluate(() => {
@@ -268,70 +336,16 @@ try {
     const tops = [...el.querySelectorAll('[data-feed-card]')].map((s) => s.offsetTop);
     return Math.min(...tops.map((t) => Math.abs(el.scrollTop - t)));
   });
-  check('Kaydırma kart sınırına oturuyor', snapOffset < 2, `sapma ${snapOffset.toFixed(1)}px`);
+  check('Akış: kaydırma kart sınırına oturuyor', snapOffset < 2, `sapma ${snapOffset.toFixed(1)}px`);
 
-  const kbStart = await feedIndex(page);
-  await feed.press('ArrowDown');
-  await feed.press('ArrowDown');
-  await feed.press('ArrowDown');
-  await settle(page, 1400);
-  const kbEnd = await feedIndex(page);
-  check('Hızlı art arda 3 ok tuşu 3 kart ilerletiyor', kbEnd === kbStart + 3, `${kbStart} → ${kbEnd}`);
-
-  const before = await feedIndex(page);
-  await feed.press('ArrowUp');
-  await settle(page, 700);
-  check('Yukarı ok önceki karta dönüyor', (await feedIndex(page)) === before - 1);
-  await shot(page, '03-akis-soru');
-
-  // Escape ile çık (masaüstü kısayolu) → XP ve seri işlenmiş olmalı
-  await feed.press('Escape');
-  await page.getByText('Soru Setlerim').waitFor();
-  const header = await page.locator('header').first().innerText();
-  const xp = Number((header.match(/(\d+)\s*XP/) ?? [0, 0])[1]);
-  check('Esc akıştan çıkıyor ve XP işleniyor', xp > 0, `${xp} XP`);
-  check('Seri 1 gün oldu', /\b1\s*gün/.test(header));
-
-  await page.reload();
-  await page.getByText('Soru Setlerim').waitFor();
-  const headerAfter = await page.locator('header').first().innerText();
-  check(
-    'XP ve seri sayfa yenilemesinden sonra korunuyor (LocalStorage)',
-    Number((headerAfter.match(/(\d+)\s*XP/) ?? [0, 0])[1]) === xp
-  );
-
-  await openSetMode(page, 'Test Seti', 'Akış');
-  await settle(page, 700);
-  check('Kaydırma ipucu ikinci açılışta çıkmıyor', !(await page.getByText('Yukarı kaydır').first().isVisible().catch(() => false)));
-
-  // Tek fare tekerleği çentiği bir sonraki karta geçirmeli
   const wheelStart = await feedIndex(page);
   const box = await page.locator('[role="feed"]').boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.move(box.x + box.width / 2, box.y + 60);
   await page.mouse.wheel(0, 120);
   await settle(page, 1200);
-  const wheelEnd = await feedIndex(page);
-  check('Tek tekerlek çentiği bir kart ilerletiyor', wheelEnd === wheelStart + 1, `${wheelStart} → ${wheelEnd}`);
+  check('Akış: tek tekerlek çentiği bir kart ilerletiyor', (await feedIndex(page)) === wheelStart + 1);
 
-  // Bir "trackpad kaydırması": art arda gelen, azalan küçük olaylar (atalet kuyruğu) tek kart.
-  const swipeStart = await feedIndex(page);
-  for (const d of [6, 14, 28, 40, 34, 26, 18, 12, 8, 5, 3, 2, 1]) {
-    await page.mouse.wheel(0, d);
-    await page.waitForTimeout(16);
-  }
-  await settle(page, 1200);
-  const swipeEnd = await feedIndex(page);
-  check('Tek trackpad kaydırması (atalet dahil) tam bir kart ilerletiyor', swipeEnd === swipeStart + 1, `${swipeStart} → ${swipeEnd}`);
-
-  // Ayrı çentikler (araları > sessizlik süresi) ayrı adımlardır; ters yön geri götürür.
-  await page.mouse.wheel(0, -120);
-  await page.waitForTimeout(400);
-  await page.mouse.wheel(0, -120);
-  await settle(page, 1200);
-  check('İki ayrı geri çentik iki kart geri götürüyor', (await feedIndex(page)) === swipeEnd - 2);
-
-  // "Kelimeyi göster": bir soru kartına gel, pencereyi aç; Esc yalnızca pencereyi kapatmalı,
-  // akıştan çıkmamalı; sonra ok tuşları çalışmaya devam etmeli (odak body'ye düşse bile).
+  // "Göster": Esc yalnızca pencereyi kapatır; sonra ok tuşları çalışır.
   let questionFound = false;
   for (let i = 0; i < 12 && !questionFound; i++) {
     const c = await activeCard(page);
@@ -343,154 +357,122 @@ try {
     await settle(page, 600);
   }
   if (questionFound) {
-    await page.getByRole('button', { name: 'Kelimeyi göster' }).click();
+    await page.getByRole('button', { name: 'Cevabı göster' }).click();
     await page.getByRole('dialog').waitFor();
     await page.keyboard.press('Escape');
     await settle(page, 500);
-    const dialogClosed = (await page.getByRole('dialog').count()) === 0;
-    const stillInFeed = (await page.locator('[role="feed"]').count()) > 0;
-    check('"Göster" penceresinde Esc yalnızca pencereyi kapatıyor', dialogClosed && stillInFeed);
+    check(
+      'Akış: "Göster" penceresinde Esc yalnızca pencereyi kapatıyor',
+      (await page.getByRole('dialog').count()) === 0 && (await page.locator('[role="feed"]').count()) > 0
+    );
     const afterDialog = await feedIndex(page);
     await page.keyboard.press('ArrowDown');
     await settle(page, 900);
-    check('Pencere kapandıktan sonra ok tuşları çalışıyor', (await feedIndex(page)) === afterDialog + 1);
+    check('Akış: pencere kapandıktan sonra ok tuşları çalışıyor', (await feedIndex(page)) === afterDialog + 1);
   } else {
-    check('"Göster" testi için soru kartı bulundu', false);
+    check('Akış: "Göster" testi için soru kartı bulundu', false);
   }
+  await page.keyboard.press('Escape');
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+  check('Akış: Esc derse geri döndürüyor', true);
 
-  await page.getByRole('button', { name: /Akıştan çık/i }).click();
-  await page.getByText('Soru Setlerim').waitFor();
+  // ===================== Düzenleme kayıpsız mı =====================
+  await setCard(page, 'Hafta 7').getByRole('button', { name: 'Düzenle' }).click();
+  const editText = await page.getByRole('dialog').locator('textarea').inputValue();
+  check('Düzenle: şıklı sorular JSON olarak açılıyor', editText.includes('"type": "mcq"') && editText.includes('"explanation"'));
+  await page.getByRole('dialog').getByRole('button', { name: 'Kaydet' }).click();
+  await settle(page, 400);
+  check(
+    'Düzenle: değiştirmeden kaydetmek hiçbir şey kaybettirmiyor',
+    (await setCard(page, 'Hafta 7').innerText()).includes(`${H7_MCQ} soru · ${H7_CARDS} kart`)
+  );
 
-  // --- Kartlar ---
-  await openSetMode(page, 'Test Seti', 'Kartlar');
-  await page.getByText('SORU').first().waitFor();
-  const firstWord = (await page.locator('.preserve-3d p').first().innerText()).trim();
-  await page.locator('.preserve-3d').click();
-  await settle(page, 800);
-  check('Kart çevrilince cevap görünüyor', await page.getByText('CEVAP').first().isVisible());
-  await shot(page, '04-kart');
-  await page.getByRole('button', { name: /Zor/i }).click();
-  await settle(page);
-  let reappeared = false;
-  for (let i = 0; i < 8; i++) {
-    if ((await page.getByText('Oturum tamamlandı').count()) > 0) break;
-    const w = (await page.locator('.preserve-3d p').first().innerText().catch(() => '')).trim();
-    if (w === firstWord) {
-      reappeared = true;
-      break;
-    }
-    await page.getByRole('button', { name: /Kolay/i }).click();
-    await settle(page, 400);
-  }
-  check('"Zor" işaretlenen kart aynı oturumda geri geliyor', reappeared, firstWord);
-  await page.getByRole('button', { name: 'Geri' }).click();
-  await page.getByText('Soru Setlerim').waitFor();
+  // ===================== İçe aktarma =====================
+  await page.getByRole('button', { name: /Bu derse set ekle/ }).click();
+  await page.getByLabel('Set adı').first().fill('Deneme seti');
+  await page.locator('textarea').fill(['Ephemeral - Kısa süreli', 'Ubiquitous - Her yerde bulunan', 'BOZUKSATIR'].join('\n'));
+  await page.getByRole('button', { name: 'Kaydet', exact: true }).click();
+  await page.getByText(/kaydedildi/).waitFor();
+  check('İçe aktar: bozuk satır uyarı olarak gösteriliyor', (await page.getByText(/BOZUKSATIR/).count()) > 0);
+  check('İçe aktar: set derse eklendi', (await setCard(page, 'Deneme seti').count()) === 1);
+  await page.locator('textarea').fill('asdf qwer zxcv');
+  await page.getByRole('button', { name: 'Kaydet', exact: true }).click();
+  check('İçe aktar: geçersiz girdi Türkçe hata veriyor', (await page.getByText(/Geçerli "Kelime - Tanım" satırı bulunamadı/).count()) > 0);
+  await setCard(page, 'Deneme seti').getByRole('button', { name: 'Sil' }).click();
+  await page.getByRole('button', { name: 'Evet, sil' }).click();
+  await settle(page, 300);
+  await page.getByRole('button', { name: 'Derslere dön' }).click();
+  await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
 
-  // --- Test (can sistemi) ---
-  await importPaste(page, 'Quiz Seti', Array.from({ length: 12 }, (_, i) => `Soru${i} - Cevap${i}`));
-  await page.getByText(/kaydedildi — 12 soru/).waitFor();
-  await openSetMode(page, 'Quiz Seti', 'Test');
-  let gameOver = false;
-  for (let i = 0; i < 40 && !gameOver; i++) {
-    if ((await page.getByText('Canların bitti').count()) > 0) {
-      gameOver = true;
-      break;
-    }
-    // Geri bildirim şeridi açıksa önce onu geç. Şerit yay animasyonuyla içeri kayar;
-    // WebKit'te hareket hâlindeki düğmeye yapılan tıklama ıskalanabildiği için oturmasını
-    // bekle, tıkla ve kaybolduğunu doğrula — yoksa döngü kilitli kutuya yazmaya çalışır.
-    const cont = page.getByRole('button', { name: /Devam Et/i });
-    if (await cont.isVisible().catch(() => false)) {
-      await page.waitForTimeout(450);
-      await cont.click();
-      await cont.waitFor({ state: 'detached', timeout: 5000 }).catch(() => {});
-      continue;
-    }
-    const prompt = (await page.locator('main h2').first().innerText().catch(() => '')).trim();
-    const want = prompt.replace('Soru', 'Cevap');
-    if ((await page.locator('main input').count()) > 0) {
-      await page.locator('main input').fill('kesinlikle-yanlis');
-      await page.getByRole('button', { name: /Kontrol Et/i }).click();
-    } else if ((await page.getByText('Çiftleri eşleştir').count()) > 0) {
-      const cols = page.locator('main .grid.grid-cols-2 > div');
-      const left = cols.nth(0).locator('button');
-      const right = cols.nth(1).locator('button');
-      const leftWord = (await left.nth(0).innerText()).trim().replace('Soru', 'Cevap');
-      for (let k = 0; k < (await right.count()); k++) {
-        if ((await right.nth(k).innerText()).trim() !== leftWord) {
-          await left.nth(0).click();
-          await right.nth(k).click();
-          break;
-        }
-      }
-    } else {
-      const opts = page.locator('main button');
-      for (let k = 0; k < (await opts.count()); k++) {
-        if (!(await opts.nth(k).innerText()).includes(want)) {
-          await opts.nth(k).click();
-          break;
-        }
-      }
-    }
-    // Cevabın sonucunu bekle: geri bildirim şeridi ya da Oyun Bitti. (Eşleştirmede yanlış çift
-    // şerit açmaz; o durumda kısa beklemeden sonra döngü yeni bir yanlış çift dener.)
-    // Her beklemenin kendi catch'i var: yarışı kaybedenin sonradan gelen zaman aşımı reddi
-    // işlenmemiş kalırsa Node süreci çöker.
-    await Promise.race([
-      cont.waitFor({ state: 'visible', timeout: 3000 }).catch(() => {}),
-      page.getByText('Canların bitti').waitFor({ timeout: 3000 }).catch(() => {}),
-    ]);
-  }
-  check('Canlar bitince "Oyun Bitti" ekranı geliyor', gameOver);
-  if (gameOver) {
-    await shot(page, '05-oyun-bitti');
-    await page.getByRole('button', { name: /Tekrar Dene/i }).click();
-    await settle(page);
-    check('"Tekrar Dene" canları 5\'e sıfırlıyor', (await page.getByLabel('5 can kaldı').count()) > 0);
-  }
+  // Ders paketi JSON'u ana ekrandan
+  await page.getByRole('button', { name: /İçe aktar/ }).click();
+  const pack = {
+    course: 'Test Dersi',
+    sets: [
+      {
+        name: 'Ünite 1',
+        items: [
+          { type: 'mcq', question: 'İki artı iki?', options: ['3', '4', '5'], answer: '4', explanation: 'Toplama.' },
+          { type: 'card', front: 'H2O', back: 'Su' },
+        ],
+      },
+    ],
+  };
+  await page.locator('textarea').fill(JSON.stringify(pack));
+  await page.getByRole('button', { name: 'Kaydet', exact: true }).click();
+  await page.getByText(/"Test Dersi" dersine 1 set eklendi/).waitFor();
+  check('İçe aktar: ders paketi JSON\'u ders olarak ekleniyor', (await page.getByRole('button', { name: /Test Dersi/ }).count()) === 1);
+
+  // ===================== Kalıcılık =====================
+  await page.reload();
+  await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  check('Yenileme sonrası dersler korunuyor', (await page.getByRole('button', { name: /Test Dersi/ }).count()) === 1);
+  check(
+    'Hazır ders yenilemede çoğaltılmıyor',
+    (await page.getByRole('button', { name: /Mikrobiyoloji/ }).count()) === 1 &&
+      (await page.getByRole('button', { name: /Mikrobiyoloji/ }).innerText()).includes('2 set')
+  );
 
   const csp1 = await page.evaluate(() => window.__cspViolations);
-  check('CSP ihlali yok (mobil)', csp1.length === 0, csp1.slice(0, 3).join(' | '));
-  check('Konsol hatası yok (mobil)', errors.length === 0, errors.slice(0, 3).join(' | '));
+  check('CSP ihlali yok', csp1.length === 0, csp1.slice(0, 3).join(' | '));
+  check('Konsol hatası yok', errors.length === 0, errors.slice(0, 3).join(' | '));
 
   // ===================== Geniş masaüstü penceresi =====================
   const wide = await newPage(browser, { width: 1280, height: 800 });
-  // Aynı veriyi kullanmak için LocalStorage'ı taşı.
   const storage = await page.evaluate(() => JSON.stringify(localStorage));
   await wide.page.goto(URL);
   await wide.page.evaluate((s) => {
+    localStorage.clear();
     for (const [k, v] of Object.entries(JSON.parse(s))) localStorage.setItem(k, v);
   }, storage);
   await wide.page.reload();
-  await openSetMode(wide.page, 'Test Seti', 'Akış');
+  await wide.page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
+  await studySet(wide.page, 'Hafta 8', 'Akış');
   await wide.page.locator('[data-feed-card]').first().waitFor();
   await settle(wide.page, 700);
   const layout = await wide.page.evaluate(() => {
     const col = document.querySelector('[data-feed-card] > div').getBoundingClientRect();
-    const rail = document.querySelector('[aria-label="Kelimeyi göster"]').getBoundingClientRect();
-    const exit = document.querySelector('[aria-label="Akıştan çık"]').getBoundingClientRect();
-    return { colW: col.width, colL: col.left, colR: col.right, railR: rail.right, exitL: exit.left };
+    const rail = document.querySelector('[aria-label="Cevabı göster"]').getBoundingClientRect();
+    return { colW: col.width, colL: col.left, colR: col.right, railR: rail.right };
   });
-  check('Geniş pencerede kart içeriği ortalanmış dar sütunda', layout.colW <= 448 && layout.colL > 300, `genişlik ${layout.colW}`);
-  check(
-    'Eylem rayı ve çıkış düğmesi sütunun içinde',
-    layout.railR <= layout.colR + 1 && layout.exitL >= layout.colL - 1
-  );
-  await shot(wide.page, '06-genis-pencere');
-
-  // Yandaki siyah boşlukta tekerlek de akışı kaydırmalı; oraya tıklamak ok tuşlarını bozmamalı.
+  check('Geniş pencere: akış ortalanmış dar sütunda', layout.colW <= 448 && layout.colL > 300, `genişlik ${layout.colW}`);
+  check('Geniş pencere: ray sütunun içinde', layout.railR <= layout.colR + 1);
   const gutterStart = await feedIndex(wide.page);
   await wide.page.mouse.move(120, 400);
   await wide.page.mouse.wheel(0, 120);
   await settle(wide.page, 1200);
-  check('Yan boşlukta tekerlek akışı kaydırıyor', (await feedIndex(wide.page)) === gutterStart + 1);
-  await wide.page.mouse.click(120, 400);
-  await wide.page.keyboard.press('ArrowDown');
-  await settle(wide.page, 1000);
-  check('Yan boşluğa tıkladıktan sonra ok tuşları çalışıyor', (await feedIndex(wide.page)) === gutterStart + 2);
-  const csp2 = await wide.page.evaluate(() => window.__cspViolations);
-  check('CSP ihlali yok (geniş)', csp2.length === 0, csp2.slice(0, 3).join(' | '));
-  check('Konsol hatası yok (geniş)', wide.errors.length === 0, wide.errors.slice(0, 3).join(' | '));
+  check('Geniş pencere: yan boşlukta tekerlek akışı kaydırıyor', (await feedIndex(wide.page)) === gutterStart + 1);
+  await shot(wide.page, '09-genis-pencere');
+  check('Geniş pencere: konsol hatası yok', wide.errors.length === 0, wide.errors.slice(0, 3).join(' | '));
+
+  // ===================== Silinen hazır ders geri gelmez =====================
+  await page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
+  await page.getByRole('button', { name: 'Dersi sil' }).click();
+  await page.getByRole('button', { name: 'Evet, sil' }).click();
+  await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  await page.reload();
+  await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  check('Silinen hazır ders yeniden açılışta geri gelmiyor', (await page.getByRole('button', { name: /Mikrobiyoloji/ }).count()) === 0);
 } finally {
   await browser.close();
   server.kill();

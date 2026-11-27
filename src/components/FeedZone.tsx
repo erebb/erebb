@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'framer-motion';
-import type { FeedCard } from '@/types';
-import { useApp } from '@/context/AppContext';
+import type { FeedCard, StudyTarget } from '@/types';
 import { useFeed } from '@/hooks/useFeed';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { FEED_RENDER_WINDOW } from '@/lib/feed';
@@ -14,6 +13,7 @@ import { TextInputCard } from '@/components/feed/TextInputCard';
 import { FeedActionRail } from '@/components/feed/FeedActionRail';
 import { FeedTopBar } from '@/components/feed/FeedTopBar';
 import { SwipeHint } from '@/components/feed/SwipeHint';
+import { autoAdvanceAfter } from '@/components/feed/FeedAnswerBanner';
 import { cn } from '@/lib/utils';
 
 const AUTO_ADVANCE_MS = 900;
@@ -25,13 +25,25 @@ const WHEEL_THRESHOLD_PX = 20;
 const PENDING_TARGET_TTL_MS = 1000;
 
 export interface FeedZoneProps {
-  setId: string;
+  target: StudyTarget;
   onExit: () => void;
 }
 
-export function FeedZone({ setId, onExit }: FeedZoneProps) {
-  const { getSet, progress } = useApp();
-  const set = getSet(setId);
+/** Olayın hedefinden kaba kadar, o yönde hâlâ kaydırılabilen bir iç öğe var mı? */
+function innerCanScroll(target: EventTarget | null, container: HTMLElement, deltaY: number): boolean {
+  let el = target instanceof HTMLElement ? target : null;
+  while (el && el !== container) {
+    const { overflowY } = getComputedStyle(el);
+    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight + 1) {
+      if (deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1) return true;
+      if (deltaY < 0 && el.scrollTop > 0) return true;
+    }
+    el = el.parentElement;
+  }
+  return false;
+}
+
+export function FeedZone({ target, onExit }: FeedZoneProps) {
   const {
     cards,
     currentIndex,
@@ -42,8 +54,7 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     stats,
     isEmpty,
     headOffset,
-    flushXP,
-  } = useFeed(setId);
+  } = useFeed(target.questions);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const cardRefs = useRef<Array<HTMLElement | null>>([]);
@@ -164,6 +175,8 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey) return; // trackpad ile yakınlaştırma hareketi
       if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // yatay kaydırma
+      // Uzun bir kartın (tablo özeti, açıklama) kendi içeriği kaydırılabiliyorsa önce o kaysın.
+      if (!gestureActive && innerCanScroll(e.target, el, e.deltaY)) return;
       e.preventDefault();
       window.clearTimeout(quietTimer);
       quietTimer = window.setTimeout(() => {
@@ -197,7 +210,8 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
   const handleAnswer = useCallback(
     (card: FeedCard, raw: string) => {
       const res = submitAnswer(card, raw);
-      if (!res.correct) return; // Yanlışta ekranda kal — açığa çıkan cevap okunmalı.
+      // Yanlışta ya da açıklaması olan soruda ekranda kal — okunması gereken bir şey var.
+      if (!autoAdvanceAfter(res, card.question)) return;
       const myIndex = indexRef.current;
       advanceTimerRef.current = window.setTimeout(() => {
         // Kullanıcı bu arada kendisi kaydırdıysa geri sürükleme.
@@ -208,14 +222,11 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     [submitAnswer, goTo]
   );
 
-  const handleExit = useCallback(() => {
-    flushXP();
-    onExit();
-  }, [flushXP, onExit]);
+  const handleExit = useCallback(() => onExit(), [onExit]);
 
   // --- Klavye ---
   // Pencere düzeyinde dinlenir. Akış kabına bağlı dinleyici kırılgandı: Safari/WebKit'te
-  // düğmeye tıklamak odak vermez ve "Kelimeyi göster" kapanınca odak body'ye düşer —
+  // düğmeye tıklamak odak vermez ve "Göster" penceresi kapanınca odak body'ye düşer —
   // ok tuşları sessizce çalışmayı bırakırdı.
   const revealOpenRef = useRef(false);
   useEffect(() => {
@@ -228,7 +239,7 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      // Tuşu başka bir bileşen zaten işlediyse karışma. Kritik durum: "Kelimeyi göster"
+      // Tuşu başka bir bileşen zaten işlediyse karışma. Kritik durum: "Göster" penceresi
       // açıkken Esc. Radix pencereyi belge düzeyinde kapatıp olayı preventDefault eder;
       // React o güncellemeyi bu dinleyici çalışmadan işlediği için aşağıdaki "pencere açık"
       // bayrağı burada çoktan false olur — tek başına ona güvenilirse Esc hem pencereyi
@@ -264,13 +275,11 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  if (!set || isEmpty) {
+  if (isEmpty) {
     return (
       <div className="flex h-feed flex-col items-center justify-center gap-4 bg-duo-gray-900 p-6 text-center">
-        <p className="text-lg font-extrabold text-white">
-          {set ? 'Bu sette henüz soru yok.' : 'Soru seti bulunamadı.'}
-        </p>
-        {set && <p className="text-sm font-semibold text-white/60">Önce sete soru ekle.</p>}
+        <p className="text-lg font-extrabold text-white">Burada henüz soru yok.</p>
+        <p className="text-sm font-semibold text-white/60">Önce bir sete soru ekle.</p>
         <Button variant="blue" onClick={handleExit}>
           Geri dön
         </Button>
@@ -289,18 +298,10 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
     <div className="relative h-feed w-full overflow-hidden bg-black">
       <div className="pointer-events-none absolute inset-0 z-20 flex justify-center">
         <div className="relative h-full w-full max-w-md">
-          <FeedTopBar
-            setName={set.name}
-            dailyXPEarned={progress.dailyXPEarned}
-            dailyGoalXP={progress.dailyGoalXP}
-            onExit={handleExit}
-          />
+          <FeedTopBar title={target.title} subtitle={target.subtitle} onExit={handleExit} />
 
           <FeedActionRail
             stats={stats}
-            streak={progress.streak}
-            dailyXPEarned={progress.dailyXPEarned}
-            dailyGoalXP={progress.dailyGoalXP}
             box={activeCard?.box}
             onReveal={() => {
               if (!activeCard || activeCard.kind === 'explainer') return;
@@ -371,10 +372,10 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
         })}
       </div>
 
-      {/* "Kelimeyi göster" alt sayfası — anlatım içeriğini birebir yeniden kullanır. */}
+      {/* "Göster" alt sayfası — anlatım içeriğini birebir yeniden kullanır. */}
       <Dialog open={revealCard !== null} onOpenChange={(open) => !open && setRevealCard(null)}>
         <DialogContent>
-          <DialogTitle className="sr-only">Kelime açıklaması</DialogTitle>
+          <DialogTitle className="sr-only">Cevap</DialogTitle>
           {revealCard && (
             <ExplainerBody
               question={revealCard.question}
@@ -386,7 +387,7 @@ export function FeedZone({ setId, onExit }: FeedZoneProps) {
             />
           )}
           <p className="mt-4 text-center text-xs font-bold text-duo-gray-300">
-            Baktığın için bu kart XP kazandırmaz.
+            Baktığın için bu cevap tekrar seviyeni yükseltmez.
           </p>
         </DialogContent>
       </Dialog>
