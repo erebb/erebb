@@ -1,0 +1,696 @@
+{
+  "name": "Sinir Sistemi 4 · Sinir impulsu ve iletim",
+  "lesson": [
+    {
+      "title": "Neural control",
+      "body": "- Hayvanlarda iki kontrol sistemi var: **hormonal** (bitkilerde de var) ve **neural**. Neural control **yalnız hayvanlara özgü**; temel birimi **neuron**.\n\n| Özellik | Anlamı |\n|---|---|\n| **Irritability** | Özel sinir hücrelerinin uyarana tepki verme yeteneği (örn. iç kulak ses dalgalarına, deri reseptörleri sıcak–soğuğa yalnız kendi uyaranına) |\n| **Conductivity** | Uyarandan sonra reseptörde oluşan impulse'un sinirlerle özel merkezlere iletilmesi |\n| **Correlation** | Uyaranın merkezlerde değerlendirilip tepkiye karar verilmesi; impulse'ların effector organlara gönderilmesi |\n| **Reaction** | Impulse effector organa gelince özel hücrelerin tepkisi: **kasılma ya da salgı** |",
+      "source": "Slayt 61"
+    },
+    {
+      "title": "Motor neuron",
+      "body": "- Slayt 62 şekli: tipik bir **motor neuron**: cell body, dendrite, axon, synapse, **muscle**.\n- **Motor neurons** sinyalleri **beyin ve medulla spinalis'ten kaslara ve bezlere** taşır (mor).\n- Slayt 64 şekli: **end of axon**; axon'lar **kas fiber'larına dallanır**.\n- Slayt 80 şekli (neuromuscular junction): motor neuron axon'u (myelinli) → **neurotransmitter vesicles**, mitochondria → **synaptic cleft** → **motor end plate** üzerindeki **neurotransmitter receptors** → **skeletal muscle fiber**.",
+      "source": "Slayt 62, 64, 80"
+    },
+    {
+      "title": "Nerve impulse ve transmembrane potential",
+      "body": "- Neuron'lar arası ve kontrol ettikleri hücrelerle iletişim **nerve impulse** iletimiyle olur.\n- Impulse; **elektriksel, kimyasal, termal ya da mekanik** bir uyarana yanıt olarak doğar.\n- **The stimulus** axolemma boyunca yayılan bir **depolarization** ve **repolarization** dalgası başlatır → impulse iletimi.\n- **Potential:** iki nokta arasındaki göreli elektrik yükü. Neuron için **transmembrane potential**: iki nokta = hücre zarının **içi ve dışı**.\n- **Tüm hücrelerin** transmembrane potential'ı vardır; ama yalnız **neuron'lar bunu değiştirip impulse üretebilir**.\n- Bu yük zara yakın **lokal** bir olaydır; hücrenin içi ve dışı elektriksel olarak nötrdür.\n- Ölçülen potential küçüktür: birimi **millivolt** (volt değil).",
+      "source": "Slayt 65, 66"
+    },
+    {
+      "title": "Resting membrane potential",
+      "body": "- Dinlenen neuron'da zarın iki tarafı arasındaki potential = **resting potential**.\n- **Resting membrane potential**, **Na⁺** ve **K⁺** iyonlarının neuron'un dışı ve içinde **eşit olmayan dağılımından** doğar.\n- **Na⁺–K⁺ ATPase pump**: Na⁺'u dışarı, K⁺'u içeri aktif taşır; zarın iç tarafında Na⁺ düşük kalır.\n- Na⁺'un dışarı taşınması K⁺'un içeri taşınmasından **daha hızlı** → içte **elektronegatiflik (−70 mV)**, dışta elektropozitiflik. Zar **polarized**.\n- Slayt 68 şekli: **microelectrode** hücre içine girer, **oscilloscope** voltajı kaydeder.\n\n! RMP = **−70 mV** (içerisi negatif); nedeni Na⁺ dışarı > K⁺ içeri taşınması.",
+      "source": "Slayt 67, 68"
+    },
+    {
+      "title": "Depolarization, repolarization ve impulse'un yayılması",
+      "body": "| Evre | Ne olur? |\n|---|---|\n| **Depolarization** | Uyarı noktasında zarın **Na⁺ permeability**'si artar; dışarıda Na⁺ yoğun olduğu için **Na⁺ içeri hücum eder**; zar **içte pozitif, dışta negatif** olur |\n| **Repolarization** | Na⁺ girişi durur, **K⁺ permeability** artar; K⁺ **dışarı akar**; resting potential yeniden kurulur |\n| **Hyperpolarization** | Ardından Vm resting potential'ın da **altına iner**; AP'nin toparlanma evresi |\n\n- Depolarize olan mikrobölgeden komşu bölgelere **current flow** olur: içte pozitif yükler negatif bölgeye akar; dış yüzey önündeki zardan pozitif iyon çeker.\n- Böylece hemen ilerideki zar depolarize olur (akım Na⁺ permeability'yi artırır) → impulse ilerler.\n- Slayt 71 (Figure 4-20): **myelinsiz** fiber'da sıra 1) depolarization, 2) current flow, 3) komşu bölgenin depolarization'ı … impulse fiber sonuna gider. **Myelinli** fiber'da 1) depolarization, 2) current flow, 3) depolarization, 4) **saltatory conduction**.\n- Slayt 72 şekli: action potential **nodes of Ranvier**'da; Slayt 75: AP bölgesinde Na⁺ girer, arkasında K⁺ çıkar.",
+      "source": "Slayt 69–72, 74, 75"
+    },
+    {
+      "title": "Action potential",
+      "body": "- **Action potentials**: resting membrane potential'da zar boyunca **aktif olarak yayılan** değişiklikler.\n- Uyaran resting potential'ı azaltır (**sıfıra doğru**).\n- Membrane potential kritik bir değere ulaşınca (genellikle −70 mV'luk dinlenme düzeyinden **10–15 mV daha az**) AP oluşur. Bu değer = **threshold**.\n- Repolarization neredeyse tamamlanana kadar fiber yeniden uyarılamaz = **refractory period**.\n- Uyaran AP başlatacak güçteyse **tüm fiber ateşlenir** = **all-or-none principle**. **Zayıf impulse diye bir şey yoktur.**\n- Slayt 74: resting membrane potential (Vm) yaklaşık **−70 mV**; depolarization → repolarization → **hyperpolarization**.",
+      "source": "Slayt 73, 74"
+    },
+    {
+      "title": "EPSP ve IPSP",
+      "body": "**Graded potentials**, postsynaptic neuron'un membrane potential'ını threshold'a **yaklaştırır ya da uzaklaştırır**.\n\n| | **EPSP** | **IPSP** |\n|---|---|---|\n| Değişim | Daha pozitife: **depolarization** | Daha negatife: **hyperpolarization** |\n| Örnek transmitter | **Acetylcholine, glutamate** | **Glycine, GABA** |\n| Kanal | **Ligand-gated Na⁺** kanalı → Na⁺ girişi | **Ligand-gated Cl⁻** kanalı → Cl⁻ girişi |\n| Threshold'a göre | Yaklaştırır | Uzaklaştırır |\n| Synapse | Excitatory | **Inhibitory synapses** |\n\n- Postsynaptic membrane, transmitter'a ve iyon permeability değişimine göre **uyarılır ya da inhibe edilir**.",
+      "source": "Slayt 76, 77"
+    },
+    {
+      "title": "Saltatory conduction ve iletim hızı",
+      "body": "- **Saltatory conduction:** myelinli fiber'larda depolarization ve repolarization aynıdır, ama AP tüm zar yerine **bir node of Ranvier'dan diğerine** olur. Saltation = dans ya da sıçrama gibi ani hareket.\n- Node'larda axolemma ECF ile yakın temasta; zarın geri kalanı yalıtılmış.\n- **Saltatory conduction'ın iki işlevi** (mavi):\n  1. **First:** impulse iletimi **hızlanır**.\n  2. **Second:** daha az zar depolarize ve repolarize olur → zarı “yeniden şarj etmek” için gereken **enerji azalır**.\n- **Transmission velocity:** fiber **çapı büyüdükçe** ve **myelin kalınlaştıkça** iletim hızlanır.\n  - En hızlı ~**100 m/sn**, en yavaş ~**0,5 m/sn**.\n  - Büyük myelinli fiber'lar ~**2.500 impulse/sn**, küçük myelinsiz fiber'lar ~**250 impulse/sn** iletir.",
+      "source": "Slayt 78"
+    },
+    {
+      "title": "Neurotransmitters",
+      "body": "- Axon'lar dallanarak sonlanır; dallar synapse'te **presynaptic terminal bulb** ile biter. Terminallerde **vesicle**'lar kimyasal madde içerir ve impulse gelince salınır.\n- Madde postsynaptic zara diffüze olur ve zarın **sodyum iyonlarına permeability**'sini etkiler.\n\n### Peripheral neurotransmitters\n| Yer | Transmitter |\n|---|---|\n| Somatic spinal ve cranial nerves (excitatory, Na⁺ permeability ↑) | **Acetylcholine (ACh)** |\n| Parasympathetic preganglionic ve postganglionic | **ACh** → **cholinergic system** |\n| Sympathetic preganglionic | **ACh** |\n| Sympathetic postganglionic | Genellikle **norepinephrine (noradrenaline)** → **adrenergic system** |\n\n- Slayt 82 şekli: sympathetic preganglionic → ACh; sympathetic postganglionic → **noradrenaline** (kalp); parasympathetic preganglionic ve postganglionic → ACh (intestine).\n\n### Central neurotransmitters\n- CNS'te **excitatory ve inhibitory** transmitter'lar var.\n- **Inhibitory:** **gamma-aminobutyric acid (GABA)** ve **glycine** (basit amino acid).\n- Bir inhibition mekanizması: etkilenen zarın **Na⁺ permeability**'sinin **azalması**.\n\n! Parasympathetic = **cholinergic** (her iki neuron ACh); sympathetic = **adrenergic** (postganglionic norepinephrine).",
+      "source": "Slayt 79–83"
+    }
+  ],
+  "items": [
+    {
+      "id": "q01",
+      "type": "mcq",
+      "question": "Slayt 61'e göre hayvanlardaki iki kontrol sisteminden yalnız hayvanlara özgü olan hangisidir?",
+      "options": [
+        "Neural control",
+        "Hormonal control",
+        "Her ikisi",
+        "Hiçbiri"
+      ],
+      "answer": "Neural control",
+      "explanation": "Slayt 61 (kırmızı 'NEUROL CONTROL'): iki kontrol sistemi var; hormonal olan bitkilerde de var, neural control yalnız hayvanlara özgü; temel birimi neuron.",
+      "source": "Slayt 61 · neural control"
+    },
+    {
+      "id": "q02",
+      "type": "mcq",
+      "question": "Özel sinir hücrelerinin yalnız ilgili uyarana tepki verme yeteneği (örn. deri reseptörlerinin sıcak–soğuğa) hangisidir?",
+      "options": [
+        "Irritability",
+        "Conductivity",
+        "Correlation",
+        "Reaction"
+      ],
+      "answer": "Irritability",
+      "explanation": "Slayt 61: Irritability — çok hücreli organizmalarda özel sinir hücrelerinin uyarana tepki verme yeteneği; deri reseptörleri sıcak ve soğuğa duyarlıdır ve yalnız ilgili uyarana tepki verir.",
+      "source": "Slayt 61 · neural control"
+    },
+    {
+      "id": "q03",
+      "type": "mcq",
+      "question": "Uyaranın merkezlerde değerlendirilip hayvanın tepkisine karar verilmesi hangi özelliktir?",
+      "options": [
+        "Correlation",
+        "Irritability",
+        "Conductivity",
+        "Reaction"
+      ],
+      "answer": "Correlation",
+      "explanation": "Slayt 61: Correlation — the stimulus are evaluated in the special centres and decided about reaction of animals; sonra impulse'lar effector organlara gönderilir.",
+      "source": "Slayt 61 · neural control"
+    },
+    {
+      "id": "q04",
+      "type": "mcq",
+      "question": "Neural control'de 'reaction' aşamasında ne gözlenir?",
+      "options": [
+        "Effector organda kasılma ya da salgı",
+        "Reseptörde impulse oluşumu",
+        "Impulse'un merkeze iletilmesi",
+        "Uyaranın değerlendirilmesi"
+      ],
+      "answer": "Effector organda kasılma ya da salgı",
+      "explanation": "Slayt 61: Reaction — impulse'lar effector organlara gelince özel hücreler tepki verir; either contraction or secretion are observed.",
+      "source": "Slayt 61 · neural control"
+    },
+    {
+      "id": "q05",
+      "type": "mcq",
+      "question": "Slayt 64'e göre motor neurons ne taşır?",
+      "options": [
+        "Beyin ve medulla spinalis'ten kaslara ve bezlere sinyal",
+        "Reseptörlerden beyne duyusal sinyal",
+        "Kandan beyne glucose",
+        "Bir hemisferden diğerine sinyal"
+      ],
+      "answer": "Beyin ve medulla spinalis'ten kaslara ve bezlere sinyal",
+      "explanation": "Slayt 64 (mor 'Motor Neurons'): 'They carry the signals from brain and medulla spinalis to the muscles and glands.' Şekilde end of axon ve branching of the axons to the muscle fibers. Slayt 62 ('The Nerve impuls and its transmission') tipik motor neuron'un impulse'u muscle'a ilettiğini gösterir.",
+      "source": "Slayt 62, 64 · motor neurons"
+    },
+    {
+      "id": "q06",
+      "type": "mcq",
+      "question": "Slayt 64 şekline göre motor neuron axon'unun ucunda ne olur?",
+      "options": [
+        "Axon'lar kas fiber'larına dallanır",
+        "Axon tek bir kas fiber'ında biter, dallanmaz",
+        "Axon bir ganglion'a girer",
+        "Axon geri dönüp cell body'ye bağlanır"
+      ],
+      "answer": "Axon'lar kas fiber'larına dallanır",
+      "explanation": "Slayt 64 şekli: 'End of axon' ve 'Branching of the axons to the muscle fibers' (turkuaz).",
+      "source": "Slayt 64 · şekil"
+    },
+    {
+      "id": "q07",
+      "type": "mcq",
+      "question": "Slayt 80 şekline (neuromuscular junction) göre neurotransmitter receptors nerededir?",
+      "options": [
+        "Motor end plate üzerinde",
+        "Myelin kılıfında",
+        "Mitochondria içinde",
+        "Neurotransmitter vesicles'ın içinde"
+      ],
+      "answer": "Motor end plate üzerinde",
+      "explanation": "Slayt 80 şekli: axon of motor neuron → neurotransmitter vesicles → synaptic cleft → motor end plate üzerindeki neurotransmitter receptors → skeletal muscle fiber.",
+      "source": "Slayt 80 · şekil"
+    },
+    {
+      "id": "q08",
+      "type": "mcq",
+      "question": "Nerve impulse hangi tür uyaranlara yanıt olarak doğar?",
+      "options": [
+        "Elektriksel, kimyasal, termal ya da mekanik",
+        "Yalnız elektriksel",
+        "Yalnız kimyasal",
+        "Yalnız hormonal"
+      ],
+      "answer": "Elektriksel, kimyasal, termal ya da mekanik",
+      "explanation": "Slayt 65 (başlık 'The Nerve impuls and its transmission'): a nerve impulse originates in response to a stimulus of an electrical, chemical, thermal, or mechanical nature.",
+      "source": "Slayt 65 · nerve impulse"
+    },
+    {
+      "id": "q09",
+      "type": "mcq",
+      "question": "Uyaran axolemma boyunca neyi başlatır?",
+      "options": [
+        "Depolarization ve repolarization dalgası",
+        "Yalnız hyperpolarization",
+        "Myelin oluşumu",
+        "Glial cell çoğalması"
+      ],
+      "answer": "Depolarization ve repolarization dalgası",
+      "explanation": "Slayt 65: the stimulus elicits a wave of depolarization and repolarization that spreads along the axolemma → nerve impulse iletimi.",
+      "source": "Slayt 65 · nerve impulse"
+    },
+    {
+      "id": "q10",
+      "type": "mcq",
+      "question": "Neuron için 'transmembrane potential'ın iki noktası hangisidir?",
+      "options": [
+        "Hücre zarının içi ve dışı",
+        "Cell body ve axon ucu",
+        "İki node of Ranvier",
+        "Dendrite ve axon"
+      ],
+      "answer": "Hücre zarının içi ve dışı",
+      "explanation": "Slayt 66 (başlık 'The Nerve impuls and its transmission'): for the neuron this is referred to as a transmembrane potential, and the two points are the inside and outside of the confines of the cell membrane.",
+      "source": "Slayt 66 · transmembrane potential"
+    },
+    {
+      "id": "q11",
+      "type": "mcq",
+      "question": "Transmembrane potential için hangisi doğrudur?",
+      "options": [
+        "Tüm hücrelerde vardır ama yalnız neuron'lar onu değiştirip impulse üretebilir",
+        "Yalnız neuron'larda bulunur",
+        "Hücrenin tamamının yükünü ifade eder",
+        "Birimi volttur"
+      ],
+      "answer": "Tüm hücrelerde vardır ama yalnız neuron'lar onu değiştirip impulse üretebilir",
+      "explanation": "Slayt 66: all cells of the body have a transmembrane potential, but the neurons are unique in being able to alter this potential to produce an impulse; lokal bir olaydır; birimi millivolts.",
+      "source": "Slayt 66 · transmembrane potential"
+    },
+    {
+      "id": "q12",
+      "type": "mcq",
+      "question": "Ölçülen membrane potential'ın birimi nedir?",
+      "options": [
+        "Millivolt",
+        "Volt",
+        "Kilovolt",
+        "Mikroamper"
+      ],
+      "answer": "Millivolt",
+      "explanation": "Slayt 66: 'A measured potential is relatively small, however, and its units are in millivolts rather than volts.'",
+      "source": "Slayt 66 · transmembrane potential"
+    },
+    {
+      "id": "q13",
+      "type": "mcq",
+      "question": "Resting membrane potential'ın nedeni nedir?",
+      "options": [
+        "Na⁺ ve K⁺ iyonlarının neuron'un içi ve dışında eşit olmayan dağılımı",
+        "Cl⁻ iyonlarının hücre içinde birikmesi",
+        "Myelin'in yük taşıması",
+        "Glucose'un hücreye girmesi"
+      ],
+      "answer": "Na⁺ ve K⁺ iyonlarının neuron'un içi ve dışında eşit olmayan dağılımı",
+      "explanation": "Slayt 67: the resting membrane potential results from the unequal distribution of sodium ions (Na⁺) and potassium ions (K⁺) on the outside and inside of the neuron.",
+      "source": "Slayt 67 · resting membrane potential"
+    },
+    {
+      "id": "q14",
+      "type": "mcq",
+      "question": "Na⁺–K⁺ ATPase pump için hangisi doğrudur?",
+      "options": [
+        "Na⁺'u dışarı, K⁺'u içeri taşır; Na⁺'un dışarı taşınması daha hızlıdır",
+        "Na⁺'u içeri, K⁺'u dışarı taşır",
+        "Yalnız K⁺ taşır",
+        "Na⁺ ve K⁺'u aynı hızda içeri taşır"
+      ],
+      "answer": "Na⁺'u dışarı, K⁺'u içeri taşır; Na⁺'un dışarı taşınması daha hızlıdır",
+      "explanation": "Slayt 67: active transport of Na⁺ to the outside, coupled with transport of K⁺ into the neuron; outward transport of Na⁺ occurs at a faster rate than inward transport of K⁺.",
+      "source": "Slayt 67 · Na⁺–K⁺ pump"
+    },
+    {
+      "id": "q15",
+      "type": "mcq",
+      "question": "Dinlenen neuron'da zarın iç tarafının potential'ı ve zarın durumu hangisidir?",
+      "options": [
+        "Yaklaşık −70 mV; zar polarized",
+        "Yaklaşık +70 mV; zar depolarized",
+        "0 mV; zar nötr",
+        "Yaklaşık −10 mV; zar hyperpolarized"
+      ],
+      "answer": "Yaklaşık −70 mV; zar polarized",
+      "explanation": "Slayt 67 ve 74: içte electronegativity (−70 mV), dışta electropositivity; 'The membrane is therefore polarized.' Vm = VR ≈ −70 mV.",
+      "source": "Slayt 67, 74 · RMP"
+    },
+    {
+      "id": "q16",
+      "type": "mcq",
+      "question": "Slayt 68 şekline göre membrane potential nasıl ölçülür?",
+      "options": [
+        "Hücre içine giren bir microelectrode ve voltajı kaydeden oscilloscope ile",
+        "Zar dışına konan iki yüzey elektrodu ile",
+        "Kan örneğinden",
+        "Myelin kalınlığı ölçülerek"
+      ],
+      "answer": "Hücre içine giren bir microelectrode ve voltajı kaydeden oscilloscope ile",
+      "explanation": "Slayt 68 şekli (Resting Membrane Potential): microelectrode hücrenin içine (inside of cell) girer; oscilloscope records voltage.",
+      "source": "Slayt 68 · şekil"
+    },
+    {
+      "id": "q17",
+      "type": "mcq",
+      "question": "Depolarization sırasında ne olur?",
+      "options": [
+        "Zarın Na⁺ permeability'si artar, Na⁺ içeri hücum eder; zar içte pozitif olur",
+        "K⁺ dışarı akar, zar içte daha negatif olur",
+        "Cl⁻ içeri girer",
+        "Na⁺–K⁺ pump durur ve zar nötr olur"
+      ],
+      "answer": "Zarın Na⁺ permeability'si artar, Na⁺ içeri hücum eder; zar içte pozitif olur",
+      "explanation": "Slayt 69: uyarı Na⁺ permeability'sini artırır, dışarıda Na⁺ yoğun olduğu için Na⁺ rushes inward; zar içte pozitif, dışta negatif olur = depolarization.",
+      "source": "Slayt 69 · depolarization"
+    },
+    {
+      "id": "q18",
+      "type": "mcq",
+      "question": "Repolarization'ı sağlayan olay hangisidir?",
+      "options": [
+        "K⁺ permeability'nin artıp K⁺'un dışarı akması",
+        "Na⁺'un içeri akmaya devam etmesi",
+        "Cl⁻'un dışarı akması",
+        "Ca²⁺'un içeri girmesi"
+      ],
+      "answer": "K⁺ permeability'nin artıp K⁺'un dışarı akması",
+      "explanation": "Slayt 69 ve 74: Na⁺ girişi durur, K⁺ permeability artar; K⁺ dışarı akar ve resting potential yeniden kurulur = repolarization.",
+      "source": "Slayt 69, 74 · repolarization"
+    },
+    {
+      "id": "q19",
+      "type": "mcq",
+      "question": "Action potential'ın son evresinde Vm'nin resting potential'ın altına inmesi ne adını alır?",
+      "options": [
+        "Hyperpolarization",
+        "Depolarization",
+        "Threshold",
+        "Overshoot"
+      ],
+      "answer": "Hyperpolarization",
+      "explanation": "Slayt 74: 'After that, Vm decreases even below the resting potential. This last period is a recovery period of action potential (hyperpolarization).'",
+      "source": "Slayt 74 · hyperpolarization"
+    },
+    {
+      "id": "q20",
+      "type": "mcq",
+      "question": "Depolarize olan bölgeden komşu bölgeye impulse'un ilerlemesini sağlayan nedir?",
+      "options": [
+        "Current flow: komşu zar depolarize olur çünkü akım Na⁺ permeability'yi artırır",
+        "Myelin'in impulse'u taşıması",
+        "Glial cells'in impulse üretmesi",
+        "K⁺'un içeri girmesi"
+      ],
+      "answer": "Current flow: komşu zar depolarize olur çünkü akım Na⁺ permeability'yi artırır",
+      "explanation": "Slayt 70: depolarize bölgeden komşu mikrobölgelere current flow olur; hemen ilerideki zar akım Na⁺ permeability'yi artırdığı için depolarize olur.",
+      "source": "Slayt 70 · current flow"
+    },
+    {
+      "id": "q21",
+      "type": "mcq",
+      "question": "Slayt 71 (Figure 4-20) myelinli fiber'daki sıralamanın son adımı hangisidir?",
+      "options": [
+        "Saltatory conduction ile fiber sonuna iletim",
+        "Komşu bölgenin depolarization'ı",
+        "Hyperpolarization",
+        "Neurotransmitter salınması"
+      ],
+      "answer": "Saltatory conduction ile fiber sonuna iletim",
+      "explanation": "Slayt 71: myelinsiz fiber'da 1) depolarization 2) current flow 3) komşu bölgenin depolarization'ı … impulse fiber sonuna gider; myelinli fiber'da 1) depolarization 2) current flow 3) depolarization 4) saltatory conduction to end of nerve fiber.",
+      "source": "Slayt 71 · şekil"
+    },
+    {
+      "id": "q22",
+      "type": "mcq",
+      "question": "Action potential için hangisi doğrudur?",
+      "options": [
+        "Resting membrane potential'daki, zar boyunca aktif olarak yayılan değişikliktir",
+        "Yalnız cell body'de kalan pasif bir değişikliktir",
+        "Zayıf ve güçlü impulse'lar şeklinde derecelenir",
+        "Myelin içinde oluşur"
+      ],
+      "answer": "Resting membrane potential'daki, zar boyunca aktif olarak yayılan değişikliktir",
+      "explanation": "Slayt 73: 'Action potentials are changes in the resting membrane potential that are actively propagated along the membrane of the cell.'",
+      "source": "Slayt 73 · action potential"
+    },
+    {
+      "id": "q23",
+      "type": "mcq",
+      "question": "Action potential'ın oluştuğu kritik membrane potential (threshold) slayta göre nedir?",
+      "options": [
+        "−70 mV'luk dinlenme düzeyinden genellikle 10–15 mV daha az",
+        "−70 mV'un tam kendisi",
+        "+70 mV",
+        "Dinlenme düzeyinden 50 mV daha negatif"
+      ],
+      "answer": "−70 mV'luk dinlenme düzeyinden genellikle 10–15 mV daha az",
+      "explanation": "Slayt 73: membrane potential kritik değere (usually 10 to 15 mV less than the resting level of −70 mV) ulaşınca AP oluşur; bu değer threshold'dur.",
+      "source": "Slayt 73 · threshold"
+    },
+    {
+      "id": "q24",
+      "type": "mcq",
+      "question": "Repolarization neredeyse tamamlanana kadar fiber'ın yeniden uyarılamadığı döneme ne denir?",
+      "options": [
+        "Refractory period",
+        "Threshold",
+        "Summation",
+        "Afterdischarge"
+      ],
+      "answer": "Refractory period",
+      "explanation": "Slayt 73: 'The nerve fiber cannot be stimulated again until repolarization is nearly complete; this is known as the refractory period.'",
+      "source": "Slayt 73 · refractory period"
+    },
+    {
+      "id": "q25",
+      "type": "mcq",
+      "question": "All-or-none principle neyi ifade eder?",
+      "options": [
+        "Uyaran AP başlatacak güçteyse tüm fiber ateşlenir; zayıf impulse yoktur",
+        "Uyaran güçlendikçe impulse büyür",
+        "Yalnız güçlü uyaranlar refractory period oluşturur",
+        "Fiber'ın bir kısmı ateşlenebilir"
+      ],
+      "answer": "Uyaran AP başlatacak güçteyse tüm fiber ateşlenir; zayıf impulse yoktur",
+      "explanation": "Slayt 73: if the stimulus is strong enough to initiate an AP, the entire fiber will fire — all-or-none principle for nerve fibers. 'There is no such thing as a weak impulse.'",
+      "source": "Slayt 73 · all-or-none"
+    },
+    {
+      "id": "q26",
+      "type": "mcq",
+      "question": "EPSP için hangisi doğrudur?",
+      "options": [
+        "Depolarizing graded potential; ACh ve glutamate ligand-gated Na⁺ kanallarını açar",
+        "Hyperpolarizing; GABA Cl⁻ kanallarını açar",
+        "Membrane potential'ı threshold'dan uzaklaştırır",
+        "Yalnız inhibitory synapses'te oluşur"
+      ],
+      "answer": "Depolarizing graded potential; ACh ve glutamate ligand-gated Na⁺ kanallarını açar",
+      "explanation": "Slayt 76–77: membrane potential daha pozitife kayar (depolarization) = excitatory postsynaptic potential (EPSP); acetylcholine ve glutamate ligand-gated Na⁺ kanallarını açar, Na⁺ girer, threshold'a yaklaştırır.",
+      "source": "Slayt 76, 77 · EPSP"
+    },
+    {
+      "id": "q27",
+      "type": "mcq",
+      "question": "IPSP oluşturan neurotransmitter'lar ve kanal hangisidir?",
+      "options": [
+        "Glycine ve GABA; ligand-gated Cl⁻ kanalları",
+        "ACh ve glutamate; ligand-gated Na⁺ kanalları",
+        "Norepinephrine; Ca²⁺ kanalları",
+        "Glucose; K⁺ kanalları"
+      ],
+      "answer": "Glycine ve GABA; ligand-gated Cl⁻ kanalları",
+      "explanation": "Slayt 77: the neurotransmitters glycine and GABA induce IPSPs by binding to ligand-gated Cl⁻ channels → Cl⁻ influx; IPSP membrane potential'ı threshold'dan uzaklaştırır.",
+      "source": "Slayt 77 · IPSP"
+    },
+    {
+      "id": "q28",
+      "type": "mcq",
+      "question": "Membrane potential'ı daha negatife kaydıran (hyperpolarizing) graded potential ve bunu yapan synapse'ler nasıl adlandırılır?",
+      "options": [
+        "IPSP; inhibitory synapses",
+        "EPSP; excitatory synapses",
+        "Action potential; chemical synapses",
+        "Resting potential; electrical synapses"
+      ],
+      "answer": "IPSP; inhibitory synapses",
+      "explanation": "Slayt 76: shifting toward more negative = hyperpolarization; a hyperpolarizing graded potential is called an inhibitory postsynaptic potential (IPSP) and synapses that induce IPSPs are called inhibitory synapses.",
+      "source": "Slayt 76 · IPSP"
+    },
+    {
+      "id": "q29",
+      "type": "mcq",
+      "question": "Saltatory conduction nedir?",
+      "options": [
+        "Myelinli fiber'da AP'nin bir node of Ranvier'dan diğerine atlaması",
+        "Myelinsiz fiber'da AP'nin tüm zar boyunca ilerlemesi",
+        "Synapse'te kimyasal iletim",
+        "Refleks arkındaki iletim"
+      ],
+      "answer": "Myelinli fiber'da AP'nin bir node of Ranvier'dan diğerine atlaması",
+      "explanation": "Slayt 78 ('Saltatory conduction'): myelinli fiber'larda AP'ler tüm zar yerine one node of Ranvier to the next şeklinde oluşur; saltation = dans ya da sıçrama gibi ani hareket.",
+      "source": "Slayt 78 · saltatory conduction"
+    },
+    {
+      "id": "q30",
+      "type": "mcq",
+      "question": "Saltatory conduction'ın iki işlevi hangisidir?",
+      "options": [
+        "İletimi hızlandırır ve zarı yeniden şarj etmek için gereken enerjiyi azaltır",
+        "İletimi yavaşlatır ve enerjiyi artırır",
+        "Impulse'u iki yönlü yapar ve myelin üretir",
+        "Threshold'u yükseltir ve refractory period'u uzatır"
+      ],
+      "answer": "İletimi hızlandırır ve zarı yeniden şarj etmek için gereken enerjiyi azaltır",
+      "explanation": "Slayt 78 (mavi): 'Two functions are served by saltatory conduction.' First, impulse transmission is accelerated; second, less membrane is depolarized and repolarized, reducing the energy requirement for recharging.",
+      "source": "Slayt 78 · saltatory conduction"
+    },
+    {
+      "id": "q31",
+      "type": "mcq",
+      "question": "Transmission velocity hangi durumda en yüksektir?",
+      "options": [
+        "Fiber çapı büyük ve myelin kalın olduğunda",
+        "Fiber çapı küçük ve myelinsiz olduğunda",
+        "Fiber çapı büyük ama myelinsiz olduğunda",
+        "Hız fiber yapısından bağımsızdır"
+      ],
+      "answer": "Fiber çapı büyük ve myelin kalın olduğunda",
+      "explanation": "Slayt 78 ('Transmission Velocity'): the larger the diameter of the fiber and the thicker the myelin sheath, the faster the transmission.",
+      "source": "Slayt 78 · transmission velocity"
+    },
+    {
+      "id": "q32",
+      "type": "mcq",
+      "question": "Slayt 78'e göre en hızlı ve en yavaş iletim hızları yaklaşık kaçtır?",
+      "options": [
+        "~100 m/sn ve ~0,5 m/sn",
+        "~120 m/sn ve ~2 m/sn",
+        "~1.000 m/sn ve ~10 m/sn",
+        "~10 m/sn ve ~0,05 m/sn"
+      ],
+      "answer": "~100 m/sn ve ~0,5 m/sn",
+      "explanation": "Slayt 78: 'The fastest transmission is about 100 m/s, and the slowest is about 0.5 m/s.'",
+      "source": "Slayt 78 · transmission velocity"
+    },
+    {
+      "id": "q33",
+      "type": "mcq",
+      "question": "Büyük myelinli ve küçük myelinsiz fiber'ların saniyedeki impulse kapasiteleri hangisidir?",
+      "options": [
+        "~2.500 ve ~250 impulse/sn",
+        "~250 ve ~2.500 impulse/sn",
+        "~100 ve ~0,5 impulse/sn",
+        "~25.000 ve ~2.500 impulse/sn"
+      ],
+      "answer": "~2.500 ve ~250 impulse/sn",
+      "explanation": "Slayt 78: large myelinated fibers can transmit about 2,500 impulses/s, contrasted with about 250 impulses/s for small unmyelinated fibers.",
+      "source": "Slayt 78 · transmission velocity"
+    },
+    {
+      "id": "q34",
+      "type": "mcq",
+      "question": "Axon terminallerindeki vesicle'larda bulunan kimyasal madde postsynaptic zarda neyi etkiler?",
+      "options": [
+        "Zarın sodyum iyonlarına permeability'sini",
+        "Myelin kalınlığını",
+        "Cell body'nin büyüklüğünü",
+        "Kan akımını"
+      ],
+      "answer": "Zarın sodyum iyonlarına permeability'sini",
+      "explanation": "Slayt 79: axon'lar presynaptic terminal bulb ile sonlanır; vesicle'lardaki madde impulse gelince salınır, postsynaptic zara diffüze olur ve 'influences the permeability of the membrane for sodium ions'.",
+      "source": "Slayt 79 · neurotransmitters"
+    },
+    {
+      "id": "q35",
+      "type": "mcq",
+      "question": "Somatic spinal ve cranial nerves'ün neurotransmitter'ı hangisidir?",
+      "options": [
+        "Acetylcholine (ACh)",
+        "Norepinephrine",
+        "GABA",
+        "Glycine"
+      ],
+      "answer": "Acetylcholine (ACh)",
+      "explanation": "Slayt 81 ('Peripheral Neurotransmitters'): somatic PNS transmitter'ları excitatory'dir; this substance is acetylcholine (ACh) for the somatic spinal and cranial nerves.",
+      "source": "Slayt 81 · peripheral neurotransmitters"
+    },
+    {
+      "id": "q36",
+      "type": "mcq",
+      "question": "Parasympathetic sisteme neden 'cholinergic system' denir?",
+      "options": [
+        "Preganglionic ve postganglionic terminal transmitter'ı ACh olduğu için",
+        "Postganglionic transmitter'ı norepinephrine olduğu için",
+        "GABA salgıladığı için",
+        "Kolin'i yıktığı için"
+      ],
+      "answer": "Preganglionic ve postganglionic terminal transmitter'ı ACh olduğu için",
+      "explanation": "Slayt 81: ACh is also the preganglionic and postganglionic terminal neurotransmitter for the parasympathetic division … sometimes referred to as the cholinergic system.",
+      "source": "Slayt 81 · cholinergic"
+    },
+    {
+      "id": "q37",
+      "type": "mcq",
+      "question": "Sympathetic sistemde neurotransmitter'lar ve adı hangisidir?",
+      "options": [
+        "Preganglionic ACh, postganglionic genellikle norepinephrine; adrenergic system",
+        "Preganglionic ve postganglionic ACh; cholinergic system",
+        "Preganglionic norepinephrine, postganglionic ACh",
+        "Preganglionic GABA, postganglionic glycine"
+      ],
+      "answer": "Preganglionic ACh, postganglionic genellikle norepinephrine; adrenergic system",
+      "explanation": "Slayt 81: sympathetic preganglionic terminal neurotransmitter ACh, postganglionic usually norepinephrine (noradrenaline) → adrenergic system. Slayt 82 şeklinde sympathetic postganglionic kalpte noradrenaline salar.",
+      "source": "Slayt 81, 82 · adrenergic"
+    },
+    {
+      "id": "q38",
+      "type": "mcq",
+      "question": "Slayt 82 şekline göre intestine'e giden parasympathetic postganglionic neuron hangi transmitter'ı salar?",
+      "options": [
+        "ACh",
+        "Noradrenaline",
+        "GABA",
+        "Glycine"
+      ],
+      "answer": "ACh",
+      "explanation": "Slayt 82 şekli: sympathetic preganglionic → ACh, sympathetic postganglionic → noradrenaline (heart); parasympathetic preganglionic → ACh, parasympathetic postganglionic → ACh (intestine).",
+      "source": "Slayt 82 · şekil"
+    },
+    {
+      "id": "q39",
+      "type": "mcq",
+      "question": "CNS'teki iki inhibitory transmitter hangisidir?",
+      "options": [
+        "GABA (gamma-aminobutyric acid) ve glycine",
+        "ACh ve norepinephrine",
+        "Glutamate ve ACh",
+        "Norepinephrine ve glutamate"
+      ],
+      "answer": "GABA (gamma-aminobutyric acid) ve glycine",
+      "explanation": "Slayt 83 ('Central Neurotransmitters'): at least two inhibitory transmitters are recognized within the brain and spinal cord, gamma-aminobutyric acid (GABA) and glycine, which is a simple amino acid.",
+      "source": "Slayt 83 · central neurotransmitters"
+    },
+    {
+      "id": "q40",
+      "type": "mcq",
+      "question": "Slayt 83'e göre bir inhibition mekanizması hangisidir?",
+      "options": [
+        "Etkilenen zarın Na⁺ permeability'sinin azalması",
+        "Na⁺ permeability'nin artması",
+        "Myelin'in kalınlaşması",
+        "K⁺ pompasının durması"
+      ],
+      "answer": "Etkilenen zarın Na⁺ permeability'sinin azalması",
+      "explanation": "Slayt 83: CNS'te excitatory ve inhibitory transmitter'lar var; 'A decrease in the permeability of the affected membrane for sodium ions is one mechanism of inhibition.'",
+      "source": "Slayt 83 · inhibition"
+    },
+    {
+      "id": "c01",
+      "type": "card",
+      "front": "Neural control'ün 4 özelliği",
+      "back": "Irritability · conductivity · correlation · reaction (kasılma ya da salgı)",
+      "source": "Slayt 61"
+    },
+    {
+      "id": "c02",
+      "type": "card",
+      "front": "Transmembrane potential",
+      "back": "Zarın içi–dışı arasındaki fark; tüm hücrelerde var, yalnız neuron değiştirir; birimi mV",
+      "source": "Slayt 66"
+    },
+    {
+      "id": "c03",
+      "type": "card",
+      "front": "Resting membrane potential",
+      "back": "−70 mV (içi negatif); Na⁺ dışarı > K⁺ içeri (Na⁺–K⁺ ATPase); polarized",
+      "source": "Slayt 67"
+    },
+    {
+      "id": "c04",
+      "type": "card",
+      "front": "Depolarization ↔ repolarization",
+      "back": "Na⁺ içeri, içi pozitif ↔ K⁺ dışarı, RMP geri gelir",
+      "source": "Slayt 69"
+    },
+    {
+      "id": "c05",
+      "type": "card",
+      "front": "Hyperpolarization",
+      "back": "Vm'nin RMP'nin altına inmesi; AP'nin toparlanma evresi",
+      "source": "Slayt 74"
+    },
+    {
+      "id": "c06",
+      "type": "card",
+      "front": "Threshold",
+      "back": "RMP'den 10–15 mV daha az; AP'nin oluştuğu değer",
+      "source": "Slayt 73"
+    },
+    {
+      "id": "c07",
+      "type": "card",
+      "front": "All-or-none",
+      "back": "Yeterli uyaranda tüm fiber ateşlenir; zayıf impulse yoktur",
+      "source": "Slayt 73"
+    },
+    {
+      "id": "c08",
+      "type": "card",
+      "front": "EPSP ↔ IPSP",
+      "back": "ACh, glutamate, Na⁺, depolarization ↔ GABA, glycine, Cl⁻, hyperpolarization",
+      "source": "Slayt 76, 77"
+    },
+    {
+      "id": "c09",
+      "type": "card",
+      "front": "Saltatory conduction'ın 2 işlevi",
+      "back": "İletim hızlanır · enerji ihtiyacı azalır",
+      "source": "Slayt 78"
+    },
+    {
+      "id": "c10",
+      "type": "card",
+      "front": "İletim hızı",
+      "back": "Büyük çap + kalın myelin = hızlı; ~100 m/sn ile ~0,5 m/sn; 2.500 ↔ 250 impulse/sn",
+      "source": "Slayt 78"
+    },
+    {
+      "id": "c11",
+      "type": "card",
+      "front": "Cholinergic ↔ adrenergic",
+      "back": "Parasympathetic (pre + post ACh) ↔ sympathetic (post norepinephrine)",
+      "source": "Slayt 81"
+    },
+    {
+      "id": "c12",
+      "type": "card",
+      "front": "CNS inhibitory transmitters",
+      "back": "GABA ve glycine; Na⁺ permeability ↓",
+      "source": "Slayt 83"
+    }
+  ]
+}

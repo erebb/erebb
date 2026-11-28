@@ -1,0 +1,806 @@
+{
+  "name": "Sinir Sistemi 5 · Refleksler, BOS ve CNS metabolizması",
+  "lesson": [
+    {
+      "title": "Final common pathway",
+      "body": "- **Lower motor neurons (LMNs):** spinal cord ve brain stem nucleus'larındaki, **skeletal muscle**'ı innerve eden somatic motor neuron'lar.\n- **Upper motor neurons (UMNs):** **beyinde**; fiber'ları inip LMN aktivitesini değiştirir.\n- Bir LMN'nin dendritic bölgesine ~**2.000** axon dalı (bazıları UMN) gelir. LMN, inhibe edici ve kolaylaştırıcı girdilerin **cebirsel toplamına** göre ateşlenir ya da ateşlenmez.\n- LMN = striated skeletal muscle'a giden tüm çıktının **final common pathway**'i ve **son entegrasyon yeri**.\n- Slayt 85: ateşlenmesi için **excitatory (E)** transmitter **inhibitory (I)**'dan fazla salınmalı; kesik çizgiler UMN axon'ları.",
+      "source": "Slayt 84, 85"
+    },
+    {
+      "title": "Neuron placement (devreler)",
+      "body": "| Devre | Yapı | İşlev / yer |\n|---|---|---|\n| **Converging** | Birçok neuron **tek bir** neuron'a gelir | Farklı kaynaklardan impulse'ların bir yanıt ya da duyum oluşturması |\n| **Diverging** | Bir neuron'un axon dalları iki ya da daha fazla neuron'a, onlar da başkalarına gider | Impulse'ların **amplification**'ı; **skeletal muscle kontrolü** |\n| **Reverberating** | Serideki her neuron başa bir dal geri yollar; son neuron'a bir impulse **voleybolu** ulaşır | **Ritmik aktiviteler**; synapse yorulana dek sürer |\n| **Parallel** | Serideki her neuron son neuron'a bir dal verir; synaptic gecikme yüzünden voley ulaşır, sonra **durur** | Tek bir uyaranı **pekiştirir (reinforcement)** |\n| **Simple** | Doğrudan bağlantılar | Special senses'ta cortex'e **2 neuron**; periferden spinal nerve ile cortex'e **en az 3 neuron** |\n\n- **Three neuron circuit** = bilinçli duyumların klasik devresi.",
+      "source": "Slayt 86–90"
+    },
+    {
+      "title": "Reflex ve reflex arc",
+      "body": "- **Reflex:** bir effector organın (kas ya da bez) uygun uyarana **otomatik ya da bilinçsiz** yanıtı.\n- **Reflex arc**'ın 5 bileşeni: **1) receptor, 2) afferent limb, 3) central connections, 4) efferent limb, 5) effector organ**.",
+      "source": "Slayt 91"
+    },
+    {
+      "title": "Refleks olayının özellikleri",
+      "body": "| Özellik | Tanım |\n|---|---|\n| **Summation** | Eşik altı aynı şiddette uyaranlar bir ya da birçok noktadan art arda verilince EPSP'ler **birikir**, eşiği aşar ve uyarı oluşur |\n| **Facilitation** | Birden fazla afferent lifi olan motor neuron'da birkaç lif zayıf uyaranla **aynı anda** uyarılınca eşik altı bölgede eşzamanlı toplamla uyarı başlaması |\n| **Afterdischarge** (post-discharge) | Dış uyaran kalktıktan sonra da merkezden perifere bir süre uyarı gönderilmesi; ara neuron'larda aktivitenin sürmesi |\n| **Inhibition** | Refleks merkezine başka bir afferent yoldan gelen uyarıyla refleksin engellenmesi. Antagonist kaslarda biri kasılırken diğeri inhibe olur = **reciprocal innervation** |\n| **Rebound** | Refleksin duraklaması bitince organın daha fazla uyarılmış gibi davranması; kasılma daha şiddetli olur |\n\n! Slaytta beşi de kırmızı: tanım → terim eşleştirmesi sorulur.",
+      "source": "Slayt 92, 93"
+    },
+    {
+      "title": "Refleks tipleri",
+      "body": "| | **Unconditional reflexes** | **Conditional reflexes** |\n|---|---|---|\n| Köken | **Doğuştan (congenital)**, değişmez, her türe özgü | Hayvanın sonradan **öğrendiği**; bazı koşullara bağlı |\n| Örnek | Medulla spinalis ve brain stem refleksleri; solunum, sindirim, kalp-damar | **Pavlov**'un köpek deneyleri |\n| Diğer adı | — | **Acquired reflexes** |\n\n- Acquired reflexes **doğal** ya da **yapay** olabilir:\n  - Doğal: alışık olduğu besini gören ya da koklayan yavrunun salyası.\n  - Yapay: et verirken zil çalmak; bir süre sonra yalnız zil ile salgı.",
+      "source": "Slayt 94"
+    },
+    {
+      "title": "Spinal reflexes",
+      "body": "- Slayt 95 listesi: flexor reflex, extensor pushing reflex, **cross extensor reflex**, itching reflex, stepping reflex, withers reflex (atta), plantar reflex, periton reflex, cremaster reflex, **patella reflex**, rektum ve mesane boşaltma refleksi, spino-genital reflex, vasomotor ve terleme refleksi.\n- En basit refleks: **myotatic (stretch) spinal reflex**; örneği **knee jerk (patellar)** refleksi.\n- **Middle patellar ligament**'e vurulur. Bu ligament quadriceps femoris'in insersiyon tendonudur; kas gerilir ve **muscle spindles** uyarılır.\n- Impulse spinal nerve'ün **dorsal root**'u ile ventral horn'daki motor neuron'a, oradan quadriceps'e gider → kasılma.\n- Refleksin amacı kasın **gerilmesine karşı koymak**.\n- Muscle spindle'dan gelen afferent → doğrudan ya da bir **interneuron** üzerinden efferent'e geçer.\n- **Knee jerk'in yokluğu** spinal cord hasarı ya da refleks arkının beş bileşeninden birinin hasarı şüphesini doğrular.\n- Ayakta durmaya yardım ettiği için bir **postural reflex**'tir.\n- Karmaşık spinal reflekslerde bağlantılar birkaç segmente ve **contralateral** ile **ipsilateral** yayılır.\n- **Crossed extensor response:** ağrılı uyaranda uyarılan bacakta flexor kasılması ve extensor inhibisyonu (geri çekme), aynı anda **karşı bacakta extension**.",
+      "source": "Slayt 95–100"
+    },
+    {
+      "title": "Somatic ↔ visceral refleksler ve refleks merkezleri",
+      "body": "- Effector **striated muscle** ise refleks **somatic**; **smooth ya da cardiac muscle** ya da bez ise **visceral**. Visceral refleksler ANS ile iletilir.\n\n| Merkez | Refleksler |\n|---|---|\n| **Spinal cord** | En basit refleksler |\n| **Pons** ve **medulla oblongata** | Kalp, damar çapı, **solunum**, yutma, kusma, öksürme, hapşırma |\n| **Cerebellum** | **Lokomosyon ve postür** reflekslerinin çoğu |\n| **Hypothalamus** | ANS'nin ana entegrasyon ve düzenleme merkezi; örn. **ısı düzenleme** |\n| **Midbrain** | **Görme ve işitme** refleksleri: pupillanın daralma ya da genişlemesi, yüksek sese irkilme |",
+      "source": "Slayt 101–103"
+    },
+    {
+      "title": "Postural reflexes and reactions",
+      "body": "- Dik duruşun korunmasına yardım eder. Cerebral cortex'i içeren yanıtlar refleks yerine **reaction** diye adlandırılır.\n- **Muscle tonus (tone):** hayvanın dik durabilmesini sağlayan kas gerginliği. **Stretch reflex** muscle tone'un temel öğesidir.\n- Evcil hayvanlarda **spinal cord**, CNS'in insandakinden daha büyük bir oranını oluşturur; köpekte spinal cord aktivitesi insandakinin yaklaşık **10 katı**.\n\n| Örnek (kırmızı) | Tanım |\n|---|---|\n| **Standing reflex** | Köpeğin sırtına bastırınca yer değişimini dengeleyen kas hareketleri |\n| **Attitudinal reflexes** | Vücudun bir kısmının yer değiştirmesini diğer kısımlarda postür değişiklikleri izler (atın başını kaldırınca arka bölüm yeni duruş alır) |\n| **Righting reflex** | Ters bırakılan kedinin dik düşmesi |\n| **Hopping reaction** | Üç bacağı kaldırılmış köpek itilince sağlam bacağı sütun gibi yeniden yerleştirir |",
+      "source": "Slayt 104, 105"
+    },
+    {
+      "title": "Cerebrospinal fluid",
+      "body": "- **CSF** ince ve sulu; **blood plasma**'dan **salgı** yoluyla oluşur. Birkaç **lymphocyte** dışında kanın hücresel öğeleri yoktur; meninges hasarı ya da yangısında hücre sayısı artabilir.\n- Başlıca işlevi beyin ve spinal cord için **sulu bir yastık** oluşturmak; başın ani yön değişimlerinde beynin yer değiştirmesini azaltır.\n- **“Lymphatic” function:** kapillerlerden sızan **proteinin geri dönüşü**.\n- **Beyinde kan hacmi artınca** CSF hacmi **azalır**; kafa içi hacim sabit kalır.\n- CSF basıncı genellikle **~10 mmHg** (nörolojik muayenede yararlı).",
+      "source": "Slayt 106, 107"
+    },
+    {
+      "title": "CNS metabolizması, blood-brain barrier, kan ihtiyacı",
+      "body": "- CNS enerjisini başlıca **karbonhidratlardan** alır; önemli kaynak **glucose**.\n- Birçok doku glucose için **insulin**'e ihtiyaç duyar; CNS glucose'u **basit diffüzyonla** alır, **insulin gerekmez**. Bu, insulin eksikliğinde CNS'in çalışmayı sürdürmesini sağlar.\n- CNS vücut kütlesinin yalnız **%2**'si ama toplam oksijenin yaklaşık **%20**'sini tüketir. **Gray matter**'ın metabolizma hızı **white matter**'ın **3–4 katı**.\n\n### Blood-brain barrier\n- Kandaki birçok madde CNS hücrelerine kolay giremez.\n- CNS kapillerlerinde endotel hücreleri arasında slit pore değil **tight junctions** var. **Lipid-soluble** maddeler (O₂, CO₂) kolay diffüze olur.\n- Çoğu maddenin taşınmasını kapillerler ile CNS hücreleri arasına yerleşmiş **astrocytes** (glial cell) sağlar. Astrocytes seçicidir → blood-brain barrier.\n- **Hypothalamus**'un bazı bölgeleri ve **chemoreceptor alanı** olan diğer beyin bölgelerinde blood-brain barrier **yoktur**.\n\n### Blood requirement\n- CNS'e **sürekli** kan gerekir. Beyne **5–10 dakika** az ya da hiç kan gitmemesi cerebrum'daki **higher brain cells**'i geri dönüşsüz hasarlar.\n- **Medulla oblongata**'daki **solunum ve kardiyovasküler merkezler hypoxia'ya daha dayanıklıdır**; 10 dakika kansız kalıştan sonra canlanma görülmüştür.\n- **Erişkin beynin** hypoxia toleransı **yenidoğan beyninden çok daha düşüktür**.",
+      "source": "Slayt 108–110"
+    }
+  ],
+  "items": [
+    {
+      "id": "q01",
+      "type": "mcq",
+      "question": "Striated skeletal muscle'a giden tüm çıktının 'final common pathway'i hangisidir?",
+      "options": [
+        "Lower motor neuron (LMN)",
+        "Upper motor neuron (UMN)",
+        "Sensory neuron",
+        "Preganglionic neuron"
+      ],
+      "answer": "Lower motor neuron (LMN)",
+      "explanation": "Slayt 84 ('Final Common Pathway'): somatic LMN'ler skeletal muscle'ı innerve eder; LMN serves as the final common pathway (and the last site for integration) for all output to striated skeletal muscle.",
+      "source": "Slayt 84 · final common pathway"
+    },
+    {
+      "id": "q02",
+      "type": "mcq",
+      "question": "Upper motor neurons (UMNs) için hangisi doğrudur?",
+      "options": [
+        "Beyindedir; fiber'ları inip LMN aktivitesini değiştirir",
+        "Skeletal muscle'ı doğrudan innerve eder",
+        "Dorsal root ganglion'dadır",
+        "Yalnız autonomic ganglia'dadır"
+      ],
+      "answer": "Beyindedir; fiber'ları inip LMN aktivitesini değiştirir",
+      "explanation": "Slayt 84: upper motor neurons (UMNs) are located in the brain and have fibers that descend to and modify the activity of LMNs.",
+      "source": "Slayt 84 · UMN"
+    },
+    {
+      "id": "q03",
+      "type": "mcq",
+      "question": "Bir LMN'nin ateşlenip ateşlenmeyeceğini ne belirler?",
+      "options": [
+        "Inhibe edici ve kolaylaştırıcı girdilerin cebirsel toplamı; excitatory transmitter inhibitory'den fazla olmalı",
+        "Yalnız tek bir UMN'nin sinyali",
+        "Kas fiber'ının büyüklüğü",
+        "Myelin kalınlığı"
+      ],
+      "answer": "Inhibe edici ve kolaylaştırıcı girdilerin cebirsel toplamı; excitatory transmitter inhibitory'den fazla olmalı",
+      "explanation": "Slayt 84–85: LMN'ye ~2.000 axon dalı gelir; algebraic sum of the inhibiting and facilitatory input'a göre ateşlenir. Ateşlenmek için daha fazla excitatory (E) transmitter salınmalı.",
+      "source": "Slayt 84, 85 · LMN"
+    },
+    {
+      "id": "q04",
+      "type": "mcq",
+      "question": "Birçok neuron'un tek bir neuron'a geldiği devre hangisidir?",
+      "options": [
+        "Converging circuit",
+        "Diverging circuit",
+        "Reverberating circuit",
+        "Parallel circuit"
+      ],
+      "answer": "Converging circuit",
+      "explanation": "Slayt 86: converging circuit — several neurons impinge on one neuron; farklı kaynaklardan impulse'ların bir yanıt ya da duyum oluşturmasını sağlar.",
+      "source": "Slayt 86 · converging"
+    },
+    {
+      "id": "q05",
+      "type": "mcq",
+      "question": "Impulse'ların amplification'ını sağlayan ve skeletal muscle kontrolünde bulunan devre hangisidir?",
+      "options": [
+        "Diverging circuit",
+        "Converging circuit",
+        "Parallel circuit",
+        "Simple circuit"
+      ],
+      "answer": "Diverging circuit",
+      "explanation": "Slayt 87: diverging circuit — bir neuron'un axon dalları iki ya da daha fazla neuron'a gider; amplification of impulses sağlar ve control of skeletal muscles'ta bulunur.",
+      "source": "Slayt 87 · diverging"
+    },
+    {
+      "id": "q06",
+      "type": "mcq",
+      "question": "Ritmik aktivitelerle ilişkili olan ve synapse yorulana kadar süren devre hangisidir?",
+      "options": [
+        "Reverberating circuit",
+        "Parallel circuit",
+        "Diverging circuit",
+        "Converging circuit"
+      ],
+      "answer": "Reverberating circuit",
+      "explanation": "Slayt 88: reverberating circuit — serideki her neuron başa bir dal yollar; associated with rhythmic activities; voley synapse yorulana ya da başka bir mekanizma durdurana kadar sürer.",
+      "source": "Slayt 88 · reverberating"
+    },
+    {
+      "id": "q07",
+      "type": "mcq",
+      "question": "Parallel circuit için hangisi doğrudur?",
+      "options": [
+        "Serideki her neuron son neuron'a dal verir; voley ulaşır, sonra durur; tek uyaranı pekiştirir",
+        "Her neuron başa dal yollar ve ritmik aktivite sürer",
+        "Bir neuron birçok neuron'a dallanır",
+        "Yalnız iki neuron'dan oluşur"
+      ],
+      "answer": "Serideki her neuron son neuron'a dal verir; voley ulaşır, sonra durur; tek uyaranı pekiştirir",
+      "explanation": "Slayt 89: parallel circuit — her neuron son neuron'a bir dal verir; synaptic gecikme nedeniyle voley ulaşır; reverberating'den farklı olarak impulse'lar sonra durur; provide reinforcement to a single stimulus.",
+      "source": "Slayt 89 · parallel"
+    },
+    {
+      "id": "q08",
+      "type": "mcq",
+      "question": "Periferden spinal nerve ile cerebral cortex'e impulse iletmek için en az kaç neuron gerekir?",
+      "options": [
+        "Üç",
+        "İki",
+        "Bir",
+        "Beş"
+      ],
+      "answer": "Üç",
+      "explanation": "Slayt 90: special senses'ta cortex'e 2 neuron yeterli olabilir; a minimum of three neurons is required … by way of a spinal nerve to the cerebral cortex. Three neuron circuit = bilinçli duyumların klasik devresi.",
+      "source": "Slayt 90 · simple circuits"
+    },
+    {
+      "id": "q09",
+      "type": "mcq",
+      "question": "Reflex arc'ın beş bileşeni arasında hangisi YOKTUR?",
+      "options": [
+        "Cerebral cortex'te bilinçli karar",
+        "Receptor",
+        "Afferent ve efferent limb",
+        "Effector organ"
+      ],
+      "answer": "Cerebral cortex'te bilinçli karar",
+      "explanation": "Slayt 91: reflex arc — 1) receptor, 2) afferent limb, 3) central connections, 4) efferent limb, 5) effector organ. Reflex automatic or unconscious response'tur.",
+      "source": "Slayt 91 · reflex arc"
+    },
+    {
+      "id": "q10",
+      "type": "mcq",
+      "question": "Eşik altı aynı şiddetteki uyaranların art arda verilince EPSP'lerinin birikip eşiği aşmasına ne denir?",
+      "options": [
+        "Summation",
+        "Facilitation",
+        "Afterdischarge",
+        "Rebound"
+      ],
+      "answer": "Summation",
+      "explanation": "Slayt 92 (kırmızı 'Summation'): eşik altı uyaranlar bir ya da birçok noktadan art arda verilince her birinin EPSP'si birikir ve eşiği aşar = summation.",
+      "source": "Slayt 92 · summation"
+    },
+    {
+      "id": "q11",
+      "type": "mcq",
+      "question": "Birden fazla afferent lifi olan bir motor neuron'da birkaç lifin zayıf uyaranla aynı anda uyarılmasıyla uyarı başlamasına ne denir?",
+      "options": [
+        "Facilitation",
+        "Summation",
+        "Inhibition",
+        "Rebound"
+      ],
+      "answer": "Facilitation",
+      "explanation": "Slayt 92 (kırmızı 'Facilitation'): birkaç afferent lif aynı anda zayıf uyaranla uyarılınca subthreshold bölgede simultaneous summation ile uyarı başlaması = facilitation.",
+      "source": "Slayt 92 · facilitation"
+    },
+    {
+      "id": "q12",
+      "type": "mcq",
+      "question": "Dış uyaran kalktıktan sonra da refleks merkezinden perifere bir süre uyarı gönderilmesi hangisidir?",
+      "options": [
+        "Afterdischarge (post-discharge)",
+        "Rebound",
+        "Summation",
+        "Inhibition"
+      ],
+      "answer": "Afterdischarge (post-discharge)",
+      "explanation": "Slayt 93 (kırmızı 'Afterdischarge'): uyaran artık etkili olmasa da synapse'lerde uyarının sürmesi = after-discharge ya da post-discharge (ara neuron'larda aktivitenin sürmesi).",
+      "source": "Slayt 93 · afterdischarge"
+    },
+    {
+      "id": "q13",
+      "type": "mcq",
+      "question": "Antagonist kaslardan biri kasılırken diğerinin inhibe olması ne adını alır ve hangi refleks özelliğiyle ilgilidir?",
+      "options": [
+        "Reciprocal innervation — inhibition",
+        "Summation — facilitation",
+        "Rebound — afterdischarge",
+        "Final common pathway — summation"
+      ],
+      "answer": "Reciprocal innervation — inhibition",
+      "explanation": "Slayt 93 (kırmızı 'Inhibition'): tension kası kasılırken flexor kas inhibe olur = reciprocal innervation of antagonist muscles; refleks merkezine başka bir afferent yoldan gelen uyarıyla refleksin engellenmesi = inhibition.",
+      "source": "Slayt 93 · inhibition"
+    },
+    {
+      "id": "q14",
+      "type": "mcq",
+      "question": "Refleksin duraklaması bitince organın daha fazla uyarılmış gibi daha şiddetli kasılması hangisidir?",
+      "options": [
+        "Rebound",
+        "Afterdischarge",
+        "Facilitation",
+        "Summation"
+      ],
+      "answer": "Rebound",
+      "explanation": "Slayt 93 (kırmızı 'Rebound'): sometimes after the pause of a reflex is over … the contraction reaches a more intense value. This is called reflex rebound.",
+      "source": "Slayt 93 · rebound"
+    },
+    {
+      "id": "q15",
+      "type": "mcq",
+      "question": "Unconditional reflexes için hangisi doğrudur?",
+      "options": [
+        "Doğuştan, değişmez ve her türe özgüdür; medulla spinalis ve brain stem refleksleri",
+        "Sonradan öğrenilir; Pavlov deneyleri",
+        "Yalnız yapay yolla oluşturulur",
+        "Koşullara bağlıdır ve unutulabilir"
+      ],
+      "answer": "Doğuştan, değişmez ve her türe özgüdür; medulla spinalis ve brain stem refleksleri",
+      "explanation": "Slayt 94 (kırmızı 'Unconditional Reflexes'): medulla spinalis ve brain-stem, solunum, sindirim ve kardiyovasküler refleksler; congenital, unchanging ve unique to every animal species.",
+      "source": "Slayt 94 · unconditional"
+    },
+    {
+      "id": "q16",
+      "type": "mcq",
+      "question": "Conditional reflexes'in diğer adı ve klasik deneyleri hangisidir?",
+      "options": [
+        "Acquired reflexes; Pavlov'un köpek deneyleri",
+        "Congenital reflexes; Pavlov'un kedi deneyleri",
+        "Spinal reflexes; knee jerk deneyi",
+        "Postural reflexes; righting deneyi"
+      ],
+      "answer": "Acquired reflexes; Pavlov'un köpek deneyleri",
+      "explanation": "Slayt 94 (kırmızı 'Conditional Reflexes'): hayvanın sonradan öğrendiği refleksler; the experiments Pavlov conducted on dogs; also called acquired reflexes.",
+      "source": "Slayt 94 · conditional"
+    },
+    {
+      "id": "q17",
+      "type": "mcq",
+      "question": "Et verirken zil çalınıp bir süre sonra yalnız zille salya salgılanması hangi refleks türüdür?",
+      "options": [
+        "Yapay (artificially) acquired reflex",
+        "Doğal (natural) acquired reflex",
+        "Unconditional reflex",
+        "Spinal reflex"
+      ],
+      "answer": "Yapay (artificially) acquired reflex",
+      "explanation": "Slayt 94: yavrunun ağzına et konması doğuştan salya refleksidir; alışık olduğu besini görünce salya = natural acquired reflex; zil + et ile sonra yalnız zille salgı = artificially acquired reflex.",
+      "source": "Slayt 94 · acquired"
+    },
+    {
+      "id": "q18",
+      "type": "mcq",
+      "question": "En basit refleks hangisidir?",
+      "options": [
+        "Myotatic (stretch) spinal reflex; örn. knee jerk",
+        "Crossed extensor response",
+        "Righting reflex",
+        "Conditional salivation reflex"
+      ],
+      "answer": "Myotatic (stretch) spinal reflex; örn. knee jerk",
+      "explanation": "Slayt 97: the simplest reflex is the myotatic (stretch) spinal reflex; an example of a spinal reflex is the knee jerk reflex.",
+      "source": "Slayt 97 · stretch reflex"
+    },
+    {
+      "id": "q19",
+      "type": "mcq",
+      "question": "Knee jerk (patellar) refleksi nasıl oluşturulur ve hangi reseptör uyarılır?",
+      "options": [
+        "Middle patellar ligament'e vurulur; quadriceps gerilir ve muscle spindles uyarılır",
+        "Tibia'ya vurulur; deri reseptörleri uyarılır",
+        "Achilles tendonuna vurulur; Golgi tendon organı uyarılır",
+        "Patella'ya bastırılır; ağrı reseptörleri uyarılır"
+      ],
+      "answer": "Middle patellar ligament'e vurulur; quadriceps gerilir ve muscle spindles uyarılır",
+      "explanation": "Slayt 96: the reflex is elicited by striking the middle patellar ligament (quadriceps femoris'in insersiyon tendonu); quadriceps gerilir ve muscle spindles (receptors for muscle sense) uyarılır.",
+      "source": "Slayt 96 · patellar reflex"
+    },
+    {
+      "id": "q20",
+      "type": "mcq",
+      "question": "Knee jerk refleksinin amacı nedir?",
+      "options": [
+        "Kasın gerilmesine karşı koymak",
+        "Kası gevşetmek",
+        "Ağrıdan kaçmak",
+        "Karşı bacağı bükmek"
+      ],
+      "answer": "Kasın gerilmesine karşı koymak",
+      "explanation": "Slayt 98: impulse dorsal root ile ventral horn motor neuron'una, oradan quadriceps'e gider ve kasılma olur; 'The purpose of the reflex is to oppose stretch of the muscle.'",
+      "source": "Slayt 98 · patellar reflex"
+    },
+    {
+      "id": "q21",
+      "type": "mcq",
+      "question": "Knee jerk refleksinin yokluğu neyi düşündürür?",
+      "options": [
+        "Spinal cord hasarını ya da refleks arkının beş bileşeninden birinin hasarını",
+        "Normal bir bulgudur",
+        "Yalnız kas yorgunluğunu",
+        "Cerebral cortex'in aşırı aktivitesini"
+      ],
+      "answer": "Spinal cord hasarını ya da refleks arkının beş bileşeninden birinin hasarını",
+      "explanation": "Slayt 98: absence of the knee jerk reflex can help to confirm suspicion of damage or injury to the spinal cord or any of the five components of the reflex arc. Bu refleks postural reflex'tir.",
+      "source": "Slayt 98 · patellar reflex"
+    },
+    {
+      "id": "q22",
+      "type": "mcq",
+      "question": "Crossed extensor response'ta ne olur?",
+      "options": [
+        "Uyarılan bacak flexor kasılmasıyla geri çekilir, karşı bacak extension yapar",
+        "Her iki bacak da bükülür",
+        "Uyarılan bacak extension yapar, karşı bacak bükülür",
+        "Hiçbir kas yanıtı olmaz"
+      ],
+      "answer": "Uyarılan bacak flexor kasılmasıyla geri çekilir, karşı bacak extension yapar",
+      "explanation": "Slayt 100: crossed extensor response karmaşık bir spinal reflekstir; ağrılı uyaranda flexor kasılması ve extensor inhibisyonu ile uyarılan kısım geri çekilir, aynı anda karşı bacakta extension olur. Slayt 99: bağlantılar contralateral ve ipsilateral yayılır.",
+      "source": "Slayt 99, 100 · crossed extensor"
+    },
+    {
+      "id": "q23",
+      "type": "mcq",
+      "question": "Slayt 95'teki spinal reflexes listesinde hangisi YOKTUR?",
+      "options": [
+        "Righting reflex",
+        "Patella reflex",
+        "Cremaster reflex",
+        "Withers reflex in horse"
+      ],
+      "answer": "Righting reflex",
+      "explanation": "Slayt 95 (Spinal Reflexes): flexor, extensor pushing, cross extensor, itching, stepping, withers (atta), plantar, periton, cremaster, patella, rektum–mesane boşaltma, spino-genital, vasomotor ve terleme refleksleri. Righting reflex postural reflex örneğidir (Slayt 105).",
+      "source": "Slayt 95, 105 · spinal reflexes"
+    },
+    {
+      "id": "q24",
+      "type": "mcq",
+      "question": "Effector organ striated muscle ise refleks nasıl adlandırılır?",
+      "options": [
+        "Somatic",
+        "Visceral",
+        "Conditional",
+        "Autonomic"
+      ],
+      "answer": "Somatic",
+      "explanation": "Slayt 101: effector organs striated muscle (lacivert) ise reflex somatic (kırmızı); smooth or cardiac muscle (lacivert) ya da bez ise visceral (kırmızı).",
+      "source": "Slayt 101 · somatic/visceral"
+    },
+    {
+      "id": "q25",
+      "type": "mcq",
+      "question": "Visceral refleksler için hangisi doğrudur?",
+      "options": [
+        "Effector smooth ya da cardiac muscle veya bezdir; ANS ile iletilir",
+        "Effector striated muscle'dır",
+        "Yalnız cerebral cortex ile iletilir",
+        "Somatic motor neuron'lar ile iletilir"
+      ],
+      "answer": "Effector smooth ya da cardiac muscle veya bezdir; ANS ile iletilir",
+      "explanation": "Slayt 101: smooth or cardiac muscle ya da bezler effector ise refleks visceral'dir; visceral reflexes regulate visceral functions and are transmitted by the autonomic nervous system.",
+      "source": "Slayt 101 · visceral"
+    },
+    {
+      "id": "q26",
+      "type": "mcq",
+      "question": "Kalp, damar çapı, solunum, yutma, kusma, öksürme ve hapşırma refleks merkezleri nerededir?",
+      "options": [
+        "Pons ve medulla oblongata",
+        "Cerebellum",
+        "Midbrain",
+        "Spinal cord"
+      ],
+      "answer": "Pons ve medulla oblongata",
+      "explanation": "Slayt 102: bazı merkezler pons ve medulla oblongata'dadır; control of heart action, vessel diameter, respiration, swallowing, vomiting, coughing, and sneezing. En basit refleksler spinal cord'la ilişkilidir.",
+      "source": "Slayt 102 · reflex centers"
+    },
+    {
+      "id": "q27",
+      "type": "mcq",
+      "question": "Lokomosyon ve postürle ilgili refleks merkezlerinin çoğu nerededir?",
+      "options": [
+        "Cerebellum",
+        "Hypothalamus",
+        "Midbrain",
+        "Medulla oblongata"
+      ],
+      "answer": "Cerebellum",
+      "explanation": "Slayt 103: the cerebellum contains most of the reflex centers associated with locomotion and posture.",
+      "source": "Slayt 103 · reflex centers"
+    },
+    {
+      "id": "q28",
+      "type": "mcq",
+      "question": "Pupillanın daralma–genişlemesi ve yüksek sese irkilme refleksleri hangi bölgededir?",
+      "options": [
+        "Midbrain",
+        "Hypothalamus",
+        "Cerebellum",
+        "Spinal cord"
+      ],
+      "answer": "Midbrain",
+      "explanation": "Slayt 103: the midbrain contains visual and auditory reflexes — constriction or dilatation of the pupils ve startle reaction to loud noises. Hypothalamus ANS'nin ana merkezi (örn. ısı düzenleme).",
+      "source": "Slayt 103 · reflex centers"
+    },
+    {
+      "id": "q29",
+      "type": "mcq",
+      "question": "Muscle tonus'un temel öğesi hangisidir?",
+      "options": [
+        "Stretch reflex",
+        "Crossed extensor reflex",
+        "Conditional reflex",
+        "Righting reflex"
+      ],
+      "answer": "Stretch reflex",
+      "explanation": "Slayt 104: muscle tonus hayvanın dik durmasını sağlayan kas gerginliğidir; 'The stretch reflex … is the fundamental element of muscle tone.'",
+      "source": "Slayt 104 · postural reflexes"
+    },
+    {
+      "id": "q30",
+      "type": "mcq",
+      "question": "Evcil hayvanlarda spinal cord için hangisi doğrudur?",
+      "options": [
+        "CNS'in insandakinden daha büyük bir oranını oluşturur; köpekte spinal cord aktivitesi insanın ~10 katıdır",
+        "CNS'in insandakinden daha küçük bir oranıdır",
+        "Refleks aktivitesi insandan azdır",
+        "Köpekte spinal cord aktivitesi insanın yarısıdır"
+      ],
+      "answer": "CNS'in insandakinden daha büyük bir oranını oluşturur; köpekte spinal cord aktivitesi insanın ~10 katıdır",
+      "explanation": "Slayt 104: the spinal cord of domestic animals constitutes a greater proportion of the CNS than in humans; approximately 10 times more spinal cord activity in dogs than in humans.",
+      "source": "Slayt 104 · spinal cord"
+    },
+    {
+      "id": "q31",
+      "type": "mcq",
+      "question": "Ters bırakılan kedinin dik pozisyonda yere düşmesi hangi postural refleks örneğidir?",
+      "options": [
+        "Righting reflex",
+        "Standing reflex",
+        "Attitudinal reflex",
+        "Hopping reaction"
+      ],
+      "answer": "Righting reflex",
+      "explanation": "Slayt 105 (kırmızı): Righting reflex — dropping an inverted cat is followed by its landing in the upright position.",
+      "source": "Slayt 105 · postural reflexes"
+    },
+    {
+      "id": "q32",
+      "type": "mcq",
+      "question": "Köpeğin sırtına bastırınca yer değişimini dengeleyen kas hareketleri hangi örnektir?",
+      "options": [
+        "Standing reflex",
+        "Hopping reaction",
+        "Righting reflex",
+        "Crossed extensor response"
+      ],
+      "answer": "Standing reflex",
+      "explanation": "Slayt 105 (kırmızı): Standing reflex — pushing down on the back of a dog causes muscle movements that compensate for and resist the displacement.",
+      "source": "Slayt 105 · postural reflexes"
+    },
+    {
+      "id": "q33",
+      "type": "mcq",
+      "question": "Atın başı kaldırılınca arka bölümün yeni bir duruş alması hangi örnektir?",
+      "options": [
+        "Attitudinal reflexes",
+        "Standing reflex",
+        "Hopping reaction",
+        "Righting reflex"
+      ],
+      "answer": "Attitudinal reflexes",
+      "explanation": "Slayt 105 (kırmızı): Attitudinal reflexes — displacement of one part of the body is followed by postural changes in other parts (e.g., lifting the head of a horse).",
+      "source": "Slayt 105 · postural reflexes"
+    },
+    {
+      "id": "q34",
+      "type": "mcq",
+      "question": "Üç bacağı kaldırılmış köpek itildiğinde sağlam bacağını sütun gibi yeniden yerleştirmesi hangisidir?",
+      "options": [
+        "Hopping reaction",
+        "Standing reflex",
+        "Attitudinal reflexes",
+        "Stepping reflex"
+      ],
+      "answer": "Hopping reaction",
+      "explanation": "Slayt 105 (kırmızı): Hopping reaction — pushing a supported dog with three limbs elevated results in a placement correction of the intact leg to act as a rigid pillar.",
+      "source": "Slayt 105 · postural reflexes"
+    },
+    {
+      "id": "q35",
+      "type": "mcq",
+      "question": "Cerebrospinal fluid için hangisi doğrudur?",
+      "options": [
+        "İnce ve suludur; blood plasma'dan salgıyla oluşur; birkaç lymphocyte dışında kan hücresi yoktur",
+        "Koyu kıvamlıdır ve eritrosit içerir",
+        "Lenften filtrasyonla oluşur",
+        "Yalnız yangıda oluşur"
+      ],
+      "answer": "İnce ve suludur; blood plasma'dan salgıyla oluşur; birkaç lymphocyte dışında kan hücresi yoktur",
+      "explanation": "Slayt 106: the cerebrospinal fluid is thin and watery; derived from blood plasma by a secretion process; except for a few lymphocytes the normal cellular elements of the blood are absent.",
+      "source": "Slayt 106 · CSF"
+    },
+    {
+      "id": "q36",
+      "type": "mcq",
+      "question": "CSF'nin başlıca işlevi nedir?",
+      "options": [
+        "Beyin ve spinal cord için sulu bir yastık oluşturmak",
+        "Beyne glucose taşımak",
+        "Impulse iletmek",
+        "Myelin üretmek"
+      ],
+      "answer": "Beyin ve spinal cord için sulu bir yastık oluşturmak",
+      "explanation": "Slayt 106: the principal function of the CSF is provision of a watery cushion for the brain and spinal cord; başın ani yön değişimlerinde beynin yer değiştirmesi azalır.",
+      "source": "Slayt 106 · CSF"
+    },
+    {
+      "id": "q37",
+      "type": "mcq",
+      "question": "Beyindeki kan hacmi arttığında CSF hacmi ne olur?",
+      "options": [
+        "Azalır; kafa içi hacim sabit kalır",
+        "Artar",
+        "Değişmez",
+        "Önce artar sonra sıfırlanır"
+      ],
+      "answer": "Azalır; kafa içi hacim sabit kalır",
+      "explanation": "Slayt 107 (açık mavi): 'When blood volume in the brain increases, the volume of cerebrospinal fluid decreases, thereby keeping the volume of cranial contents constant.'",
+      "source": "Slayt 107 · CSF"
+    },
+    {
+      "id": "q38",
+      "type": "mcq",
+      "question": "CSF basıncı genellikle kaçtır ve 'lymphatic' işlevi nedir?",
+      "options": [
+        "~10 mmHg; kapillerlerden sızan proteinin geri dönüşü",
+        "~100 mmHg; glucose taşınması",
+        "~1 mmHg; lymphocyte üretimi",
+        "~40 mmHg; O₂ taşınması"
+      ],
+      "answer": "~10 mmHg; kapillerlerden sızan proteinin geri dönüşü",
+      "explanation": "Slayt 107: “lymphatic” function serves the brain and spinal cord for the return of protein that leaks from the capillaries; CSF basıncı is usually about 10 mm Hg.",
+      "source": "Slayt 107 · CSF"
+    },
+    {
+      "id": "q39",
+      "type": "mcq",
+      "question": "CNS'in glucose alımı için hangisi doğrudur?",
+      "options": [
+        "Basit diffüzyonla alır, insulin gerekmez",
+        "Insulin'e bağımlı facilitated diffusion ile alır",
+        "Yalnız aktif taşımayla alır",
+        "Glucose kullanmaz, yalnız yağ asidi kullanır"
+      ],
+      "answer": "Basit diffüzyonla alır, insulin gerekmez",
+      "explanation": "Slayt 108: unlike many tissues which require insulin for facilitated diffusion of glucose, the CNS receives glucose by simple diffusion, and insulin is not required.",
+      "source": "Slayt 108 · CNS metabolism"
+    },
+    {
+      "id": "q40",
+      "type": "mcq",
+      "question": "CNS vücut kütlesinin ve toplam oksijen tüketiminin yaklaşık yüzde kaçını oluşturur?",
+      "options": [
+        "Kütlenin %2'si, oksijenin %20'si",
+        "Kütlenin %20'si, oksijenin %2'si",
+        "Kütlenin %10'u, oksijenin %10'u",
+        "Kütlenin %2'si, oksijenin %2'si"
+      ],
+      "answer": "Kütlenin %2'si, oksijenin %20'si",
+      "explanation": "Slayt 108: although the CNS constitutes only 2% of body mass, it consumes approximately 20% of the total oxygen supplied to the body. Gray matter'ın metabolizma hızı white matter'ın 3–4 katı.",
+      "source": "Slayt 108 · CNS metabolism"
+    },
+    {
+      "id": "q41",
+      "type": "mcq",
+      "question": "Blood-brain barrier'ın yapısal temeli ve taşımayı sağlayan hücre hangisidir?",
+      "options": [
+        "Kapiller endotel hücreleri arasındaki tight junctions; astrocytes",
+        "Kapillerlerdeki slit pores; microglia",
+        "Myelin kılıfı; Schwann cells",
+        "Ependymal cells; ventricles"
+      ],
+      "answer": "Kapiller endotel hücreleri arasındaki tight junctions; astrocytes",
+      "explanation": "Slayt 109: CNS kapillerlerinde slit pores yerine tight junctions var; transport for most substances is provided for by astrocytes (a glial cell); astrocytes seçici olduğu için blood-brain barrier.",
+      "source": "Slayt 109 · blood-brain barrier"
+    },
+    {
+      "id": "q42",
+      "type": "mcq",
+      "question": "Blood-brain barrier'dan kolayca geçen maddeler hangileridir?",
+      "options": [
+        "O₂ ve CO₂ gibi lipid-soluble maddeler",
+        "Proteinler",
+        "Tüm iyonlar",
+        "Kan hücreleri"
+      ],
+      "answer": "O₂ ve CO₂ gibi lipid-soluble maddeler",
+      "explanation": "Slayt 109: lipid-soluble substances, however, such as oxygen and carbon dioxide, readily diffuse.",
+      "source": "Slayt 109 · blood-brain barrier"
+    },
+    {
+      "id": "q43",
+      "type": "mcq",
+      "question": "Blood-brain barrier'ın bulunmadığı yerler hangisidir?",
+      "options": [
+        "Hypothalamus'un bazı bölgeleri ve chemoreceptor alanı olan diğer bölgeler",
+        "Cerebral cortex'in tamamı",
+        "Cerebellum",
+        "Spinal cord gray matter'ı"
+      ],
+      "answer": "Hypothalamus'un bazı bölgeleri ve chemoreceptor alanı olan diğer bölgeler",
+      "explanation": "Slayt 109: some areas of the hypothalamus, as well as other portions of the brain that serve as chemoreceptor areas (açık mavi), lack a blood-brain barrier.",
+      "source": "Slayt 109 · blood-brain barrier"
+    },
+    {
+      "id": "q44",
+      "type": "mcq",
+      "question": "Beyne 5–10 dakika az ya da hiç kan gitmezse hangi hücreler geri dönüşsüz hasarlanır?",
+      "options": [
+        "Cerebrum'daki higher brain cells",
+        "Medulla oblongata'daki solunum merkezi",
+        "Spinal cord motor neuron'ları",
+        "Glial cells"
+      ],
+      "answer": "Cerebrum'daki higher brain cells",
+      "explanation": "Slayt 110: five to 10 minutes of little or no blood to the brain injures higher brain cells (açık mavi, in the cerebrum) so that no recovery occurs.",
+      "source": "Slayt 110 · blood requirement"
+    },
+    {
+      "id": "q45",
+      "type": "mcq",
+      "question": "Hypoxia'ya daha dayanıklı olan merkezler hangisidir?",
+      "options": [
+        "Medulla oblongata'daki solunum ve kardiyovasküler merkezler",
+        "Cerebrum'daki higher brain cells",
+        "Cerebral cortex'in motor area'sı",
+        "Thalamus'taki relay nuclei"
+      ],
+      "answer": "Medulla oblongata'daki solunum ve kardiyovasküler merkezler",
+      "explanation": "Slayt 110: respiratory and cardiovascular centers (in the medulla oblongata) are more resistant to hypoxia; 10 dakika kansız kalıştan sonra canlanma görülmüştür.",
+      "source": "Slayt 110 · hypoxia"
+    },
+    {
+      "id": "q46",
+      "type": "mcq",
+      "question": "Erişkin ve yenidoğan beyninin hypoxia toleransı nasıldır?",
+      "options": [
+        "Erişkin beynin toleransı yenidoğandan çok daha düşüktür",
+        "Erişkin beynin toleransı yenidoğandan çok daha yüksektir",
+        "İkisi eşittir",
+        "Yenidoğan beyni hypoxia'ya hiç dayanamaz"
+      ],
+      "answer": "Erişkin beynin toleransı yenidoğandan çok daha düşüktür",
+      "explanation": "Slayt 110 (açık mavi): 'The tolerance of an adult brain to hypoxia is much lower than the tolerance of a newborn brain.'",
+      "source": "Slayt 110 · hypoxia"
+    },
+    {
+      "id": "c01",
+      "type": "card",
+      "front": "Final common pathway",
+      "back": "LMN: striated muscle'a giden tüm çıktının son yolu ve son entegrasyon yeri",
+      "source": "Slayt 84"
+    },
+    {
+      "id": "c02",
+      "type": "card",
+      "front": "LMN ↔ UMN",
+      "back": "Spinal cord ve brain stem, kası innerve eder ↔ beyinde, LMN'yi modüle eder",
+      "source": "Slayt 84"
+    },
+    {
+      "id": "c03",
+      "type": "card",
+      "front": "Converging / diverging",
+      "back": "Çok → bir (duyum, yanıt) / bir → çok (amplification, skeletal muscle)",
+      "source": "Slayt 86, 87"
+    },
+    {
+      "id": "c04",
+      "type": "card",
+      "front": "Reverberating / parallel",
+      "back": "Geri dal, ritmik, yorulana dek / voley sonra durur, pekiştirme",
+      "source": "Slayt 88, 89"
+    },
+    {
+      "id": "c05",
+      "type": "card",
+      "front": "Reflex arc",
+      "back": "Receptor · afferent limb · central connections · efferent limb · effector",
+      "source": "Slayt 91"
+    },
+    {
+      "id": "c06",
+      "type": "card",
+      "front": "Summation ↔ facilitation",
+      "back": "Ardışık eşik altı uyaranların EPSP'si birikir ↔ birkaç afferent lif aynı anda zayıf uyarılır",
+      "source": "Slayt 92"
+    },
+    {
+      "id": "c07",
+      "type": "card",
+      "front": "Afterdischarge · rebound",
+      "back": "Uyaran kalkınca uyarının sürmesi · duraklama sonrası daha şiddetli kasılma",
+      "source": "Slayt 93"
+    },
+    {
+      "id": "c08",
+      "type": "card",
+      "front": "Conditional reflex",
+      "back": "Acquired reflex; öğrenilir (Pavlov); doğal ya da yapay",
+      "source": "Slayt 94"
+    },
+    {
+      "id": "c09",
+      "type": "card",
+      "front": "Knee jerk",
+      "back": "Myotatic (stretch) reflex; middle patellar ligament; muscle spindle; gerilmeye karşı koyar",
+      "source": "Slayt 96–98"
+    },
+    {
+      "id": "c10",
+      "type": "card",
+      "front": "Somatic ↔ visceral reflex",
+      "back": "Effector striated muscle ↔ smooth, cardiac muscle ya da bez (ANS)",
+      "source": "Slayt 101"
+    },
+    {
+      "id": "c11",
+      "type": "card",
+      "front": "Refleks merkezleri",
+      "back": "Pons + medulla: kalp, solunum, kusma · cerebellum: postür · hypothalamus: ısı · midbrain: pupilla, irkilme",
+      "source": "Slayt 102, 103"
+    },
+    {
+      "id": "c12",
+      "type": "card",
+      "front": "Postural reflex örnekleri",
+      "back": "Standing · attitudinal · righting (kedi) · hopping reaction",
+      "source": "Slayt 105"
+    },
+    {
+      "id": "c13",
+      "type": "card",
+      "front": "CSF",
+      "back": "Plasma'dan salgı; yastık; protein geri dönüşü; ~10 mmHg; kan hacmi ↑ → CSF ↓",
+      "source": "Slayt 106, 107"
+    },
+    {
+      "id": "c14",
+      "type": "card",
+      "front": "CNS metabolizması",
+      "back": "Glucose, insulin gerekmez; kütlenin %2'si, O₂'nin %20'si",
+      "source": "Slayt 108"
+    },
+    {
+      "id": "c15",
+      "type": "card",
+      "front": "Blood-brain barrier",
+      "back": "Tight junctions + astrocytes; O₂, CO₂ geçer; hypothalamus/chemoreceptor alanlarında yok",
+      "source": "Slayt 109"
+    }
+  ]
+}

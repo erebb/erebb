@@ -28,13 +28,17 @@ açılır). macOS'ta “Hareketi azalt” açıksa animasyonlar da kapanır.
 setin ve “Tüm ders”in altında *“x/y çalışıldı · n doğru · m yanlış”* çizgisi görünür; **Soru çöz**'e
 başlarken **Hepsi / Çözülmemiş / Yanlışlarım** seçilebilir. Uygulamayı kapatıp açınca hepsi yerinde durur.
 
-**Hazır içerik:** Uygulama iki dersle gelir:
+**Hazır içerik:** Uygulama üç dersle gelir:
 - **Mikrobiyoloji** — Hafta 7 (mikrobiyal büyümeyi etkileyen faktörler) ve Hafta 8 (antimikrobiyaller)
   slaytlarından 184 sınav sorusu ve 63 bilgi kartı. Hafta 8'de slaytlardaki bütün tabloların toplandığı
   bir **“Tablolar”** konu anlatımı ve tablolardan sorular var.
 - **Topografik Anatomi** — damarlar, lenf düğümleri, sinirler, gövde topografisi ve klinik uygulamalar
   (boynuz anestezisi, enjeksiyon yerleri); konu anlatımı, defterdeki exercise soruları dahil 129 sınav sorusu
   ve 40 bilgi kartı.
+- **Fizyoloji 1** — Sinir Sistemi slaytlarından 5 set (nöron–sinaps–glia, CNS ve PNS, otonom sinir sistemi,
+  sinir impulsu ve iletim, refleksler–BOS–CNS metabolizması); konu anlatımı, 233 sınav sorusu ve 65 bilgi kartı.
+  Slaytlarda rengi ya da yazı tipi farklı olan her ifade en az bir soruyla soruluyor; kafa sinirleri ve otonom
+  etkiler tabloları anlatıma ve sorulara geçirildi.
 
 Sorular Türkçe, ilaç adları ve bilimsel terimler İngilizce; tablolara ve kalın/eğik yazılmış kavramlara ağırlık
 verildi, her sorunun açıklaması ve kaynağı (slayt, plate, tablo ya da exercise numarası) var. İçerik

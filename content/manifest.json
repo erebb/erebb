@@ -3,20 +3,80 @@
   "packs": [
     {
       "course": "Mikrobiyoloji",
-      "legacyIds": ["mikrobiyoloji-hafta-7-8"],
+      "legacyIds": [
+        "mikrobiyoloji-hafta-7-8"
+      ],
       "sets": [
-        { "key": "mikrobiyoloji-hafta-7", "version": 2, "file": "mikrobiyoloji-hafta-7.json" },
-        { "key": "mikrobiyoloji-hafta-8", "version": 3, "file": "mikrobiyoloji-hafta-8.json" }
+        {
+          "key": "mikrobiyoloji-hafta-7",
+          "version": 2,
+          "file": "mikrobiyoloji-hafta-7.json"
+        },
+        {
+          "key": "mikrobiyoloji-hafta-8",
+          "version": 3,
+          "file": "mikrobiyoloji-hafta-8.json"
+        }
       ]
     },
     {
       "course": "Topografik Anatomi",
       "sets": [
-        { "key": "topografik-damarlar", "version": 1, "file": "topografik-damarlar.json" },
-        { "key": "topografik-lenf", "version": 1, "file": "topografik-lenf.json" },
-        { "key": "topografik-sinirler", "version": 1, "file": "topografik-sinirler.json" },
-        { "key": "topografik-govde", "version": 1, "file": "topografik-govde.json" },
-        { "key": "topografik-klinik", "version": 1, "file": "topografik-klinik.json" }
+        {
+          "key": "topografik-damarlar",
+          "version": 1,
+          "file": "topografik-damarlar.json"
+        },
+        {
+          "key": "topografik-lenf",
+          "version": 1,
+          "file": "topografik-lenf.json"
+        },
+        {
+          "key": "topografik-sinirler",
+          "version": 1,
+          "file": "topografik-sinirler.json"
+        },
+        {
+          "key": "topografik-govde",
+          "version": 1,
+          "file": "topografik-govde.json"
+        },
+        {
+          "key": "topografik-klinik",
+          "version": 1,
+          "file": "topografik-klinik.json"
+        }
+      ]
+    },
+    {
+      "course": "Fizyoloji 1",
+      "sets": [
+        {
+          "key": "fizyoloji-sinir-1",
+          "version": 1,
+          "file": "fizyoloji-sinir-1.json"
+        },
+        {
+          "key": "fizyoloji-sinir-2",
+          "version": 1,
+          "file": "fizyoloji-sinir-2.json"
+        },
+        {
+          "key": "fizyoloji-sinir-3",
+          "version": 1,
+          "file": "fizyoloji-sinir-3.json"
+        },
+        {
+          "key": "fizyoloji-sinir-4",
+          "version": 1,
+          "file": "fizyoloji-sinir-4.json"
+        },
+        {
+          "key": "fizyoloji-sinir-5",
+          "version": 1,
+          "file": "fizyoloji-sinir-5.json"
+        }
       ]
     }
   ]

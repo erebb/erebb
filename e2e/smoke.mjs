@@ -40,6 +40,7 @@ const TOTAL_MCQ = H7_MCQ + H8_MCQ;
 const TOTAL_CARDS = H7_CARDS + count(H8, 'card');
 const TOPO_SETS = ['damarlar', 'lenf', 'sinirler', 'govde', 'klinik'].map((k) => readJson(`../content/topografik-${k}.json`));
 const TOPO_DAMAR = TOPO_SETS[0];
+const FIZ_SETS = [1, 2, 3, 4, 5].map((k) => readJson(`../content/fizyoloji-sinir-${k}.json`));
 const MANIFEST = readJson('../content/manifest.json');
 const PKG_VERSION = readJson('../package.json').version;
 const H8_ITEMS = H8.items.length;
@@ -561,6 +562,32 @@ try {
   );
   await page.keyboard.press('Escape');
   await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+  await page.getByRole('button', { name: 'Derslere dön' }).click();
+  await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+
+  // ===================== Fizyoloji 1 · Sinir Sistemi =====================
+  await page.getByRole('button', { name: /Fizyoloji 1/ }).click();
+  await page.getByRole('heading', { name: 'Fizyoloji 1' }).waitFor();
+  check(
+    'Fizyoloji 1: 5 Sinir Sistemi seti hazır, her birinde konu anlatımı',
+    (
+      await Promise.all(
+        FIZ_SETS.map((x) => setCard(page, x.name).getByRole('button', { name: /Konu anlatımı/ }).count())
+      )
+    ).every((n) => n === 1)
+  );
+  await studySet(page, 'Sinir Sistemi 3', 'Konu anlatımı');
+  await page.getByText('İçindekiler').first().waitFor();
+  const ansText = await page.locator('[data-lesson-section]').allInnerTexts();
+  check(
+    'Fizyoloji 1: otonom anlatımında tüm bölümler ve otonom etkiler tablosu',
+    ansText.length === FIZ_SETS[2].lesson.length &&
+      (await page.locator('[data-lesson-section] table').count()) >= 5 &&
+      ansText.some((t) => t.includes('Ejaculation') && t.includes('Erection')),
+    `${ansText.length} bölüm`
+  );
+  await page.keyboard.press('Escape');
+  await page.getByRole('heading', { name: 'Fizyoloji 1' }).waitFor();
   await page.getByRole('button', { name: 'Derslere dön' }).click();
   await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
 

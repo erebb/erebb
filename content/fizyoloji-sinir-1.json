@@ -1,0 +1,714 @@
+{
+  "name": "Sinir Sistemi 1 · Nöron, sinaps ve glia",
+  "lesson": [
+    {
+      "title": "Sinir sistemi ve iki temel hücre",
+      "body": "Sinir sistemi hayvanın kendisini ya da parçalarını **dış ve iç ortamdaki değişikliklere uydurmasını** sağlar; bir **control system** gibi çalışır.\n\n| Hücre | Tanım (slayt) |\n|---|---|\n| **Neuron** (nerve cell) | Sinir sisteminin **anatomic ve physiologic birimi** |\n| **Glial cells** | **Non-neuronal** hücreler: homeostasis'i korur, **myelin** yapar, neuron'lara destek ve koruma sağlar (CNS ve PNS'te) |\n\n- Glial cell sayısı neuron'ların yaklaşık **10 katı**.\n\n! Slaytta renkli: **Neuron** (mavi) ve **glial cells** (yeşil) — sinir sisteminin iki hücre tipi.",
+      "source": "Slayt 2"
+    },
+    {
+      "title": "Neuron'un yapısı ve tipleri",
+      "body": "- Neuron'un 3 bölümü: **cell body**, **dendrites**, **axon**.\n- Bir uzantı impulse'u **cell body'ye doğru** iletiyorsa **dendrite**, **cell body'den uzağa** iletiyorsa **axon**'dur.\n- Bir neuron'un **tek axon**'u, ama **çok sayıda dendrite**'ı olabilir.\n- **Dendrites** diğer neuron'lardan bilgi alma yerleridir; çok sayıda axon'la iletişim için çok dallanarak geniş yüzey oluştururlar.\n\n### Neuron types (Slayt 5 şeması)\n**Sensory neuron → (synapse) → interneuron → (synapse) → motor neuron → (synapse) → muscle contracts**\n\n! Dendrite = cell body'ye **doğru**, axon = cell body'den **uzağa**. Neuron'lar arasındaki her bağlantı bir **synapse**.",
+      "source": "Slayt 3, 5, 6"
+    },
+    {
+      "title": "Neuron polarity",
+      "body": "**The polarity of a neuron** = cell body'den çıkan kutup (uzantı) sayısı. Memeli neuron'ları:\n\n| Tip | Yapı | Nerede? |\n|---|---|---|\n| **Bipolar** | Cell body'den bir axon + bir dendrite | **Retina** (göz) ve burundaki **olfactoric region** |\n| **Pseudounipolar** | Bipolar neuron'un axon ve dendrite'ı cell body yakınında **kaynaşmış**, tek uzantı gibi görünür | **Most primary afferent neurons** |\n| **Multipolar** | Çok dallı dendrites + tek axon | **CNS'teki neuron'ların çoğu** |\n\n! Slaytta tamamı renkli: tip adı (mavi) → yapı (mor) → yer (yeşil). Tablo satır satır sorulur.",
+      "source": "Slayt 7"
+    },
+    {
+      "title": "Axon, nerve fiber ve gruplar",
+      "body": "- **Axon** (+ varsa myelin kılıfı) = **nerve fiber**. Axon'u örten hücre zarı = **axolemma**.\n- Myelinli axon'da axolemma'yı **myelin sheath (neurilemma)** sarar; kılıf düzenli aralıklarla **nodes of Ranvier** ile kesilir.\n\n| | CNS'in içinde (brain / spinal cord) | CNS'in dışında |\n|---|---|---|\n| Nerve cell body grubu | **Nucleus** | **Ganglion** |\n| Paralel fiber demeti | **Tract** ya da **fasciculus** | **Nerve** |\n\n- Slayt 4 şekli: bir **nerve**; axon demetleri, **connective tissue** ve **blood vessel** içerir.\n\n! Nucleus ↔ ganglion ve tract ↔ nerve ayrımı = içeride mi dışarıda mı.",
+      "source": "Slayt 4, 8"
+    },
+    {
+      "title": "Synapse",
+      "body": "- **The synapse** bir neuron'dan diğerine sürekliliği sağlar; synapse'te **fiziksel temas yoktur**.\n- Aradaki boşluk **synaptic gap**; impulse bu boşluktan **kimyasal** yolla geçer = **chemical synaptic transmission**.\n- Slayt 10 şekli: synaptic gap, presynaptic neuron'un **terminal bulb**'ı ile postsynaptic neuron'un **dendrite**'ı arasındadır.\n- Neuron'lar birbirine dokunamadığı için synapse'e **neurotransmitters** salınır; **receptors neurotransmitter'ı alınca mesaj ulaşmış olur** (Slayt 11).\n\n| Synapse'in 3 özelliği | Anlamı |\n|---|---|\n| **One-way conduction** | Tek yönlü iletim |\n| **Facilitation** | Tekrarlayan impulse'lar sonraki iletimi kolaylaştırır |\n| **Greater fatigability than the neuron** | Neuron'dan daha kolay yorulur; tekrarlayan impulse'lar söner |\n\n### Slayt 63 şekli (synaptic transmission)\n1. Nerve impulse **synaptic end bulb**'a gelir. 2. **Voltage-gated Ca²⁺ channel**'lar açılır, Ca²⁺ girer. 3. Ca²⁺ **synaptic vesicle**'lardan neurotransmitter salınmasını tetikler. 4–5. Neurotransmitter postsynaptic **ligand-gated channel**'ları açar, **Na⁺** girer. 6–7. **Postsynaptic potential** → nerve impulse.\n\n! Üç özellik (mavi) ve açıklamaları (mor) kesin sorulur: one-way conduction, facilitation, greater fatigability.",
+      "source": "Slayt 9, 10, 11, 63"
+    },
+    {
+      "title": "Glial cells (neuroglia)",
+      "body": "- **Glial cells** CNS'in non-neuronal hücreleridir; neuron'lardan ~**10 kat** fazla, CNS hacminin yaklaşık **yarısı**.\n- Yoğun paketlenme yüzünden sinir dokusunda **interstitial space daha azdır**. Glial cells **metabolically quite active**.\n- Sınıflama: **macroglia**, **microglia**, **ependymal cells**. Macroglia iki tip: **oligodendrocytes** ve **astrocytes**.\n\n| Hücre | Görev (slayt + konuşmacı notu) |\n|---|---|\n| **Astrocytes** | **En belirgin** glia; uzantıları **blood vessels**, synaptic yapılar ve nerve cell body'leri çevresinde; AP oluşumu için kimyasal ortamı korur; **blood-brain barrier**'a katılır |\n| **Oligodendrocytes** | **CNS'te myelin sheath** yapar |\n| **Microglia** | **Phagocytic** (CNS phagocytes) |\n| **Ependymal cells** | Beyin **ventricles** ve spinal cord **central canal**'ını döşer; CSF oluşturur |\n| **Schwann cells** (PNS) | **PNS'te myelin** yapar; neurolemma'yı oluşturur |\n| **Satellite cells** (PNS) | Ganglion'larda kimyasal ortamı korur |\n\n- Slayt 13–14: **CNS neuroglia** (astrocyte, microglial, oligodendrocyte) ve **PNS neuroglia** (Schwann, satellite). Slayt 15: neuron ve astrocyte birlikte.\n\n! Oligodendrocyte = CNS myelini, Schwann cell = PNS myelini. Microglia = phagocytic.",
+      "source": "Slayt 12–15 · konuşmacı notu"
+    },
+    {
+      "title": "Myelin sheath ve nodes of Ranvier",
+      "body": "- **Myelin**: beyaz lipid (**sphingomyelin**); nerve fiber'ı saran **elektriksel yalıtkan**.\n- CNS'te **oligodendrocytes**, PNS'te **Schwann cells** yapar.\n- CNS **gray matter**'ındaki fiberler **myelinsizdir**; **white matter** ve periferik sinirlerin beyaz parlak görünümü myelin'dendir.\n- **Schwann cell cytoplasm**'ı (myelin'i içerir) fiber'ın etrafına **defalarca sarılır**; çekirdek neurolemma'nın hemen altında, myelin'in dışındadır.\n- Myelin kılıfındaki kesintiler = **nodes of Ranvier**. Burada **axolemma ECF'e doğrudan açıktır** (CNS'te daha yakın temas) ve **depolarization node'larda olur**.\n\n! Depolarization **node of Ranvier**'da → saltatory conduction'ın temeli (Set 4).",
+      "source": "Slayt 16–18"
+    }
+  ],
+  "items": [
+    {
+      "id": "q01",
+      "type": "mcq",
+      "question": "Slayta göre sinir sisteminin karmaşık işlevlerini yürüten iki ana hücre tipi hangisidir?",
+      "options": [
+        "Neuron ve glial cells",
+        "Neuron ve Schwann cells",
+        "Astrocytes ve oligodendrocytes",
+        "Sensory neuron ve motor neuron"
+      ],
+      "answer": "Neuron ve glial cells",
+      "explanation": "Slayt 2: 'There are mainly two cells (Neuron and glial cells) dealing with the complicated functions of the nervous system' (neuron mavi, glial cells yeşil).",
+      "source": "Slayt 1, 2 · nervous system"
+    },
+    {
+      "id": "q02",
+      "type": "mcq",
+      "question": "Sinir sisteminin anatomic ve physiologic birimi hangisidir?",
+      "options": [
+        "Neuron (nerve cell)",
+        "Glial cell",
+        "Synapse",
+        "Nerve fiber"
+      ],
+      "answer": "Neuron (nerve cell)",
+      "explanation": "Slayt 2 (mavi): 'The neuron (nerve cells) is the anatomic and physiologic unit of the nervous system.'",
+      "source": "Slayt 2 · nervous system"
+    },
+    {
+      "id": "q03",
+      "type": "mcq",
+      "question": "Glial cells için hangisi slayttaki görevlerden DEĞİLDİR?",
+      "options": [
+        "Impulse'u cell body'den uzağa iletmek",
+        "Homeostasis'i korumak",
+        "Myelin oluşturmak",
+        "Neuron'lara destek ve koruma sağlamak"
+      ],
+      "answer": "Impulse'u cell body'den uzağa iletmek",
+      "explanation": "Slayt 2 (yeşil): glial cells non-neuronal hücrelerdir; homeostasis'i korur, myelin yapar, destek ve koruma sağlar. Impulse'u cell body'den uzağa iletmek axon'un işidir (Slayt 3).",
+      "source": "Slayt 2 · nervous system"
+    },
+    {
+      "id": "q04",
+      "type": "mcq",
+      "question": "Glial cells sayıca neuron'ların yaklaşık kaç katıdır?",
+      "options": [
+        "10 katı",
+        "2 katı",
+        "Yarısı kadar",
+        "100 katı"
+      ],
+      "answer": "10 katı",
+      "explanation": "Slayt 2 ve 12: glial cells neuron'lardan yaklaşık 10 kat fazladır (ten-fold / about 10-fold) ve CNS hacminin yarısını oluşturur.",
+      "source": "Slayt 2, 12 · glial cells"
+    },
+    {
+      "id": "q05",
+      "type": "mcq",
+      "question": "Bir neuron uzantısı impulse'u cell body'ye DOĞRU iletiyorsa ne adını alır?",
+      "options": [
+        "Dendrite",
+        "Axon",
+        "Axolemma",
+        "Nerve fiber"
+      ],
+      "answer": "Dendrite",
+      "explanation": "Slayt 3 (mor): 'A nerve cell process is a dendrite if it conducts impulses toward the cell body and it is an axon if it conducts impulses away from the cell body.'",
+      "source": "Slayt 3 · neuron"
+    },
+    {
+      "id": "q06",
+      "type": "mcq",
+      "question": "Neuron'un üç bölümü hangi seçenekte doğru verilmiştir?",
+      "options": [
+        "Cell body, dendrites, axon",
+        "Cell body, synapse, ganglion",
+        "Nucleus, tract, nerve",
+        "Dendrites, axolemma, neurotransmitter"
+      ],
+      "answer": "Cell body, dendrites, axon",
+      "explanation": "Slayt 3'te mor renkle: Cell body, Dendrites, Axon.",
+      "source": "Slayt 3 · neuron"
+    },
+    {
+      "id": "q07",
+      "type": "mcq",
+      "question": "Slayt 5'teki 'Neuron types' şemasına göre impulse'un doğru sırası hangisidir?",
+      "options": [
+        "Sensory neuron → interneuron → motor neuron → muscle contracts",
+        "Motor neuron → interneuron → sensory neuron → muscle contracts",
+        "Interneuron → sensory neuron → motor neuron → muscle contracts",
+        "Sensory neuron → motor neuron → interneuron → muscle contracts"
+      ],
+      "answer": "Sensory neuron → interneuron → motor neuron → muscle contracts",
+      "explanation": "Slayt 5 şeması: Sensory Neuron → Interneuron → Motor Neuron → Muscle Contracts; aralarındaki her bağlantı kırmızı 'Synapse' ile gösterilmiş.",
+      "source": "Slayt 5 · neuron types"
+    },
+    {
+      "id": "q08",
+      "type": "mcq",
+      "question": "Slayt 5 şemasında sensory neuron, interneuron ve motor neuron arasındaki bağlantı noktaları ne olarak gösterilmiştir?",
+      "options": [
+        "Synapse",
+        "Node of Ranvier",
+        "Ganglion",
+        "Axolemma"
+      ],
+      "answer": "Synapse",
+      "explanation": "Slayt 5'te üç kez kırmızı ve farklı fontla 'Synapse' yazılı: neuron'lar arası her geçiş bir synapse'tir.",
+      "source": "Slayt 5 · neuron types"
+    },
+    {
+      "id": "q09",
+      "type": "mcq",
+      "question": "Neuron'un axon ve dendrite sayısı için hangisi doğrudur?",
+      "options": [
+        "Tek axon, çok sayıda dendrite olabilir",
+        "Çok sayıda axon, tek dendrite olur",
+        "Her zaman bir axon ve bir dendrite olur",
+        "Axon sayısı dendrite sayısına eşittir"
+      ],
+      "answer": "Tek axon, çok sayıda dendrite olabilir",
+      "explanation": "Slayt 6: 'A neuron has only one axon but can have many dendrites.'",
+      "source": "Slayt 6 · neurons and synapses"
+    },
+    {
+      "id": "q10",
+      "type": "mcq",
+      "question": "Dendrites'ın çok dallanmasının nedeni slayta göre nedir?",
+      "options": [
+        "Çok sayıda axon'la iletişim için geniş yüzey sağlamak",
+        "Impulse'u daha hızlı cell body'den uzaklaştırmak",
+        "Myelin üretmek",
+        "Neurotransmitter'ı yıkmak"
+      ],
+      "answer": "Çok sayıda axon'la iletişim için geniş yüzey sağlamak",
+      "explanation": "Slayt 6 (yeşil 'The dendrites'): dendrites diğer neuron'lardan bilgi alma yerleridir; çok sayıda axon'la iletişim için geniş yüzey oluşturmak üzere çok dallanabilir.",
+      "source": "Slayt 6 · neurons and synapses"
+    },
+    {
+      "id": "q11",
+      "type": "mcq",
+      "question": "'The polarity of a neuron' neyi ifade eder?",
+      "options": [
+        "Cell body'den çıkan kutup (uzantı) sayısını",
+        "Membranın iç ve dışı arasındaki yük farkını",
+        "Impulse'un yönünü",
+        "Myelin kılıfının kalınlığını"
+      ],
+      "answer": "Cell body'den çıkan kutup (uzantı) sayısını",
+      "explanation": "Slayt 7 (kırmızı): 'The polarity of a neuron refers to the number of poles or processes that stem from its cell body.'",
+      "source": "Slayt 7 · polarity"
+    },
+    {
+      "id": "q12",
+      "type": "mcq",
+      "question": "Retina ve burundaki olfactoric region'da hangi neuron tipi bulunur?",
+      "options": [
+        "Bipolar",
+        "Pseudounipolar",
+        "Multipolar",
+        "Interneuron"
+      ],
+      "answer": "Bipolar",
+      "explanation": "Slayt 7: Bipolar (mavi) — bir axon ve bir dendrite; 'in the retina of eyes and olfactoric region in the nose' (yeşil).",
+      "source": "Slayt 7 · polarity"
+    },
+    {
+      "id": "q13",
+      "type": "mcq",
+      "question": "Axon ve dendrite'ı cell body yakınında kaynaşmış, tek uzantılı gibi görünen neuron tipi ve yeri hangisidir?",
+      "options": [
+        "Pseudounipolar — most primary afferent neurons",
+        "Bipolar — retina",
+        "Multipolar — CNS neuron'larının çoğu",
+        "Pseudounipolar — CNS neuron'larının çoğu"
+      ],
+      "answer": "Pseudounipolar — most primary afferent neurons",
+      "explanation": "Slayt 7: Pseudounipolar (mavi) — bipolar neuron'un axon ve dendrite'ı cell body yakınında kaynaşmıştır; 'most primary afferent neuron' (yeşil).",
+      "source": "Slayt 7 · polarity"
+    },
+    {
+      "id": "q14",
+      "type": "mcq",
+      "question": "CNS'teki neuron'ların çoğu hangi tiptir?",
+      "options": [
+        "Multipolar",
+        "Bipolar",
+        "Pseudounipolar",
+        "Unipolar"
+      ],
+      "answer": "Multipolar",
+      "explanation": "Slayt 7: Multipolar (mavi) — çok dallı dendrites ve tek axon; 'most neurons in the central nervous system' (yeşil).",
+      "source": "Slayt 7 · polarity"
+    },
+    {
+      "id": "q15",
+      "type": "mcq",
+      "question": "Neuron polarity eşleştirmelerinden hangisi YANLIŞTIR?",
+      "options": [
+        "Multipolar — retina",
+        "Bipolar — olfactoric region",
+        "Pseudounipolar — primary afferent neuron",
+        "Multipolar — CNS neuron'larının çoğu"
+      ],
+      "answer": "Multipolar — retina",
+      "explanation": "Slayt 7: retina ve olfactoric region bipolar neuron yeridir; multipolar CNS'tedir.",
+      "source": "Slayt 7 · polarity"
+    },
+    {
+      "id": "q16",
+      "type": "mcq",
+      "question": "Axon ve (varsa) myelin kılıfı birlikte ne olarak adlandırılır?",
+      "options": [
+        "Nerve fiber",
+        "Nerve",
+        "Tract",
+        "Axolemma"
+      ],
+      "answer": "Nerve fiber",
+      "explanation": "Slayt 8: 'The Axon (and its myelin covering, if present) is called a nerve fiber.'",
+      "source": "Slayt 8 · axon"
+    },
+    {
+      "id": "q17",
+      "type": "mcq",
+      "question": "Axon'u örten hücre zarının adı nedir?",
+      "options": [
+        "Axolemma",
+        "Neurilemma",
+        "Myelin",
+        "Synaptic gap"
+      ],
+      "answer": "Axolemma",
+      "explanation": "Slayt 8: 'The part of the cell membrane that covers the axon is known as the axolemma.'",
+      "source": "Slayt 8 · axon"
+    },
+    {
+      "id": "q18",
+      "type": "mcq",
+      "question": "Myelinli bir axon'da myelin sheath'i düzenli aralıklarla kesen myelinsiz boşluklar nedir?",
+      "options": [
+        "Nodes of Ranvier",
+        "Synaptic gaps",
+        "Ganglia",
+        "Dendritic spines"
+      ],
+      "answer": "Nodes of Ranvier",
+      "explanation": "Slayt 8: myelin sheath (neurilemma) düzenli aralıklarla 'nodes (of Ranvier)' denen myelinsiz boşluklarla kesilir (Slayt 17'de de).",
+      "source": "Slayt 8, 17 · Ranvier"
+    },
+    {
+      "id": "q19",
+      "type": "mcq",
+      "question": "Brain ya da spinal cord DIŞINDAKİ nerve cell body grubu ne adını alır?",
+      "options": [
+        "Ganglion",
+        "Nucleus",
+        "Tract",
+        "Fasciculus"
+      ],
+      "answer": "Ganglion",
+      "explanation": "Slayt 8: CNS içindeki cell body grubu nucleus, dışındaki ganglion.",
+      "source": "Slayt 8 · nucleus/ganglion"
+    },
+    {
+      "id": "q20",
+      "type": "mcq",
+      "question": "Brain ya da spinal cord İÇİNDEKİ paralel fiber demeti ne olarak adlandırılır?",
+      "options": [
+        "Tract ya da fasciculus",
+        "Nerve",
+        "Ganglion",
+        "Nucleus"
+      ],
+      "answer": "Tract ya da fasciculus",
+      "explanation": "Slayt 8: CNS içindeki paralel fiber demeti tract ya da fasciculus, dışındaki ise nerve.",
+      "source": "Slayt 8 · tract/nerve"
+    },
+    {
+      "id": "q21",
+      "type": "mcq",
+      "question": "Slayt 4 şekline göre bir 'nerve' hangilerini içerir?",
+      "options": [
+        "Axon demetleri, connective tissue ve blood vessel",
+        "Yalnızca nerve cell body'leri",
+        "Yalnızca glial cells",
+        "Synaptic vesicle'lar ve receptor'lar"
+      ],
+      "answer": "Axon demetleri, connective tissue ve blood vessel",
+      "explanation": "Slayt 4 şekli: Nerve — Axons, Connective tissue, Blood vessel etiketleri.",
+      "source": "Slayt 4 · şekil"
+    },
+    {
+      "id": "q22",
+      "type": "mcq",
+      "question": "Synapse için hangisi doğrudur?",
+      "options": [
+        "Neuron'lar arasında fiziksel temas yoktur; impulse kimyasal yolla iletilir",
+        "Neuron'lar fiziksel olarak birbirine kaynaşmıştır",
+        "Impulse synaptic gap'te elektriksel olarak atlar",
+        "Synapse yalnızca glial cells arasında bulunur"
+      ],
+      "answer": "Neuron'lar arasında fiziksel temas yoktur; impulse kimyasal yolla iletilir",
+      "explanation": "Slayt 9 (kırmızı 'The Synapse'): synapse'te fiziksel temas yoktur; synaptic gap'ten kimyasal yolla iletim = chemical synaptic transmission.",
+      "source": "Slayt 9 · synapse"
+    },
+    {
+      "id": "q23",
+      "type": "mcq",
+      "question": "Synapse'in 'three notable characteristics' arasında hangisi YOKTUR?",
+      "options": [
+        "Two-way conduction",
+        "One-way conduction",
+        "Facilitation",
+        "Greater fatigability than the neuron"
+      ],
+      "answer": "Two-way conduction",
+      "explanation": "Slayt 9: üç özellik (mavi) one-way conduction, facilitation ve greater fatigability than the neuron. İletim tek yönlüdür.",
+      "source": "Slayt 9 · synapse"
+    },
+    {
+      "id": "q24",
+      "type": "mcq",
+      "question": "Synapse'te 'facilitation' ne demektir?",
+      "options": [
+        "Tekrarlayan impulse'ların sonraki iletimi kolaylaştırması",
+        "Iletimin tek yönlü olması",
+        "Tekrarlayan impulse'ların sönmesi",
+        "Neurotransmitter'ın geri alınması"
+      ],
+      "answer": "Tekrarlayan impulse'ların sonraki iletimi kolaylaştırması",
+      "explanation": "Slayt 9 (mor): Facilitation — 'repeated impulses provide for easier subsequent transmission'.",
+      "source": "Slayt 9 · synapse"
+    },
+    {
+      "id": "q25",
+      "type": "mcq",
+      "question": "Synapse'in neuron'dan daha kolay yorulmasının (greater fatigability) işlevi nedir?",
+      "options": [
+        "Tekrarlayan impulse'ların sönmesine izin verir",
+        "İletimi iki yönlü yapar",
+        "Impulse hızını artırır",
+        "Myelin oluşumunu sağlar"
+      ],
+      "answer": "Tekrarlayan impulse'ların sönmesine izin verir",
+      "explanation": "Slayt 9 (mor): Greater fatigability than the neuron — 'allows for repetitive impulses to fade'.",
+      "source": "Slayt 9 · synapse"
+    },
+    {
+      "id": "q26",
+      "type": "mcq",
+      "question": "Slayt 10 şekline göre synaptic gap nerededir?",
+      "options": [
+        "Presynaptic neuron'un terminal bulb'ı ile postsynaptic neuron'un dendrite'ı arasında",
+        "İki node of Ranvier arasında",
+        "Cell body ile axon arasında",
+        "Myelin ile axolemma arasında"
+      ],
+      "answer": "Presynaptic neuron'un terminal bulb'ı ile postsynaptic neuron'un dendrite'ı arasında",
+      "explanation": "Slayt 10 şekli: 'Synaptic gap between terminal bulb and dendrite' — terminal bulb of presynaptic neuron, dendrite of postsynaptic neuron.",
+      "source": "Slayt 10 · şekil"
+    },
+    {
+      "id": "q27",
+      "type": "mcq",
+      "question": "Slayt 11'e göre mesajın bir neuron'dan diğerine ulaştığı an hangisidir?",
+      "options": [
+        "Receptor'ların neurotransmitter'ı alması",
+        "Neuron'ların birbirine dokunması",
+        "Myelin'in depolarize olması",
+        "Glial cell'in impulse üretmesi"
+      ],
+      "answer": "Receptor'ların neurotransmitter'ı alması",
+      "explanation": "Slayt 11 (lacivert): neuron'lar dokunamadığı için neurotransmitters synapse'e salınır; (sarı/pembe) 'When the receptors receive neurotransmitters mean the message has been reached'.",
+      "source": "Slayt 11 · neurotransmitters"
+    },
+    {
+      "id": "q28",
+      "type": "mcq",
+      "question": "Slayt 63 şekline göre presynaptic terminalde neurotransmitter salınmasını tetikleyen olay hangisidir?",
+      "options": [
+        "Voltage-gated Ca²⁺ channel'lardan Ca²⁺ girişi",
+        "Ligand-gated Na⁺ channel'ların kapanması",
+        "K⁺'un hücreye girişi",
+        "Myelin'in parçalanması"
+      ],
+      "answer": "Voltage-gated Ca²⁺ channel'lardan Ca²⁺ girişi",
+      "explanation": "Slayt 63 şekli: (2) nerve impulse ile voltage-gated Ca²⁺ channel'lar açılır, (3) Ca²⁺ synaptic vesicle'lardan neurotransmitter salınmasını sağlar; (4–5) postsynaptic ligand-gated channel'lar açılıp Na⁺ girer.",
+      "source": "Slayt 63 · şekil"
+    },
+    {
+      "id": "q29",
+      "type": "mcq",
+      "question": "Glial cells hangi üç gruba ayrılır?",
+      "options": [
+        "Macroglia, microglia, ependymal cells",
+        "Astrocytes, neurons, Schwann cells",
+        "Sensory, motor, interneuron",
+        "Bipolar, pseudounipolar, multipolar"
+      ],
+      "answer": "Macroglia, microglia, ependymal cells",
+      "explanation": "Slayt 12: 'Glial cells are classified as Macroglia, microglia and ependymal cells.'",
+      "source": "Slayt 12 · glial cells"
+    },
+    {
+      "id": "q30",
+      "type": "mcq",
+      "question": "Macroglial cells'in iki tipi hangisidir?",
+      "options": [
+        "Oligodendrocytes ve astrocytes",
+        "Microglia ve ependymal cells",
+        "Schwann cells ve satellite cells",
+        "Astrocytes ve microglia"
+      ],
+      "answer": "Oligodendrocytes ve astrocytes",
+      "explanation": "Slayt 12: macroglial cell are two types; oligodendrocytes (yeşil) ve astrocytes (mavi).",
+      "source": "Slayt 12 · glial cells"
+    },
+    {
+      "id": "q31",
+      "type": "mcq",
+      "question": "CNS'te myelin sheath'i oluşturan glial cell hangisidir?",
+      "options": [
+        "Oligodendrocytes",
+        "Schwann cells",
+        "Astrocytes",
+        "Microglia"
+      ],
+      "answer": "Oligodendrocytes",
+      "explanation": "Slayt 12 (yeşil): Oligodendrocytes (myelin sheath formation in CNS); Slayt 16: CNS'te oligodendrocytes, PNS'te Schwann cells.",
+      "source": "Slayt 12, 16 · myelin"
+    },
+    {
+      "id": "q32",
+      "type": "mcq",
+      "question": "En belirgin (most prominent) glial cell hangisidir ve uzantıları nerelerdedir?",
+      "options": [
+        "Astrocytes — blood vessels, synaptic yapılar ve nerve cell body'leri çevresinde",
+        "Microglia — ventricles yüzeyinde",
+        "Oligodendrocytes — yalnızca PNS'te",
+        "Ependymal cells — axon'un etrafına sarılı"
+      ],
+      "answer": "Astrocytes — blood vessels, synaptic yapılar ve nerve cell body'leri çevresinde",
+      "explanation": "Slayt 12 (mavi): Astrocytes most prominent glial cells; processes about blood vessels, synaptic structures and nerve cell bodies and processes. Slayt 15'te neuron ile astrocyte birlikte gösterilmiş.",
+      "source": "Slayt 12, 15 · astrocytes"
+    },
+    {
+      "id": "q33",
+      "type": "mcq",
+      "question": "Phagocytic işlevi olan glial cell hangisidir?",
+      "options": [
+        "Microglia",
+        "Astrocytes",
+        "Oligodendrocytes",
+        "Ependymal cells"
+      ],
+      "answer": "Microglia",
+      "explanation": "Slayt 12: 'The microglia (have a phagocytic function)'; konuşmacı notu: microglia = CNS phagocytes.",
+      "source": "Slayt 12 · microglia"
+    },
+    {
+      "id": "q34",
+      "type": "mcq",
+      "question": "Beyin ventricles'ını ve spinal cord'un central canal'ını döşeyen hücreler hangisidir?",
+      "options": [
+        "Ependymal cells",
+        "Astrocytes",
+        "Schwann cells",
+        "Satellite cells"
+      ],
+      "answer": "Ependymal cells",
+      "explanation": "Slayt 12: ependymal cells line the ventricles of the brain and the central canal of the spinal cord; konuşmacı notu: CSF oluşturur.",
+      "source": "Slayt 12 · ependymal"
+    },
+    {
+      "id": "q35",
+      "type": "mcq",
+      "question": "Konuşmacı notuna göre PNS neuroglia'sından olan ve ganglion'larda kimyasal ortamı koruyan hücre hangisidir?",
+      "options": [
+        "Satellite cells",
+        "Schwann cells",
+        "Astrocytes",
+        "Microglia"
+      ],
+      "answer": "Satellite cells",
+      "explanation": "Slayt 13 konuşmacı notu: Satellite cells maintain chemical environment in ganglia; Schwann cells PNS myelin + neurolemma. Slayt 13'te CNS neuroglia (sarı) ve PNS neuroglia (turuncu) ayrı gösterilmiş.",
+      "source": "Slayt 13 · konuşmacı notu"
+    },
+    {
+      "id": "q36",
+      "type": "mcq",
+      "question": "Slayt 14'teki CNS neuroglia görsellerinde hangisi YOKTUR?",
+      "options": [
+        "Schwann cell",
+        "Astrocyte",
+        "Microglial cell",
+        "Oligodendrocyte"
+      ],
+      "answer": "Schwann cell",
+      "explanation": "Slayt 14 (farklı fontla): astrocyte, microglial, oligodendrocyte. Schwann cell PNS neuroglia'sıdır (Slayt 13 notu).",
+      "source": "Slayt 13, 14 · neuroglia"
+    },
+    {
+      "id": "q37",
+      "type": "mcq",
+      "question": "Glial cells ve sinir dokusu için hangisi doğrudur?",
+      "options": [
+        "Yoğun paketlenme nedeniyle sinir dokusunda interstitial space diğer dokulardan azdır",
+        "Glial cells metabolik olarak inaktiftir",
+        "Glial cells CNS hacminin %5'ini oluşturur",
+        "Glial cells neuron'lardan sayıca azdır"
+      ],
+      "answer": "Yoğun paketlenme nedeniyle sinir dokusunda interstitial space diğer dokulardan azdır",
+      "explanation": "Slayt 12 (kırmızı 'Glial cells'): glial cells neuron'lardan ~10 kat fazladır, hacmin yarısını oluşturur, metabolically quite active'dir; yoğun paketlenme interstitial space'i azaltır.",
+      "source": "Slayt 12 · glial cells"
+    },
+    {
+      "id": "q38",
+      "type": "mcq",
+      "question": "Myelin'in yapısı ve işlevi için hangisi doğrudur?",
+      "options": [
+        "Beyaz lipid (sphingomyelin); elektriksel yalıtkan",
+        "Protein yapılı; impulse üretir",
+        "Gri renkli karbonhidrat; phagocytosis yapar",
+        "Neurotransmitter depolar"
+      ],
+      "answer": "Beyaz lipid (sphingomyelin); elektriksel yalıtkan",
+      "explanation": "Slayt 16 (kırmızı 'Myelin Sheaths'): myelin is a white lipid (sphingomyelin) substance … serves as an electrical insulator.",
+      "source": "Slayt 16 · myelin"
+    },
+    {
+      "id": "q39",
+      "type": "mcq",
+      "question": "PNS'te myelin'i hangi hücre oluşturur?",
+      "options": [
+        "Schwann cells",
+        "Oligodendrocytes",
+        "Astrocytes",
+        "Ependymal cells"
+      ],
+      "answer": "Schwann cells",
+      "explanation": "Slayt 16: myelin CNS'te oligodendrocytes, PNS'te Schwann cells tarafından oluşturulur.",
+      "source": "Slayt 16 · myelin"
+    },
+    {
+      "id": "q40",
+      "type": "mcq",
+      "question": "CNS gray matter'ındaki nerve fiber'lar için hangisi doğrudur?",
+      "options": [
+        "Myelinsizdir; white matter'ın beyaz görünümü myelin'den gelir",
+        "Kalın myelinlidir",
+        "Schwann cells ile kaplıdır",
+        "Yalnızca dendrite içerir"
+      ],
+      "answer": "Myelinsizdir; white matter'ın beyaz görünümü myelin'den gelir",
+      "explanation": "Slayt 16: gray matter'daki fiberler myelinated değildir; white matter ve periferik sinirlerin beyaz parlak görünümü myelin'den kaynaklanır.",
+      "source": "Slayt 16 · gray/white"
+    },
+    {
+      "id": "q41",
+      "type": "mcq",
+      "question": "Nodes of Ranvier'da ne olur?",
+      "options": [
+        "Axolemma ECF'e doğrudan açıktır ve depolarization burada olur",
+        "Myelin en kalın hâlindedir",
+        "Neurotransmitter salınır",
+        "Schwann cell çekirdeği bulunur"
+      ],
+      "answer": "Axolemma ECF'e doğrudan açıktır ve depolarization burada olur",
+      "explanation": "Slayt 18: Ranvier nodes'ta nerve fiber plasma membrane (axolemma) ECF'e doğrudan açıktır (CNS'te daha yakın temas) ve 'Depolarization occurs at the nodes.'",
+      "source": "Slayt 18 · Ranvier"
+    },
+    {
+      "id": "q42",
+      "type": "mcq",
+      "question": "Schwann cell için slayttaki bilgi hangisidir?",
+      "options": [
+        "Myelin içeren cytoplasm'ı fiber'ın etrafına defalarca sarılır; çekirdek myelin'in dışında, neurolemma'nın altındadır",
+        "CNS'te myelin yapar",
+        "Phagocytosis yapar",
+        "Ventricles'ı döşer"
+      ],
+      "answer": "Myelin içeren cytoplasm'ı fiber'ın etrafına defalarca sarılır; çekirdek myelin'in dışında, neurolemma'nın altındadır",
+      "explanation": "Slayt 17: 'The Schwann cell cytoplasm (which contain the myelin) is wrapped around a nerve fiber many times, and the nucleus lies … just beneath the neurolemma external to the myelin sheath.'",
+      "source": "Slayt 17 · Schwann"
+    },
+    {
+      "id": "c01",
+      "type": "card",
+      "front": "Neuron",
+      "back": "Sinir sisteminin anatomic ve physiologic birimi",
+      "source": "Slayt 2 · nervous system"
+    },
+    {
+      "id": "c02",
+      "type": "card",
+      "front": "Glial cells",
+      "back": "Non-neuronal; homeostasis, myelin, destek/koruma; neuron'ların ~10 katı",
+      "source": "Slayt 2, 12"
+    },
+    {
+      "id": "c03",
+      "type": "card",
+      "front": "Dendrite ↔ axon",
+      "back": "Dendrite impulse'u cell body'ye doğru, axon cell body'den uzağa iletir",
+      "source": "Slayt 3"
+    },
+    {
+      "id": "c04",
+      "type": "card",
+      "front": "Bipolar neuron",
+      "back": "1 axon + 1 dendrite · retina, olfactoric region",
+      "source": "Slayt 7"
+    },
+    {
+      "id": "c05",
+      "type": "card",
+      "front": "Pseudounipolar neuron",
+      "back": "Axon ve dendrite kaynaşmış · most primary afferent neurons",
+      "source": "Slayt 7"
+    },
+    {
+      "id": "c06",
+      "type": "card",
+      "front": "Multipolar neuron",
+      "back": "Çok dendrite + 1 axon · CNS neuron'larının çoğu",
+      "source": "Slayt 7"
+    },
+    {
+      "id": "c07",
+      "type": "card",
+      "front": "Nucleus ↔ ganglion",
+      "back": "Cell body grubu: CNS içinde nucleus, dışında ganglion",
+      "source": "Slayt 8"
+    },
+    {
+      "id": "c08",
+      "type": "card",
+      "front": "Tract ↔ nerve",
+      "back": "Fiber demeti: CNS içinde tract/fasciculus, dışında nerve",
+      "source": "Slayt 8"
+    },
+    {
+      "id": "c09",
+      "type": "card",
+      "front": "Synapse'in 3 özelliği",
+      "back": "One-way conduction · facilitation · greater fatigability than the neuron",
+      "source": "Slayt 9"
+    },
+    {
+      "id": "c10",
+      "type": "card",
+      "front": "Oligodendrocyte ↔ Schwann cell",
+      "back": "Myelin: CNS'te oligodendrocyte, PNS'te Schwann cell",
+      "source": "Slayt 12, 16"
+    },
+    {
+      "id": "c11",
+      "type": "card",
+      "front": "Astrocytes",
+      "back": "En belirgin glia; blood vessels çevresinde; blood-brain barrier",
+      "source": "Slayt 12 · not"
+    },
+    {
+      "id": "c12",
+      "type": "card",
+      "front": "Nodes of Ranvier",
+      "back": "Myelin kesintileri; axolemma ECF'e açık; depolarization burada",
+      "source": "Slayt 17, 18"
+    }
+  ]
+}

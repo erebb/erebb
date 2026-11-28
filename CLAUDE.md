@@ -17,6 +17,14 @@ işin doğrudan yapılmasını istiyor ("İzin isteme benden direkt yap").
      kaynağı gösterir: slayt için "Slayt N · …"; ders kitabı/defter için "Plate 1.25 · …", "Table 15.6 · …",
      "Sayfa 30 · …" ya da exercise için "Exercise · <konu> N — <sorunun İngilizce aslı>".
    - Kalın, eğik, altı çizili ya da başında yıldız olan ifadeler önemlidir; önce onlar sorulur.
+   - **Rengi ya da yazı tipi farklı olan yazılar en önemli vurgudur** (kullanıcı: "üstüne düş, kesin sor").
+     Kırmızı, mavi, mor, yeşil, sarı vb. renkli ya da Comic Sans, Arial Black/Narrow, Times gibi farklı
+     fontlu her ifade **en az bir soruyla mutlaka sorulur** ve konu anlatımında **kalın** yazılır.
+     - pptx'te biçim XML'den çıkarılır (run'da `solidFill` rengi, `latin` yazı tipi, `b`/`i`/`u`; Symbol
+       fontundaki `\uf0ad` = ↑, `\uf0af` = ↓). Konuşmacı notları da okunur. pdf/görselde gözle bakılır.
+     - Üreteç bir **kapsama raporu** çıkarır: her renkli/farklı fontlu ifade, aynı slaytı kaynak gösteren
+       en az bir soruda geçmeli; açıkta kalan ifade olmadan içerik yüklenmez (yalnız her slaytta tekrar
+       eden başlıklar istisna).
    - **Exercise soruları** (defterdeki alıştırmalar) mutlaka MCQ olarak eklenir. Cevap boşluğu varsa plate ve
      tablolarla, yoksa standart veteriner anatomi bilgisiyle cevaplanır ve kullanıcıya bu söylenir.
    - Kullanıcı "konu anlatımı" isterse setin `lesson` alanına sınav odaklı anlatım yazılır.
@@ -47,7 +55,9 @@ işin doğrudan yapılmasını istiyor ("İzin isteme benden direkt yap").
   tekrar (SRS) ve ilerleme (doğru/yanlış sayıları) buna bağlı. Bir öğeyi düzeltirken id'sini değiştirme;
   yeni öğeye yeni id ver.
 - Dersler: Mikrobiyoloji (`mikrobiyoloji-hafta-*.json`), Topografik Anatomi (`topografik-*.json`: damarlar,
-  lenf, sinirler, govde, klinik).
+  lenf, sinirler, govde, klinik), Fizyoloji 1 (`fizyoloji-sinir-1..5.json`: Sinir Sistemi slaytları).
+- Üreteç betikleri depoda değil, oturumun scratchpad'inde (`gen/`); JSON dosyaları kaynaktır. Düzeltme
+  doğrudan JSON'da yapılabilir (id'ler korunur, manifest sürümü artırılır).
 - **Mikrobiyoloji 8. hafta tabloları önemli** (kullanıcı vurguladı): hafta-8'de "Tablolar" konu anlatımı
   (Slayt 4, 6, 8, 9, 10, 12×2, 14, 17, 18) ve tablo hücrelerinden sorular var. Yeni haftalarda da tablolar
   hem anlatıma hem sorulara eksiksiz geçirilir.

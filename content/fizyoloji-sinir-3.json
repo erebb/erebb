@@ -1,0 +1,885 @@
+{
+  "name": "Sinir Sistemi 3 · Otonom sinir sistemi",
+  "lesson": [
+    {
+      "title": "ANS nedir?",
+      "body": "- **Autonomic Nervous System (ANS)** = **involuntary, vegetative** ya da **visceral** nervous system.\n- Görevleri: normal organ işlevini korumak (**homeostasis**), çevre değişimine uyum (örn. vücut ısısı), strese yanıt (örn. heyecan).\n\n| Alt bölüm | İlişkili olduğu |\n|---|---|\n| **Sympathetic (SNS)** | Vücudun **strese** yanıtı |\n| **Parasympathetic (PSNS)** | Stres yokken **homeostatic** işlevler |\n| **Enteric (ENS)** | **Gastrointestinal** sistemin düzenlenmesi; çoğunlukla **kendi başına** çalışır, SNS ve PSNS ile modüle edilir |\n\n- ANS innervasyonu: **düz kas, kalp kası ve bezler**. Çoğu organ **hem sympathetic hem parasympathetic** innervasyon alır.\n- Somatic sistemden farkı **istemsiz** çalışmasıdır; somatic sistem ve ANS **bağımsız değil, birlikte** çalışır.",
+      "source": "Slayt 39, 40"
+    },
+    {
+      "title": "Sympathetic ↔ parasympathetic",
+      "body": "| | **Sympathetic** | **Parasympathetic** |\n|---|---|---|\n| Genel | Acil durumda vücudu strese hazırlar: **“fight, fright, or flight”** | Acil durum geçince vücudu sakinleştirir, normale döndürür: **resting and digestion** |\n| Metabolizma | **Catabolic** | **Anabolic** |\n| Uyanıklık | **Awakens** ↑ (RF eşiği düşer) | **Relaxation** |\n| Pupilla | ↑ (genişler) | ↓ (daralır) |\n| Kalp frekansı ve kan basıncı | ↑ | ↓ |\n| Solunum yolu çapı ve solunum frekansı | ↑ | ↓ |\n| İskelet kası kan akımı | ↑ | — |\n| Deri kan akımı | ↓ | — |\n| Gastrointestinal kan akımı / sindirim | Sindirim ↓ | GI kan akımı ↑ |\n| Plasma glucose ve serbest yağ asidi (enerji) | ↑ | — |\n| Glucose'un glycogen olarak depolanması | — | ↑ |\n\n! Slayt 43–44'teki ok listeleri sorulur. Sympathetic'te yalnız **sindirim** ve **deri kan akımı** azalır.",
+      "source": "Slayt 42–44"
+    },
+    {
+      "title": "Actions of autonomic stimulation (Slayt 45 tablosu)",
+      "body": "| Organ / yapı | Sympathetic action | Parasympathetic action |\n|---|---|---|\n| Iris kasları | **Radial** kas kasılır → pupilla **genişler** | **Circular** kas kasılır → pupilla **daralır** |\n| Kalp: S-A node | Kalp hızı artar | Kalp hızı azalır |\n| Kalp: A-V node | İletim hızı artar | İletim hızı azalır |\n| Kalp kası | Kasılma gücü artar | Kasılma gücü azalır |\n| Barsak kası ve salgıları | Azalır | Artar |\n| Bronchi | **Dilation** | **Constriction** |\n| Kidney | **Afferent arteriole constriction** | — |\n| Mesane duvarı | Yok | **Contraction** |\n| Mesane sphincter'ı | **Contraction** | **Relaxation** |\n| Penis | **Ejaculation** | **Erection** |\n| Piloerector kaslar | Contraction | Yok |\n| Salivary glands | **Mucus** salgısı | **Serous** salgı |\n\n! Ezber çiftleri: ejaculation ↔ erection, mucus ↔ serous, sphincter kasılır ↔ gevşer, bronş dilation ↔ constriction.",
+      "source": "Slayt 45 · tablo"
+    },
+    {
+      "title": "Merkezi ve periferik bileşenler",
+      "body": "- **Central component:** afferent neuron'lardan gelen verilerin (örn. kan basıncı, organ gerilmesi) ve kan sinyallerinin (sıcaklık, pH, glucose) işlenmesi.\n- Refleks entegrasyonu ve modülasyonu **spinal cord bölgelerinde ve beyindeki birçok yerde** olur; en iyi temsilcisi **hypothalamus** (mavi).\n- **Peripheral (efferent) components:** merkezi işlemden sonra refleks ayarlamaları yapar.\n\n| | Sympathetic | Parasympathetic |\n|---|---|---|\n| Hücrelerin kökeni | Spinal cord'un **thoracic ve lumbar** segmentlerinde **intermediolateral horn** | **Brain stem** ve spinal cord'un **sacral** segmentleri |\n| Adı | **Thoracolumbar** | **Craniosacral** |\n| Segmentler (Slayt 56) | **T1 – L3 (ya da L2)** | Cranial nerves **III, VII, IX, X** ve **S2–S4** |\n\n- İki sistemde de cells of origin'den effector'a **seri iki neuron**: birincisi **preganglionic**, ikincisi **postganglionic**; ikincinin hücreleri **ganglia**'dadır.\n\n| Neuron | Fiber tipi | Cell body | Axon |\n|---|---|---|---|\n| **Preganglionic** | **B type** | **CNS**'te | **Myelinli**; ANS ganglion'una gider |\n| **Postganglionic** | **C type** | **ANS ganglion**'unda | **Myelinsiz**; effector'a gider |\n\n### Slayt 41 şekli\n- ANS: preganglionic (myelinli) → ganglion'da **ACh** → postganglionic (myelinsiz) → effector'da **ACh ya da NE** (düz kas, kalp kası, bezler).\n- Somatic: spinal cord'dan **tek myelinli neuron** → skeletal muscle'da **ACh** → kasılma.",
+      "source": "Slayt 41, 46–48, 56"
+    },
+    {
+      "title": "Somatic ↔ autonomic sinirler",
+      "body": "| | **Somatic** | **Autonomic** |\n|---|---|---|\n| Sinir kesilirse | Kas işlevsizleşir ve **küçülür (atrophy)** | Organ ciddi etkilenmez; başta çalışmayabilir sonra düzelir; **atrophy yok** |\n| Inhibition | **Merkezde** | Hem **merkezde hem periferde** (n. vagus uyarılınca sinus nodülünde sinyal azalır, kalp durabilir) |\n| Axon yolu | Cell body CNS'te; axon **ganglion'da durmadan** doğrudan organa | Axon **mutlaka ganglion'da durur**; ganglion öncesi myelinli, sonrası myelinsiz |\n| Çap ve hız | **Kalın**, hızlı: **120 m/sn** | **İnce**, yavaş: **2–14 m/sn** |\n| Lifler | Somatic fibres; neurons ve plexus | Visceral fibres; neurons, **ganglia** ve plexus |\n| Kontrol | **Voluntary** | **Involuntary** |\n| Hedef | **Skeletal muscle** | **Smooth muscle, glands, heart muscle** |\n| Etki | Hareket başlatır | Hareket başlatır ya da baskılar |\n| Impulse frekansı | **Yüksek** | **Düşük** |\n\n! Slaytta somatic yeşil, autonomic mavi yazılmış; her satır sorulur.",
+      "source": "Slayt 49–51"
+    },
+    {
+      "title": "Sympathetic efferent dağılım",
+      "body": "- Preganglionic neuron thoracic ya da lumbar spinal nerve'ün **ventral root**'undan geçer, spinal nerve'e girer ve kısa sürede ayrılarak **sympathetic trunk**'ın bir **vertebral ganglion**'una girer. Sympathetic trunk vertebraların ventralinde, iki yanlı bir ganglion zinciridir.\n- Aynı segmentin ganglion'unda ya da uzaktaki başka bir vertebral ganglion'da synapse yapar. Hiç vertebral ganglion'da synapse yapmayıp trunk'ın ventralindeki **prevertebral (collateral) ganglia**'ya da gidebilir.\n\n| Prevertebral ganglion | Dağılım |\n|---|---|\n| **Cranial cervical** | Başın düz kasları ve bezleri |\n| **Middle cervical** | **Kalp ve akciğerler** |\n| **Cervicothoracic** | Boyun ve thorax arterleri |\n| **Celiac** | **Mide, karaciğer, pankreas, böbrek ve adrenal** |\n| **Cranial mesenteric** | **İnce bağırsak** ve üst colon |\n| **Caudal mesenteric** | **Alt colon** ve mesane boynu |\n\n- **Postganglionic neuron** ganglion'dan çıkıp effector'a genellikle **bir kan damarı boyunca** gider; ya da spinal nerve'e tekrar girip onun dallarıyla dağılır.\n- Slayt 54 (Figure 4-19, köpek): sympathetic outflow = **thoracolumbar** (düz çizgi), parasympathetic outflow = **craniosacral** (kesik çizgi: cranial ve sacral outflow). Ganglia: 1 cranial cervical, 2 middle cervical, 3 stellate, 4 celiac, 5 cranial mesenteric, 6 caudal mesenteric.",
+      "source": "Slayt 52–54"
+    },
+    {
+      "title": "Sympathectomy deneyleri",
+      "body": "- Sympathetic sistem organizmada birçok işi kontrol eder; ama deneysel olarak kaldırıldığında **hayvanlar yaşayabilir** (mavi).\n- **Kedilerde:** yavru atma ve ölü doğum sık, laktasyon düzgün olmaz; çevreye uyum sağlayamaz; düşük kan basıncı yükselemez, glucose düzeyi ayarlanamaz; köpekle karşılaşınca **piloerection olmaz** ve glucose yükselmez (yeşil).\n- **Köpekler** sympathetic sistem olmadan yaşamaya **daha dayanıklıdır**.",
+      "source": "Slayt 55"
+    },
+    {
+      "title": "Parasympathetic efferent dağılım",
+      "body": "| Cranial nerve | Parasympathetic nucleus |\n|---|---|\n| III oculomotor | **Edinger-Westphal nucleus** |\n| VII facial | **N. salivarius superior** |\n| IX glossopharyngeal | **N. salivarius inferior** |\n| X vagus | **Dorsal vagal nucleus**, **n. ambiguus** |\n\n- Preganglionic neuron'lar effector organın **yakınındaki** ganglia'ya gider. Bu yüzden **preganglionic uzun, postganglionic kısa** (mavi).\n- Parasympathetic ganglia'nın çoğu **mikroskobiktir** ve innerve ettiği dokunun bir parçasıdır.\n- Beyinden çıkan preganglionic fiber'lar dört cranial nerve ile dağılır: **III, VII, IX → baş bölgesi**; **X (vagus)** → thorax'ta **kalp ve akciğer**, abdominal organların neredeyse tamamı. Geniş dolaşımı yüzünden vagus'a **“vagabond nerve”** denir.\n- **Sacral** preganglionic fiber'lar sindirim kanalının **son kısmı** ve ürogenital sistemin çoğuna gider; **pelvic nerve** ile organ yakınındaki ganglia'ya ulaşır.\n- Slayt 57'de dört sinir “II, VII, IX or X” diye yazılmış, Slayt 56 ve 58'de “III, VII, IX, X”. Doğrusu **III**.",
+      "source": "Slayt 56–58"
+    },
+    {
+      "title": "Autonomic reflexes ve afferents",
+      "body": "- Otonom işlev **refleks aktivitesine** dayanır: **kan basıncı, kalp hızı**, sindirim ve ürogenital sistem aktivitesi.\n- Autonomic reflex: effector organdan CNS'e **afferent** duyusal iletim → **bilgi işleme** → effector'a **motor yanıt**.\n- **Autonomic afferents** sympathetic ya da parasympathetic diye **ayrılmaz**; çoğu SNS ve PSNS sinirleriyle CNS'e gider.\n- Afferent cell body'leri: **dorsal root ganglion** ve **cranial nuclei** (mavi).\n- Çoğu otonom işlev bilince ulaşmaz; ulaşan bilgi **normal** (mesane ya da rektum doluluğu) ya da **pathologic** (safra kesesi ağrısı, **angina pectoris**) olabilir.",
+      "source": "Slayt 59, 60"
+    }
+  ],
+  "items": [
+    {
+      "id": "q01",
+      "type": "mcq",
+      "question": "Autonomic Nervous System'in diğer adları arasında hangisi YOKTUR?",
+      "options": [
+        "Voluntary nervous system",
+        "Involuntary nervous system",
+        "Vegetative nervous system",
+        "Visceral nervous system"
+      ],
+      "answer": "Voluntary nervous system",
+      "explanation": "Slayt 39 (mavi başlık 'Autonomic Nervous System (ANS)'): the ANS, also known as the involuntary, vegetative, or visceral nervous system.",
+      "source": "Slayt 39 · ANS"
+    },
+    {
+      "id": "q02",
+      "type": "mcq",
+      "question": "ANS'nin alt bölümlerinden stres yokken homeostatic işlevlerle ilişkili olan hangisidir?",
+      "options": [
+        "Parasympathetic nervous system (PSNS)",
+        "Sympathetic nervous system (SNS)",
+        "Enteric nervous system (ENS)",
+        "Somatic nervous system"
+      ],
+      "answer": "Parasympathetic nervous system (PSNS)",
+      "explanation": "Slayt 39: SNS strese yanıt; PSNS 'homeostatic functions in the absence of stress'; ENS gastrointestinal düzenleme.",
+      "source": "Slayt 39 · ANS"
+    },
+    {
+      "id": "q03",
+      "type": "mcq",
+      "question": "Enteric nervous system (ENS) için hangisi doğrudur?",
+      "options": [
+        "GI sistemi düzenler; çoğunlukla kendi başına çalışır ama SNS ve PSNS ile modüle edilebilir",
+        "Yalnızca SNS'in kontrolünde çalışır",
+        "İskelet kaslarını kontrol eder",
+        "Strese yanıttan sorumludur"
+      ],
+      "answer": "GI sistemi düzenler; çoğunlukla kendi başına çalışır ama SNS ve PSNS ile modüle edilebilir",
+      "explanation": "Slayt 39: The ENS is associated with regulation of the gastrointestinal system; 'functions mostly by itself but can be modulated by both SNS and PSNS'.",
+      "source": "Slayt 39 · ENS"
+    },
+    {
+      "id": "q04",
+      "type": "mcq",
+      "question": "ANS innervasyonu ve somatic sistemle ilişkisi için hangisi doğrudur?",
+      "options": [
+        "Düz kas, kalp kası ve bezlere gider; çoğu organ çift innervasyon alır; somatic sistemle birlikte çalışır",
+        "Yalnızca iskelet kasına gider",
+        "Organların çoğu yalnız sympathetic innervasyon alır",
+        "Somatic sistemden tamamen bağımsız çalışır"
+      ],
+      "answer": "Düz kas, kalp kası ve bezlere gider; çoğu organ çift innervasyon alır; somatic sistemle birlikte çalışır",
+      "explanation": "Slayt 40: ANS innervation extends to smooth muscle, cardiac muscle, and glands; most organs receive both sympathetic and parasympathetic; somatic system ve ANS birlikte çalışır.",
+      "source": "Slayt 40 · ANS"
+    },
+    {
+      "id": "q05",
+      "type": "mcq",
+      "question": "“Fight, fright, or flight” reaksiyonu ve catabolic etki hangi sisteme aittir?",
+      "options": [
+        "Sympathetic",
+        "Parasympathetic",
+        "Enteric",
+        "Somatic"
+      ],
+      "answer": "Sympathetic",
+      "explanation": "Slayt 42 (Sympathetic kırmızı): vücudu acil durumda strese hazırlar; fight, fright, or flight; catabolic. Parasympathetic: resting and digestion, anabolic.",
+      "source": "Slayt 42 · sympathetic/parasympathetic"
+    },
+    {
+      "id": "q06",
+      "type": "mcq",
+      "question": "Parasympathetic sistem için hangisi doğrudur?",
+      "options": [
+        "Resting and digestion; anabolic",
+        "Fight or flight; catabolic",
+        "Plasma glucose'u artırır",
+        "Pupillayı genişletir"
+      ],
+      "answer": "Resting and digestion; anabolic",
+      "explanation": "Slayt 42 (Parasympathetic renkli): acil durum geçince vücudu sakinleştirir; resting and digestion; anabolic.",
+      "source": "Slayt 42 · parasympathetic"
+    },
+    {
+      "id": "q07",
+      "type": "mcq",
+      "question": "Sympathetic sistem (“Fight or Flight”) uyarıldığında hangisi AZALIR?",
+      "options": [
+        "Sindirim ve deri kan akımı",
+        "Pupilla çapı",
+        "İskelet kası kan akımı",
+        "Kalp frekansı ve kan basıncı"
+      ],
+      "answer": "Sindirim ve deri kan akımı",
+      "explanation": "Slayt 43: Sympathetic System: “Fight or Flight” — awakens ↑, pupilla ↑, skeletal muscle blood flow ↑, respiratory diameter/frequency ↑, heart frequency/BP ↑, plasma glucose ve FFA ↑; digestion ↓, blood flow to the skin ↓.",
+      "source": "Slayt 43 · sympathetic"
+    },
+    {
+      "id": "q08",
+      "type": "mcq",
+      "question": "Sympathetic uyarıda plasma glucose ve serbest yağ asitleri ne olur?",
+      "options": [
+        "Artar (enerji sağlanır)",
+        "Azalır",
+        "Değişmez",
+        "Glycogen olarak depolanır"
+      ],
+      "answer": "Artar (enerji sağlanır)",
+      "explanation": "Slayt 43: Level of plasma glucose and free fatty acid ↑ (energy). Glucose'un glycogen olarak depolanması parasympathetic etkidir (Slayt 44).",
+      "source": "Slayt 43 · sympathetic"
+    },
+    {
+      "id": "q09",
+      "type": "mcq",
+      "question": "Sympathetic sistemin uyanıklık (awakens) etkisi neyle açıklanır?",
+      "options": [
+        "RF (reticular formation) eşiğinin düşmesiyle",
+        "RF eşiğinin yükselmesiyle",
+        "Kalp hızının azalmasıyla",
+        "Glycogen depolanmasıyla"
+      ],
+      "answer": "RF (reticular formation) eşiğinin düşmesiyle",
+      "explanation": "Slayt 43: Awakens ↑ (threshold of RF decreases).",
+      "source": "Slayt 43 · sympathetic"
+    },
+    {
+      "id": "q10",
+      "type": "mcq",
+      "question": "Parasympathetic System uyarıldığında hangisi ARTAR?",
+      "options": [
+        "Gastrointestinal kan akımı ve glucose'un glycogen olarak depolanması",
+        "Pupilla çapı",
+        "Kalp frekansı",
+        "Solunum yolu çapı"
+      ],
+      "answer": "Gastrointestinal kan akımı ve glucose'un glycogen olarak depolanması",
+      "explanation": "Slayt 44: Parasympathetic System — relaxation; pupilla ↓, heart frequency/BP ↓, respiratory diameter/frequency ↓, blood flow to the GI system ↑, storage of glucose as glycogen ↑.",
+      "source": "Slayt 44 · parasympathetic"
+    },
+    {
+      "id": "q11",
+      "type": "mcq",
+      "question": "Pupillayı genişleten (dilates) iris kası ve sistem hangisidir?",
+      "options": [
+        "Radial muscle — sympathetic",
+        "Circular muscle — sympathetic",
+        "Radial muscle — parasympathetic",
+        "Circular muscle — parasympathetic"
+      ],
+      "answer": "Radial muscle — sympathetic",
+      "explanation": "Slayt 45: Muscles of iris — sympathetic: contraction of radial muscle (dilates pupil); parasympathetic: contraction of circular muscle (contracts pupil).",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "q12",
+      "type": "mcq",
+      "question": "Kalpte parasympathetic uyarının etkisi hangisidir?",
+      "options": [
+        "S-A node'da kalp hızı, A-V node'da iletim hızı ve kasılma gücü azalır",
+        "Kalp hızı artar",
+        "Yalnızca kasılma gücü artar",
+        "Etkisi yoktur"
+      ],
+      "answer": "S-A node'da kalp hızı, A-V node'da iletim hızı ve kasılma gücü azalır",
+      "explanation": "Slayt 45: Heart — parasympathetic: decrease in heart rate (S-A), decrease in conduction velocity (A-V), decrease in force of contraction. Sympathetic hepsini artırır.",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "q13",
+      "type": "mcq",
+      "question": "Bronchi'de sympathetic ve parasympathetic etkiler hangisidir?",
+      "options": [
+        "Sympathetic dilation, parasympathetic constriction",
+        "Sympathetic constriction, parasympathetic dilation",
+        "İkisi de dilation",
+        "İkisinin de etkisi yok"
+      ],
+      "answer": "Sympathetic dilation, parasympathetic constriction",
+      "explanation": "Slayt 45: Lungs/Bronchi — sympathetic dilation, parasympathetic constriction.",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "q14",
+      "type": "mcq",
+      "question": "Mesanede parasympathetic uyarının etkisi hangisidir?",
+      "options": [
+        "Mesane duvarı kasılır, sphincter gevşer",
+        "Duvar gevşer, sphincter kasılır",
+        "Duvar ve sphincter kasılır",
+        "Etkisi yoktur"
+      ],
+      "answer": "Mesane duvarı kasılır, sphincter gevşer",
+      "explanation": "Slayt 45: Urinary bladder — bladder wall: sympathetic none, parasympathetic contraction; sphincter: sympathetic contraction, parasympathetic relaxation.",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "q15",
+      "type": "mcq",
+      "question": "Penis ve salivary glands için sympathetic etkiler hangisidir?",
+      "options": [
+        "Ejaculation ve mucus salgısı",
+        "Erection ve serous salgı",
+        "Ejaculation ve serous salgı",
+        "Erection ve mucus salgısı"
+      ],
+      "answer": "Ejaculation ve mucus salgısı",
+      "explanation": "Slayt 45: Penis — sympathetic ejaculation, parasympathetic erection; salivary glands — sympathetic mucus secretion, parasympathetic serous secretion.",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "q16",
+      "type": "mcq",
+      "question": "Slayt 45 tablosuna göre hangisi yalnız sympathetic etkiyle olur (parasympathetic: none)?",
+      "options": [
+        "Piloerector kasların kasılması",
+        "Mesane duvarının kasılması",
+        "Barsak salgılarının artması",
+        "Pupillanın daralması"
+      ],
+      "answer": "Piloerector kasların kasılması",
+      "explanation": "Slayt 45: Piloerector muscles — sympathetic contraction, parasympathetic none. Mesane duvarı kasılması parasympathetic, barsak salgısı artışı parasympathetic, pupillanın daralması parasympathetic.",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "q17",
+      "type": "mcq",
+      "question": "Sympathetic uyarının barsaklar ve böbrek üzerindeki etkisi hangisidir?",
+      "options": [
+        "Barsak kası ve salgıları azalır; afferent arteriole daralır",
+        "Barsak kası ve salgıları artar; afferent arteriole genişler",
+        "Barsak etkilenmez; böbrekte renin azalır",
+        "Barsak kası kasılır; böbrek etkilenmez"
+      ],
+      "answer": "Barsak kası ve salgıları azalır; afferent arteriole daralır",
+      "explanation": "Slayt 45: Intestines muscle ve secretions — sympathetic decreased, parasympathetic increased; Kidney — sympathetic afferent arteriole constriction.",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "q18",
+      "type": "mcq",
+      "question": "ANS'de refleks entegrasyonu ve modülasyonu için merkezi işlem nerede olur ve en iyi temsilcisi hangisidir?",
+      "options": [
+        "Spinal cord bölgeleri ve beyindeki birçok yer; en iyi temsilcisi hypothalamus",
+        "Yalnız cerebellum",
+        "Yalnız dorsal root ganglion",
+        "Yalnız cerebral cortex motor area"
+      ],
+      "answer": "Spinal cord bölgeleri ve beyindeki birçok yer; en iyi temsilcisi hypothalamus",
+      "explanation": "Slayt 46 (mavi): the central processing for the reflex integration and modulation of body conditions by the ANS occurs in spinal cord sites and a number of brain locations; the latter is best represented by the hypothalamus.",
+      "source": "Slayt 46 · central components"
+    },
+    {
+      "id": "q19",
+      "type": "mcq",
+      "question": "Sympathetic sinirlerin cells of origin'i nerededir?",
+      "options": [
+        "Thoracic ve lumbar segmentlerin intermediolateral horn'unda",
+        "Brain stem ve sacral segmentlerde",
+        "Dorsal root ganglion'da",
+        "Cervical segmentlerin dorsal horn'unda"
+      ],
+      "answer": "Thoracic ve lumbar segmentlerin intermediolateral horn'unda",
+      "explanation": "Slayt 47 (mor): the cells of origin for the sympathetic nerves are located in the intermediolateral horn of the thoracic and lumbar segments of the spinal cord → thoracolumbar.",
+      "source": "Slayt 47 · peripheral components"
+    },
+    {
+      "id": "q20",
+      "type": "mcq",
+      "question": "Parasympathetic sistem kökenine göre nasıl adlandırılır?",
+      "options": [
+        "Craniosacral",
+        "Thoracolumbar",
+        "Cervicothoracic",
+        "Lumbosacral"
+      ],
+      "answer": "Craniosacral",
+      "explanation": "Slayt 47 (mor): parasympathetic hücreleri brain stem ve sacral segmentlerdedir; 'craniosacral for the parasympathetics, as opposed to thoracolumbar for the sympathetics'.",
+      "source": "Slayt 47 · craniosacral"
+    },
+    {
+      "id": "q21",
+      "type": "mcq",
+      "question": "Sympathetic ve parasympathetic yolda effector'a giden ikinci neuron'un adı ve hücrelerinin yeri hangisidir?",
+      "options": [
+        "Postganglionic; ganglia'da",
+        "Preganglionic; spinal cord'da",
+        "Postganglionic; spinal cord'da",
+        "Preganglionic; ganglia'da"
+      ],
+      "answer": "Postganglionic; ganglia'da",
+      "explanation": "Slayt 47: iki neuron seri; ilki preganglionic, ikincisi postganglionic; 'the cells of origin for the second neuron are located in ganglia'.",
+      "source": "Slayt 47 · pre/postganglionic"
+    },
+    {
+      "id": "q22",
+      "type": "mcq",
+      "question": "Preganglionic neuron için hangisi doğrudur?",
+      "options": [
+        "B type fiber; cell body CNS'te; axon myelinli",
+        "C type fiber; cell body ganglion'da; axon myelinsiz",
+        "B type fiber; cell body ganglion'da",
+        "C type fiber; axon myelinli"
+      ],
+      "answer": "B type fiber; cell body CNS'te; axon myelinli",
+      "explanation": "Slayt 48: Preganglionic (B type fibres) — cell bodies in CNS, myelinated axons go to the ganglion; Postganglionic (C type fibres) — cell bodies in ANS ganglia, unmyelinated axons.",
+      "source": "Slayt 48 · neurons"
+    },
+    {
+      "id": "q23",
+      "type": "mcq",
+      "question": "Slayt 41 şekline göre autonomic ganglion'da salınan neurotransmitter hangisidir?",
+      "options": [
+        "ACh",
+        "Norepinephrine",
+        "GABA",
+        "Glycine"
+      ],
+      "answer": "ACh",
+      "explanation": "Slayt 41 şekli: preganglionic (myelinli) neuron autonomic ganglion'da ACh salar; postganglionic (myelinsiz) neuron effector'da ACh ya da NE salar. Somatic motor neuron (myelinli) skeletal muscle'da ACh salar.",
+      "source": "Slayt 41 · şekil"
+    },
+    {
+      "id": "q24",
+      "type": "mcq",
+      "question": "Slayt 41 şekline göre somatic motor yol için hangisi doğrudur?",
+      "options": [
+        "Spinal cord'dan skeletal muscle'a tek myelinli neuron; ACh ile kasılma",
+        "İki neuron ve bir ganglion; NE salınır",
+        "Myelinsiz postganglionic neuron ile düz kasa gider",
+        "Effector'da ACh ya da NE salınır"
+      ],
+      "answer": "Spinal cord'dan skeletal muscle'a tek myelinli neuron; ACh ile kasılma",
+      "explanation": "Slayt 41 şekli: (b) Somatic nervous system — somatic motor neuron (myelinated) → ACh → skeletal muscle contraction.",
+      "source": "Slayt 41 · şekil"
+    },
+    {
+      "id": "q25",
+      "type": "mcq",
+      "question": "Bir somatic sinir kesilirse ne olur?",
+      "options": [
+        "İnnerve ettiği kas işlevsizleşir ve küçülür (atrophy)",
+        "Kas ciddi etkilenmez, atrophy olmaz",
+        "Kas daha güçlü kasılır",
+        "Yalnız salgı azalır"
+      ],
+      "answer": "İnnerve ettiği kas işlevsizleşir ve küçülür (atrophy)",
+      "explanation": "Slayt 49 (kırmızı 'Differences between Autonomic and Somatic nerves'; yeşil): somatic sinir kesilirse kas inefficient ve smaller olur. (Mavi) autonomic kesilirse organ ciddi etkilenmez, atrophy olmaz.",
+      "source": "Slayt 49 · somatic/autonomic"
+    },
+    {
+      "id": "q26",
+      "type": "mcq",
+      "question": "Autonomic sinir kesildiğinde organ için hangisi doğrudur?",
+      "options": [
+        "Ciddi etkilenmez; başta çalışmayabilir, sonra düzgün çalışır; atrophy olmaz",
+        "Kalıcı olarak çalışmaz ve atrophy olur",
+        "Hemen kasılır",
+        "Organ ölür"
+      ],
+      "answer": "Ciddi etkilenmez; başta çalışmayabilir, sonra düzgün çalışır; atrophy olmaz",
+      "explanation": "Slayt 49 (mavi): 'In the case of cutting or damaging an autonomic nerve, the organ … is not affected seriously … There is no any atrophy in the organ.'",
+      "source": "Slayt 49 · autonomic"
+    },
+    {
+      "id": "q27",
+      "type": "mcq",
+      "question": "Inhibition'ın yeri somatic ve autonomic sinirlerde nasıldır?",
+      "options": [
+        "Somatic: merkezde; autonomic: hem merkezde hem periferde",
+        "Somatic: periferde; autonomic: merkezde",
+        "İkisinde de yalnız merkezde",
+        "İkisinde de yalnız periferde"
+      ],
+      "answer": "Somatic: merkezde; autonomic: hem merkezde hem periferde",
+      "explanation": "Slayt 49: (yeşil) 'In somatic nerve inhibition happens in the centre.' (mavi) 'In autonomic nerve inhibition happens in both centre and periphery.'",
+      "source": "Slayt 49 · inhibition"
+    },
+    {
+      "id": "q28",
+      "type": "mcq",
+      "question": "N. vagus uyarılınca kalpte ne olabilir?",
+      "options": [
+        "Sinus nodülünde sinyal üretimi azalır ve kalp sonunda durabilir",
+        "Kalp hızı artar",
+        "Kasılma gücü artar",
+        "Hiçbir etki olmaz"
+      ],
+      "answer": "Sinus nodülünde sinyal üretimi azalır ve kalp sonunda durabilir",
+      "explanation": "Slayt 49 (mavi): 'In case of stimulating n.vagus, the ability of signal producing in sinus nodule getting less and the heart may stop at the end.'",
+      "source": "Slayt 49 · vagus"
+    },
+    {
+      "id": "q29",
+      "type": "mcq",
+      "question": "Somatic ve autonomic sinirlerde axon yolu için hangisi doğrudur?",
+      "options": [
+        "Somatic axon ganglion'da durmadan organa gider; autonomic axon mutlaka ganglion'da durur",
+        "Somatic axon ganglion'da durur; autonomic durmaz",
+        "İkisi de ganglion'da durur",
+        "İkisi de ganglion'da durmaz"
+      ],
+      "answer": "Somatic axon ganglion'da durmadan organa gider; autonomic axon mutlaka ganglion'da durur",
+      "explanation": "Slayt 50: (yeşil) somatic cell body CNS'te, axon ganglion'da durmadan organa gider; (mavi) autonomic axon definitely stop in ganglia; ganglion öncesi myelinli, sonrası myelinsiz.",
+      "source": "Slayt 50 · somatic/autonomic"
+    },
+    {
+      "id": "q30",
+      "type": "mcq",
+      "question": "Slayt 50'ye göre somatic ve autonomic sinirlerde iletim hızları hangisidir?",
+      "options": [
+        "Somatic ~120 m/sn; autonomic 2–14 m/sn",
+        "Somatic 2–14 m/sn; autonomic ~120 m/sn",
+        "İkisi de ~120 m/sn",
+        "Somatic ~0,5 m/sn; autonomic ~100 m/sn"
+      ],
+      "answer": "Somatic ~120 m/sn; autonomic 2–14 m/sn",
+      "explanation": "Slayt 50: (yeşil) somatic sinirler kalın, sinyal hızı 120 m/sec; (mavi) autonomic sinirler ince, 2–14 m/sec.",
+      "source": "Slayt 50 · hız"
+    },
+    {
+      "id": "q31",
+      "type": "mcq",
+      "question": "Slayt 51 tablosuna göre autonomic sistem için hangisi YANLIŞTIR?",
+      "options": [
+        "Impulse frekansı yüksektir",
+        "Involuntary kontrol",
+        "Düz kas, bezler ve kalp kasını kontrol eder",
+        "Neurons, ganglia ve plexus içerir"
+      ],
+      "answer": "Impulse frekansı yüksektir",
+      "explanation": "Slayt 51: Somatic — voluntary, skeletal muscle, high impulse frequency; Otonom — visceral fibres, neurons-ganglia-plexus, involuntary, smooth muscle-glands-heart, induces or suppresses, LOW impulse frequency.",
+      "source": "Slayt 51 · tablo"
+    },
+    {
+      "id": "q32",
+      "type": "mcq",
+      "question": "Sympathetic trunk nedir?",
+      "options": [
+        "Vertebraların ventralinde, iki yanlı vertebral ganglion zinciri",
+        "Spinal cord içindeki bir tract",
+        "Brain stem'deki bir nucleus",
+        "Mesane duvarındaki mikroskobik ganglia"
+      ],
+      "answer": "Vertebraların ventralinde, iki yanlı vertebral ganglion zinciri",
+      "explanation": "Slayt 52: preganglionic neuron 'a vertebral ganglion of the sympathetic trunk, a bilateral chain of ganglia ventral to the vertebrae' içine girer.",
+      "source": "Slayt 52 · sympathetic efferent"
+    },
+    {
+      "id": "q33",
+      "type": "mcq",
+      "question": "Vertebral ganglion'da synapse yapmayıp sympathetic trunk'ın ventralindeki çift ganglia'ya giden preganglionic fiber'ların ulaştığı ganglia hangisidir?",
+      "options": [
+        "Prevertebral (collateral) ganglia",
+        "Dorsal root ganglia",
+        "Parasympathetic terminal ganglia",
+        "Basal nuclei"
+      ],
+      "answer": "Prevertebral (collateral) ganglia",
+      "explanation": "Slayt 52: synapse vertebral ganglion'da olmayabilir; fiber 'paired ganglia that are ventral to the sympathetic trunk; these are called prevertebral or collateral ganglia'.",
+      "source": "Slayt 52 · prevertebral"
+    },
+    {
+      "id": "q34",
+      "type": "mcq",
+      "question": "Mide, karaciğer, pankreas, böbrek ve adrenal'e dağılan prevertebral ganglion hangisidir?",
+      "options": [
+        "Celiac ganglia",
+        "Cranial mesenteric ganglion",
+        "Middle cervical ganglion",
+        "Caudal mesenteric ganglia"
+      ],
+      "answer": "Celiac ganglia",
+      "explanation": "Slayt 53: the celiac ganglia — stomach, liver, pancreas, kidney and adrenal.",
+      "source": "Slayt 53 · prevertebral ganglia"
+    },
+    {
+      "id": "q35",
+      "type": "mcq",
+      "question": "Kalp ve akciğerlere dağılan ganglion hangisidir?",
+      "options": [
+        "Middle cervical ganglion",
+        "Cranial cervical ganglion",
+        "Celiac ganglia",
+        "Cranial mesenteric ganglion"
+      ],
+      "answer": "Middle cervical ganglion",
+      "explanation": "Slayt 53: the middle cervical ganglion — heart and lungs; cranial cervical — başın düz kasları ve bezleri.",
+      "source": "Slayt 53 · prevertebral ganglia"
+    },
+    {
+      "id": "q36",
+      "type": "mcq",
+      "question": "Prevertebral ganglion — dağılım eşleştirmelerinden hangisi YANLIŞTIR?",
+      "options": [
+        "Caudal mesenteric — ince bağırsak ve üst colon",
+        "Cranial mesenteric — ince bağırsak ve üst colon",
+        "Caudal mesenteric — alt colon ve mesane boynu",
+        "Cervicothoracic — boyun ve thorax arterleri"
+      ],
+      "answer": "Caudal mesenteric — ince bağırsak ve üst colon",
+      "explanation": "Slayt 53: cranial mesenteric ganglion small intestine and upper colon; caudal mesenteric ganglia lower colon and neck of bladder; servikotorasic ganglion arteria in the neck and thorax.",
+      "source": "Slayt 53 · prevertebral ganglia"
+    },
+    {
+      "id": "q37",
+      "type": "mcq",
+      "question": "Sympathetic postganglionic neuron effector organa genellikle nasıl ulaşır?",
+      "options": [
+        "O organa giden bir kan damarı boyunca",
+        "Doğrudan ventral root ile",
+        "Cranial nerves içinde",
+        "Pelvic nerve ile"
+      ],
+      "answer": "O organa giden bir kan damarı boyunca",
+      "explanation": "Slayt 53: the postganglionic neuron leaves the vertebral or prevertebral ganglion and proceeds to the effector organ, usually by way of a blood vessel; spinal nerve'e tekrar da girebilir.",
+      "source": "Slayt 53 · postganglionic"
+    },
+    {
+      "id": "q38",
+      "type": "mcq",
+      "question": "Slayt 54'teki Figure 4-19'da düz (solid) çizgiler neyi gösterir?",
+      "options": [
+        "Sympathetic outflow (thoracolumbar)",
+        "Parasympathetic outflow (craniosacral)",
+        "Somatic motor sinirleri",
+        "Afferent sinirleri"
+      ],
+      "answer": "Sympathetic outflow (thoracolumbar)",
+      "explanation": "Slayt 54 (Figure 4-19, köpek): sympathetic outflow (thoracolumbar) düz, parasympathetic outflow (craniosacral) kesik çizgiyle; numaralar sympathetic ganglia: 1 cranial cervical, 2 middle cervical, 3 stellate, 4 celiac, 5 cranial mesenteric, 6 caudal mesenteric.",
+      "source": "Slayt 54 · şekil"
+    },
+    {
+      "id": "q39",
+      "type": "mcq",
+      "question": "Sympathetic sistem deneysel olarak kaldırıldığında ne olur?",
+      "options": [
+        "Hayvanlar yaşayabilir, ama kedilerde yavru atma, ölü doğum ve uyum sorunları görülür",
+        "Hayvanlar hemen ölür",
+        "Hiçbir değişiklik olmaz",
+        "Yalnız köpeklerde ölüm görülür"
+      ],
+      "answer": "Hayvanlar yaşayabilir, ama kedilerde yavru atma, ölü doğum ve uyum sorunları görülür",
+      "explanation": "Slayt 55 (mavi): sympathetic sistem deneysel olarak kaldırılınca animals can survive; (yeşil) kedilerde aborts ve dead births, laktasyon bozukluğu, çevreye uyum sağlayamama.",
+      "source": "Slayt 55 · sympathectomy"
+    },
+    {
+      "id": "q40",
+      "type": "mcq",
+      "question": "Sympathectomy yapılmış kedi köpekle karşılaşınca ne görülür?",
+      "options": [
+        "Piloerection olmaz ve glucose yükselmez",
+        "Piloerection ve glucose artışı abartılı olur",
+        "Kan basıncı hızla yükselir",
+        "Hemen saldırır"
+      ],
+      "answer": "Piloerection olmaz ve glucose yükselmez",
+      "explanation": "Slayt 55 (yeşil): 'In case of facing with the dog, they did not have piloerection and their glucose level was not increased.' Köpekler sympathetic sistem olmadan yaşamaya daha dayanıklıdır.",
+      "source": "Slayt 55 · sympathectomy"
+    },
+    {
+      "id": "q41",
+      "type": "mcq",
+      "question": "Slayt 56'ya göre sympathetic sistemin spinal cord segmentleri hangisidir?",
+      "options": [
+        "T1 – L3 (ya da L2)",
+        "S2 – S4",
+        "C1 – T1",
+        "L4 – S1"
+      ],
+      "answer": "T1 – L3 (ya da L2)",
+      "explanation": "Slayt 56 (farklı fontla): Sympathetic nerve system toraco-lumbar system — T1 – L3 (or L2) segments; Parasympathetic = cranio-sacral system — III, VII, IX ve X cranial nerves ve S2–S4.",
+      "source": "Slayt 56 · segmentler"
+    },
+    {
+      "id": "q42",
+      "type": "mcq",
+      "question": "Parasympathetic sistemin sacral segmentleri hangisidir?",
+      "options": [
+        "S2 – S4",
+        "T1 – L3",
+        "S1 – S2",
+        "L1 – L3"
+      ],
+      "answer": "S2 – S4",
+      "explanation": "Slayt 56: Parasympathetic nerve system = cranio-sacral system; III, VII, IX and X cranial nerves and S2-S4 segments.",
+      "source": "Slayt 56 · segmentler"
+    },
+    {
+      "id": "q43",
+      "type": "mcq",
+      "question": "Oculomotor nerve (III)'ün parasympathetic nucleus'u hangisidir?",
+      "options": [
+        "Edinger-Westphal nucleus",
+        "N. salivarius superior",
+        "N. salivarius inferior",
+        "Dorsal vagal nucleus"
+      ],
+      "answer": "Edinger-Westphal nucleus",
+      "explanation": "Slayt 56: III = oculomotor nerve: Edinger-Westphal nucleus; VII = n. salivarius sup.; IX = n. salivarius inf.; X = dorsal vagal nucleus, n. ambiguus.",
+      "source": "Slayt 56 · nuclei"
+    },
+    {
+      "id": "q44",
+      "type": "mcq",
+      "question": "Cranial nerve — parasympathetic nucleus eşleştirmelerinden hangisi YANLIŞTIR?",
+      "options": [
+        "IX glossopharyngeal — n. salivarius superior",
+        "VII facial — n. salivarius superior",
+        "X vagus — dorsal vagal nucleus, n. ambiguus",
+        "III oculomotor — Edinger-Westphal nucleus"
+      ],
+      "answer": "IX glossopharyngeal — n. salivarius superior",
+      "explanation": "Slayt 56: IX glossopharyngeal n. salivarius INFERIOR'a, VII facial n. salivarius superior'a aittir.",
+      "source": "Slayt 56 · nuclei"
+    },
+    {
+      "id": "q45",
+      "type": "mcq",
+      "question": "Parasympathetic sistemde preganglionic ve postganglionic fiber uzunlukları nasıldır?",
+      "options": [
+        "Preganglionic uzun, postganglionic kısa",
+        "Preganglionic kısa, postganglionic uzun",
+        "İkisi de eşit uzunlukta",
+        "İkisi de çok kısa"
+      ],
+      "answer": "Preganglionic uzun, postganglionic kısa",
+      "explanation": "Slayt 57 (mavi): preganglionic neuron'lar effector organ yakınındaki ganglia'ya gider; 'Accordingly, the preganglionic neuron are relatively longer and the postganglionic fibers are relatively shorter.'",
+      "source": "Slayt 57 · parasympathetic"
+    },
+    {
+      "id": "q46",
+      "type": "mcq",
+      "question": "Parasympathetic ganglia için hangisi doğrudur?",
+      "options": [
+        "Çoğu mikroskobiktir ve innerve ettiği dokunun bir parçasıdır",
+        "Vertebraların ventralinde bir zincir oluşturur",
+        "Celiac ve mesenteric ganglia'dır",
+        "Spinal cord içindedir"
+      ],
+      "answer": "Çoğu mikroskobiktir ve innerve ettiği dokunun bir parçasıdır",
+      "explanation": "Slayt 57: 'Most of the parasympathetic ganglia are microscopic and are an intimate component of the tissue they innervate.'",
+      "source": "Slayt 57 · parasympathetic"
+    },
+    {
+      "id": "q47",
+      "type": "mcq",
+      "question": "Beyinden çıkan parasympathetic preganglionic fiber'lar hangi dört cranial nerve ile dağılır?",
+      "options": [
+        "III, VII, IX ve X",
+        "II, V, VII ve X",
+        "I, II, VIII ve X",
+        "IV, VI, XI ve XII"
+      ],
+      "answer": "III, VII, IX ve X",
+      "explanation": "Slayt 56 ve 58 (mavi): III, VII and IX baş bölgesine, X (the vagus nerve) kalp, akciğer ve abdominal organlara. (Slayt 57'de 'II' yazılmış; diğer iki slayt III der.)",
+      "source": "Slayt 56, 57, 58 · cranial parasympathetic"
+    },
+    {
+      "id": "q48",
+      "type": "mcq",
+      "question": "Kalp, akciğerler ve abdominal organların neredeyse tamamına parasympathetic lif veren ve 'vagabond nerve' de denen sinir hangisidir?",
+      "options": [
+        "X — vagus nerve",
+        "VII — facial",
+        "IX — glossopharyngeal",
+        "III — oculomotor"
+      ],
+      "answer": "X — vagus nerve",
+      "explanation": "Slayt 58 (mavi): cranial nerve X (the vagus nerve) supplies the heart and lungs … nearly all of the abdominal viscera; 'sometimes been called the vagabond nerve because of its extensive wanderings'.",
+      "source": "Slayt 58 · vagus"
+    },
+    {
+      "id": "q49",
+      "type": "mcq",
+      "question": "Sacral parasympathetic preganglionic fiber'lar nereye gider ve hangi sinirle?",
+      "options": [
+        "Sindirim kanalının son kısmı ve ürogenital sistemin çoğu; pelvic nerve ile",
+        "Kalp ve akciğer; vagus ile",
+        "Baş bölgesi; facial nerve ile",
+        "İskelet kasları; ventral root ile"
+      ],
+      "answer": "Sindirim kanalının son kısmı ve ürogenital sistemin çoğu; pelvic nerve ile",
+      "explanation": "Slayt 58: sacral parasympathetic fibers 'supply the last part of the digestive tract and most of the urogenital system' ve 'the ganglia near the effector organs supplied by the pelvic nerve'.",
+      "source": "Slayt 58 · sacral"
+    },
+    {
+      "id": "q50",
+      "type": "mcq",
+      "question": "Slayt 59'a göre otonom işlev neye dayanır?",
+      "options": [
+        "Refleks aktivitesine; kan basıncı, kalp hızı, sindirim ve ürogenital sistemi kontrol eden reflekslere",
+        "Yalnızca istemli komutlara",
+        "Yalnızca hormonlara",
+        "Cerebral cortex'in bilinçli kararlarına"
+      ],
+      "answer": "Refleks aktivitesine; kan basıncı, kalp hızı, sindirim ve ürogenital sistemi kontrol eden reflekslere",
+      "explanation": "Slayt 59 (lacivert): 'Autonomic function is based on reflex activity, and these reflexes control such functions as blood pressure, heart rate, and the activity of the digestive and urogenital systems.'",
+      "source": "Slayt 59 · autonomic reflexes"
+    },
+    {
+      "id": "q51",
+      "type": "mcq",
+      "question": "Autonomic reflex'in bileşenleri arasında hangisi YOKTUR?",
+      "options": [
+        "İstemli kortikal komut",
+        "Effector organdan CNS'e afferent duyusal iletim",
+        "Bilgi işleme",
+        "Effector organa motor yanıt"
+      ],
+      "answer": "İstemli kortikal komut",
+      "explanation": "Slayt 59: autonomic reflexes involves; afferent transmission of sensory information from effector organs to the CNS, information processing, and return of a motor response to the effector organs.",
+      "source": "Slayt 59 · autonomic reflexes"
+    },
+    {
+      "id": "q52",
+      "type": "mcq",
+      "question": "Autonomic afferent'lerin cell body'leri nerededir?",
+      "options": [
+        "Dorsal root ganglion ve cranial nuclei'de",
+        "Sympathetic trunk'ta",
+        "Prevertebral ganglia'da",
+        "Effector organın içinde"
+      ],
+      "answer": "Dorsal root ganglion ve cranial nuclei'de",
+      "explanation": "Slayt 60 (mavi): 'Their cell bodies are in Dorsal root ganglion and cranial nuclei.' Autonomic afferents sympathetic ya da parasympathetic diye ayrılmaz.",
+      "source": "Slayt 60 · afferents"
+    },
+    {
+      "id": "q53",
+      "type": "mcq",
+      "question": "Bilince ulaşan otonom duyusal bilgiye 'pathologic' örnek hangisidir?",
+      "options": [
+        "Angina pectoris ya da safra kesesi ağrısı",
+        "Mesane doluluğu hissi",
+        "Rektum doluluğu hissi",
+        "Açlık hissi"
+      ],
+      "answer": "Angina pectoris ya da safra kesesi ağrısı",
+      "explanation": "Slayt 60 (mavi, kalın-eğik): 'This may be normal or pathologic. Normal would include feelings of fullness of the bladder or rectum and pathologic might include gallbladder pain or angina pectoris.' Çoğu otonom işlev bilince ulaşmaz.",
+      "source": "Slayt 60 · afferents"
+    },
+    {
+      "id": "c01",
+      "type": "card",
+      "front": "ANS'nin üç alt bölümü",
+      "back": "SNS: stres · PSNS: stres yokken homeostasis · ENS: GI, çoğunlukla kendi başına",
+      "source": "Slayt 39"
+    },
+    {
+      "id": "c02",
+      "type": "card",
+      "front": "Sympathetic ↔ parasympathetic",
+      "back": "Fight, fright, flight, catabolic ↔ rest and digest, anabolic",
+      "source": "Slayt 42"
+    },
+    {
+      "id": "c03",
+      "type": "card",
+      "front": "Sympathetic'te azalanlar",
+      "back": "Sindirim ve deri kan akımı (diğerleri ↑)",
+      "source": "Slayt 43"
+    },
+    {
+      "id": "c04",
+      "type": "card",
+      "front": "Pupilla",
+      "back": "Sympathetic: radial kas → genişler · parasympathetic: circular kas → daralır",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "c05",
+      "type": "card",
+      "front": "Penis · salivary glands",
+      "back": "Ejaculation ↔ erection · mucus ↔ serous (sympathetic ↔ parasympathetic)",
+      "source": "Slayt 45 · actions of autonomic stimulation"
+    },
+    {
+      "id": "c06",
+      "type": "card",
+      "front": "Thoracolumbar ↔ craniosacral",
+      "back": "Sympathetic: T1–L3 (L2), intermediolateral horn · parasympathetic: III, VII, IX, X + S2–S4",
+      "source": "Slayt 47, 56"
+    },
+    {
+      "id": "c07",
+      "type": "card",
+      "front": "Pre ↔ postganglionic",
+      "back": "B fiber, CNS'te cell body, myelinli ↔ C fiber, ganglion'da cell body, myelinsiz",
+      "source": "Slayt 48"
+    },
+    {
+      "id": "c08",
+      "type": "card",
+      "front": "Somatic ↔ autonomic hız",
+      "back": "120 m/sn (kalın) ↔ 2–14 m/sn (ince)",
+      "source": "Slayt 50"
+    },
+    {
+      "id": "c09",
+      "type": "card",
+      "front": "Somatic sinir kesilirse",
+      "back": "Kas işlevsiz ve atrofik · autonomic'te organ ciddi etkilenmez",
+      "source": "Slayt 49"
+    },
+    {
+      "id": "c10",
+      "type": "card",
+      "front": "Celiac ganglia",
+      "back": "Mide, karaciğer, pankreas, böbrek, adrenal",
+      "source": "Slayt 53"
+    },
+    {
+      "id": "c11",
+      "type": "card",
+      "front": "Parasympathetic nuclei",
+      "back": "III Edinger-Westphal · VII n. salivarius sup. · IX n. salivarius inf. · X dorsal vagal, n. ambiguus",
+      "source": "Slayt 56"
+    },
+    {
+      "id": "c12",
+      "type": "card",
+      "front": "Parasympathetic fiber uzunluğu",
+      "back": "Preganglionic uzun, postganglionic kısa; ganglia organ içinde",
+      "source": "Slayt 57"
+    },
+    {
+      "id": "c13",
+      "type": "card",
+      "front": "Autonomic afferents",
+      "back": "Symp/parasymp diye ayrılmaz; cell body: dorsal root ganglion, cranial nuclei",
+      "source": "Slayt 60"
+    }
+  ]
+}

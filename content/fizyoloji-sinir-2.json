@@ -1,0 +1,876 @@
+{
+  "name": "Sinir Sistemi 2 · CNS ve PNS",
+  "lesson": [
+    {
+      "title": "Sinir sisteminin bölümleri",
+      "body": "Slayt 19 şeması (renkli kutular):\n\n- **Central Nervous System (CNS)** → **Brain** + **Spinal Cord**\n- **Peripheral Nervous System (PNS)** → **Sensory Neurons** + **Motor Neurons**\n  - Motor neurons → **Somatic Nervous System** ve **Autonomic Nervous System**\n  - Autonomic → **Sympathetic** ve **Parasympathetic**\n\n- CNS **brain ve spinal cord**'dan oluşur (Slayt 20, mor altı çizili). Şekilde brain'in parçaları: **cerebrum**, **cerebellum**, **medulla oblongata**.\n- CNS yalnız iletim yapmaz; beyin bilgisayar benzeri işlevler de sağlar: **memory**, problem çözmek için **central processing unit**, **input-output** (duyusal girdiden doğan duyumlar).\n- **Brain** = **cerebrum** (çift cerebral hemispheres) + **cerebellum** + **brain stem**.\n- Slayt 23 şekli: cerebral hemisphere, thalamus, hypothalamus, pituitary, midbrain, pons, medulla, cerebellum, spinal cord.\n\n! Şema sorulur: Sympathetic ve Parasympathetic → Autonomic'in, Somatic ve Autonomic → PNS motor neuron'larının alt bölümüdür.",
+      "source": "Slayt 19–23"
+    },
+    {
+      "title": "Cerebral hemispheres ve cerebral cortex",
+      "body": "**Cerebral hemispheres:** dışta gray matter = **cerebral cortex**; ortada white matter = **medullary substance** (nerve fiber'lar); ve **basal nuclei**.\n\nCerebral cortex'in özellikleri:\n- Evrimde **geç kazanılmış**\n- **Consciousness** ile sonuçlanan reaksiyonlarla ilgili\n- En yüksek tip nervous correlation'ın yeri\n- Yüksek **educability** (özellikle insanda)\n- **Motor area**'sı var:\n  - Bir hemisferdeki motor area impulse'ları vücudun **karşı (contralateral)** tarafında kas hareketi yapar.\n  - Motor area'nın büyüklüğü, hayvanın yapabildiği skeletal muscle hareketlerinin sayısı ve karmaşıklığıyla **doğru orantılı**.\n- Sensory fiber'ların boşaldığı **sensory areas** içerir.\n\n! Slaytta mavi: motor area → **contralateral**; motor area büyüklüğü ↔ hareket karmaşıklığı **doğrudan ilişkili**.",
+      "source": "Slayt 24"
+    },
+    {
+      "title": "Sensory areas ve white matter",
+      "body": "| Sensory area | Ne alır? |\n|---|---|\n| **Somesthetic (body sense) area** | Deriden dokunma, sıcak, soğuk, ağrı lokalizasyonu; **tat**; kas, tendon ve eklemlerden impulse |\n| **Visual area** | Görme (sight) |\n| **Auditory area** | İşitme (hearing) |\n| **Olfactory area** | Koku (smell) |\n\n**White matter** cortex'in altındaki **myelinli** nerve fiber'lardır:\n\n| Fiber | Bağladığı |\n|---|---|\n| **Association fibers** | Cortex'in farklı bölümleri |\n| **Commissural fibers** | **İki hemisfer** |\n| **Projection fibers** | Cortex ↔ beynin diğer bölümleri ve spinal cord |",
+      "source": "Slayt 25"
+    },
+    {
+      "title": "Basal nuclei",
+      "body": "- Cerebral hemisferlerin **derininde**; **yürüme, koşma** gibi karmaşık **semivoluntary** hareketleri kontrol eden büyük neuron havuzları.\n- **Kuşlarda** cerebral cortex zayıf, basal nuclei çok gelişmiş → basal nuclei **istemli hareketler dahil** hemen tüm motor işlevleri yapar.\n- **Kedide** (ve daha az köpekte) cortex'in çıkarılması birçok ince motor işlevi engeller, ama basal nuclei sayesinde **yürüme, yeme, dövüşme, cinsel aktivite** sürer.",
+      "source": "Slayt 26"
+    },
+    {
+      "title": "Cerebellum",
+      "body": "- **Cerebellum** cortex gibi **consciousness ya da sensation ile ilgili değildir**; inertia ve momentum'un bozucu etkisini önlemek için **otomatik ayarlamalar** yapar.\n- Impulse aldığı yerler:\n  1. **Proprioceptive receptors** (tüm eklemler, kaslar, basınç alanları; örn. foot pads)\n  2. İç kulağın **equilibrium apparatus**'u\n  3. **Visual cortex**\n  4. Kaslara giden tüm motor impulse'lar için doğrudan **motor cortex**\n- Cerebral motor area **contralateral**, cerebellum'un bir yarısı **aynı taraf (ipsilateral)** üzerinde etkili.\n- Cerebellum vücudun anlık fiziksel durumu için bir **\"collecting house\"**'tur.\n\n! Cortex = contralateral, **cerebellum = ipsilateral**.",
+      "source": "Slayt 27"
+    },
+    {
+      "title": "Brain stem ve interbrain",
+      "body": "- **Brain stem** (kraniyalden kaudale): **interbrain → midbrain → pons → medulla oblongata**.\n- Cerebral hemispheres ve cerebellum brain stem'den çıkar.\n- Brain stem, **optic, olfactory ve acoustic** (special nerves) dışındaki **tüm cranial nerves**'ün çıkış yeridir; bu üçünün hücreleri kafatası dışındadır.\n\nInterbrain (aşağıdan yukarıya):\n\n| Bölüm | Özellik |\n|---|---|\n| **Hypothalamus** | **Hypophysis (pituitary)** buradadır; sensing ve neurosecretory işlev; **ANS entegrasyonunda başlıca rol**: ön ve orta bölüm **parasympathetic**, **posterior** bölüm **sympathetic** bileşenler |\n| **Thalamus** | Çok sayıda nucleus; gerçek bir **relay center** — vücudun her yerinden impulse'ları cerebral cortex'e aktarır |\n| **Epithalamus** | **Olfactory correlation center** ve **pineal gland** (gonadal hormonlar ve bazı günlük ritimler) |",
+      "source": "Slayt 28, 29"
+    },
+    {
+      "title": "Spinal cord",
+      "body": "- **Spinal cord** medulla'nın kaudal devamıdır.\n- **Dorsal roots** ile sensory afferent fiber'ları alır, **ventral roots**'a efferent motor fiber verir.\n- Merkezde **gray matter**: büyük H harfine benzer (**gray H**), çoğunlukla nerve cell body'leri.\n- Çevrede **white matter**: myelin yüzünden beyaz; birçok ayrı **tract** içerir. Tract'lar brain stem ve üst merkezleri spinal nerves'e bağlar.\n\n### Slayt 32 (köpek spinal cord kesiti)\n- Gray matter'da: 1) sensory neuron cell body'leri, 2) **somatic motor neurons**, 3) **autonomic motor neurons** (mavi).\n\n| Gray H bölgesi | Hücreler |\n|---|---|\n| **Dorsal horns** | Beyne ya da spinal cord'un diğer kısımlarına giden **sensory** impulse'ların hücreleri |\n| **Ventral horns** | Spinal nerves'e giden **motor** impulse'ların hücreleri |\n| Ventral horn'ların **lateral (intermediate)** kitleleri | **Autonomic motor** impulse'ların hücreleri |\n\n- Tract'lar bağladıkları yapılara göre adlanır: **ventral spinocerebellar tract** = spinal cord → cerebellum.\n- Spinal cord kaudale gittikçe incelir; son kısım (spinal cord, meninges ve sinirler) = **cauda equina** (kırmızı).",
+      "source": "Slayt 30, 32"
+    },
+    {
+      "title": "Meninges (Slayt 31 şekli)",
+      "body": "- İçten dışa: **pia mater → arachnoid → dura mater**.\n- Aralıklar: **subarachnoid space** (arachnoid–pia), **subdural space**, **epidural space** (dura dışında).\n- Not: **epidural space kafatasında (cranium) yoktur**.",
+      "source": "Slayt 31 · şekil"
+    },
+    {
+      "title": "Spinal nerves",
+      "body": "- **PNS = spinal nerves + cranial nerves** (Slayt 33).\n- Spinal ve cranial nerves istemli kas kontrolüyle ilgili oldukları için **somatic nerves**; autonomic nerves düz kas, kalp kası ve bezler gibi istemsiz işlevlerle ilgili oldukları için **visceral nerves**.\n- Köpekte vertebra: **7 cervical, 13 thoracic, 7 lumbar, 3 sacral**, ortalama **20 caudal**.\n\n| Kısım | Özellik |\n|---|---|\n| **Dorsal root** | **Afferent (sensory)**; cell body'leri **dorsal root ganglion**'da |\n| **Ventral root** | Spinal cord'un ventral kısmından çıkar; **efferent (motor)**, striated muscle'a |\n| **Spinal nerve proper** | Intervertebral foramen yakınında dorsal + ventral root birleşir → **mixed nerve** (sensory + motor) |\n| **Dorsal / ventral branch** | Foramen'den çıkınca ayrılır; transverse process'lerin dorsalindeki / ventralindeki yapılar |\n\n! Dorsal root = sensory (ganglion'lu), ventral root = motor; birleşince **mixed nerve**.",
+      "source": "Slayt 33–35"
+    },
+    {
+      "title": "Cranial nerves",
+      "body": "- **12 çift** cranial nerve; genelde baş ve boyun yapılarını innerve eder. İstisna **vagus nerve**: farinks ve larinkse duysal ve motor; ayrıca **thorax ve abdomen** organlarına **parasympathetic** lif verir.\n- Cranial nerves'ün **dorsal ya da ventral root'u yoktur**; kafatasındaki foramina'dan çıkar.\n- Bazıları yalnız **sensory**, bazıları yalnız **motor**, bazıları **mixed**.\n\n| No | Name | Type | Distribution |\n|---|---|---|---|\n| I | Olfactory | Sensory | Burun mukozası (koku) |\n| II | Optic | Sensory | Retina (görme) |\n| III | Oculomotor | Motor | Göz kaslarının çoğu; **parasympathetic → ciliary muscle ve iris circular muscle** |\n| IV | Trochlear | Motor | Dorsal oblique muscle |\n| V | Trigeminal | Mixed | Sensory: göz ve yüz; motor: **mastication** kasları |\n| VI | Abducens | Motor | Retractor ve lateral göz kasları |\n| VII | Facial | Mixed | Kulak bölgesi ve dilin **rostral 2/3'ü tat**; **yüz ifadesi** kasları; parasympathetic → **mandibular ve sublingual** salivary glands |\n| VIII | Vestibulocochlear | Sensory | Cochlea (işitme); semicircular canals (denge) |\n| IX | Glossopharyngeal | Mixed | Farinks ve dilin **kaudal 1/3'ü tat**; farinks kası; parasympathetic → **parotid** |\n| X | Vagus | Mixed | Farinks–larinks; parasympathetic → **thorax ve abdomen** organları |\n| XI | Accessory | Motor | Omuz ve boyun kasları |\n| XII | Hypoglossal | Motor | **Dil** kasları |\n\n! Yalnız sensory: **I, II, VIII**. Parasympathetic lif taşıyanlar: **III, VII, IX, X**.",
+      "source": "Slayt 36–38 · cranial nerves tablosu"
+    }
+  ],
+  "items": [
+    {
+      "id": "q01",
+      "type": "mcq",
+      "question": "Slayt 19 şemasına göre Sympathetic ve Parasympathetic hangi sistemin alt bölümleridir?",
+      "options": [
+        "Autonomic Nervous System",
+        "Somatic Nervous System",
+        "Central Nervous System",
+        "Sensory neurons"
+      ],
+      "answer": "Autonomic Nervous System",
+      "explanation": "Slayt 19: PNS → Sensory/Motor Neurons; motor → Somatic ve Autonomic Nervous System (mavi); Autonomic → Sympathetic ve Parasympathetic (yeşil).",
+      "source": "Slayt 19 · şema"
+    },
+    {
+      "id": "q02",
+      "type": "mcq",
+      "question": "Slayt 19 şemasında CNS'in iki bölümü hangisidir?",
+      "options": [
+        "Brain ve Spinal Cord",
+        "Sensory Neurons ve Motor Neurons",
+        "Somatic ve Autonomic Nervous System",
+        "Cerebrum ve Cerebellum"
+      ],
+      "answer": "Brain ve Spinal Cord",
+      "explanation": "Slayt 19: Central Nervous System (CNS, mavi) → Brain ve Spinal Cord (kırmızı); Slayt 20 (mor): 'It is composed of brain and spinal cord'.",
+      "source": "Slayt 19, 20 · CNS"
+    },
+    {
+      "id": "q03",
+      "type": "mcq",
+      "question": "Slayt 19'a göre Peripheral Nervous System (PNS) doğrudan hangi iki gruba ayrılır?",
+      "options": [
+        "Sensory Neurons ve Motor Neurons",
+        "Brain ve Spinal Cord",
+        "Sympathetic ve Parasympathetic",
+        "Cerebrum ve brain stem"
+      ],
+      "answer": "Sensory Neurons ve Motor Neurons",
+      "explanation": "Slayt 19 (Arial Narrow): Peripheral Nervous System (PNS) → Sensory Neurons ve Motor Neurons; The Nervous System şemasının sağ kolu.",
+      "source": "Slayt 19 · şema"
+    },
+    {
+      "id": "q04",
+      "type": "mcq",
+      "question": "Slayt 19'a göre Somatic Nervous System şemada nerede yer alır?",
+      "options": [
+        "PNS'in motor neuron'ları altında, Autonomic ile birlikte",
+        "CNS'in altında, Brain ile birlikte",
+        "Autonomic'in altında, Sympathetic ile birlikte",
+        "Sensory neurons'ın altında"
+      ],
+      "answer": "PNS'in motor neuron'ları altında, Autonomic ile birlikte",
+      "explanation": "Slayt 19: Motor Neurons → Somatic Nervous System ve Autonomic Nervous System (ikisi de mavi).",
+      "source": "Slayt 19 · şema"
+    },
+    {
+      "id": "q05",
+      "type": "mcq",
+      "question": "Slayt 20 şeklinde brain'in parçası olarak gösterilmeyen hangisidir?",
+      "options": [
+        "Dorsal root ganglion",
+        "Cerebrum",
+        "Cerebellum",
+        "Medulla Oblongata"
+      ],
+      "answer": "Dorsal root ganglion",
+      "explanation": "Slayt 20 (Comic Sans etiketler): brain, spinal cord, Cerebellum, Cerebrum, Medulla Oblongata. Dorsal root ganglion PNS'tedir (Slayt 34).",
+      "source": "Slayt 20 · Central Nervous System"
+    },
+    {
+      "id": "q06",
+      "type": "mcq",
+      "question": "Slayt 21'e göre beynin bilgisayara benzeyen işlevleri arasında hangisi YOKTUR?",
+      "options": [
+        "Myelin üretimi",
+        "Memory",
+        "Problem çözmek için central processing unit",
+        "Input-output (duyusal girdiden doğan duyumlar)"
+      ],
+      "answer": "Myelin üretimi",
+      "explanation": "Slayt 21: CNS iletim bileşenleri dışında memory, central processing unit ve input-output capability sağlar. Myelin glial cells'in işidir.",
+      "source": "Slayt 21 · CNS"
+    },
+    {
+      "id": "q07",
+      "type": "mcq",
+      "question": "Slayt 22'ye göre brain hangi üç bölümden oluşur?",
+      "options": [
+        "Cerebrum, cerebellum, brain stem",
+        "Cerebrum, spinal cord, ganglion",
+        "Thalamus, pons, spinal cord",
+        "Cortex, white matter, nerves"
+      ],
+      "answer": "Cerebrum, cerebellum, brain stem",
+      "explanation": "Slayt 22: Brain (lacivert) — Cerebrum (paired cerebral hemispheres), Cerebellum, Brain stem.",
+      "source": "Slayt 22 · brain"
+    },
+    {
+      "id": "q08",
+      "type": "mcq",
+      "question": "Cerebral hemisphere'in yapısı için hangisi doğrudur?",
+      "options": [
+        "Dışta gray matter (cerebral cortex), ortada white matter (medullary substance) ve basal nuclei",
+        "Dışta white matter, ortada gray matter",
+        "Yalnızca gray matter'dan oluşur",
+        "Dışta myelinli fiber'lar, ortada ventricles"
+      ],
+      "answer": "Dışta gray matter (cerebral cortex), ortada white matter (medullary substance) ve basal nuclei",
+      "explanation": "Slayt 24 (kırmızı 'Cerebral Hemispheres'): gray matter örtü = cerebral cortex; central mass of white matter = medullary substance (nerve fibers); ve basal nuclei.",
+      "source": "Slayt 24 · cerebral hemispheres"
+    },
+    {
+      "id": "q09",
+      "type": "mcq",
+      "question": "Bir hemisferin motor area'sından çıkan impulse'lar vücudun hangi tarafında kas hareketi yapar?",
+      "options": [
+        "Karşı (contralateral) tarafında",
+        "Aynı (ipsilateral) tarafında",
+        "Her iki tarafında eşit",
+        "Yalnızca baş bölgesinde"
+      ],
+      "answer": "Karşı (contralateral) tarafında",
+      "explanation": "Slayt 24 (mavi): 'Impulses from these areas in one hemisphere cause muscle movements on the opposite (contralateral) side of the body.'",
+      "source": "Slayt 24 · motor area"
+    },
+    {
+      "id": "q10",
+      "type": "mcq",
+      "question": "Motor area'nın büyüklüğü neyle doğrudan ilişkilidir?",
+      "options": [
+        "Hayvanın yapabildiği skeletal muscle hareketlerinin sayısı ve karmaşıklığı",
+        "Vücut ağırlığı",
+        "Cerebellum'un büyüklüğü",
+        "Sensory area sayısı"
+      ],
+      "answer": "Hayvanın yapabildiği skeletal muscle hareketlerinin sayısı ve karmaşıklığı",
+      "explanation": "Slayt 24 (mavi): 'Size of motor area and number and complexity of skeletal muscle movements of which an animal is capable are directly related.'",
+      "source": "Slayt 24 · motor area"
+    },
+    {
+      "id": "q11",
+      "type": "mcq",
+      "question": "Cerebral cortex'in özellikleri için hangisi YANLIŞTIR?",
+      "options": [
+        "Evrimde erken kazanılmıştır",
+        "Consciousness ile sonuçlanan reaksiyonlarla ilgilidir",
+        "Yüksek educability gösterir",
+        "Motor ve sensory area'ları vardır"
+      ],
+      "answer": "Evrimde erken kazanılmıştır",
+      "explanation": "Slayt 24: cerebral cortex evrimde GEÇ kazanılmıştır (acquired late in vertebrate evolution); consciousness, en yüksek correlation, educability, motor ve sensory areas.",
+      "source": "Slayt 24 · cerebral cortex"
+    },
+    {
+      "id": "q12",
+      "type": "mcq",
+      "question": "Deriden dokunma, sıcak, soğuk ve ağrı lokalizasyonu; tat ve kas–tendon–eklem impulse'larını alan alan hangisidir?",
+      "options": [
+        "Somesthetic (body sense) area",
+        "Visual area",
+        "Auditory area",
+        "Olfactory area"
+      ],
+      "answer": "Somesthetic (body sense) area",
+      "explanation": "Slayt 25: the somesthetic or body sense area deriden touch, warmth, cold, pain; taste; muscles, tendons, joints impulse'larını alır.",
+      "source": "Slayt 25 · sensory areas"
+    },
+    {
+      "id": "q13",
+      "type": "mcq",
+      "question": "Sensory area eşleştirmelerinden hangisi YANLIŞTIR?",
+      "options": [
+        "Auditory area — koku",
+        "Visual area — görme",
+        "Olfactory area — koku",
+        "Auditory area — işitme"
+      ],
+      "answer": "Auditory area — koku",
+      "explanation": "Slayt 25: visual area (sight), auditory area (hearing), olfactory area (smell).",
+      "source": "Slayt 25 · sensory areas"
+    },
+    {
+      "id": "q14",
+      "type": "mcq",
+      "question": "İki cerebral hemisferi birbirine bağlayan white matter fiber'ları hangisidir?",
+      "options": [
+        "Commissural fibers",
+        "Association fibers",
+        "Projection fibers",
+        "Spinocerebellar tract"
+      ],
+      "answer": "Commissural fibers",
+      "explanation": "Slayt 25: association fibers cortex bölümlerini, commissural fibers iki hemisferi, projection fibers cortex'i beynin diğer bölümleri ve spinal cord ile bağlar.",
+      "source": "Slayt 25 · white matter"
+    },
+    {
+      "id": "q15",
+      "type": "mcq",
+      "question": "Cerebral cortex'i beynin diğer bölümleri ve spinal cord ile bağlayan fiber'lar hangisidir?",
+      "options": [
+        "Projection fibers",
+        "Association fibers",
+        "Commissural fibers",
+        "Ependymal fibers"
+      ],
+      "answer": "Projection fibers",
+      "explanation": "Slayt 25: projection fibers connect the cerebral cortex with other parts of the brain and spinal cord.",
+      "source": "Slayt 25 · white matter"
+    },
+    {
+      "id": "q16",
+      "type": "mcq",
+      "question": "Basal nuclei'nin görevi nedir?",
+      "options": [
+        "Yürüme, koşma gibi karmaşık semivoluntary hareketlerin kontrolü",
+        "Görme impulse'larının alınması",
+        "Hormon salgılanması",
+        "Impulse'ları cortex'e aktaran relay center olmak"
+      ],
+      "answer": "Yürüme, koşma gibi karmaşık semivoluntary hareketlerin kontrolü",
+      "explanation": "Slayt 26: basal nuclei cerebral hemisferlerin derinindedir; walking ve running gibi complex semivoluntary movements'ı kontrol eder.",
+      "source": "Slayt 26 · basal nuclei"
+    },
+    {
+      "id": "q17",
+      "type": "mcq",
+      "question": "Kuşlarda motor işlevler için hangisi doğrudur?",
+      "options": [
+        "Cortex zayıf, basal nuclei çok gelişmiştir; istemli hareketler dahil motor işlevleri basal nuclei yapar",
+        "Cortex çok gelişmiştir, basal nuclei yoktur",
+        "Motor işlevleri yalnızca cerebellum yapar",
+        "Motor işlevleri spinal cord yapar, beyin katılmaz"
+      ],
+      "answer": "Cortex zayıf, basal nuclei çok gelişmiştir; istemli hareketler dahil motor işlevleri basal nuclei yapar",
+      "explanation": "Slayt 26: kuşlarda cerebral cortex poorly developed, basal nuclei highly developed; basal nuclei voluntary movements dahil nearly all motor functions'ı yapar.",
+      "source": "Slayt 26 · basal nuclei"
+    },
+    {
+      "id": "q18",
+      "type": "mcq",
+      "question": "Kedide cerebral cortex çıkarılınca hayvanın yine yürüyüp yemek yiyebilmesi neye bağlıdır?",
+      "options": [
+        "Basal nuclei",
+        "Cerebellum'un consciousness işlevi",
+        "Thalamus'un hormonları",
+        "Epithalamus"
+      ],
+      "answer": "Basal nuclei",
+      "explanation": "Slayt 26: cortex çıkarılması sophisticated motor functions'ı engeller, ama basal nuclei sayesinde walk, eat, fight ve sexual activity sürer.",
+      "source": "Slayt 26 · basal nuclei"
+    },
+    {
+      "id": "q19",
+      "type": "mcq",
+      "question": "Cerebellum için hangisi doğrudur?",
+      "options": [
+        "Consciousness ve sensation ile ilgili değildir; inertia ve momentum için otomatik ayarlamalar yapar",
+        "Consciousness'ın merkezidir",
+        "Hypophysis'i içerir",
+        "Bütün cranial nerves buradan çıkar"
+      ],
+      "answer": "Consciousness ve sensation ile ilgili değildir; inertia ve momentum için otomatik ayarlamalar yapar",
+      "explanation": "Slayt 27 (kırmızı 'Cerebellum'): cerebral cortex gibi consciousness ya da sensation ile ilgili değildir; inertia ve momentum'un bozucu etkisini önlemek için automatic adjustments yapar.",
+      "source": "Slayt 27 · cerebellum"
+    },
+    {
+      "id": "q20",
+      "type": "mcq",
+      "question": "Cerebellum'un impulse aldığı kaynaklardan hangisi slaytta YOKTUR?",
+      "options": [
+        "Olfactory area",
+        "Proprioceptive receptors",
+        "İç kulağın equilibrium apparatus'u",
+        "Visual cortex ve motor cortex"
+      ],
+      "answer": "Olfactory area",
+      "explanation": "Slayt 27: cerebellum proprioceptive receptors, inner ear equilibrium apparatus, visual cortex ve doğrudan motor cortex'ten impulse alır.",
+      "source": "Slayt 27 · cerebellum"
+    },
+    {
+      "id": "q21",
+      "type": "mcq",
+      "question": "Cerebellum'un bir yarısı vücudun hangi tarafında etkilidir?",
+      "options": [
+        "Aynı (ipsilateral) tarafında",
+        "Karşı (contralateral) tarafında",
+        "Yalnız orta hatta",
+        "Etkisi yoktur"
+      ],
+      "answer": "Aynı (ipsilateral) tarafında",
+      "explanation": "Slayt 27: cerebral motor area contralateral, cerebellum'un bir tarafı aynı (ipsilateral) tarafta etkilidir; cerebellum bir 'collecting house'tur.",
+      "source": "Slayt 27 · cerebellum"
+    },
+    {
+      "id": "q22",
+      "type": "mcq",
+      "question": "Brain stem'in kraniyalden kaudale doğru sırası hangisidir?",
+      "options": [
+        "Interbrain → midbrain → pons → medulla oblongata",
+        "Medulla oblongata → pons → midbrain → interbrain",
+        "Midbrain → interbrain → medulla oblongata → pons",
+        "Pons → midbrain → interbrain → medulla oblongata"
+      ],
+      "answer": "Interbrain → midbrain → pons → medulla oblongata",
+      "explanation": "Slayt 28 (kırmızı 'Brain Stem'): interbrain cranially followed caudally (in order) by the midbrain, pons, and medulla oblongata.",
+      "source": "Slayt 28 · brain stem"
+    },
+    {
+      "id": "q23",
+      "type": "mcq",
+      "question": "Brain stem'den ÇIKMAYAN (special) cranial nerves hangileridir?",
+      "options": [
+        "Optic, olfactory ve acoustic",
+        "Vagus, facial ve trigeminal",
+        "Oculomotor, trochlear ve abducens",
+        "Accessory ve hypoglossal"
+      ],
+      "answer": "Optic, olfactory ve acoustic",
+      "explanation": "Slayt 28: brain stem optic, olfactory ve acoustic (special nerves) dışındaki tüm cranial nerves'ün çıkış yeridir; bunların hücreleri kafatası dışındadır.",
+      "source": "Slayt 28 · brain stem"
+    },
+    {
+      "id": "q24",
+      "type": "mcq",
+      "question": "Interbrain'in aşağıdan yukarıya bölümleri hangisidir?",
+      "options": [
+        "Hypothalamus, thalamus, epithalamus",
+        "Epithalamus, thalamus, hypothalamus",
+        "Pons, midbrain, thalamus",
+        "Thalamus, hypothalamus, cerebellum"
+      ],
+      "answer": "Hypothalamus, thalamus, epithalamus",
+      "explanation": "Slayt 29: 'From below upward, the interbrain is comprised of the hypothalamus, thalamus, and epithalamus.'",
+      "source": "Slayt 29 · interbrain"
+    },
+    {
+      "id": "q25",
+      "type": "mcq",
+      "question": "Hypothalamus için hangisi doğrudur?",
+      "options": [
+        "Hypophysis'i içerir ve ANS entegrasyonunda başlıca rol oynar; posterior bölümü sympathetic bileşen içerir",
+        "Pineal gland'ı içerir",
+        "Tüm impulse'ları cortex'e aktaran relay center'dır",
+        "Consciousness ile ilgisi olmayan otomatik hareket ayarlayıcıdır"
+      ],
+      "answer": "Hypophysis'i içerir ve ANS entegrasyonunda başlıca rol oynar; posterior bölümü sympathetic bileşen içerir",
+      "explanation": "Slayt 29: hypothalamus hypophysis (pituitary) içerir, sensing ve neurosecretory işlevi vardır, ANS entegrasyonunda major role; ön/orta bölüm parasympathetic, posterior bölüm sympathetic.",
+      "source": "Slayt 29 · hypothalamus"
+    },
+    {
+      "id": "q26",
+      "type": "mcq",
+      "question": "Vücudun her yerinden gelen impulse'ları cerebral cortex'e aktaran 'relay center' hangisidir?",
+      "options": [
+        "Thalamus",
+        "Hypothalamus",
+        "Epithalamus",
+        "Cerebellum"
+      ],
+      "answer": "Thalamus",
+      "explanation": "Slayt 29: The Thalamus contains many nuclei and is truly a relay center.",
+      "source": "Slayt 29 · thalamus"
+    },
+    {
+      "id": "q27",
+      "type": "mcq",
+      "question": "Pineal gland ve olfactory correlation center hangi bölümdedir?",
+      "options": [
+        "Epithalamus",
+        "Thalamus",
+        "Hypothalamus",
+        "Pons"
+      ],
+      "answer": "Epithalamus",
+      "explanation": "Slayt 29: epithalamus olfactory correlation center ve pineal gland içerir; pineal gland gonadal hormonları ve günlük ritimleri düzenleyen neurosecretory organdır.",
+      "source": "Slayt 29 · epithalamus"
+    },
+    {
+      "id": "q28",
+      "type": "mcq",
+      "question": "Spinal cord için hangisi doğrudur?",
+      "options": [
+        "Medulla'nın kaudal devamıdır; dorsal roots ile afferent fiber alır, ventral roots'a efferent fiber verir",
+        "Dorsal roots ile efferent fiber verir",
+        "Gray matter çevrede, white matter merkezdedir",
+        "Cerebellum'un devamıdır"
+      ],
+      "answer": "Medulla'nın kaudal devamıdır; dorsal roots ile afferent fiber alır, ventral roots'a efferent fiber verir",
+      "explanation": "Slayt 30 (kırmızı 'Spinal Cord'): the caudal continuation of the medulla; dorsal roots ile sensory afferent fiber alır, ventral roots'a efferent motor fiber verir.",
+      "source": "Slayt 30 · spinal cord"
+    },
+    {
+      "id": "q29",
+      "type": "mcq",
+      "question": "Spinal cord'da gray matter ve white matter yerleşimi hangisidir?",
+      "options": [
+        "Gray matter merkezde (gray H), white matter çevrede",
+        "White matter merkezde, gray matter çevrede",
+        "İkisi de karışık dağılmıştır",
+        "Gray matter yalnız dorsal roots'ta"
+      ],
+      "answer": "Gray matter merkezde (gray H), white matter çevrede",
+      "explanation": "Slayt 30: centrally located gray matter capital H'ye benzer (gray H), çoğunlukla cell body; peripherally arranged white matter myelin nedeniyle beyazdır ve tract'lar içerir.",
+      "source": "Slayt 30 · spinal cord"
+    },
+    {
+      "id": "q30",
+      "type": "mcq",
+      "question": "Slayt 32'ye göre spinal cord gray matter'ında bulunanlar arasında hangisi YOKTUR?",
+      "options": [
+        "Schwann cell'lerden oluşan myelin",
+        "Sensory neuron cell body'leri",
+        "Somatic motor neurons",
+        "Autonomic motor neurons"
+      ],
+      "answer": "Schwann cell'lerden oluşan myelin",
+      "explanation": "Slayt 32 (mavi): gray matter'da 1) sensory neuron cell bodies, 2) somatic motor neurons, 3) autonomic motor neurons bulunur.",
+      "source": "Slayt 32 · spinal cord"
+    },
+    {
+      "id": "q31",
+      "type": "mcq",
+      "question": "Spinal nerves'e giden motor impulse'ların hücreleri gray H'nin neresindedir?",
+      "options": [
+        "Ventral horns",
+        "Dorsal horns",
+        "Dorsal root ganglion",
+        "White matter"
+      ],
+      "answer": "Ventral horns",
+      "explanation": "Slayt 32: sensory impulse hücreleri dorsal horns'ta, motor impulse hücreleri ventral horns'ta.",
+      "source": "Slayt 32 · gray H"
+    },
+    {
+      "id": "q32",
+      "type": "mcq",
+      "question": "Spinal cord'dan çıkan autonomic motor impulse'ların hücreleri nerededir?",
+      "options": [
+        "Ventral horn'ların lateral (intermediate) kitlelerinde",
+        "Dorsal horns'ta",
+        "Dorsal root ganglion'da",
+        "Cauda equina'da"
+      ],
+      "answer": "Ventral horn'ların lateral (intermediate) kitlelerinde",
+      "explanation": "Slayt 32: autonomic motor impulse'ların hücreleri the ventral horns'un lateral masses'ında (intermediate location).",
+      "source": "Slayt 32 · gray H"
+    },
+    {
+      "id": "q33",
+      "type": "mcq",
+      "question": "Ventral spinocerebellar tract impulse'ları nereden nereye taşır?",
+      "options": [
+        "Spinal cord'dan cerebellum'a",
+        "Cerebellum'dan spinal cord'a",
+        "Cortex'ten thalamus'a",
+        "Retina'dan visual area'ya"
+      ],
+      "answer": "Spinal cord'dan cerebellum'a",
+      "explanation": "Slayt 32: tract'lar bağladıkları yapılara göre adlanır; ventral spinocerebellar tract spinal cord'dan cerebellum'a impulse taşır.",
+      "source": "Slayt 32 · tracts"
+    },
+    {
+      "id": "q34",
+      "type": "mcq",
+      "question": "Spinal cord, meninges ve sinirlerin son (terminal) bölümüne ne denir?",
+      "options": [
+        "Cauda equina",
+        "Medulla oblongata",
+        "Conus medullaris",
+        "Filum durae"
+      ],
+      "answer": "Cauda equina",
+      "explanation": "Slayt 32 (kırmızı): spinal cord kaudale gittikçe incelir; terminal part of the spinal cord, meninges, and nerves = cauda equina.",
+      "source": "Slayt 32 · cauda equina"
+    },
+    {
+      "id": "q35",
+      "type": "mcq",
+      "question": "Slayt 31 şekline göre kafatasında (cranium) bulunmayan aralık hangisidir?",
+      "options": [
+        "Epidural space",
+        "Subarachnoid space",
+        "Subdural space",
+        "Pia mater ile beyin arası"
+      ],
+      "answer": "Epidural space",
+      "explanation": "Slayt 31 şekli (Spinal Meninges): 'Note: The epidural space is not present in the cranium.' İçten dışa pia mater, arachnoid, dura mater.",
+      "source": "Slayt 31 · şekil"
+    },
+    {
+      "id": "q36",
+      "type": "mcq",
+      "question": "Slayt 33'e göre peripheral nervous system neyden oluşur?",
+      "options": [
+        "Spinal nerves ve cranial nerves",
+        "Brain ve spinal cord",
+        "Yalnızca autonomic ganglia",
+        "Cerebellum ve brain stem"
+      ],
+      "answer": "Spinal nerves ve cranial nerves",
+      "explanation": "Slayt 33 (renkli altı çizili): 'The peripheral nervous system consists of the spinal nerves and the cranial nerves.'",
+      "source": "Slayt 33 · PNS"
+    },
+    {
+      "id": "q37",
+      "type": "mcq",
+      "question": "Spinal ve cranial nerves neden 'somatic nerves' diye adlandırılır?",
+      "options": [
+        "İstemli kas kontrolüyle ilişkili oldukları için",
+        "İstemsiz işlevleri kontrol ettikleri için",
+        "Yalnızca duyusal oldukları için",
+        "Ganglion içermedikleri için"
+      ],
+      "answer": "İstemli kas kontrolüyle ilişkili oldukları için",
+      "explanation": "Slayt 34 (kırmızı 'Spinal Nerves'): spinal ve cranial nerves voluntary control of muscles ile ilişkili olduklarından somatic nerves; autonomic nerves istemsiz işlevler nedeniyle visceral nerves.",
+      "source": "Slayt 34 · spinal nerves"
+    },
+    {
+      "id": "q38",
+      "type": "mcq",
+      "question": "Düz kas, kalp kası ve bezlerin kontrolüyle ilgili oldukları için 'visceral nerves' denen sinirler hangileridir?",
+      "options": [
+        "Autonomic nerves",
+        "Spinal nerves",
+        "Cranial nerves",
+        "Somatic nerves"
+      ],
+      "answer": "Autonomic nerves",
+      "explanation": "Slayt 34: autonomic nerves are referred to as visceral nerves because they are involved with involuntary functions such as control of smooth muscle, cardiac muscle, and glands.",
+      "source": "Slayt 34 · visceral nerves"
+    },
+    {
+      "id": "q39",
+      "type": "mcq",
+      "question": "Köpeğin vertebra sayıları slayta göre hangisidir?",
+      "options": [
+        "7 cervical, 13 thoracic, 7 lumbar, 3 sacral, ~20 caudal",
+        "7 cervical, 12 thoracic, 5 lumbar, 5 sacral, ~10 caudal",
+        "8 cervical, 13 thoracic, 6 lumbar, 3 sacral, ~20 caudal",
+        "7 cervical, 18 thoracic, 6 lumbar, 5 sacral, ~18 caudal"
+      ],
+      "answer": "7 cervical, 13 thoracic, 7 lumbar, 3 sacral, ~20 caudal",
+      "explanation": "Slayt 34: in the dog 7 cervical, 13 thoracic, 7 lumbar, 3 sacral and an average of 20 caudal vertebrae.",
+      "source": "Slayt 34 · köpek"
+    },
+    {
+      "id": "q40",
+      "type": "mcq",
+      "question": "Dorsal root için hangisi doğrudur?",
+      "options": [
+        "Afferent (sensory) impulse taşır; cell body'leri dorsal root ganglion'dadır",
+        "Efferent (motor) impulse taşır",
+        "Ventral horn'dan çıkar",
+        "Yalnızca autonomic fiber içerir"
+      ],
+      "answer": "Afferent (sensory) impulse taşır; cell body'leri dorsal root ganglion'dadır",
+      "explanation": "Slayt 34: spinal nerve dorsal root afferent (sensory) impulse'ları spinal cord'a taşır; dorsal root neuron'larının cell body'leri dorsal root ganglion'dadır.",
+      "source": "Slayt 34 · dorsal root"
+    },
+    {
+      "id": "q41",
+      "type": "mcq",
+      "question": "Ventral root için hangisi doğrudur?",
+      "options": [
+        "Spinal cord'dan striated muscle'a efferent (motor) impulse taşır",
+        "Afferent impulse taşır",
+        "Cell body'leri dorsal root ganglion'dadır",
+        "Kafatası foramina'sından çıkar"
+      ],
+      "answer": "Spinal cord'dan striated muscle'a efferent (motor) impulse taşır",
+      "explanation": "Slayt 35: the ventral root spinal cord'un ventral kısmından çıkar; efferent (motor) impulses from the spinal cord to striated muscle fibers.",
+      "source": "Slayt 35 · ventral root"
+    },
+    {
+      "id": "q42",
+      "type": "mcq",
+      "question": "Spinal nerve proper neden 'mixed nerve' olarak sınıflandırılır?",
+      "options": [
+        "Hem sensory hem motor fiber içerdiği için",
+        "Hem CNS hem PNS'te bulunduğu için",
+        "Hem myelinli hem myelinsiz olduğu için",
+        "Hem sympathetic hem parasympathetic olduğu için"
+      ],
+      "answer": "Hem sensory hem motor fiber içerdiği için",
+      "explanation": "Slayt 35: intervertebral foramen yakınında dorsal root ventral root ile birleşir; spinal nerve proper sensory ve motor fiber içerdiği için mixed nerve'dür (Slayt 35'teki 'Bir spinal sinir ve onun dalları…' şekli).",
+      "source": "Slayt 35 · spinal nerve"
+    },
+    {
+      "id": "q43",
+      "type": "mcq",
+      "question": "Spinal nerve intervertebral foramen'den çıktıktan sonra ne olur?",
+      "options": [
+        "Dorsal ve ventral branch'a ayrılır; transverse process'lerin dorsalindeki ve ventralindeki yapılara gider",
+        "Dorsal ve ventral root'a ayrılır",
+        "Sympathetic trunk'a katılarak sona erer",
+        "Cauda equina'ya karışır"
+      ],
+      "answer": "Dorsal ve ventral branch'a ayrılır; transverse process'lerin dorsalindeki ve ventralindeki yapılara gider",
+      "explanation": "Slayt 35: spinal nerve intervertebral foramen'den çıkınca dorsal branch ve ventral branch'a ayrılır; bunlar transverse processes'in dorsal ve ventralindeki yapıları innerve eder.",
+      "source": "Slayt 35 · branches"
+    },
+    {
+      "id": "q44",
+      "type": "mcq",
+      "question": "Cranial nerves için hangisi YANLIŞTIR?",
+      "options": [
+        "Dorsal ve ventral root'ları vardır",
+        "12 çifttir",
+        "Kafatasındaki foramina'dan çıkarlar",
+        "Bazıları yalnız sensory, bazıları yalnız motor, bazıları mixed'dir"
+      ],
+      "answer": "Dorsal ve ventral root'ları vardır",
+      "explanation": "Slayt 36 (kırmızı 'Cranial Nerves'): 12 pairs; no dorsal or ventral roots; emerge through foramina in the skull; sensory, motor ya da mixed.",
+      "source": "Slayt 36 · cranial nerves"
+    },
+    {
+      "id": "q45",
+      "type": "mcq",
+      "question": "Baş ve boyun dışında thorax ve abdomen organlarına parasympathetic lif veren istisna cranial nerve hangisidir?",
+      "options": [
+        "Vagus nerve",
+        "Facial nerve",
+        "Trigeminal nerve",
+        "Accessory nerve"
+      ],
+      "answer": "Vagus nerve",
+      "explanation": "Slayt 36: cranial nerves genelde baş ve boyunu innerve eder; the vagus nerve is an exception — farinks/larinks yanında thorax ve abdomen organlarına parasympathetic lif verir.",
+      "source": "Slayt 36, 38 · vagus"
+    },
+    {
+      "id": "q46",
+      "type": "mcq",
+      "question": "Yalnızca sensory olan cranial nerves hangileridir?",
+      "options": [
+        "I (olfactory), II (optic), VIII (vestibulocochlear)",
+        "III, IV, VI",
+        "V, VII, IX",
+        "XI, XII, X"
+      ],
+      "answer": "I (olfactory), II (optic), VIII (vestibulocochlear)",
+      "explanation": "Slayt 38 tablosu: Type = Sensory → I Olfactory, II Optic, VIII Vestibulocochlear.",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "q47",
+      "type": "mcq",
+      "question": "Mastication (çiğneme) kaslarını innerve eden cranial nerve hangisidir?",
+      "options": [
+        "V — Trigeminal",
+        "VII — Facial",
+        "XII — Hypoglossal",
+        "IX — Glossopharyngeal"
+      ],
+      "answer": "V — Trigeminal",
+      "explanation": "Slayt 38: V Trigeminal, mixed — sensory to eye and face; motor to muscles of mastication.",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "q48",
+      "type": "mcq",
+      "question": "Ciliary muscle ve iris circular muscle'ına parasympathetic lif veren cranial nerve hangisidir?",
+      "options": [
+        "III — Oculomotor",
+        "IV — Trochlear",
+        "VI — Abducens",
+        "II — Optic"
+      ],
+      "answer": "III — Oculomotor",
+      "explanation": "Slayt 38: III Oculomotor, motor — most muscles of eye; parasympathetic to ciliary muscle and circular muscle of iris.",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "q49",
+      "type": "mcq",
+      "question": "Dilin kaudal 1/3'ünden tat alan ve parotid bezine parasympathetic lif veren sinir hangisidir?",
+      "options": [
+        "IX — Glossopharyngeal",
+        "VII — Facial",
+        "X — Vagus",
+        "V — Trigeminal"
+      ],
+      "answer": "IX — Glossopharyngeal",
+      "explanation": "Slayt 38: IX Glossopharyngeal, mixed — pharynx ve dilin caudal third'ünden tat; farinks kası; parasympathetic to parotid salivary glands.",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "q50",
+      "type": "mcq",
+      "question": "Yüz ifadesi kasları, dilin rostral 2/3'ünden tat ve mandibular–sublingual salivary glands hangi sinirle ilgilidir?",
+      "options": [
+        "VII — Facial",
+        "IX — Glossopharyngeal",
+        "V — Trigeminal",
+        "XII — Hypoglossal"
+      ],
+      "answer": "VII — Facial",
+      "explanation": "Slayt 38: VII Facial, mixed — kulak bölgesi ve dilin rostral two-thirds'ünden tat; motor to muscles of facial expression; parasympathetic to mandibular and sublingual salivary glands.",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "q51",
+      "type": "mcq",
+      "question": "Cranial nerve — işlev eşleştirmelerinden hangisi YANLIŞTIR?",
+      "options": [
+        "XII Hypoglossal — omuz ve boyun kasları",
+        "IV Trochlear — dorsal oblique muscle",
+        "VI Abducens — retractor ve lateral göz kasları",
+        "XI Accessory — omuz ve boyun kasları"
+      ],
+      "answer": "XII Hypoglossal — omuz ve boyun kasları",
+      "explanation": "Slayt 38: XII Hypoglossal dil kaslarını, XI Accessory omuz ve boyun kaslarını innerve eder; IV dorsal oblique, VI retractor ve lateral göz kasları.",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "q52",
+      "type": "mcq",
+      "question": "VIII. cranial nerve (vestibulocochlear) için hangisi doğrudur?",
+      "options": [
+        "Sensory; cochlea (işitme) ve semicircular canals (denge)",
+        "Motor; dil kasları",
+        "Mixed; mastication",
+        "Sensory; burun mukozası (koku)"
+      ],
+      "answer": "Sensory; cochlea (işitme) ve semicircular canals (denge)",
+      "explanation": "Slayt 38: VIII Vestibulocochlear, sensory — cochlea (hearing); semicircular canals (equilibrium).",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "c01",
+      "type": "card",
+      "front": "Slayt 19 şeması",
+      "back": "CNS (brain, spinal cord) · PNS (sensory, motor) → somatic + autonomic (sympathetic, parasympathetic)",
+      "source": "Slayt 19"
+    },
+    {
+      "id": "c02",
+      "type": "card",
+      "front": "Motor area etkisi",
+      "back": "Karşı taraf (contralateral); büyüklüğü hareket karmaşıklığıyla doğru orantılı",
+      "source": "Slayt 24"
+    },
+    {
+      "id": "c03",
+      "type": "card",
+      "front": "Association / commissural / projection",
+      "back": "Cortex içi / iki hemisfer / cortex ↔ beyin ve spinal cord",
+      "source": "Slayt 25"
+    },
+    {
+      "id": "c04",
+      "type": "card",
+      "front": "Basal nuclei",
+      "back": "Semivoluntary hareketler (yürüme, koşma); kuşlarda motor işlevlerin çoğu",
+      "source": "Slayt 26"
+    },
+    {
+      "id": "c05",
+      "type": "card",
+      "front": "Cerebellum",
+      "back": "Bilinçsiz otomatik ayar; ipsilateral; 'collecting house'",
+      "source": "Slayt 27"
+    },
+    {
+      "id": "c06",
+      "type": "card",
+      "front": "Brain stem sırası",
+      "back": "Interbrain → midbrain → pons → medulla oblongata",
+      "source": "Slayt 28"
+    },
+    {
+      "id": "c07",
+      "type": "card",
+      "front": "Brain stem'den çıkmayan cranial nerves",
+      "back": "Optic, olfactory, acoustic (special nerves)",
+      "source": "Slayt 28"
+    },
+    {
+      "id": "c08",
+      "type": "card",
+      "front": "Hypothalamus / thalamus / epithalamus",
+      "back": "Hypophysis + ANS entegrasyonu / relay center / pineal gland + olfactory correlation",
+      "source": "Slayt 29"
+    },
+    {
+      "id": "c09",
+      "type": "card",
+      "front": "Gray H boynuzları",
+      "back": "Dorsal = sensory · ventral = motor · lateral (intermediate) = autonomic",
+      "source": "Slayt 32"
+    },
+    {
+      "id": "c10",
+      "type": "card",
+      "front": "Cauda equina",
+      "back": "Spinal cord, meninges ve sinirlerin terminal kısmı",
+      "source": "Slayt 32"
+    },
+    {
+      "id": "c11",
+      "type": "card",
+      "front": "Dorsal ↔ ventral root",
+      "back": "Dorsal: afferent, dorsal root ganglion · ventral: efferent; birleşince mixed nerve",
+      "source": "Slayt 34, 35"
+    },
+    {
+      "id": "c12",
+      "type": "card",
+      "front": "Yalnız sensory cranial nerves",
+      "back": "I olfactory, II optic, VIII vestibulocochlear",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    },
+    {
+      "id": "c13",
+      "type": "card",
+      "front": "Parasympathetic lifli cranial nerves",
+      "back": "III (ciliary, iris), VII (mandibular, sublingual), IX (parotid), X (thorax, abdomen)",
+      "source": "Slayt 38 · cranial nerves tablosu"
+    }
+  ]
+}
