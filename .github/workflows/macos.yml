@@ -290,7 +290,7 @@ jobs:
           # Her commit bir sürüm yayımlar; en yeni 5 sürüm kalsın.
           gh release list --repo "$REPO" --limit 100 --json tagName,createdAt \
             --jq 'sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
-            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+            { grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' || true; } |
             while read -r tag; do
               echo "Siliniyor: $tag"
               gh release delete "$tag" --repo "$REPO" --cleanup-tag --yes || true
