@@ -128,6 +128,12 @@ const shot = async (page, name) => {
   if (SHOTS) await page.screenshot({ path: `${SHOTS}/${BROWSER}-${name}.png` });
 };
 const settle = (page, ms = 450) => page.waitForTimeout(ms);
+// Yenilemeden önce açılıştaki güncelleme isteğinin bitmesini bekle: WebKit, yenilemeyle iptal
+// edilen fetch'i "access control checks" konsol hatası olarak yazıyor.
+async function reload(page) {
+  await page.waitForLoadState('networkidle').catch(() => {});
+  await page.reload();
+}
 
 const setCard = (page, prefix) => page.locator(`[data-set-card^="${prefix}"]`);
 async function studySet(page, prefix, mode) {
@@ -477,7 +483,7 @@ try {
   check('İçe aktar: ders paketi JSON\'u ders olarak ekleniyor', (await page.getByRole('button', { name: /Test Dersi/ }).count()) === 1);
 
   // ===================== Kalıcılık =====================
-  await page.reload();
+  await reload(page);
   await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
   check('Yenileme sonrası dersler korunuyor', (await page.getByRole('button', { name: /Test Dersi/ }).count()) === 1);
   check(
@@ -576,7 +582,7 @@ try {
     localStorage.clear();
     for (const [k, v] of Object.entries(JSON.parse(s))) localStorage.setItem(k, v);
   }, storage);
-  await wide.page.reload();
+  await reload(wide.page);
   await wide.page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
   await studySet(wide.page, 'Hafta 8', 'Akış');
   await wide.page.locator('[data-feed-card]').first().waitFor();
@@ -619,7 +625,7 @@ try {
     const keep = JSON.parse(localStorage.getItem('kelime-ustasi.seededPacks') ?? '[]').filter((e) => !e.startsWith('mikrobiyoloji'));
     localStorage.setItem('kelime-ustasi.seededPacks', JSON.stringify([...keep, 'mikrobiyoloji-hafta-7-8']));
   });
-  await up.page.reload();
+  await reload(up.page);
   await up.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
   const upgraded = await up.page.evaluate(() => {
     const sets = JSON.parse(localStorage.getItem('kelime-ustasi.sets'));
@@ -643,7 +649,7 @@ try {
   check('Güncelleme: soru kimlikleri sabit (tekrar ilerlemesi korunur)', upgraded.h7Id === 'mikrobiyoloji-hafta-7:q01', upgraded.h7Id);
   check('Güncelleme: kullanıcının düzenlediği set korunuyor', upgraded.h8Kept);
   check('Güncelleme: set çoğaltılmıyor', upgraded.count === 2, `${upgraded.count} set`);
-  await up.page.reload();
+  await reload(up.page);
   await up.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
   check(
     'Güncelleme: ikinci açılışta tekrar uygulanmıyor',
@@ -687,7 +693,7 @@ try {
       ? r.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(body) })
       : r.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: '{}' });
   });
-  await ota.page.reload();
+  await reload(ota.page);
   await ota.page.locator('[data-update-toast="content"]').waitFor({ timeout: 10000 });
   check('Güncelleme (uzak): "Yeni içerik yüklendi" bildirimi', (await ota.page.locator('[data-update-toast="content"]').innerText()).includes('Hafta 7'));
   const otaState = await ota.page.evaluate(() => {
@@ -723,7 +729,7 @@ try {
   await page.getByRole('button', { name: 'Dersi sil' }).click();
   await page.getByRole('button', { name: 'Evet, sil' }).click();
   await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
-  await page.reload();
+  await reload(page);
   await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
   check('Silinen hazır ders yeniden açılışta geri gelmiyor', (await page.getByRole('button', { name: /Mikrobiyoloji/ }).count()) === 0);
 } finally {
