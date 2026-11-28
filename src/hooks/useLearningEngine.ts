@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import type { Question, QuizFeedback, QuizItem, QuizMode, QuizSession } from '@/types';
 import { isMcq } from '@/types';
 import { dedupeBy, normalizeAnswer, shuffle } from '@/lib/utils';
@@ -84,6 +84,8 @@ export interface UseLearningEngineReturn {
   availableCount: number;
   /** Şıklı soru mu soruluyor, yoksa kartlardan mı üretiliyor. */
   source: 'mcq' | 'cards';
+  /** Sorulabilecek öğeler (şıklı soru varsa yalnız onlar) — havuz filtreleri bunun üstünde çalışır. */
+  quizPool: Question[];
   correctCount: number;
   wrongQuestions: Question[];
   /** `pool` verilmezse hedefin tüm sorularından; `limit` kadarı rastgele seçilir. */
@@ -95,7 +97,16 @@ export interface UseLearningEngineReturn {
   reset: () => void;
 }
 
-export function useLearningEngine(questions: Question[]): UseLearningEngineReturn {
+/**
+ * `onResult` her sorunun bu oturumdaki İLK sonucunu bildirir (kalıcı ilerleme kaydı için);
+ * eşleştirmede yanlış ilk deneme o çifti yanlış sayar.
+ */
+export function useLearningEngine(
+  questions: Question[],
+  onResult?: (questionId: string, correct: boolean) => void
+): UseLearningEngineReturn {
+  const onResultRef = useRef(onResult);
+  onResultRef.current = onResult;
   const mcqs = useMemo(() => questions.filter(isMcq), [questions]);
   const cards = useMemo(() => questions.filter((q) => !isMcq(q)), [questions]);
   const source: 'mcq' | 'cards' = mcqs.length > 0 ? 'mcq' : 'cards';
@@ -134,8 +145,13 @@ export function useLearningEngine(questions: Question[]): UseLearningEngineRetur
   }, []);
 
   const currentItem = session ? (session.items[session.currentIndex] ?? null) : null;
+  const sessionRef = useRef(session);
+  sessionRef.current = session;
 
   const record = useCallback((mode: QuizMode, questionId: string, userAnswer: string, correct: boolean) => {
+    if (!sessionRef.current?.answers.some((x) => x.questionId === questionId)) {
+      onResultRef.current?.(questionId, correct);
+    }
     setSession((prev) =>
       prev && prev.status === 'in-progress'
         ? { ...prev, answers: [...prev.answers, { questionId, userAnswer, correct, mode }] }
@@ -233,6 +249,7 @@ export function useLearningEngine(questions: Question[]): UseLearningEngineRetur
     matchedPairIds,
     lastWrongPair,
     availableCount: quizPool.length,
+    quizPool,
     source,
     correctCount,
     wrongQuestions,

@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useMemo, type ReactNode } from 
 import type {
   Course,
   FlashcardSRSEntry,
+  ProgressMap,
   Question,
   QuestionSet,
   SRSEntries,
@@ -33,6 +34,9 @@ interface AppContextValue {
   getSet: (id: string) => QuestionSet | undefined;
   srsEntries: SRSEntries;
   updateSrsEntry: (entry: FlashcardSRSEntry) => void;
+  /** Soru başına doğru/yanlış geçmişi; uygulama kapanıp açılınca ve güncellenince korunur. */
+  progress: ProgressMap;
+  recordResult: (questionId: string, correct: boolean) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -41,6 +45,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [courses, setCourses] = useLocalStorage<Course[]>(STORAGE_KEYS.courses, []);
   const [sets, setSets] = useLocalStorage<QuestionSet[]>(STORAGE_KEYS.questionSets, []);
   const [srsEntries, setSrs] = useLocalStorage<SRSEntries>(STORAGE_KEYS.srs, {});
+  const [progress, setProgress] = useLocalStorage<ProgressMap>(STORAGE_KEYS.progress, {});
 
   const createCourse = useCallback(
     (name: string): Course => {
@@ -60,16 +65,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [setCourses]
   );
 
+  /** Silinen setlerin tekrar ve ilerleme kayıtlarını da temizler. */
   const forgetSrs = useCallback(
     (questionIds: string[]) => {
       if (questionIds.length === 0) return;
-      setSrs((prev) => {
+      const drop = <T,>(prev: Record<string, T>) => {
         const next = { ...prev };
         for (const id of questionIds) delete next[id];
         return next;
-      });
+      };
+      setSrs(drop);
+      setProgress(drop);
     },
-    [setSrs]
+    [setSrs, setProgress]
   );
 
   const deleteCourse = useCallback(
@@ -153,6 +161,24 @@ export function AppProvider({ children }: { children: ReactNode }) {
     [setSrs]
   );
 
+  const recordResult = useCallback(
+    (questionId: string, correct: boolean) =>
+      setProgress((prev) => {
+        const p = prev[questionId];
+        return {
+          ...prev,
+          [questionId]: {
+            seen: (p?.seen ?? 0) + 1,
+            correct: (p?.correct ?? 0) + (correct ? 1 : 0),
+            wrong: (p?.wrong ?? 0) + (correct ? 0 : 1),
+            last: correct ? 'correct' : 'wrong',
+            at: new Date().toISOString(),
+          },
+        };
+      }),
+    [setProgress]
+  );
+
   const value = useMemo<AppContextValue>(
     () => ({
       courses,
@@ -168,6 +194,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       getSet,
       srsEntries,
       updateSrsEntry,
+      progress,
+      recordResult,
     }),
     [
       courses,
@@ -183,6 +211,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       getSet,
       srsEntries,
       updateSrsEntry,
+      progress,
+      recordResult,
     ]
   );
 

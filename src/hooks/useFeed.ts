@@ -28,7 +28,7 @@ export interface UseFeedResult {
 }
 
 export function useFeed(questions: Question[]): UseFeedResult {
-  const { srsEntries, updateSrsEntry } = useApp();
+  const { srsEntries, updateSrsEntry, recordResult } = useApp();
   const isEmpty = questions.length === 0;
   const cardPool = useMemo(() => questions.filter((q) => !isMcq(q)), [questions]);
 
@@ -146,12 +146,15 @@ export function useFeed(questions: Question[]): UseFeedResult {
         updateSrsEntry(markHardEntry(entry));
       }
 
+      // İlerleme: cevaba bakılarak verilen doğru cevap "bildim" sayılmaz.
+      recordResult(card.question.id, correct && !peeked);
+
       const result: FeedAnswerResult = { correct, correctAnswer: card.question.back, userAnswer: raw, peeked };
       setAnswers((prev) => ({ ...prev, [card.id]: result }));
       setStats((prev) => ({ correct: prev.correct + (correct ? 1 : 0), answered: prev.answered + 1 }));
       return result;
     },
-    [answers, peekedIds, updateSrsEntry]
+    [answers, peekedIds, updateSrsEntry, recordResult]
   );
 
   return {

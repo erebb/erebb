@@ -44,17 +44,31 @@ işin doğrudan yapılmasını istiyor ("İzin isteme benden direkt yap").
   ara başlık, `**kalın**` (bkz. `src/components/RichText.tsx`). Ara başlıkları büyük harfe çevirme:
   sayfa dili `tr` olduğu için İngilizce terimlerde "İ" sorunu çıkar.
 - `id` her öğede sabit ve set içinde benzersiz (q01…, c01…). Soru kimliği = `<set anahtarı>:<id>`;
-  tekrar (SRS) ilerlemesi buna bağlı. Bir öğeyi düzeltirken id'sini değiştirme; yeni öğeye yeni id ver.
+  tekrar (SRS) ve ilerleme (doğru/yanlış sayıları) buna bağlı. Bir öğeyi düzeltirken id'sini değiştirme;
+  yeni öğeye yeni id ver.
 - Dersler: Mikrobiyoloji (`mikrobiyoloji-hafta-*.json`), Topografik Anatomi (`topografik-*.json`: damarlar,
   lenf, sinirler, govde, klinik).
-- Uygulamaya ekleme: `src/content/seed.ts` → `BUNDLED_PACKS`. Yeni hafta = yeni set girdisi
-  (yeni `key`, `version: 1`). **Var olan bir setin içeriği değiştiğinde `version` bir artırılır**;
-  uygulama kullanıcının düzenlemediği kopyayı açılışta günceller.
+- **Mikrobiyoloji 8. hafta tabloları önemli** (kullanıcı vurguladı): hafta-8'de "Tablolar" konu anlatımı
+  (Slayt 4, 6, 8, 9, 10, 12×2, 14, 17, 18) ve tablo hücrelerinden sorular var. Yeni haftalarda da tablolar
+  hem anlatıma hem sorulara eksiksiz geçirilir.
+- Sürümler tek yerde: **`content/manifest.json`** (`packs[{ course, sets[{ key, version, file }] }]`).
+  Yeni hafta = o derse yeni set girdisi (yeni `key`, `version: 1`). **Var olan bir setin içeriği
+  değiştiğinde manifest'te `version` bir artırılır**; uygulama kullanıcının düzenlemediği kopyayı açılışta
+  günceller. Aynı manifest uygulamaya gömülür ve açılışta GitHub'daki son sürümden de okunur
+  (`src/content/seed.ts` → `syncContent`, `src/lib/updates.ts`), yani içerik yeniden kurmadan gelir.
+  Manifest biçimi geriye uyumsuz değişirse `schema` artırılır (eski uygulamalar onu yok sayar).
 - Doğrulama: her cevap şıklarda olmalı, şık/soru tekrarı olmamalı, her MCQ'da açıklama ve kaynak olmalı.
 
 ## Geliştirme
 
 - `npm run build`, uçtan uca test: `node e2e/smoke.mjs` (yerelde Chromium; CI'da macOS'ta WebKit).
-- CI: `.github/workflows/macos.yml` (WebKit e2e + universal .dmg). `v*` etiketi Release yayınlar;
-  etiket `package.json` sürümüyle aynı olmalı.
+- CI: `.github/workflows/macos.yml` (WebKit e2e + universal .dmg + `release` işi). `main`'e ya da çalışma
+  dalına her push'ta testler yeşilse `v<major.minor>.<run_number>` (taban `package.json`, şu an 1.1)
+  Release olarak yayımlanır; en yeni 5 sürüm tutulur. Kullanıcının uygulaması açılışta bu sürümden içerik
+  ve (imzalıysa) uygulama güncellemesi alır — yani her commit kullanıcıya gider, yarım iş commit'leme.
+- Mac güncelleyicisi (Tauri updater) imzalı paket ister: açık anahtar `src-tauri/tauri.conf.json`'da,
+  özel anahtar yalnızca GitHub secret'ı `TAURI_SIGNING_PRIVATE_KEY` (parolasız). Özel anahtar asla depoya
+  girmez. Secret yoksa CI yalnız .dmg yayımlar, uygulama "Yeni sürüm var" der.
+- Uygulama ağda yalnızca `api.github.com` / `raw.githubusercontent.com` / GitHub Releases'teki herkese açık
+  dosyaları okur (CSP `connect-src`); kullanıcı verisi gönderilmez. e2e bu istekleri sahte yanıtlarla keser.
 - Commit'ler `claude/gamified-learning-app-hr183v` dalına.

@@ -1,8 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { BookOpen, Check, ClipboardCheck, RotateCcw, Target, X } from 'lucide-react';
 import type { StudyTarget } from '@/types';
 import { useLearningEngine } from '@/hooks/useLearningEngine';
+import { useApp } from '@/context/AppContext';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { STORAGE_KEYS } from '@/lib/storageKeys';
 import { Button } from '@/components/ui/button';
@@ -22,8 +23,11 @@ interface Props {
 const COUNT_OPTIONS = [10, 20, 40];
 
 /** Soru çözme: canı, puanı, serisi yok — yalnızca sorular, cevaplar ve açıklamalar. */
+type PoolFilter = 'all' | 'new' | 'wrong';
+
 export function DuolingoZone({ target, onExit }: Props) {
-  const engine = useLearningEngine(target.questions);
+  const { progress, recordResult } = useApp();
+  const engine = useLearningEngine(target.questions, recordResult);
   const {
     session,
     currentItem,
@@ -31,8 +35,8 @@ export function DuolingoZone({ target, onExit }: Props) {
     feedback,
     matchedPairIds,
     lastWrongPair,
-    availableCount,
     source,
+    quizPool,
     correctCount,
     wrongQuestions,
     start,
@@ -45,6 +49,15 @@ export function DuolingoZone({ target, onExit }: Props) {
 
   // 0 = tümü
   const [count, setCount] = useLocalStorage<number>(STORAGE_KEYS.quizCount, 20);
+  // Havuz: hepsi / hiç çözülmemiş / son cevabı yanlış olan. Liste oturum başında sabitlenir.
+  const [poolFilter, setPoolFilter] = useState<PoolFilter>('all');
+  const pools: Record<PoolFilter, typeof quizPool> = {
+    all: quizPool,
+    new: quizPool.filter((q) => !progress[q.id]),
+    wrong: quizPool.filter((q) => progress[q.id]?.last === 'wrong'),
+  };
+  const activePool = pools[poolFilter].length > 0 ? pools[poolFilter] : quizPool;
+  const availableCount = activePool.length;
 
   // Geri bildirim sesleri
   useEffect(() => {
@@ -124,6 +137,34 @@ export function DuolingoZone({ target, onExit }: Props) {
             <>
               <div className="flex flex-col gap-2">
                 <span className="text-center text-xs font-extrabold tracking-widest text-duo-gray-300">
+                  HANGİ SORULAR
+                </span>
+                <div className="flex flex-wrap justify-center gap-2" data-pool-filter>
+                  {(
+                    [
+                      ['all', 'Hepsi'],
+                      ['new', 'Çözülmemiş'],
+                      ['wrong', 'Yanlışlarım'],
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      disabled={pools[key].length === 0}
+                      onClick={() => setPoolFilter(key)}
+                      className={cn(
+                        'h-11 rounded-xl border-2 px-4 text-sm font-extrabold transition-colors disabled:opacity-40',
+                        poolFilter === key && pools[key].length > 0
+                          ? 'border-duo-blue bg-duo-blue-light text-duo-blue-dark'
+                          : 'border-duo-gray-100 bg-white text-duo-gray-500 hover:border-duo-blue'
+                      )}
+                    >
+                      {label} ({pools[key].length})
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="text-center text-xs font-extrabold tracking-widest text-duo-gray-300">
                   SORU SAYISI
                 </span>
                 <div className="flex flex-wrap justify-center gap-2">
@@ -154,7 +195,7 @@ export function DuolingoZone({ target, onExit }: Props) {
                   </button>
                 </div>
               </div>
-              <Button size="lg" onClick={() => start(chosen || undefined)}>
+              <Button size="lg" onClick={() => start(chosen || undefined, activePool)}>
                 Başla
               </Button>
             </>

@@ -1,5 +1,62 @@
 {
   "name": "Hafta 8 · Antimikrobiyaller",
+  "lesson": [
+    {
+      "title": "Bu anlatım: 8. haftanın tabloları",
+      "body": "8. hafta sınavında **tablolar** ağırlıklı. Bu anlatım slaytlardaki her tabloyu ve şemayı tek yerde toplar; tablolardaki her hücre için soru setinde en az bir soru var.\n\n! Tabloları satır satır oku: önce **drug class → örnek ilaç**, sonra **mechanism**, **origin** (natural / semisynthetic / synthetic), **spectrum** ve **clinical use**.",
+      "source": "Slayt 4–18"
+    },
+    {
+      "title": "Antibiotics sınıflama şeması",
+      "body": "| Grup | Tanım (slayt) | Örnekler |\n|---|---|---|\n| **Natural** | Compounds produced by microbes | Penicillins G/V, streptomycin, cephalosporin C |\n| **Semi-synthetic** | Chemically-modified natural antibiotics | Amoxicillin, cephalexin |\n| **Synthetic** | Industrially manufactured agents chemically related to natural antibiotics | Fluoroquinolones, sulfonamides |\n\n- **Semisynthetic antimicrobial** = natural bir antibiotic'in kimyasal olarak modifiye edilmiş türevi. Amaç: hedef bakteri yelpazesini genişletmek, stability'yi artırmak, toxicity'yi azaltmak.\n\n! Synthetic = **fluoroquinolones ve sulfonamides**. Cephalexin semi-synthetic, cephalosporin C natural.",
+      "source": "Slayt 4 · Antibiotics sınıflama şeması"
+    },
+    {
+      "title": "MIC · MBC · dilution ve microdilution",
+      "body": "- **MIC:** visible bacterial growth'u inhibe eden en düşük ilaç konsantrasyonu.\n- **MBC:** starting inoculum'un **≥%99.9**'unu öldüren en düşük konsantrasyon.\n- **MLC / MLD:** MBC'nin daha geniş (umbrella) terimi; her mikroorganizmaya uygulanır.\n\n### Dilution test (tüpler)\n| Tüp | 2 µg/mL | 4 µg/mL | 8 µg/mL | 16 µg/mL | 32 µg/mL |\n|---|---|---|---|---|---|\n| Turbidity | var | var | yok | yok | yok |\n\n- Turbidity'yi inhibe eden en düşük dilution = **MIC = 8 µg/mL**. Turbidity olmayan tüplerden ilaçsız plaklara ekim → ≥%99.9 öldüren en düşük dilution = **MBC**.\n\n### Microdilution tepsisi (CDC)\n| Drug | MIC |\n|---|---|\n| Penicillin | **0.06 µg/mL** |\n| Erythromycin | **8 µg/mL** |\n| Clindamycin | **>32 µg/mL** (32'ye kadar her konsantrasyonda üreme) |\n\n- Konsantrasyon **soldan sağa** artar; son sütunda **growth control** ve **sterile control** kuyucukları vardır.",
+      "source": "Slayt 6 · MIC / MBC · dilution ve microdilution"
+    },
+    {
+      "title": "PK / PD ve AUC hesap tablosu",
+      "body": "| Kutu | Tanım |\n|---|---|\n| **Pharmacokinetics (PK)** | What body does to the drug — plasma'daki ilaç düzeyinin zamanla değişimi |\n| **Pharmacodynamics (PD)** | What the drug does to the microorganism — MIC, görünür üremeyi durduran en düşük laboratuvar konsantrasyonu |\n| **AUC(24)** | 24 saatlik plasma concentration eğrisinin altındaki toplam alan; drug exposure ölçüsü |\n| **AUC(24)/MIC** | Drug exposure ÷ mikroorganizmanın MIC'i; exposure'ı susceptibility ile karşılaştırır |\n\n### Alan = iki konsantrasyonun ortalaması × aradaki saat\n| Aralık | Hesap | Alan |\n|---|---|---|\n| 0–2 h | [(0 + 16) ÷ 2] × 2 | 16 mg·h/L |\n| 2–6 h | [(16 + 8) ÷ 2] × 4 | 48 mg·h/L |\n| 6–12 h | [(8 + 4) ÷ 2] × 6 | 36 mg·h/L |\n| 12–24 h | [(4 + 1) ÷ 2] × 12 | 30 mg·h/L |\n| **Toplam** | AUC(24) | **130 mg·h/L** |\n\n- **AUC(24)/MIC = 130 ÷ 2 = 65 h.**\n\n! Kalın maddeler: 65 h, **inhibition'ın 65 saat sürdüğü anlamına gelmez**; hastada gerçekte ne olduğunu da göstermez (MIC kontrollü laboratuvar koşulunda ölçülür, vücuttaki düzey iner çıkar). Oran, ilaç ve enfeksiyon için **hedef değer** belirlenmişse yararlıdır: AUC kan düzeylerinden tahmin edilir, MIC laboratuvarda bulunur, oran hedefle karşılaştırılır.",
+      "source": "Slayt 8 · AUC hesap tablosu"
+    },
+    {
+      "title": "Mechanisms şeması",
+      "body": "| Hedef | İlaçlar |\n|---|---|\n| **Cell wall** | β-lactams (penicillins, cephalosporins, monobactams, carbapenems), glycopeptides (vancomycin), bacitracin |\n| **Plasma membrane** | Polymyxins (polymyxin B, colistin), lipopeptide (daptomycin) |\n| **Ribosomes — 30S** | Aminoglycosides, tetracyclines |\n| **Ribosomes — 50S** | Macrolides, lincosamides, chloramphenicol, oxazolidinones |\n| **DNA synthesis** | Fluoroquinolones (ciprofloxacin, levofloxacin, moxifloxacin) |\n| **RNA synthesis** | Rifamycins (rifampin) |\n| **Metabolic pathways — folic acid synthesis** | Sulfonamides, sulfones, trimethoprim |\n| **Metabolic pathways — mycolic acid synthesis** | Isoniazid |\n\n! 30S = aminoglycosides + tetracyclines; geri kalan ribozom ilaçları 50S.",
+      "source": "Slayt 9 · Mechanisms şeması"
+    },
+    {
+      "title": "Side chain tablosu ve β-lactam yapıları",
+      "body": "| Drug | Side chain | Yapı |\n|---|---|---|\n| **Penicillin G** | Benzyl | Benzene ring, **CH₂** üzerinden bağlı |\n| **Penicillin V** | Phenoxymethyl | Benzene ring, **O–CH₂** üzerinden bağlı |\n| **Ampicillin** | α-aminobenzyl | Benzene ring, **CH(NH₂)** üzerinden bağlı; NH₂ amino group |\n\n- Şekildeki dört yapının hepsinde **β-lactam ring** vardır: **penicillin, cephalosporin, monobactam, carbapenem**. Monobactam'da halka tek başınadır.\n- Cell wall inhibitörleri hücreyi **osmotic lysis**'e duyarlı yapar → **bactericidal**. İnsan hücresi peptidoglycan yapmaz → **selective toxicity**.\n- β-lactam ring **değişmeden kalmalı**; R gruplarındaki değişiklikler potency, spectrum ve half-life'ı artırır.\n- **Vancomycin** (glycopeptide) PBP'yi doğrudan inaktive etmez; cell wall precursor'larının peptide ucuna bağlanır, alt birimlerin NAM-NAG omurgasına katılmasını engeller.",
+      "source": "Slayt 10 · Side chain tablosu ve β-lactam yapıları"
+    },
+    {
+      "title": "Penicillins & cephalosporins tablosu",
+      "body": "| Drug class | Examples | Origin | Spectrum of activity |\n|---|---|---|---|\n| Penicillins | Penicillin G, penicillin V | **Natural** | Narrow: mainly Gram-positive; activity against a few Gram-negative bacteria |\n| Penicillins | Ampicillin, amoxicillin | Semisynthetic | Broader spectrum: Gram-positive bacteria plus increased Gram-negative activity |\n| Penicillins | Methicillin | Semisynthetic | Narrow: Gram-positive bacteria, including penicillinase-producing strains |\n| Cephalosporins | Cephalosporin C | **Natural** | Narrow: similar to penicillin, with increased Gram-negative activity |\n| Cephalosporins | First generation | Semisynthetic | Narrow: similar to penicillin, with some Gram-negative activity |\n| Cephalosporins | Second generation | Semisynthetic | Broader Gram-negative activity than first-generation drugs |\n| Cephalosporins | Third and fourth generation | Semisynthetic | Broad spectrum: Gram-positive and Gram-negative bacteria, including some β-lactamase producers |\n| Cephalosporins | Fifth generation | Semisynthetic | Broad spectrum, including **MRSA** |\n\n! Natural yalnız **penicillin G/V** ve **cephalosporin C**. **MRSA → fifth generation**. Penicillinase-producing strains → **methicillin**.",
+      "source": "Slayt 12 · Penicillins / cephalosporins tablosu"
+    },
+    {
+      "title": "Cell wall hedef tablosu",
+      "body": "| Target / mechanism | Drug class | Examples | Origin | Spectrum of activity |\n|---|---|---|---|---|\n| Block peptidoglycan subunit transport | Monobactams | Aztreonam | Semisynthetic | Narrow: Gram-negative bacteria, including β-lactamase producers |\n| Inhibit cell-wall cross-linking | Carbapenems | Imipenem, meropenem, doripenem | Semisynthetic | Broadest β-lactam spectrum: Gram-positive and Gram-negative, including many β-lactamase producers |\n| Bind D-Ala-D-Ala termini | Glycopeptides | Vancomycin | **Natural** | Narrow: Gram-positive bacteria, including multidrug-resistant strains |\n| Block transport of peptidoglycan subunits across the cytoplasmic membrane | Bacitracin | Bacitracin | **Natural** | Broad spectrum: Gram-positive and Gram-negative bacteria |\n\n- Slayttaki ilaç listesi: penicillin, oxacillin, ampicillin, cephalosporine, carbenicillin, vancomycin, methicillin, bacitracin, cycloserine, **griseofulvin \\* antifungal activity**.\n\n! Klinikte kullanılan **tek monobactam = aztreonam** (yalnız gram-negative). **En geniş β-lactam spectrum = carbapenems**.",
+      "source": "Slayt 12 · Cell wall hedef tablosu"
+    },
+    {
+      "title": "Membrane function tablosu",
+      "body": "| Specific drug | Drug class | Mechanism of action | Spectrum of activity | Clinical use |\n|---|---|---|---|---|\n| Polymyxin B | Polymyxins | Binds lipopolysaccharide (LPS) in the outer membrane, then disrupts the outer and cytoplasmic membranes | Narrow: Gram-negative bacteria, including multidrug-resistant strains | Topical preparations to help prevent infection in wounds |\n| Polymyxin E (colistin), oral | Polymyxins | Binds LPS and disrupts bacterial membranes | Narrow: Gram-negative, including MDR strains | Oral bowel decontamination in selected high-risk patients or before invasive procedures |\n| Polymyxin E (colistin), IV | Polymyxins | Binds LPS and disrupts bacterial membranes | Narrow: Gram-negative, including MDR strains | Treats serious systemic infections caused by multidrug-resistant pathogens |\n| Daptomycin | **Lipopeptide** | Inserts into the cytoplasmic membrane, disrupting it and killing the cell | Narrow: **Gram-positive**, including MDR strains | Complicated skin and skin-structure infections and bacteremia caused by Gram-positive pathogens, including MRSA |\n\n- Liste: polymyxin, gramicidin, tyrosidine, **nistatin \\* antifungal activity**, **amphotericin B \\* antifungal activity**.\n\n! Polymyxins → **gram-negative**; daptomycin → **gram-positive**. Daptomycin: Streptomyces roseosporus, IV, skeletal muscle'da reversible toxicity.",
+      "source": "Slayt 14 · Membrane function tablosu"
+    },
+    {
+      "title": "Protein synthesis inhibitörleri",
+      "body": "| Grup | Subunit | Etki (özet kutusu) | Sınav notu |\n|---|---|---|---|\n| **Aminoglycosides** | 30S | Impair proofreading → faulty proteins | Bactericidal; nephro-, neuro-, ototoxic; streptomycin, gentamicin, neomycin, kanamycin |\n| **Tetracyclines** | 30S | Block binding of tRNAs | Bacteriostatic; phototoxicity, dişlerde renk değişikliği, liver toxicity |\n| **Macrolides** | 50S | Prevent peptide bond formation | Bacteriostatic; erythromycin t½ 1.5 h, azithromycin t½ 68 h; telithromycin hepatotoxic |\n| **Lincosamides** | 50S | Prevent peptide bond formation | Lincomycin (natural), clindamycin (semisynthetic); streptococcal ve staphylococcal |\n| **Chloramphenicol** | 50S | Prevent peptide bond formation | İlk synthetically mass produced; gray baby syndrome, bone marrow suppression |\n| **Oxazolidinones** (linezolid) | 50S | Initiation complex'i ve A → P translocation'ı engeller | Synthetic, broad-spectrum |\n\n- Hayvan hücresi ribozomu **80S**, bakterininki **70S** → selective target.\n- Initiation complex = **50S subunit + 30S subunit + diğer faktörlerin** birleşmesi.",
+      "source": "Slayt 17 · Protein synthesis özet kutusu"
+    },
+    {
+      "title": "Nucleic acid synthesis tablosu",
+      "body": "| Mechanism of action | Drug class | Specific drugs | Spectrum of activity | Clinical use |\n|---|---|---|---|---|\n| Inhibits bacterial RNA polymerase activity and blocks transcription, killing the cell | Rifamycin | Rifampin | Narrow: gram-positive and limited gram-negative; also Mycobacterium tuberculosis | Combination therapy for treatment of tuberculosis |\n| Inhibits the activity of DNA gyrase and blocks DNA replication, killing the cell | Fluoroquinolones | Ciprofloxacin, ofloxacin, moxifloxacin | Broad spectrum against gram-positive and gram-negative bacteria | Wide variety of skin and systemic infections |\n\n- **Metronidazole:** semisynthetic nitroimidazole, aynı zamanda **antiprotozoan**; DNA replication'ı engeller.\n- **Rifampin:** liver enzyme'lerini indükler → diğer ilaçların metabolizması artar (**antagonism**) → **hepatotoxicity**.",
+      "source": "Slayt 18 · Nucleic acid synthesis tablosu"
+    }
+  ],
   "items": [
     {
       "id": "q01",
@@ -19,7 +76,12 @@
       "id": "q02",
       "type": "mcq",
       "question": "Slayttaki tanıma göre antibiotics hangi mikroorganizmaları hedefler?",
-      "options": ["Bakterileri", "Mantarları", "Virüsleri", "Protozoonları"],
+      "options": [
+        "Bakterileri",
+        "Mantarları",
+        "Virüsleri",
+        "Protozoonları"
+      ],
       "answer": "Bakterileri",
       "explanation": "Antibiotics bakterileri, antifungals mantarları, antivirals virüsleri hedefler.",
       "source": "Slayt 3"
@@ -28,7 +90,12 @@
       "id": "q03",
       "type": "mcq",
       "question": "Paul Ehrlich ile birlikte verilen Compound 606 hangi hastalığın tedavisinde etkili olmuştur?",
-      "options": ["Syphilis", "Tuberculosis", "Typhoid fever", "Meningitis"],
+      "options": [
+        "Syphilis",
+        "Tuberculosis",
+        "Typhoid fever",
+        "Meningitis"
+      ],
       "answer": "Syphilis",
       "explanation": "Compound 606, syphilis (sifiliz) tedavisinde etkili olduğu kanıtlanan bir antimicrobial agent'tır.",
       "source": "Slayt 3"
@@ -107,7 +174,12 @@
       "id": "q09",
       "type": "mcq",
       "question": "Antibiotics sınıflamasına göre aşağıdakilerden hangisi SYNTHETIC antibiotic'tir?",
-      "options": ["Fluoroquinolones", "Amoxicillin", "Streptomycin", "Cephalexin"],
+      "options": [
+        "Fluoroquinolones",
+        "Amoxicillin",
+        "Streptomycin",
+        "Cephalexin"
+      ],
       "answer": "Fluoroquinolones",
       "explanation": "Natural: penicillins G/V, streptomycin, cephalosporin C · Semi-synthetic: amoxicillin, cephalexin · Synthetic: fluoroquinolones, sulfonamides.",
       "source": "Slayt 4 · Antibiotics sınıflama şeması"
@@ -116,7 +188,12 @@
       "id": "q10",
       "type": "mcq",
       "question": "Sınıflamaya göre aşağıdakilerden hangisi NATURAL antibiotic'tir?",
-      "options": ["Streptomycin", "Amoxicillin", "Cephalexin", "Sulfonamides"],
+      "options": [
+        "Streptomycin",
+        "Amoxicillin",
+        "Cephalexin",
+        "Sulfonamides"
+      ],
       "answer": "Streptomycin",
       "explanation": "Natural (mikropların ürettiği bileşikler): penicillins G/V, streptomycin, cephalosporin C.",
       "source": "Slayt 4 · Antibiotics sınıflama şeması"
@@ -125,7 +202,12 @@
       "id": "q11",
       "type": "mcq",
       "question": "Sınıflamaya göre cephalexin hangi gruptadır?",
-      "options": ["Semi-synthetic", "Natural", "Synthetic", "Antifungal"],
+      "options": [
+        "Semi-synthetic",
+        "Natural",
+        "Synthetic",
+        "Antifungal"
+      ],
       "answer": "Semi-synthetic",
       "explanation": "Semi-synthetic (chemically-modified natural antibiotics): amoxicillin, cephalexin.",
       "source": "Slayt 4 · Antibiotics sınıflama şeması"
@@ -204,7 +286,12 @@
       "id": "q17",
       "type": "mcq",
       "question": "MBC (minimal bactericidal concentration), başlangıç inoculum'unun en az yüzde kaçını öldüren en düşük konsantrasyondur?",
-      "options": ["≥ %99.9", "≥ %50", "≥ %90", "%100"],
+      "options": [
+        "≥ %99.9",
+        "≥ %50",
+        "≥ %90",
+        "%100"
+      ],
       "answer": "≥ %99.9",
       "explanation": "MBC, başlangıç inoculum'unun (starting inoculum) ≥%99.9'unu öldüren en düşük ilaç konsantrasyonudur.",
       "source": "Slayt 6"
@@ -227,7 +314,12 @@
       "id": "q19",
       "type": "mcq",
       "question": "Slayttaki dilution test örneğinde (2, 4, 8, 16, 32 µg/mL tüpleri) MIC kaç bulunmuştur?",
-      "options": ["8 µg/mL", "2 µg/mL", "4 µg/mL", "32 µg/mL"],
+      "options": [
+        "8 µg/mL",
+        "2 µg/mL",
+        "4 µg/mL",
+        "32 µg/mL"
+      ],
       "answer": "8 µg/mL",
       "explanation": "Dilution test'te turbidity'yi (bulanıklık) inhibe eden en düşük konsantrasyon MIC'tir. Bu örnekte MIC 8 µg/mL'dir.",
       "source": "Slayt 6 · Dilution test"
@@ -292,7 +384,12 @@
       "id": "q24",
       "type": "mcq",
       "question": "Enfeksiyona neden olan patojen tanımlanmışsa slayta göre hangi tür antimicrobial tercih edilmelidir?",
-      "options": ["Narrow-spectrum", "Broad-spectrum", "Her zaman iki broad-spectrum ilacın kombinasyonu", "Antifungal"],
+      "options": [
+        "Narrow-spectrum",
+        "Broad-spectrum",
+        "Her zaman iki broad-spectrum ilacın kombinasyonu",
+        "Antifungal"
+      ],
       "answer": "Narrow-spectrum",
       "explanation": "Enfeksiyona neden olan patojen tanımlanmışsa narrow-spectrum bir antimicrobial kullanmak en iyisidir. Narrow-spectrum antimicrobial yalnızca belirli bakteriyel patojen alt gruplarını hedefler.",
       "source": "Slayt 7"
@@ -343,7 +440,12 @@
       "id": "q28",
       "type": "mcq",
       "question": "Slayttaki örnekte AUC(24) = 130 mg·h/L ve MIC = 2 mg/L ise AUC(24)/MIC kaçtır?",
-      "options": ["65 h", "260 h", "130 h", "32.5 h"],
+      "options": [
+        "65 h",
+        "260 h",
+        "130 h",
+        "32.5 h"
+      ],
       "answer": "65 h",
       "explanation": "130 mg·h/L ÷ 2 mg/L = 65 h. Parçalar: 0–2 h 16 + 2–6 h 48 + 6–12 h 36 + 12–24 h 30 = 130 mg·h/L.",
       "source": "Slayt 8 · Plasma concentration–time curve"
@@ -380,7 +482,12 @@
       "id": "q31",
       "type": "mcq",
       "question": "Mechanisms şemasına göre aşağıdakilerden hangisi CELL WALL synthesis'i hedefler?",
-      "options": ["Vancomycin", "Gentamicin", "Ciprofloxacin", "Rifampin"],
+      "options": [
+        "Vancomycin",
+        "Gentamicin",
+        "Ciprofloxacin",
+        "Rifampin"
+      ],
       "answer": "Vancomycin",
       "explanation": "Cell wall: β-lactams (penicillins, cephalosporins, monobactams, carbapenems), glycopeptides (vancomycin), bacitracin. Gentamicin → 30S, ciprofloxacin → DNA synthesis, rifampin → RNA synthesis.",
       "source": "Slayt 9 · Mechanisms şeması"
@@ -403,7 +510,12 @@
       "id": "q33",
       "type": "mcq",
       "question": "Aşağıdakilerden hangisi 50S subunit'e BAĞLANMAZ?",
-      "options": ["Tetracyclines", "Macrolides", "Lincosamides", "Chloramphenicol"],
+      "options": [
+        "Tetracyclines",
+        "Macrolides",
+        "Lincosamides",
+        "Chloramphenicol"
+      ],
       "answer": "Tetracyclines",
       "explanation": "Tetracyclines 30S'e bağlanır. 50S: macrolides, lincosamides, chloramphenicol, oxazolidinones.",
       "source": "Slayt 9 · Mechanisms şeması"
@@ -426,7 +538,12 @@
       "id": "q35",
       "type": "mcq",
       "question": "Mechanisms şemasına göre mycolic acid synthesis'i hedefleyen ilaç hangisidir?",
-      "options": ["Isoniazid", "Trimethoprim", "Daptomycin", "Bacitracin"],
+      "options": [
+        "Isoniazid",
+        "Trimethoprim",
+        "Daptomycin",
+        "Bacitracin"
+      ],
       "answer": "Isoniazid",
       "explanation": "Metabolic pathways — mycolic acid synthesis: isoniazid.",
       "source": "Slayt 9 · Mechanisms şeması"
@@ -491,7 +608,12 @@
       "id": "q40",
       "type": "mcq",
       "question": "β-lactam ilaçlarında antibacterial aktivitenin korunması için hangi yapı DEĞİŞMEDEN kalmalıdır?",
-      "options": ["β-lactam ring", "R groups", "Benzene ring", "Amino group"],
+      "options": [
+        "β-lactam ring",
+        "R groups",
+        "Benzene ring",
+        "Amino group"
+      ],
       "answer": "β-lactam ring",
       "explanation": "Bu ilaçların antibacterial aktivitesini koruması için β-lactam ring değişmeden kalmalıdır; R groups'taki stratejik değişiklikler daha güçlü (increased potency), expanded spectrum ve daha uzun half-life'lı semisynthetic β-lactams'ı ortaya çıkarmıştır.",
       "source": "Slayt 10"
@@ -514,7 +636,12 @@
       "id": "q42",
       "type": "mcq",
       "question": "Vancomycin hangi ilaç sınıfının üyesidir?",
-      "options": ["Glycopeptides", "β-lactams", "Aminoglycosides", "Lipopeptides"],
+      "options": [
+        "Glycopeptides",
+        "β-lactams",
+        "Aminoglycosides",
+        "Lipopeptides"
+      ],
       "answer": "Glycopeptides",
       "explanation": "Vancomycin, glycopeptides sınıfının üyesidir. Tabloya göre natural; narrow: multidrug-resistant suşlar dahil gram-positive bakteriler.",
       "source": "Slayt 10 · Slayt 12"
@@ -565,7 +692,12 @@
       "id": "q46",
       "type": "mcq",
       "question": "Klinik olarak kullanılan TEK monobactam hangisidir?",
-      "options": ["Aztreonam", "Imipenem", "Meropenem", "Methicillin"],
+      "options": [
+        "Aztreonam",
+        "Imipenem",
+        "Meropenem",
+        "Methicillin"
+      ],
       "answer": "Aztreonam",
       "explanation": "Klinikte kullanılan tek monobactam aztreonam'dır. Yalnızca gram-negative bakterilere etkili, narrow-spectrum bir antibacterial'dir.",
       "source": "Slayt 11 (kalın)"
@@ -644,7 +776,12 @@
       "id": "q52",
       "type": "mcq",
       "question": "Tabloya göre MRSA'yı da kapsayan broad-spectrum cephalosporin generation'ı hangisidir?",
-      "options": ["Fifth generation", "First generation", "Second generation", "Cephalosporin C"],
+      "options": [
+        "Fifth generation",
+        "First generation",
+        "Second generation",
+        "Cephalosporin C"
+      ],
       "answer": "Fifth generation",
       "explanation": "Cephalosporins — fifth generation — semisynthetic — broad spectrum, MRSA dahil.",
       "source": "Slayt 12 · tablo"
@@ -667,7 +804,12 @@
       "id": "q54",
       "type": "mcq",
       "question": "Tabloya göre bazı β-lactamase producer'lar dahil gram-positive ve gram-negative'lere etkili cephalosporin generation'ları hangileridir?",
-      "options": ["Third and fourth generation", "First generation", "Second generation", "Cephalosporin C (natural)"],
+      "options": [
+        "Third and fourth generation",
+        "First generation",
+        "Second generation",
+        "Cephalosporin C (natural)"
+      ],
       "answer": "Third and fourth generation",
       "explanation": "Third and fourth generation — semisynthetic — broad spectrum: bazı β-lactamase producer'lar dahil gram-positive ve gram-negative bakteriler.",
       "source": "Slayt 12 · tablo"
@@ -704,7 +846,12 @@
       "id": "q57",
       "type": "mcq",
       "question": "Slayt 12'deki cell wall ilaçları listesinde “antifungal activity” ile işaretlenen ilaç hangisidir?",
-      "options": ["Griseofulvin", "Cycloserine", "Carbenicillin", "Oxacillin"],
+      "options": [
+        "Griseofulvin",
+        "Cycloserine",
+        "Carbenicillin",
+        "Oxacillin"
+      ],
       "answer": "Griseofulvin",
       "explanation": "Liste: penicillin, oxacillin, ampicillin, cephalosporine, carbenicillin, vancomycin, methicillin, bacitracin, cycloserine, griseofulvin *antifungal activity.",
       "source": "Slayt 12 · ilaç listesi"
@@ -741,7 +888,12 @@
       "id": "q60",
       "type": "mcq",
       "question": "Polymyxins sistemik kullanıldığında hangi organların hücre membranlarına zarar verebilir?",
-      "options": ["Böbrek ve sinir sistemi", "Karaciğer ve kemik iliği", "Kulak ve diş", "Deri ve kas"],
+      "options": [
+        "Böbrek ve sinir sistemi",
+        "Karaciğer ve kemik iliği",
+        "Kulak ve diş",
+        "Deri ve kas"
+      ],
       "answer": "Böbrek ve sinir sistemi",
       "explanation": "Membranı hedefleyen bu mekanizma selective toxicity değildir; bu ilaçlar sistemik verildiğinde böbrek ve sinir sistemi hücrelerinin membranına da zarar verir.",
       "source": "Slayt 13"
@@ -778,7 +930,12 @@
       "id": "q63",
       "type": "mcq",
       "question": "Daptomycin için slaytta belirtilen reversible toxicity hangi dokudadır?",
-      "options": ["Skeletal muscle (iskelet kası)", "Böbrek", "Kulak", "Karaciğer"],
+      "options": [
+        "Skeletal muscle (iskelet kası)",
+        "Böbrek",
+        "Kulak",
+        "Karaciğer"
+      ],
       "answer": "Skeletal muscle (iskelet kası)",
       "explanation": "Genellikle intravenous verilir ve iyi tolere ediliyor görünür; skeletal muscle'da reversible toxicity gösterir.",
       "source": "Slayt 14"
@@ -815,7 +972,12 @@
       "id": "q66",
       "type": "mcq",
       "question": "Slayt 14'teki membrane function inhibitörleri listesinde “antifungal activity” ile işaretlenenler hangileridir?",
-      "options": ["Nystatin ve amphotericin B", "Polymyxin ve gramicidin", "Gramicidin ve tyrocidine", "Polymyxin ve tyrocidine"],
+      "options": [
+        "Nystatin ve amphotericin B",
+        "Polymyxin ve gramicidin",
+        "Gramicidin ve tyrocidine",
+        "Polymyxin ve tyrocidine"
+      ],
       "answer": "Nystatin ve amphotericin B",
       "explanation": "Liste: polymyxin, gramicidin, tyrocidine, nystatin *antifungal activity, amphotericin B *antifungal activity.",
       "source": "Slayt 14 · ilaç listesi"
@@ -922,7 +1084,12 @@
       "id": "q74",
       "type": "mcq",
       "question": "İlk macrolide hangisidir?",
-      "options": ["Erythromycin", "Azithromycin", "Telithromycin", "Clindamycin"],
+      "options": [
+        "Erythromycin",
+        "Azithromycin",
+        "Telithromycin",
+        "Clindamycin"
+      ],
       "answer": "Erythromycin",
       "explanation": "İlk macrolide erythromycin'dir. Semisynthetic macrolides arasında azithromycin ve telithromycin bulunur.",
       "source": "Slayt 16 (kalın)"
@@ -959,7 +1126,12 @@
       "id": "q77",
       "type": "mcq",
       "question": "Macrolide-resistant patojenlere karşı kullanılan ancak seriously hepatotoxic olan semisynthetic ilaç hangisidir?",
-      "options": ["Telithromycin", "Azithromycin", "Erythromycin", "Lincomycin"],
+      "options": [
+        "Telithromycin",
+        "Azithromycin",
+        "Erythromycin",
+        "Lincomycin"
+      ],
       "answer": "Telithromycin",
       "explanation": "Semisynthetic telithromycin macrolide-resistant patojenlere karşı etkilidir ancak seriously hepatotoxic'tir.",
       "source": "Slayt 16 (kalın)"
@@ -982,7 +1154,12 @@
       "id": "q79",
       "type": "mcq",
       "question": "Synthetically mass produced ilk antibacterial ilaç hangisidir?",
-      "options": ["Chloramphenicol", "Penicillin", "Erythromycin", "Streptomycin"],
+      "options": [
+        "Chloramphenicol",
+        "Penicillin",
+        "Erythromycin",
+        "Streptomycin"
+      ],
       "answer": "Chloramphenicol",
       "explanation": "Chloramphenicol 50S ribozoma bağlanıp peptide bond formation'ı inhibe eder; synthetically mass produced ilk antibacterial ilaçtır.",
       "source": "Slayt 16 (kalın)"
@@ -1308,6 +1485,321 @@
       "front": "Fluoroquinolones",
       "back": "Ciprofloxacin, ofloxacin, moxifloxacin (şemada levofloxacin de); DNA gyrase'ı inhibe eder, DNA replication'ı bloke eder, hücreyi öldürür; gram-positive ve gram-negative'lere broad-spectrum; çok çeşitli skin ve sistemik enfeksiyonlar. Sınıflamada synthetic.",
       "source": "Slayt 9 · Slayt 18 tablosu"
+    },
+    {
+      "id": "q88",
+      "type": "mcq",
+      "question": "Slayt 8'deki AUC hesabında 0–2 saat arasındaki alan nasıl hesaplanır?",
+      "options": [
+        "[(0 + 16) ÷ 2] × 2 = 16 mg·h/L",
+        "16 × 2 = 32 mg·h/L",
+        "[(0 + 16) ÷ 2] × 4 = 32 mg·h/L",
+        "(16 − 0) ÷ 2 = 8 mg·h/L"
+      ],
+      "answer": "[(0 + 16) ÷ 2] × 2 = 16 mg·h/L",
+      "explanation": "Area = iki konsantrasyonun ortalaması × ölçümler arasındaki saat. 0–2 h: [(0 + 16) ÷ 2] × 2 = 16 mg·h/L.",
+      "source": "Slayt 8 · AUC hesap tablosu"
+    },
+    {
+      "id": "q89",
+      "type": "mcq",
+      "question": "Slayt 8'deki AUC hesabında 6–12 saat arasındaki alan nasıl hesaplanır?",
+      "options": [
+        "[(8 + 4) ÷ 2] × 6 = 36 mg·h/L",
+        "[(8 + 4) ÷ 2] × 12 = 72 mg·h/L",
+        "(8 − 4) × 6 = 24 mg·h/L",
+        "8 × 6 = 48 mg·h/L"
+      ],
+      "answer": "[(8 + 4) ÷ 2] × 6 = 36 mg·h/L",
+      "explanation": "6–12 h: [(8 + 4) ÷ 2] × 6 = 36 mg·h/L (aralık 6 saat).",
+      "source": "Slayt 8 · AUC hesap tablosu"
+    },
+    {
+      "id": "q90",
+      "type": "mcq",
+      "question": "Slayt 8'deki AUC hesabında 12–24 saat arasındaki alan nasıl hesaplanır?",
+      "options": [
+        "[(4 + 1) ÷ 2] × 12 = 30 mg·h/L",
+        "[(4 + 1) ÷ 2] × 24 = 60 mg·h/L",
+        "(4 − 1) × 12 = 36 mg·h/L",
+        "4 × 12 = 48 mg·h/L"
+      ],
+      "answer": "[(4 + 1) ÷ 2] × 12 = 30 mg·h/L",
+      "explanation": "12–24 h: [(4 + 1) ÷ 2] × 12 = 30 mg·h/L. Toplam: 16 + 48 + 36 + 30 = 130 mg·h/L.",
+      "source": "Slayt 8 · AUC hesap tablosu"
+    },
+    {
+      "id": "q91",
+      "type": "mcq",
+      "question": "Slayta göre AUC(24)/MIC oranı klinikte nasıl kullanılır?",
+      "options": [
+        "AUC ölçülen ya da modellenen kan düzeylerinden tahmin edilir, MIC laboratuvarda belirlenir, oran hesaplanıp o ilacın hedef değeriyle karşılaştırılır",
+        "Oran, inhibisyonun kaç saat süreceğini doğrudan gösterir",
+        "MIC hastanın kanında ölçülür, AUC ise laboratuvarda belirlenir",
+        "Oran yalnızca ilacın toxic dose'unu belirlemek için kullanılır"
+      ],
+      "answer": "AUC ölçülen ya da modellenen kan düzeylerinden tahmin edilir, MIC laboratuvarda belirlenir, oran hesaplanıp o ilacın hedef değeriyle karşılaştırılır",
+      "explanation": "Slayt (kalın): AUC/MIC, araştırmalarla belirli bir ilaç ve enfeksiyon için hedef değer belirlendiğinde yararlıdır. Clinicians estimate a patient's AUC from measured or modeled blood levels, determine the bacterium's MIC in the lab, calculate the ratio, and compare it with that drug's target — drug exposure'ın yeterli olup olmadığını değerlendirmeye yardım eder.",
+      "source": "Slayt 8 (kalın maddeler)"
+    },
+    {
+      "id": "q92",
+      "type": "mcq",
+      "question": "Penicillins/cephalosporins tablosuna göre first generation cephalosporins için hangisi doğrudur?",
+      "options": [
+        "Semisynthetic; narrow — penicillin'e benzer, bir miktar gram-negative aktivite",
+        "Natural; narrow — penicillin'e benzer, artmış gram-negative aktivite",
+        "Semisynthetic; broad — MRSA dahil",
+        "Semisynthetic; broad — bazı β-lactamase producer'lar dahil"
+      ],
+      "answer": "Semisynthetic; narrow — penicillin'e benzer, bir miktar gram-negative aktivite",
+      "explanation": "First generation — semisynthetic — “Narrow: similar to penicillin, with some Gram-negative activity.” (Cephalosporin C: natural, “increased” gram-negative activity; 3rd/4th: β-lactamase producer'lar; 5th: MRSA.)",
+      "source": "Slayt 12 · Penicillins / cephalosporins tablosu"
+    },
+    {
+      "id": "q93",
+      "type": "mcq",
+      "question": "Penicillins/cephalosporins tablosunda origin sütunu “Natural” olan satırlar hangileridir?",
+      "options": [
+        "Penicillin G, V ve cephalosporin C",
+        "Ampicillin, amoxicillin ve methicillin",
+        "Cephalosporin C ve fifth generation",
+        "Penicillin G, V ve methicillin"
+      ],
+      "answer": "Penicillin G, V ve cephalosporin C",
+      "explanation": "Natural: penicillin G, penicillin V, cephalosporin C. Geri kalanların hepsi (ampicillin, amoxicillin, methicillin ve 1st–5th generation cephalosporins) semisynthetic.",
+      "source": "Slayt 12 · Penicillins / cephalosporins tablosu"
+    },
+    {
+      "id": "q94",
+      "type": "mcq",
+      "question": "Cell wall hedef tablosunda “Inhibit cell-wall cross-linking” mekanizması hangi drug class'a aittir?",
+      "options": [
+        "Carbapenems (imipenem, meropenem, doripenem)",
+        "Glycopeptides (vancomycin)",
+        "Bacitracin",
+        "Monobactams (aztreonam)"
+      ],
+      "answer": "Carbapenems (imipenem, meropenem, doripenem)",
+      "explanation": "Tablo: Inhibit cell-wall cross-linking → carbapenems — semisynthetic — broadest β-lactam spectrum (gram-positive ve gram-negative, birçok β-lactamase producer dahil).",
+      "source": "Slayt 12 · Cell wall hedef tablosu"
+    },
+    {
+      "id": "q95",
+      "type": "mcq",
+      "question": "Cell wall hedef tablosunda “Bind D-Ala-D-Ala termini” mekanizması hangi drug class'a aittir?",
+      "options": [
+        "Glycopeptides (vancomycin)",
+        "Carbapenems",
+        "Bacitracin",
+        "Cephalosporins"
+      ],
+      "answer": "Glycopeptides (vancomycin)",
+      "explanation": "Tablo: Bind D-Ala-D-Ala termini → glycopeptides (vancomycin) — natural — narrow: multidrug-resistant suşlar dahil gram-positive bakteriler.",
+      "source": "Slayt 12 · Cell wall hedef tablosu"
+    },
+    {
+      "id": "q96",
+      "type": "mcq",
+      "question": "Cell wall hedef tablosunda origin'i “Natural” olan ilaçlar hangileridir?",
+      "options": [
+        "Vancomycin ve bacitracin",
+        "Aztreonam ve imipenem",
+        "Aztreonam ve vancomycin",
+        "Meropenem ve bacitracin"
+      ],
+      "answer": "Vancomycin ve bacitracin",
+      "explanation": "Natural: vancomycin (glycopeptides) ve bacitracin. Semisynthetic: aztreonam (monobactams) ve carbapenems (imipenem, meropenem, doripenem).",
+      "source": "Slayt 12 · Cell wall hedef tablosu"
+    },
+    {
+      "id": "q97",
+      "type": "mcq",
+      "question": "Membrane function tablosunda daptomycin'in drug class'ı nedir?",
+      "options": [
+        "Lipopeptide",
+        "Polymyxins",
+        "Glycopeptides",
+        "Aminoglycosides"
+      ],
+      "answer": "Lipopeptide",
+      "explanation": "Tablo: polymyxin B ve polymyxin E (colistin) → polymyxins; daptomycin → lipopeptide.",
+      "source": "Slayt 14 · Membrane function tablosu"
+    },
+    {
+      "id": "q98",
+      "type": "mcq",
+      "question": "Membrane function tablosuna göre polymyxin B ve colistin'in spectrum of activity'si nedir?",
+      "options": [
+        "Narrow: multidrug-resistant suşlar dahil gram-negative bakteriler",
+        "Narrow: multidrug-resistant suşlar dahil gram-positive bakteriler",
+        "Broad: gram-positive ve gram-negative bakteriler",
+        "Narrow: yalnızca mantarlar"
+      ],
+      "answer": "Narrow: multidrug-resistant suşlar dahil gram-negative bakteriler",
+      "explanation": "Polymyxins: “Narrow: Gram-negative bacteria, including multidrug-resistant strains.” Daptomycin ise: “Narrow: Gram-positive bacteria, including multidrug-resistant strains.”",
+      "source": "Slayt 14 · Membrane function tablosu"
+    },
+    {
+      "id": "q99",
+      "type": "mcq",
+      "question": "Membrane function tablosuna göre polymyxin E (colistin) IV formunun klinik kullanımı nedir?",
+      "options": [
+        "Multidrug-resistant patojenlerin neden olduğu ciddi sistemik enfeksiyonlar",
+        "Seçilmiş high-risk hastalarda oral bowel decontamination",
+        "Yaralarda enfeksiyonu önlemek için topical preparatlar",
+        "MRSA dahil complicated skin infections ve bacteremia"
+      ],
+      "answer": "Multidrug-resistant patojenlerin neden olduğu ciddi sistemik enfeksiyonlar",
+      "explanation": "Polymyxin B: topical (yaralar) · Colistin oral: bowel decontamination · Colistin IV: “Treats serious systemic infections caused by multidrug-resistant pathogens” · Daptomycin: complicated skin infections ve bacteremia (MRSA dahil).",
+      "source": "Slayt 14 · Membrane function tablosu"
+    },
+    {
+      "id": "q100",
+      "type": "mcq",
+      "question": "Nucleic acid synthesis tablosuna göre klinik kullanımı “wide variety of skin and systemic infections” olan drug class hangisidir?",
+      "options": [
+        "Fluoroquinolones",
+        "Rifamycin",
+        "Polymyxins",
+        "Lipopeptide"
+      ],
+      "answer": "Fluoroquinolones",
+      "explanation": "Fluoroquinolones (ciprofloxacin, ofloxacin, moxifloxacin): wide variety of skin and systemic infections. Rifamycin (rifampin): combination therapy for treatment of tuberculosis.",
+      "source": "Slayt 18 · Nucleic acid synthesis tablosu"
+    },
+    {
+      "id": "q101",
+      "type": "mcq",
+      "question": "Slayt 10'daki yapılarda β-lactam ring'i gösterilen dört ilaç grubu hangileridir?",
+      "options": [
+        "Penicillin, cephalosporin, monobactam, carbapenem",
+        "Penicillin, vancomycin, bacitracin, carbapenem",
+        "Cephalosporin, aminoglycoside, monobactam, tetracycline",
+        "Penicillin, cephalosporin, glycopeptide, lipopeptide"
+      ],
+      "answer": "Penicillin, cephalosporin, monobactam, carbapenem",
+      "explanation": "Şekilde dört yapının hepsinde β-lactam ring işaretlidir: penicillin, cephalosporin, monobactam, carbapenem. β-lactam ring'in değişmeden kalması antibacterial aktivite için şarttır.",
+      "source": "Slayt 10 · Side chain tablosu ve β-lactam yapıları"
+    },
+    {
+      "id": "q102",
+      "type": "mcq",
+      "question": "Slayt 10'daki yapılara göre β-lactam ring'i ikinci bir halkaya bağlı olmayan (tek halkalı) grup hangisidir?",
+      "options": [
+        "Monobactam",
+        "Penicillin",
+        "Cephalosporin",
+        "Carbapenem"
+      ],
+      "answer": "Monobactam",
+      "explanation": "Penicillin, cephalosporin ve carbapenem'de β-lactam ring ikinci bir halkaya bağlıdır; monobactam'da tek başınadır (adı da buradan: mono-bactam; yapıda SO₃H grubu görülür).",
+      "source": "Slayt 10 · Side chain tablosu ve β-lactam yapıları"
+    },
+    {
+      "id": "q103",
+      "type": "mcq",
+      "question": "Mikrodilüsyon tepsisi örneğinde ilaç konsantrasyonu hangi yönde artar?",
+      "options": [
+        "Soldan sağa (low → high concentration)",
+        "Sağdan sola",
+        "Yukarıdan aşağıya",
+        "Her kuyucukta aynıdır"
+      ],
+      "answer": "Soldan sağa (low → high concentration)",
+      "explanation": "Slayt: “In this example, the drug concentrations increase from left to right and the rows with clindamycin, penicillin, and erythromycin have been indicated to the left of the plate.”",
+      "source": "Slayt 6 · MIC / MBC · dilution ve microdilution"
+    },
+    {
+      "id": "q104",
+      "type": "mcq",
+      "question": "Mikrodilüsyon tepsisinde ilaç içermeyen ve üremenin olması beklenen kontrol kuyucuğu nasıl adlandırılır?",
+      "options": [
+        "Growth control",
+        "Sterile control",
+        "MIC kuyucuğu",
+        "MBC kuyucuğu"
+      ],
+      "answer": "Growth control",
+      "explanation": "Şekilde son sütunda “growth control” (ilaçsız, bakteri ürer) ve “sterile control” (bakteri yok) kuyucukları işaretlidir.",
+      "source": "Slayt 6 · MIC / MBC · dilution ve microdilution"
+    },
+    {
+      "id": "q105",
+      "type": "mcq",
+      "question": "Antibiotics sınıflama şemasında “Compounds produced by microbes” tanımı hangi gruba aittir?",
+      "options": [
+        "Natural",
+        "Semi-synthetic",
+        "Synthetic",
+        "Antifungals"
+      ],
+      "answer": "Natural",
+      "explanation": "Natural: compounds produced by microbes · Semi-synthetic: chemically-modified natural antibiotics · Synthetic: industrially manufactured agents chemically related to natural antibiotics.",
+      "source": "Slayt 4 · Antibiotics sınıflama şeması"
+    },
+    {
+      "id": "q106",
+      "type": "mcq",
+      "question": "Mechanisms şemasında “Metabolic pathways” başlığı altında hangi iki sentez yolu yer alır?",
+      "options": [
+        "Folic acid synthesis ve mycolic acid synthesis",
+        "DNA synthesis ve RNA synthesis",
+        "Peptidoglycan synthesis ve LPS synthesis",
+        "30S ve 50S subunit sentezi"
+      ],
+      "answer": "Folic acid synthesis ve mycolic acid synthesis",
+      "explanation": "Metabolic pathways: folic acid synthesis (sulfonamides, sulfones, trimethoprim) ve mycolic acid synthesis (isoniazid).",
+      "source": "Slayt 9 · Mechanisms şeması"
+    },
+    {
+      "id": "q107",
+      "type": "mcq",
+      "question": "Slayta göre oxazolidinones'un engellediği initiation complex nedir?",
+      "options": [
+        "50S subunit, 30S subunit ve diğer faktörlerin bir araya gelmesi",
+        "Yalnızca tRNA ile mRNA'nın birleşmesi",
+        "DNA gyrase ile DNA'nın birleşmesi",
+        "Peptidoglycan alt birimlerinin birleşmesi"
+      ],
+      "answer": "50S subunit, 30S subunit ve diğer faktörlerin bir araya gelmesi",
+      "explanation": "Slayt: “They interfere with formation of the initiation complex (association of the 50S subunit, 30S subunit, and other factors) for translation, and they prevent translocation of the growing protein from the ribosomal A site to the P site.”",
+      "source": "Slayt 17 · Protein synthesis özet kutusu"
+    },
+    {
+      "id": "c31",
+      "type": "card",
+      "front": "Tablo · Penicillins & cephalosporins — origin",
+      "back": "Natural: penicillin G/V, cephalosporin C · Semisynthetic: ampicillin, amoxicillin, methicillin ve 1st–5th generation cephalosporins.",
+      "source": "Slayt 12 · Penicillins / cephalosporins tablosu"
+    },
+    {
+      "id": "c32",
+      "type": "card",
+      "front": "Tablo · Cell wall hedefleri (mekanizma → sınıf)",
+      "back": "Inhibit cell-wall cross-linking → carbapenems (semisynthetic) · Bind D-Ala-D-Ala termini → glycopeptides / vancomycin (natural) · Block transport of peptidoglycan subunits across the cytoplasmic membrane → bacitracin (natural) · Aztreonam: monobactam, semisynthetic.",
+      "source": "Slayt 12 · Cell wall hedef tablosu"
+    },
+    {
+      "id": "c33",
+      "type": "card",
+      "front": "AUC hesabı (trapezoid)",
+      "back": "0–2: [(0+16)÷2]×2 = 16 · 2–6: [(16+8)÷2]×4 = 48 · 6–12: [(8+4)÷2]×6 = 36 · 12–24: [(4+1)÷2]×12 = 30 → AUC(24) = 130 mg·h/L; ÷ MIC 2 mg/L = 65 h.",
+      "source": "Slayt 8 · AUC hesap tablosu"
+    },
+    {
+      "id": "c34",
+      "type": "card",
+      "front": "β-lactam ring taşıyan gruplar",
+      "back": "Penicillin, cephalosporin, monobactam (tek halka), carbapenem. β-lactam ring değişmeden kalmalı; R grupları değişince semisynthetic β-lactams.",
+      "source": "Slayt 10 · Side chain tablosu ve β-lactam yapıları"
+    },
+    {
+      "id": "c35",
+      "type": "card",
+      "front": "Tablo · Membrane function",
+      "back": "Polymyxin B (polymyxins): LPS'e bağlanır, outer + cytoplasmic membrane'ı bozar; gram-negative, MDR dahil; topical · Colistin oral: bowel decontamination · Colistin IV: MDR sistemik enfeksiyon · Daptomycin (lipopeptide): cytoplasmic membrane'a girer; gram-positive, MDR dahil; MRSA skin infections & bacteremia.",
+      "source": "Slayt 14 · Membrane function tablosu"
     }
   ]
 }

@@ -132,6 +132,10 @@ export function Dashboard({ onOpenCourse }: Props) {
           </form>
         </DialogContent>
       </Dialog>
+
+      <p className="mt-auto text-center text-xs font-bold text-duo-gray-300" data-app-version>
+        Kelime Ustası · sürüm {__APP_VERSION__}
+      </p>
     </div>
   );
 }

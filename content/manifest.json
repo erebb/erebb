@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "packs": [
+    {
+      "course": "Mikrobiyoloji",
+      "legacyIds": ["mikrobiyoloji-hafta-7-8"],
+      "sets": [
+        { "key": "mikrobiyoloji-hafta-7", "version": 2, "file": "mikrobiyoloji-hafta-7.json" },
+        { "key": "mikrobiyoloji-hafta-8", "version": 3, "file": "mikrobiyoloji-hafta-8.json" }
+      ]
+    },
+    {
+      "course": "Topografik Anatomi",
+      "sets": [
+        { "key": "topografik-damarlar", "version": 1, "file": "topografik-damarlar.json" },
+        { "key": "topografik-lenf", "version": 1, "file": "topografik-lenf.json" },
+        { "key": "topografik-sinirler", "version": 1, "file": "topografik-sinirler.json" },
+        { "key": "topografik-govde", "version": 1, "file": "topografik-govde.json" },
+        { "key": "topografik-klinik", "version": 1, "file": "topografik-klinik.json" }
+      ]
+    }
+  ]
+}

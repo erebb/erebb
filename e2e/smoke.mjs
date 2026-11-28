@@ -40,6 +40,10 @@ const TOTAL_MCQ = H7_MCQ + H8_MCQ;
 const TOTAL_CARDS = H7_CARDS + count(H8, 'card');
 const TOPO_SETS = ['damarlar', 'lenf', 'sinirler', 'govde', 'klinik'].map((k) => readJson(`../content/topografik-${k}.json`));
 const TOPO_DAMAR = TOPO_SETS[0];
+const MANIFEST = readJson('../content/manifest.json');
+const PKG_VERSION = readJson('../package.json').version;
+const H8_ITEMS = H8.items.length;
+const CORS = { 'access-control-allow-origin': '*' };
 
 // ---------------------------------------------------------------------------
 
@@ -105,6 +109,12 @@ async function newPage(browser, viewport) {
     const res = await route.fetch();
     await route.fulfill({ response: res, headers: { ...res.headers(), 'content-security-policy': CSP } });
   });
+  // Açılıştaki güncelleme denetimi: GitHub'a gitme, "sürüm yok" de. Sonra kaydedilen route
+  // önce çalışır; testler kendi sahte sürümlerini bunun üstüne kaydedebilir.
+  await page.route(
+    (url) => url.hostname === 'api.github.com' || url.hostname === 'raw.githubusercontent.com',
+    (route) => route.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: '{}' })
+  );
   await page.addInitScript(() => {
     window.__cspViolations = [];
     document.addEventListener('securitypolicyviolation', (e) => {
@@ -258,6 +268,29 @@ try {
   await page.getByRole('button', { name: new RegExp(`Yanlışları tekrar çöz \\(${WRONG_FIRST}\\)`) }).click();
   await page.locator('[data-quiz-position]').waitFor();
   check('Soru çöz: "Yanlışları tekrar çöz" yalnız yanlışlarla başlıyor', (await page.locator('[data-quiz-position]').innerText()) === `1/${WRONG_FIRST}`);
+  await page.getByRole('button', { name: 'Çıkış' }).click();
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+
+  // ===================== İlerleme kaydı =====================
+  const h8Progress = await setCard(page, 'Hafta 8').locator('[data-progress-line]').innerText();
+  check(
+    'İlerleme: çözülen sorular set kartında görünüyor',
+    h8Progress.includes(`10/${H8_ITEMS} çalışıldı`) &&
+      h8Progress.includes(`${10 - WRONG_FIRST} doğru`) &&
+      h8Progress.includes(`${WRONG_FIRST} yanlış`),
+    h8Progress
+  );
+  await studySet(page, 'Hafta 8', 'Soru çöz');
+  await page.locator('[data-pool-filter]').waitFor();
+  check(
+    'İlerleme: "Yanlışlarım" ve "Çözülmemiş" havuzları doğru sayıda',
+    (await page.getByRole('button', { name: `Yanlışlarım (${WRONG_FIRST})` }).count()) === 1 &&
+      (await page.getByRole('button', { name: `Çözülmemiş (${H8_MCQ - 10})` }).count()) === 1
+  );
+  await page.getByRole('button', { name: `Yanlışlarım (${WRONG_FIRST})` }).click();
+  await page.getByRole('button', { name: 'Başla' }).click();
+  await page.locator('[data-quiz-position]').waitFor();
+  check('İlerleme: "Yanlışlarım" yalnız yanlış cevaplananları soruyor', (await page.locator('[data-quiz-position]').innerText()) === `1/${WRONG_FIRST}`);
   await page.getByRole('button', { name: 'Çıkış' }).click();
   await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
 
@@ -448,6 +481,10 @@ try {
   await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
   check('Yenileme sonrası dersler korunuyor', (await page.getByRole('button', { name: /Test Dersi/ }).count()) === 1);
   check(
+    'Yenileme sonrası ilerleme korunuyor',
+    (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('kelime-ustasi.progress.v1') ?? '{}')).length)) >= 10
+  );
+  check(
     'Hazır ders yenilemede çoğaltılmıyor',
     (await page.getByRole('button', { name: /Mikrobiyoloji/ }).count()) === 1 &&
       (await page.getByRole('button', { name: /Mikrobiyoloji/ }).innerText()).includes('2 set')
@@ -476,6 +513,7 @@ try {
   const jumpTop = await page.locator('[data-lesson-section]').nth(target).evaluate((el) => el.getBoundingClientRect().top);
   check('Konu anlatımı: içindekiler bölüme götürüyor', Math.abs(jumpTop) < 60, `${Math.round(jumpTop)}px`);
   await shot(page, '10-konu-anlatimi');
+  await settle(page, 900); // kaydırma bitince kalınan bölüm kaydedilir
   await page.getByRole('button', { name: /Soru çöz/ }).last().click();
   await page.getByText(`${count(TOPO_DAMAR, 'mcq')} sınav sorusu`, { exact: false }).waitFor();
   check('Konu anlatımı: sonundan aynı setin sorularına geçiliyor', true);
@@ -491,18 +529,40 @@ try {
   await page.keyboard.press('Escape');
   await page.getByRole('heading', { name: 'Topografik Anatomi' }).waitFor();
   check('Konu anlatımı: Esc derse döndürüyor', true);
+  // Kaldığın yerden devam: Damarlar anlatımı yeniden açılınca son okunan bölüm önerilir.
+  await studySet(page, 'Damarlar', 'Konu anlatımı');
+  await page.getByText('İçindekiler').first().waitFor();
+  const resume = page.locator('[data-lesson-resume]');
   check(
-    'Mikrobiyoloji setlerinde konu anlatımı düğmesi yok',
-    await (async () => {
-      await page.getByRole('button', { name: 'Derslere dön' }).click();
-      await page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
-      await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
-      const n = await page.getByRole('button', { name: /Konu anlatımı/ }).count();
-      await page.getByRole('button', { name: 'Derslere dön' }).click();
-      await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
-      return n === 0;
-    })()
+    'Konu anlatımı: yeniden açınca "Kaldığın yerden devam et" son bölümü gösteriyor',
+    (await resume.count()) === 1 && (await resume.innerText()).includes(TOPO_DAMAR.lesson[target].title)
   );
+  await resume.click();
+  await settle(page, 1000);
+  const resumeTop = await page.locator('[data-lesson-section]').nth(target).evaluate((el) => el.getBoundingClientRect().top);
+  check('Konu anlatımı: devam düğmesi o bölüme götürüyor', Math.abs(resumeTop) < 60, `${Math.round(resumeTop)}px`);
+  await page.keyboard.press('Escape');
+  await page.getByRole('heading', { name: 'Topografik Anatomi' }).waitFor();
+
+  await page.getByRole('button', { name: 'Derslere dön' }).click();
+  await page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+  check(
+    'Mikrobiyoloji: 8. haftada tablolar anlatımı var, 7. haftada yok',
+    (await setCard(page, 'Hafta 8').getByRole('button', { name: /Konu anlatımı/ }).count()) === 1 &&
+      (await setCard(page, 'Hafta 7').getByRole('button', { name: /Konu anlatımı/ }).count()) === 0
+  );
+  await studySet(page, 'Hafta 8', 'Konu anlatımı');
+  await page.getByText('İçindekiler').first().waitFor();
+  check(
+    'Mikrobiyoloji: 8. hafta anlatımında tüm tablolar',
+    (await page.locator('[data-lesson-section]').count()) === H8.lesson.length &&
+      (await page.locator('[data-lesson-section] table').count()) >= 10
+  );
+  await page.keyboard.press('Escape');
+  await page.getByRole('heading', { name: 'Mikrobiyoloji' }).waitFor();
+  await page.getByRole('button', { name: 'Derslere dön' }).click();
+  await page.getByRole('heading', { name: 'Derslerim' }).waitFor();
 
   const csp1 = await page.evaluate(() => window.__cspViolations);
   check('CSP ihlali yok', csp1.length === 0, csp1.slice(0, 3).join(' | '));
@@ -593,6 +653,70 @@ try {
     upgraded.seeded.join(', ')
   );
   check('Güncelleme: konsol hatası yok', up.errors.length === 0, up.errors.slice(0, 3).join(' | '));
+
+  // ===================== Açılışta uzaktan içerik güncellemesi =====================
+  // GitHub'da daha yeni bir sürüm varmış gibi: manifest'te Hafta 7'nin sürümü yükselmiş ve
+  // ilk sorusu değişmiş. Açılışta indirilip uygulanmalı; ilerleme ve soru kimliği korunmalı.
+  const ota = await newPage(browser, { width: 440, height: 780 });
+  await ota.page.goto(URL);
+  await ota.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  check('Sürüm: ana sayfada uygulama sürümü yazıyor', (await ota.page.locator('[data-app-version]').innerText()).includes(PKG_VERSION));
+  await ota.page.evaluate(() => {
+    const at = new Date().toISOString();
+    localStorage.setItem(
+      'kelime-ustasi.progress.v1',
+      JSON.stringify({ 'mikrobiyoloji-hafta-7:q01': { seen: 1, correct: 1, wrong: 0, last: 'correct', at } })
+    );
+  });
+  const fakeManifest = structuredClone(MANIFEST);
+  for (const p of fakeManifest.packs) for (const x of p.sets) if (x.key === 'mikrobiyoloji-hafta-7') x.version = 99;
+  const fakeH7 = structuredClone(H7);
+  fakeH7.items[0] = { ...fakeH7.items[0], question: 'GÜNCEL SORU (uzaktan)' };
+  await ota.page.route('https://api.github.com/repos/erebb/erebb/releases/latest', (r) =>
+    r.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      headers: CORS,
+      body: JSON.stringify({ tag_name: 'v9.9.9', html_url: 'https://github.com/erebb/erebb/releases/tag/v9.9.9' }),
+    })
+  );
+  await ota.page.route('https://raw.githubusercontent.com/erebb/erebb/v9.9.9/content/**', (r) => {
+    const file = r.request().url().split('/').pop();
+    const body = file === 'manifest.json' ? fakeManifest : file === 'mikrobiyoloji-hafta-7.json' ? fakeH7 : null;
+    return body
+      ? r.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: JSON.stringify(body) })
+      : r.fulfill({ status: 200, contentType: 'application/json', headers: CORS, body: '{}' });
+  });
+  await ota.page.reload();
+  await ota.page.locator('[data-update-toast="content"]').waitFor({ timeout: 10000 });
+  check('Güncelleme (uzak): "Yeni içerik yüklendi" bildirimi', (await ota.page.locator('[data-update-toast="content"]').innerText()).includes('Hafta 7'));
+  const otaState = await ota.page.evaluate(() => {
+    const sets = JSON.parse(localStorage.getItem('kelime-ustasi.sets'));
+    const h7 = sets.find((s) => s.name.startsWith('Hafta 7'));
+    return {
+      first: h7.questions[0].front,
+      id: h7.questions[0].id,
+      version: h7.bundle?.version,
+      kept: Boolean(JSON.parse(localStorage.getItem('kelime-ustasi.progress.v1'))['mikrobiyoloji-hafta-7:q01']),
+      seeded: JSON.parse(localStorage.getItem('kelime-ustasi.seededPacks')),
+    };
+  });
+  check(
+    'Güncelleme (uzak): yeni sürüm indirilip uygulanıyor',
+    otaState.first === 'GÜNCEL SORU (uzaktan)' && otaState.version === 99 && otaState.seeded.includes('mikrobiyoloji-hafta-7@99'),
+    `${otaState.first} · v${otaState.version}`
+  );
+  check('Güncelleme (uzak): ilerleme ve soru kimliği korunuyor', otaState.kept && otaState.id === 'mikrobiyoloji-hafta-7:q01');
+  await ota.page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
+  await studySet(ota.page, 'Hafta 7', 'Göz at');
+  await ota.page.getByPlaceholder(/Ara/).fill('GÜNCEL SORU');
+  check(
+    'Güncelleme (uzak): açık uygulama yeni içeriği sayfa yenilenmeden gösteriyor',
+    (await ota.page.locator('ol > li').count()) === 1
+  );
+  const csp3 = await ota.page.evaluate(() => window.__cspViolations);
+  check('Güncelleme (uzak): CSP GitHub isteklerine izin veriyor', csp3.length === 0, csp3.slice(0, 3).join(' | '));
+  check('Güncelleme (uzak): konsol hatası yok', ota.errors.length === 0, ota.errors.slice(0, 3).join(' | '));
 
   // ===================== Silinen hazır ders geri gelmez =====================
   await page.getByRole('button', { name: /Mikrobiyoloji/ }).click();

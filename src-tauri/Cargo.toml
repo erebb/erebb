@@ -10,6 +10,14 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 tauri = { version = "2", features = [] }
+# tauri.conf.json'daki eklenti ayarları (updater) generate_context! ile serde_json değeri olarak gömülür.
+serde_json = "1"
+# Açılışta GitHub'daki son sürümü denetleyip imzalı güncellemeyi kurar (bkz. src/lib/updates.ts).
+tauri-plugin-updater = "2"
+# Güncellemeden sonra "Şimdi yeniden başlat".
+tauri-plugin-process = "2"
+# "Yeni sürüm var · İndir" bağlantısını sistem tarayıcısında açar.
+tauri-plugin-opener = "2"
 
 [profile.release]
 # Küçük ve hızlı açılan bir uygulama paketi için.

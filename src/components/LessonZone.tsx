@@ -1,15 +1,19 @@
-import { useEffect, useRef } from 'react';
-import { ArrowLeft, BookOpen, ClipboardCheck, Layers, ListOrdered } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowLeft, BookOpen, ClipboardCheck, CornerDownRight, Layers, ListOrdered } from 'lucide-react';
 import type { StudyMode, StudyTarget } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { RichText } from '@/components/RichText';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { STORAGE_KEYS } from '@/lib/storageKeys';
 
 interface Props {
   target: StudyTarget;
   onExit: () => void;
   /** Anlatımın sonundan aynı hedefle başka moda geç (soru çöz, kartlar). */
   onStudy?: (mode: StudyMode) => void;
+  /** Kalınan bölümü hatırlamak için hedefin anahtarı (set ya da ders). */
+  resumeKey?: string;
 }
 
 const sectionId = (li: number, si: number) => `konu-${li}-${si}`;
@@ -18,9 +22,42 @@ const sectionId = (li: number, si: number) => `konu-${li}-${si}`;
  * Konu anlatımı: sınav için okunacak bölümler, içindekiler ve sonunda "şimdi soru çöz".
  * Tüm ders açıldığında her setin anlatımı kendi başlığı altında sırayla gelir.
  */
-export function LessonZone({ target, onExit, onStudy }: Props) {
+export function LessonZone({ target, onExit, onStudy, resumeKey }: Props) {
   const lessons = target.lessons ?? [];
   const many = lessons.length > 1;
+
+  // Bölümler düz sırada: kalınan yer bu sırayla saklanır.
+  const flat = useMemo(
+    () => lessons.flatMap((l, li) => l.sections.map((s, si) => ({ li, si, title: s.title }))),
+    [lessons]
+  );
+  const [positions, setPositions] = useLocalStorage<Record<string, number>>(STORAGE_KEYS.lessonPos, {});
+  const [resumeAt] = useState(() => (resumeKey ? (positions[resumeKey] ?? 0) : 0));
+  const resume = resumeAt > 0 && resumeAt < flat.length ? flat[resumeAt] : null;
+
+  // Okurken en üstteki bölümü kaydet (kaydırma durunca).
+  const posRef = useRef(resumeAt);
+  useEffect(() => {
+    if (!resumeKey) return;
+    let timer: number | undefined;
+    const onScroll = () => {
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        const els = Array.from(document.querySelectorAll<HTMLElement>('[data-lesson-index]'));
+        let idx = 0;
+        for (const el of els) if (el.getBoundingClientRect().top <= 140) idx = Number(el.dataset.lessonIndex);
+        if (idx !== posRef.current) {
+          posRef.current = idx;
+          setPositions((prev) => ({ ...prev, [resumeKey]: idx }));
+        }
+      }, 300);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.clearTimeout(timer);
+      window.removeEventListener('scroll', onScroll);
+    };
+  }, [resumeKey, setPositions]);
 
   // Escape → derse dön. onExit her çizimde yeni bir fonksiyon olabilir; dinleyici ref'ten okur.
   const exitRef = useRef(onExit);
@@ -56,6 +93,20 @@ export function LessonZone({ target, onExit, onStudy }: Props) {
         </Card>
       ) : (
         <>
+          {resume && (
+            <Button
+              variant="blue"
+              className="h-auto justify-start whitespace-normal py-3 text-left normal-case tracking-normal"
+              onClick={() => jump(sectionId(resume.li, resume.si))}
+              data-lesson-resume
+            >
+              <CornerDownRight className="h-5 w-5 shrink-0" />
+              <span>
+                Kaldığın yerden devam et
+                <span className="block text-xs font-bold opacity-90">{resume.title}</span>
+              </span>
+            </Button>
+          )}
           <Card>
             <CardContent className="flex flex-col gap-2 p-4">
               <p className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wide text-duo-gray-500">
@@ -92,7 +143,13 @@ export function LessonZone({ target, onExit, onStudy }: Props) {
                 </h2>
               )}
               {lesson.sections.map((s, si) => (
-                <Card key={si} id={sectionId(li, si)} className="scroll-mt-4" data-lesson-section>
+                <Card
+                  key={si}
+                  id={sectionId(li, si)}
+                  className="scroll-mt-4"
+                  data-lesson-section
+                  data-lesson-index={flat.findIndex((f) => f.li === li && f.si === si)}
+                >
                   <CardContent className="flex flex-col gap-3 p-4 sm:p-5">
                     <h3 className="text-lg font-extrabold leading-snug text-duo-gray-700">
                       <span className="text-duo-blue">{si + 1}.</span> {s.title}

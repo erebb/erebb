@@ -1,9 +1,12 @@
 // Kelime Ustası — macOS masaüstü kabuğu.
 //
-// Uygulamanın tamamı web ön ucundadır (React, ../src); bu kabuk yalnızca onu
-// macOS'un kendi WebKit'iyle (WKWebView) yerel bir pencerede açar. Ön uç hiçbir
-// Tauri komutu çağırmaz ve ağa çıkmaz; veriler pencerenin LocalStorage'ında,
-// uygulama kimliğine (`com.erebb.kelimeustasi`) bağlı kalıcı depoda tutulur.
+// Uygulamanın tamamı web ön ucundadır (React, ../src); bu kabuk onu macOS'un kendi
+// WebKit'iyle (WKWebView) yerel bir pencerede açar. Veriler (setler, ilerleme) pencerenin
+// LocalStorage'ında, uygulama kimliğine (`com.erebb.kelimeustasi`) bağlı kalıcı depoda
+// tutulur — uygulama güncellense de korunur.
+//
+// Ağ: yalnızca güncelleme için GitHub'daki herkese açık dosyalar okunur (son sürüm, içerik
+// manifest'i, imzalı uygulama paketi). Kullanıcı verisi hiçbir yere gönderilmez.
 
 // Windows'ta sürüm derlemesinde fazladan konsol penceresi açılmasın.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -84,6 +87,9 @@ fn main() {
     let builder = builder.menu(build_menu);
 
     builder
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_opener::init())
         .run(tauri::generate_context!())
         .expect("Kelime Ustası başlatılamadı");
 }

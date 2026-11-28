@@ -9,6 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Progress } from '@/components/ui/progress';
+import { progressStats } from '@/lib/progress';
+import type { ProgressMap } from '@/types';
 import { Textarea } from '@/components/ui/textarea';
 import { ImportPanel } from '@/components/ImportPanel';
 import { StudyModeButtons } from '@/components/StudyModeButtons';
@@ -20,13 +23,39 @@ interface Props {
   onStudy: (mode: StudyMode, setId: string | null) => void;
 }
 
+/** Bir set ya da tüm ders için kalıcı ilerleme özeti. */
+function ProgressLine({ items, progress }: { items: Question[]; progress: ProgressMap }) {
+  const st = progressStats(items, progress);
+  if (st.total === 0) return null;
+  const pct = Math.round((st.answered / st.total) * 100);
+  return (
+    <div className="flex flex-col gap-1" data-progress-line>
+      <Progress value={pct} className="h-2" aria-label={`İlerleme yüzde ${pct}`} />
+      <p className="text-xs font-bold text-duo-gray-500">
+        {st.answered === 0 ? (
+          'Henüz çalışılmadı'
+        ) : (
+          <>
+            {st.answered}/{st.total} çalışıldı · <span className="text-duo-green-dark">{st.correct} doğru</span>
+            {st.wrong > 0 && (
+              <>
+                {' '}· <span className="text-duo-red-dark">{st.wrong} yanlış</span>
+              </>
+            )}
+          </>
+        )}
+      </p>
+    </div>
+  );
+}
+
 function counts(items: Question[]) {
   const mcq = items.filter(isMcq).length;
   return `${mcq} soru · ${items.length - mcq} kart`;
 }
 
 export function CourseView({ courseId, onBack, onStudy }: Props) {
-  const { courses, setsOfCourse, renameCourse, deleteCourse, updateQuestionSet, deleteQuestionSet } = useApp();
+  const { courses, setsOfCourse, renameCourse, deleteCourse, updateQuestionSet, deleteQuestionSet, progress } = useApp();
   const course = courses.find((c) => c.id === courseId);
   const sets = setsOfCourse(courseId);
 
@@ -115,6 +144,7 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
               <p className="font-extrabold text-duo-gray-700">Tüm ders</p>
               <p className="text-xs font-semibold text-duo-gray-300">Bütün setler birlikte · {counts(all)}</p>
             </div>
+            <ProgressLine items={all} progress={progress} />
             <StudyModeButtons
               onStudy={(mode) => onStudy(mode, null)}
               disabled={all.length === 0}
@@ -155,6 +185,7 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
                     </Button>
                   </div>
                 </div>
+                <ProgressLine items={set.questions} progress={progress} />
                 <StudyModeButtons
                   onStudy={(mode) => onStudy(mode, set.id)}
                   disabled={set.questions.length === 0}

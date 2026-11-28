@@ -12,23 +12,35 @@ cevaplar ve açıklamalar.
   “Zor” işaretlenen kart aynı oturumda geri gelir.
 - **Akış** — TikTok tarzı dikey kaydırma; anlatım kartları ve sorular karışık, bitmez.
 - **Konu anlatımı** — konu anlatımı olan setlerde sınav için okunacak bölümler: içindekiler, tablolar,
-  “Sınavda” kutuları; sonunda tek dokunuşla o setin sorularına geçilir.
+  “Sınavda” kutuları; sonunda tek dokunuşla o setin sorularına geçilir. Kaldığın bölüm hatırlanır
+  (**“Kaldığın yerden devam et”**).
 
 Her mod tek bir sette ya da **“Tüm ders”** ile dersin bütün setlerinde çalışır.
 
+**İlerleme kaydedilir:** her sorunun kaç kez çözüldüğü, doğru/yanlış sayısı saklanır. Ders sayfasında her
+setin ve “Tüm ders”in altında *“x/y çalışıldı · n doğru · m yanlış”* çizgisi görünür; **Soru çöz**'e
+başlarken **Hepsi / Çözülmemiş / Yanlışlarım** seçilebilir. Uygulamayı kapatıp açınca hepsi yerinde durur.
+
 **Hazır içerik:** Uygulama iki dersle gelir:
 - **Mikrobiyoloji** — Hafta 7 (mikrobiyal büyümeyi etkileyen faktörler) ve Hafta 8 (antimikrobiyaller)
-  slaytlarından 164 sınav sorusu ve 58 bilgi kartı.
+  slaytlarından 184 sınav sorusu ve 63 bilgi kartı. Hafta 8'de slaytlardaki bütün tabloların toplandığı
+  bir **“Tablolar”** konu anlatımı ve tablolardan sorular var.
 - **Topografik Anatomi** — damarlar, lenf düğümleri, sinirler, gövde topografisi ve klinik uygulamalar
   (boynuz anestezisi, enjeksiyon yerleri); konu anlatımı, defterdeki exercise soruları dahil 129 sınav sorusu
   ve 40 bilgi kartı.
 
 Sorular Türkçe, ilaç adları ve bilimsel terimler İngilizce; tablolara ve kalın/eğik yazılmış kavramlara ağırlık
 verildi, her sorunun açıklaması ve kaynağı (slayt, plate, tablo ya da exercise numarası) var. İçerik
-`content/` klasöründeki JSON dosyalarıdır; bir dersi silersen geri gelmez. Uygulama güncellendiğinde,
-düzenlemediğin hazır setler yeni içerikle yenilenir; tekrar ilerlemen korunur.
+`content/` klasöründeki JSON dosyalarıdır; bir dersi silersen geri gelmez. İçerik güncellendiğinde,
+düzenlemediğin hazır setler yeni içerikle yenilenir; ilerlemen korunur.
 
-Tüm veriler yalnızca senin bilgisayarında tutulur; uygulama internete bağlanmaz.
+**Kendini günceller:** depoya yapılan her başarılı commit GitHub'da yeni bir sürüm yayımlar. Uygulama her
+açılışta son sürüme bakar; yeni ya da düzeltilmiş soru setlerini hemen indirir (yeniden kurmadan) ve Mac
+uygulamasının kendisi daha yeniyse onu da indirip kurar (bkz. [Güncelleme](#güncelleme)).
+
+Tüm verilerin (setler, ilerleme) yalnızca senin bilgisayarında tutulur ve hiçbir yere gönderilmez. Uygulama
+internete yalnızca güncelleme için çıkar ve yalnızca bu deponun GitHub'daki herkese açık dosyalarını okur;
+internet yoksa gömülü içerikle normal çalışır.
 
 ---
 
@@ -82,9 +94,20 @@ Bundan sonra uygulama Dock'tan ya da Launchpad'den normal şekilde açılır.
 
 ### Güncelleme
 
-Yeni `.dmg`'yi indir, Kelime Ustası'nı Uygulamalar'a sürükle ve **Değiştir**'i seç. Soru setlerin ve
-ilerlemen korunur. Her yeni sürüm macOS için yeni bir uygulama sayıldığından ilk açılış onayını
-(yukarıdaki 3. adım) bir kez daha vermen gerekir.
+Kendiliğinden olur — bir şey yapman gerekmez. Uygulama her açılışta GitHub'daki son sürümü denetler:
+
+- **Yeni içerik** (yeni hafta, düzeltilen sorular) hemen yüklenir; altta *“Yeni içerik yüklendi: …”* yazar.
+  Senin düzenlediğin setlere dokunulmaz.
+- **Uygulamanın yeni sürümü** arka planda indirilip kurulur (*“Yeni sürüm indiriliyor · %…”*). Bitince
+  *“Sürüm X yüklendi”* yazar: **Şimdi başlat**'a basarsan hemen, basmazsan bir sonraki açılışta yeni sürüm
+  açılır. Otomatik kurulum yapılamazsa *“Yeni sürüm var”* bildirimi ve **İndir** düğmesi çıkar.
+
+Hangi sürümü kullandığın ana ekranın en altında yazar (*“Kelime Ustası · sürüm 1.1.N”*).
+
+> **v1.0.0'ı kurduysan:** o sürümde güncelleyici yoktu. [Releases](https://github.com/erebb/erebb/releases/latest)
+> sayfasından en son `.dmg`'yi **bir kez** elle kur (Uygulamalar'a sürükle → **Değiştir**); bundan sonrası
+> otomatik. Soru setlerin ve ilerlemen korunur. Elle kurulan her `.dmg` için ilk açılış onayını
+> (yukarıdaki 3. adım) bir kez daha vermen gerekebilir.
 
 ### Verilerin nerede?
 
@@ -193,15 +216,23 @@ Her push'ta GitHub Actions (`.github/workflows/macos.yml`) uygulamayı macOS'ta 
 ve imzasını doğrular, açılışta çökmediğini test eder, uçtan uca testleri Safari motorunda (WebKit)
 çalıştırır ve `.dmg`'yi artefakt olarak yükler.
 
-**Sürüm yayımlamak:** `package.json`'daki `version`'ı artır (uygulamanın sürümü oradan okunur),
-commit'le ve aynı sürümle bir etiket at — `git tag v1.0.1 && git push origin v1.0.1`. İş akışı
-etiketle sürümün eşleştiğini denetler ve `.dmg`'yi bir GitHub Release'e ekler.
+**Sürümler kendiliğinden yayımlanır:** `main`'e ya da çalışma dalına yapılan her push'ta testler ve
+derleme yeşilse iş akışı `v<major.minor>.<çalışma no>` (örn. `v1.1.42`; `major.minor` `package.json`'dan)
+sürümünü GitHub Release olarak yayımlar ve en yeni 5 sürüm dışındakileri siler. Uygulamalar açılışta bu
+sürümün içeriğini (`content/manifest.json`) ve — imza anahtarı tanımlıysa — imzalı güncelleme paketini
+(`latest.json`, `KelimeUstasi.app.tar.gz`) okur. Elle `v*` etiketi atmak da hâlâ o sürümü yayımlar.
+
+**Güncelleme imzası:** Mac güncelleyicisi yalnızca imzalı paketi kurar. Açık anahtar
+`src-tauri/tauri.conf.json`'da; özel anahtar depoda **değil**, GitHub'da
+*Settings › Secrets and variables › Actions* altında `TAURI_SIGNING_PRIVATE_KEY` adlı secret olarak durur.
+Secret yoksa sürüm yine yayımlanır ama uygulama kendini kuramaz, yalnızca “Yeni sürüm var” der.
 
 ### Yapı
 
 ```
 src/                 React ön ucu (tüm uygulama burada)
-content/             Uygulamayla gelen ders içeriği (JSON) — kodda soru yok
+content/             Uygulamayla gelen ders içeriği (JSON) — kodda soru yok;
+                     manifest.json hangi setin hangi sürümde olduğunu söyler
 src-tauri/           macOS kabuğu (Tauri 2): pencere, Türkçe menü, ikon, paketleme
 e2e/smoke.mjs        Uçtan uca test
 scripts/             İkon üretimi

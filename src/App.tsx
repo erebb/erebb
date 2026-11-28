@@ -9,6 +9,7 @@ import { FlashcardZone } from '@/components/FlashcardZone';
 import { DuolingoZone } from '@/components/DuolingoZone';
 import { FeedZone } from '@/components/FeedZone';
 import { LessonZone } from '@/components/LessonZone';
+import { UpdateNotifier } from '@/components/UpdateNotifier';
 import { Button } from '@/components/ui/button';
 
 type View =
@@ -22,6 +23,7 @@ export default function App() {
     // güncellemeler sağlayıcıyla birlikte sökülür ve hiç işlenmez.
     <AppProvider>
       <Router />
+      <UpdateNotifier />
     </AppProvider>
   );
 }
@@ -103,7 +105,12 @@ function Router() {
           <FlashcardZone target={target} onExit={exitStudy} />
         )}
         {view.name === 'study' && target && view.mode === 'lesson' && (
-          <LessonZone target={target} onExit={exitStudy} onStudy={(mode) => setView({ ...view, mode })} />
+          <LessonZone
+            target={target}
+            onExit={exitStudy}
+            onStudy={(mode) => setView({ ...view, mode })}
+            resumeKey={view.setId ?? `course:${view.courseId}`}
+          />
         )}
       </motion.div>
     </AnimatePresence>

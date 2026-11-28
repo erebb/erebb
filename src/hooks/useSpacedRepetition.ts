@@ -29,7 +29,7 @@ export interface UseSpacedRepetitionReturn {
  * "Kolay" kartları kuyruktan çıkarıp bir üst kutuya taşır.
  */
 export function useSpacedRepetition(questions: Question[]): UseSpacedRepetitionReturn {
-  const { srsEntries, updateSrsEntry } = useApp();
+  const { srsEntries, updateSrsEntry, recordResult } = useApp();
 
   // Güncel kayıtları ref'ten oku: her işaretleme bağlamı yeniler, ama kuyruk
   // yalnızca oturum başında kurulmalı.
@@ -55,21 +55,23 @@ export function useSpacedRepetition(questions: Question[]): UseSpacedRepetitionR
   const markEasy = useCallback(() => {
     if (!currentCard) return;
     updateSrsEntry(markEasyEntry(entryFor(currentCard.id)));
+    recordResult(currentCard.id, true);
     setQueue((prev) => prev.slice(1));
     setReviewed((n) => n + 1);
     setEasyCount((n) => n + 1);
-  }, [currentCard, updateSrsEntry]);
+  }, [currentCard, updateSrsEntry, recordResult]);
 
   const markHard = useCallback(() => {
     if (!currentCard) return;
     updateSrsEntry(markHardEntry(entryFor(currentCard.id)));
+    recordResult(currentCard.id, false);
     setQueue((prev) => {
       const rest = prev.slice(1);
       const insertAt = Math.min(REQUEUE_OFFSET, rest.length);
       return [...rest.slice(0, insertAt), prev[0], ...rest.slice(insertAt)];
     });
     setHardCount((n) => n + 1);
-  }, [currentCard, updateSrsEntry]);
+  }, [currentCard, updateSrsEntry, recordResult]);
 
   const restart = useCallback(() => {
     const next = buildSessionQueue(questions, entriesRef.current);

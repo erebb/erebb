@@ -10,4 +10,8 @@ export const STORAGE_KEYS = {
   feedSwipeHintSeen: 'kelime-ustasi.feed.swipeHintSeen',
   browseRevealAll: 'kelime-ustasi.browse.revealAll',
   quizCount: 'kelime-ustasi.quiz.count',
+  /** questionId → doğru/yanlış sonuçları (bkz. ProgressMap). */
+  progress: 'kelime-ustasi.progress.v1',
+  /** Konu anlatımında kalınan bölüm: hedef anahtarı → bölüm sırası. */
+  lessonPos: 'kelime-ustasi.lessonPos',
 } as const;

@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write # yalnızca v* etiketinde Release oluşturmak için
+  contents: write # testler ve derleme yeşilse sürümü (Release) yayımlamak için
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -53,16 +53,11 @@ jobs:
     name: .dmg derle (Intel + Apple Silicon)
     runs-on: macos-15
     timeout-minutes: 45
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      publish: ${{ steps.ver.outputs.publish }}
     steps:
       - uses: actions/checkout@v4
-
-      - name: Etiket ile uygulama sürümü aynı mı
-        if: startsWith(github.ref, 'refs/tags/v')
-        shell: bash
-        run: |
-          APP_VERSION=$(node -p "require('./package.json').version")
-          [ "${GITHUB_REF_NAME#v}" = "$APP_VERSION" ] || {
-            echo "::error::Etiket $GITHUB_REF_NAME ama package.json sürümü $APP_VERSION"; exit 1; }
 
       - uses: actions/setup-node@v4
         with:
@@ -80,15 +75,49 @@ jobs:
       - name: Bağımlılıklar
         run: npm ci
 
-      - name: Uygulamayı derle
+      - name: Sürümü belirle
+        id: ver
         shell: bash
         run: |
+          set -euo pipefail
+          # Her commit'te yeni sürüm: package.json'daki ana.ara sürüm + çalışma numarası
+          # (ör. 1.1.57). Uygulama açılışta GitHub'daki son sürümle kendi sürümünü karşılaştırır.
+          BASE=$(node -p "require('./package.json').version.split('.').slice(0,2).join('.')")
+          PUBLISH=false
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+            PUBLISH=true
+          else
+            VERSION="$BASE.$GITHUB_RUN_NUMBER"
+            if [[ "$GITHUB_EVENT_NAME" == push && ( "$GITHUB_REF_NAME" == main || "$GITHUB_REF_NAME" == claude/gamified-learning-app-hr183v ) ]]; then
+              PUBLISH=true
+            fi
+          fi
+          npm pkg set version="$VERSION"
+          echo "Sürüm: $VERSION (yayımla: $PUBLISH)"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "publish=$PUBLISH" >> "$GITHUB_OUTPUT"
+
+      - name: Uygulamayı derle
+        shell: bash
+        env:
+          # Güncelleme imza anahtarı (depo ayarlarında secret). Yoksa uygulama yine derlenir;
+          # yalnızca otomatik kurulabilen güncelleme paketi üretilmez.
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
+        run: |
+          EXTRA=()
+          if [ -n "${TAURI_SIGNING_PRIVATE_KEY:-}" ]; then
+            EXTRA=(--config '{"bundle":{"createUpdaterArtifacts":true}}')
+          else
+            echo "::notice::TAURI_SIGNING_PRIVATE_KEY yok — imzalı güncelleme paketi üretilmeyecek"
+          fi
           # hdiutil, macOS runner'larında ara sıra "Resource busy" ile düşer; o durumda
-          # yalnızca .dmg paketleme adımını yeniden dene (derlemeyi baştan yapmadan).
-          if ! npm run app:build:universal; then
-            echo "::warning::Derleme/paketleme düştü; .dmg paketlemesi yeniden deneniyor"
+          # yalnızca paketleme adımını yeniden dene (derlemeyi baştan yapmadan).
+          if ! npx tauri build --target universal-apple-darwin "${EXTRA[@]}"; then
+            echo "::warning::Derleme/paketleme düştü; paketleme yeniden deneniyor"
             sleep 10
-            npx tauri bundle --bundles dmg --target universal-apple-darwin
+            npx tauri bundle --bundles app,dmg --target universal-apple-darwin "${EXTRA[@]}"
           fi
 
       - name: Paketi doğrula
@@ -127,12 +156,37 @@ jobs:
 
           # Dosya adı ASCII olsun: GitHub, boşluk ve Türkçe karakter içeren Release dosyalarını
           # yeniden adlandırıyor; bazı indirme araçları da bozuyor.
-          VERSION=$(node -p "require('./package.json').version")
-          REF="${GITHUB_REF_NAME//\//-}"
-          if [[ "$GITHUB_REF" == refs/tags/* ]]; then NAME="KelimeUstasi-${VERSION}-mac.dmg"; else NAME="KelimeUstasi-${VERSION}-${REF}-mac.dmg"; fi
+          VERSION="${{ steps.ver.outputs.version }}"
+          NAME="KelimeUstasi-${VERSION}-mac.dmg"
           mkdir -p out
           cp "$DMG" "out/$NAME"
           echo "dmg=out/$NAME" >> "$GITHUB_OUTPUT"
+
+          # İmzalı güncelleme paketi (yalnızca anahtar varsa üretilir) + latest.json.
+          tgz=("$BUNDLE"/macos/*.app.tar.gz)
+          if [ ${#tgz[@]} -eq 1 ] && [ -f "${tgz[0]}.sig" ]; then
+            cp "${tgz[0]}" out/KelimeUstasi.app.tar.gz
+            cp "${tgz[0]}.sig" out/KelimeUstasi.app.tar.gz.sig
+            node -e '
+              const fs = require("fs");
+              const [version, sigFile, repo] = process.argv.slice(1);
+              const platform = {
+                signature: fs.readFileSync(sigFile, "utf8").trim(),
+                url: `https://github.com/${repo}/releases/download/v${version}/KelimeUstasi.app.tar.gz`,
+              };
+              const latest = {
+                version,
+                notes: `Kelime Ustası ${version}`,
+                pub_date: new Date().toISOString(),
+                platforms: { "darwin-aarch64": platform, "darwin-x86_64": platform },
+              };
+              fs.writeFileSync("out/latest.json", JSON.stringify(latest, null, 2));
+            ' "$VERSION" out/KelimeUstasi.app.tar.gz.sig "$GITHUB_REPOSITORY"
+            echo "== latest.json"; cat out/latest.json
+          else
+            echo "::notice::Güncelleme paketi yok (imza anahtarı tanımlı değil)"
+          fi
+          ls -lh out
 
       - name: Açılış testi
         shell: bash
@@ -174,21 +228,70 @@ jobs:
           if-no-files-found: error
           compression-level: 0 # .dmg zaten sıkıştırılmış
 
-      - name: GitHub Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+      - name: Yayımlanacak dosyalar
+        if: steps.ver.outputs.publish == 'true'
+        uses: actions/upload-artifact@v4
         with:
-          name: Kelime Ustası ${{ github.ref_name }}
-          files: out/*.dmg
-          fail_on_unmatched_files: true
-          body: |
-            ## Mac'e kurulum
+          name: release-files
+          path: out/
+          if-no-files-found: error
+          compression-level: 0
 
-            1. Aşağıdaki **`KelimeUstasi-…-mac.dmg`** dosyasını indir. Tek dosya hem Apple Silicon (M1–M4) hem Intel Mac'lerde çalışır; en az macOS 11 gerekir.
-            2. `.dmg`'yi aç ve **Kelime Ustası**'nı **Uygulamalar** klasörüne sürükle. (İlk açılıştan önce mutlaka Uygulamalar'a kopyala.)
-            3. **İlk açılış (bir kez):** Uygulama Apple geliştirici sertifikasıyla imzalı olmadığından macOS bir uyarı gösterir.
-               - **macOS 15 ve sonrası:** Uygulamayı açmayı dene, uyarıda **Bitti**'ye bas → **Sistem Ayarları › Gizlilik ve Güvenlik** → aşağıdaki **Yine de Aç** → parolanı gir.
-               - **macOS 11–14:** Uygulamalar'da Kelime Ustası'na **Control-tık (sağ tık) › Aç** → **Aç**.
-               - Ya da Terminal'de: `xattr -dr com.apple.quarantine /Applications/Kelime*.app`
+  release:
+    name: Sürümü yayımla
+    # Yalnızca WebKit testleri ve Mac derlemesi yeşilse: açılışta güncellemeyi denetleyen
+    # uygulamalar (içerik ve uygulama) yalnızca test edilmiş sürümü alır.
+    needs: [webkit-e2e, build-macos]
+    if: needs.build-macos.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-files
+          path: out
 
-            Ayrıntılar ve güncelleme notları için depodaki README'ye bak.
+      - name: GitHub Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          VERSION: ${{ needs.build-macos.outputs.version }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          set -euo pipefail
+          TAG="v$VERSION"
+          {
+            echo "## Bu sürümde"
+            echo
+            echo "${COMMIT_MSG:-Kelime Ustası $VERSION}" | head -n 1
+            echo
+            echo "## Kurulum ve güncelleme"
+            echo
+            echo "- **Zaten kuruluysa:** uygulama açılışta bu sürümü kendisi bulur; yeni içerik otomatik yüklenir, uygulama güncellemesi indirilip kurulur (ilerlemen korunur)."
+            echo "- **İlk kurulum:** aşağıdaki **\`KelimeUstasi-$VERSION-mac.dmg\`** dosyasını indir, aç ve **Kelime Ustası**'nı **Uygulamalar** klasörüne sürükle. Tek dosya Apple Silicon ve Intel Mac'lerde çalışır (macOS 11+)."
+            echo "- **İlk açılış (bir kez):** Uygulama Apple geliştirici sertifikasıyla imzalı değil. macOS 15+: açmayı dene → **Bitti** → **Sistem Ayarları › Gizlilik ve Güvenlik** → **Yine de Aç**. macOS 11–14: Control-tık › **Aç**. Ya da Terminal: \`xattr -dr com.apple.quarantine /Applications/Kelime*.app\`"
+          } > notes.md
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/* --repo "$REPO" --clobber
+          else
+            gh release create "$TAG" out/* --repo "$REPO" --target "$GITHUB_SHA" \
+              --title "Kelime Ustası $VERSION" --notes-file notes.md --latest
+          fi
+
+      - name: Eski sürümleri temizle
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          # Her commit bir sürüm yayımlar; en yeni 5 sürüm kalsın.
+          gh release list --repo "$REPO" --limit 100 --json tagName,createdAt \
+            --jq 'sort_by(.createdAt) | reverse | .[5:] | .[].tagName' |
+            grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' |
+            while read -r tag; do
+              echo "Siliniyor: $tag"
+              gh release delete "$tag" --repo "$REPO" --cleanup-tag --yes || true
+            done

@@ -84,6 +84,21 @@ export interface FlashcardSRSEntry {
 /** questionId → kayıt. Soru id'leri tüm setlerde benzersiz olduğu için tek bir harita yeter. */
 export type SRSEntries = Record<string, FlashcardSRSEntry>;
 
+// ---- İlerleme (soru başına sonuçlar) ----
+
+/** Bir sorunun bugüne kadarki sonuçları: soru çöz, akış ve kartların hepsi yazar. */
+export interface QuestionProgress {
+  seen: number;
+  correct: number;
+  wrong: number;
+  /** En son cevap — "Yanlışlarım" bununla seçilir. */
+  last: 'correct' | 'wrong';
+  at: string; // ISO zaman damgası
+}
+
+/** questionId → ilerleme. */
+export type ProgressMap = Record<string, QuestionProgress>;
+
 // ---- Soru çözme oturumu ----
 
 export type QuizMode = 'multiple-choice' | 'text-input' | 'matching-pairs';
