@@ -31,7 +31,7 @@ function ProgressLine({ items, progress }: { items: Question[]; progress: Progre
   return (
     <div className="flex flex-col gap-1" data-progress-line>
       <Progress value={pct} className="h-2" aria-label={`İlerleme yüzde ${pct}`} />
-      <p className="text-xs font-bold text-duo-gray-500">
+      <p className="text-xs font-medium text-duo-gray-500">
         {st.answered === 0 ? (
           'Henüz çalışılmadı'
         ) : (
@@ -74,7 +74,7 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
   if (!course) {
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-        <p className="font-bold text-duo-gray-500">Ders bulunamadı.</p>
+        <p className="font-medium text-duo-gray-500">Ders bulunamadı.</p>
         <Button variant="blue" onClick={onBack}>
           Derslere dön
         </Button>
@@ -116,8 +116,8 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-extrabold text-duo-gray-700">{course.name}</h1>
-          <p className="text-xs font-bold text-duo-gray-300">
+          <h1 className="truncate text-2xl font-semibold text-duo-gray-700">{course.name}</h1>
+          <p className="text-xs font-medium text-duo-gray-300">
             {sets.length} set · {counts(all)}
           </p>
         </div>
@@ -132,17 +132,17 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
         >
           <Pencil className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="icon" aria-label="Dersi sil" onClick={() => setDeleteCourseOpen(true)}>
-          <Trash2 className="h-4 w-4 text-duo-red" />
+        <Button variant="ghost" size="icon" aria-label="Dersi sil" className="hover:text-duo-red-dark" onClick={() => setDeleteCourseOpen(true)}>
+          <Trash2 className="h-4 w-4" />
         </Button>
       </header>
 
       {sets.length > 1 && (
-        <Card className="border-duo-green" data-course-all>
+        <Card className="border-duo-blue/40" data-course-all>
           <CardContent className="flex flex-col gap-3 p-4">
             <div>
-              <p className="font-extrabold text-duo-gray-700">Tüm ders</p>
-              <p className="text-xs font-semibold text-duo-gray-300">Bütün setler birlikte · {counts(all)}</p>
+              <p className="font-semibold text-duo-gray-700">Tüm ders</p>
+              <p className="text-xs font-normal text-duo-gray-300">Bütün setler birlikte · {counts(all)}</p>
             </div>
             <ProgressLine items={all} progress={progress} />
             <StudyModeButtons
@@ -157,7 +157,7 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
       <section className="flex flex-col gap-3" aria-label="Setler">
         {sets.length === 0 && (
           <Card>
-            <CardContent className="p-8 text-center text-sm font-semibold text-duo-gray-300">
+            <CardContent className="p-8 text-center text-sm font-normal text-duo-gray-300">
               Bu derste henüz set yok. Aşağıdan bir set ekle.
             </CardContent>
           </Card>
@@ -173,15 +173,15 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
               <CardContent className="flex flex-col gap-3 p-4">
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
-                    <p className="font-extrabold text-duo-gray-700">{set.name}</p>
-                    <p className="text-xs font-semibold text-duo-gray-300">{counts(set.questions)}</p>
+                    <p className="font-semibold text-duo-gray-700">{set.name}</p>
+                    <p className="text-xs font-normal text-duo-gray-300">{counts(set.questions)}</p>
                   </div>
                   <div className="flex shrink-0 gap-1">
                     <Button variant="ghost" size="icon" onClick={() => openEdit(set)} aria-label="Düzenle">
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(set)} aria-label="Sil">
-                      <Trash2 className="h-4 w-4 text-duo-red" />
+                    <Button variant="ghost" size="icon" className="hover:text-duo-red-dark" onClick={() => setDeleteTarget(set)} aria-label="Sil">
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
@@ -277,7 +277,7 @@ export function CourseView({ courseId, onBack, onStudy }: Props) {
               spellCheck={false}
             />
             {editError && (
-              <p className="rounded-xl bg-duo-red-light p-3 text-sm font-bold text-duo-red-dark">{editError}</p>
+              <p className="rounded-xl bg-duo-red-light p-3 text-sm font-medium text-duo-red-dark">{editError}</p>
             )}
             <div className="grid grid-cols-2 gap-2">
               <Button variant="outline" onClick={() => setEditTarget(null)}>

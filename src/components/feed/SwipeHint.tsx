@@ -22,7 +22,7 @@ export function SwipeHint({ visible }: SwipeHintProps) {
           >
             <ChevronUp className="h-8 w-8 text-white" />
           </motion.div>
-          <span className="text-sm font-extrabold text-white/80">Yukarı kaydır</span>
+          <span className="text-sm font-semibold text-white/80">Yukarı kaydır</span>
         </motion.div>
       )}
     </AnimatePresence>

@@ -1,4 +1,23 @@
+import { STORAGE_KEYS } from '@/lib/storageKeys';
+
 let ctx: AudioContext | null = null;
+
+/** Sesler varsayılan olarak kapalı: beklenmedik ses dikkati dağıtır. Ana ekrandan açılır. */
+export function soundEnabled(): boolean {
+  try {
+    return window.localStorage.getItem(STORAGE_KEYS.sound) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+export function setSoundEnabled(on: boolean) {
+  try {
+    window.localStorage.setItem(STORAGE_KEYS.sound, on ? 'true' : 'false');
+  } catch {
+    // depolama yok
+  }
+}
 
 function getCtx(): AudioContext | null {
   try {
@@ -10,7 +29,8 @@ function getCtx(): AudioContext | null {
   }
 }
 
-function tone(frequency: number, startAt: number, duration: number, volume = 0.12) {
+function tone(frequency: number, startAt: number, duration: number, volume = 0.08) {
+  if (!soundEnabled()) return;
   const ac = getCtx();
   if (!ac) return;
   const osc = ac.createOscillator();
@@ -24,7 +44,7 @@ function tone(frequency: number, startAt: number, duration: number, volume = 0.1
   osc.stop(ac.currentTime + startAt + duration);
 }
 
-/** Doğru cevap: yükselen neşeli iki nota. */
+/** Doğru cevap: yükselen iki nota. */
 export function playCorrect() {
   tone(660, 0, 0.15);
   tone(880, 0.12, 0.2);

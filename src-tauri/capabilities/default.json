@@ -1,12 +1,13 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Ana pencere: çekirdek varsayılanlar + güncelleme (denetle/kur), yeniden başlatma ve yalnız GitHub sürüm sayfasını tarayıcıda açma.",
+  "description": "Ana pencere: çekirdek varsayılanlar + tam ekran, güncelleme (denetle/kur), yeniden başlatma ve yalnız GitHub sürüm sayfasını tarayıcıda açma.",
   "windows": [
     "main"
   ],
   "permissions": [
     "core:default",
+    "core:window:allow-set-fullscreen",
     "updater:default",
     "process:allow-restart",
     {

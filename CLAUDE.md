@@ -59,6 +59,28 @@ işin doğrudan yapılmasını istiyor ("İzin isteme benden direkt yap").
   Manifest biçimi geriye uyumsuz değişirse `schema` artırılır (eski uygulamalar onu yok sayar).
 - Doğrulama: her cevap şıklarda olmalı, şık/soru tekrarı olmamalı, her MCQ'da açıklama ve kaynak olmalı.
 
+## Tasarım (KALICI — odak için; yeni ekranlarda da uy)
+
+Amaç dikkati içerikte tutmak. Dayanak: bilişsel yük kuramı (Sweller) ve "seductive details"
+(Harp & Mayer 1998) — süs öğeleri öğrenmeyi düşürür; hareket başlangıcı dikkati çeker (Abrams &
+Christ 2003); kırmızı başarı durumlarında performansı düşürür (Elliot ve ark. 2007); açık zeminde
+koyu yazı okumada daha iyi (Piepenbrock ve ark. 2013); satır uzunluğu ~60–75 karakter.
+
+- Renkler `src/index.css` değişkenlerinden (açık/koyu tema); `tailwind.config.ts` açıklamasına bak.
+  Sabit hex ya da Tailwind'in hazır renkleri (amber-700 vb.) kullanma (istisna: Akış'ın temadan
+  bağımsız koyu sahnesi, `ink`); yüzey `bg-surface`, `bg-white` değil.
+- Tek vurgu rengi mavi. **Yeşil yalnız "doğru", kırmızı yalnız "yanlış"**, altın yalnız "Sınavda".
+  Devam/başla düğmeleri her zaman mavi; "Zor" gibi öz değerlendirme kırmızı değil.
+- Büyük harfli (uppercase) metin ve harf aralığı yok; etiketler cümle düzeninde ("Soru sayısı").
+- Ağırlık: başlıklar `font-semibold`, şık/etiket `font-medium`, okunacak metin normal (400).
+  `font-bold` üstü yok.
+- Uzun metin sola hizalı, `leading-relaxed`/`1.65`; açıklama metni renkli değil ana metin renginde.
+- Hareket: yalnız kısa solma (≤150 ms); kayma, zıplama, kademeli giriş yok. `MotionConfig
+  reducedMotion="user"` ve CSS `prefers-reduced-motion` var.
+- Sesler varsayılan kapalı. Yazı tipi Atkinson Hyperlegible Next (I/l/1, O/0 ayrımı).
+- Her çalışma ekranının başlığında `FullscreenButton` (tam ekran); Akış'ta `tone="dark"`.
+  Mac'te menü: Görünüm › Tam Ekran (⌃⌘F). Klavyede "F" kullanma: Soru çöz'de 6. şık.
+
 ## Geliştirme
 
 - `npm run build`, uçtan uca test: `node e2e/smoke.mjs` (yerelde Chromium; CI'da macOS'ta WebKit).

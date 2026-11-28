@@ -29,7 +29,7 @@ export function TextInputQuestion({ question, feedback, onSubmit }: Props) {
         if (!locked && text.trim()) onSubmit(text);
       }}
     >
-      <h2 className="text-center text-2xl font-extrabold text-duo-gray-700">{question.front}</h2>
+      <h2 className="text-center text-2xl font-semibold text-duo-gray-700">{question.front}</h2>
       <Input
         ref={inputRef}
         value={text}

@@ -116,7 +116,7 @@ export function ImportPanel({ fixedCourseId, onImported }: Props) {
             value={courseChoice}
             onChange={(e) => setCourseChoice(e.target.value)}
             aria-label="Ders"
-            className="h-12 w-full rounded-xl border-2 border-duo-gray-100 bg-duo-gray-50 px-3 text-base font-semibold text-duo-gray-700 focus:border-duo-blue focus:bg-white focus:outline-none"
+            className="h-12 w-full rounded-xl border border-duo-gray-100 bg-duo-gray-50 px-3 text-base font-normal text-duo-gray-700 focus:border-duo-blue focus:bg-surface focus:outline-none"
           >
             {courses.map((c) => (
               <option key={c.id} value={c.id}>
@@ -170,13 +170,13 @@ export function ImportPanel({ fixedCourseId, onImported }: Props) {
             onClick={() => fileInputRef.current?.click()}
             className={
               isDragging
-                ? 'flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-duo-blue bg-duo-blue-light p-8 text-center transition-colors'
-                : 'flex cursor-pointer flex-col items-center gap-2 rounded-2xl border-2 border-dashed border-duo-gray-100 p-8 text-center transition-colors hover:border-duo-blue'
+                ? 'flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-duo-blue bg-duo-blue-light p-8 text-center transition-colors'
+                : 'flex cursor-pointer flex-col items-center gap-2 rounded-2xl border border-dashed border-duo-gray-100 p-8 text-center transition-colors hover:border-duo-blue'
             }
           >
             <Upload className="h-8 w-8 text-duo-blue" />
-            <p className="font-bold text-duo-gray-700">JSON, CSV ya da TXT dosyasını buraya sürükle</p>
-            <p className="text-xs font-semibold text-duo-gray-300">ya da seçmek için tıkla</p>
+            <p className="font-medium text-duo-gray-700">JSON, CSV ya da TXT dosyasını buraya sürükle</p>
+            <p className="text-xs font-normal text-duo-gray-300">ya da seçmek için tıkla</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -192,17 +192,17 @@ export function ImportPanel({ fixedCourseId, onImported }: Props) {
       </Tabs>
 
       {error && (
-        <div className="flex items-start gap-2 rounded-xl bg-duo-red-light p-3 text-sm font-bold text-duo-red-dark">
+        <div className="flex items-start gap-2 rounded-xl bg-duo-red-light p-3 text-sm font-medium text-duo-red-dark">
           <XCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
       {successMsg && (
-        <div className="rounded-xl bg-duo-green-light p-3 text-sm font-bold text-duo-green-dark">✅ {successMsg}</div>
+        <div className="rounded-xl bg-duo-green-light p-3 text-sm font-medium text-duo-green-dark">{successMsg}</div>
       )}
       {warnings.length > 0 && (
-        <div className="flex flex-col gap-1 rounded-xl bg-duo-gold-light p-3 text-xs font-semibold text-duo-gold-dark">
-          <span className="flex items-center gap-1 font-extrabold">
+        <div className="flex flex-col gap-1 rounded-xl bg-duo-gold-light p-3 text-xs font-normal text-duo-gold-dark">
+          <span className="flex items-center gap-1 font-semibold">
             <AlertTriangle className="h-4 w-4" /> Uyarılar
           </span>
           {warnings.slice(0, 5).map((w, i) => (

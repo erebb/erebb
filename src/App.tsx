@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import type { StudyMode, StudyTarget } from '@/types';
 import { AppProvider, useApp } from '@/context/AppContext';
 import { Dashboard } from '@/components/Dashboard';
@@ -21,10 +21,13 @@ export default function App() {
   return (
     // Tek bir sağlayıcı: görünüm değişince unmount olmamalı; aksi halde çıkışta tetiklenen
     // güncellemeler sağlayıcıyla birlikte sökülür ve hiç işlenmez.
-    <AppProvider>
-      <Router />
-      <UpdateNotifier />
-    </AppProvider>
+    // reducedMotion="user": macOS'ta "Hareketi azalt" açıksa kayma/ölçek animasyonları kapanır.
+    <MotionConfig reducedMotion="user">
+      <AppProvider>
+        <Router />
+        <UpdateNotifier />
+      </AppProvider>
+    </MotionConfig>
   );
 }
 
@@ -65,7 +68,7 @@ function Router() {
     // Akış tam görünüm alanını sahiplenir; dikey kaydırma yüzeyinde dikey slayt yanlış
     // kaydırma gibi okunacağı için düz solma geçişi.
     return (
-      <motion.div key="feed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2 }}>
+      <motion.div key="feed" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
         <FeedZone target={target} onExit={exitStudy} />
       </motion.div>
     );
@@ -78,10 +81,11 @@ function Router() {
     <AnimatePresence mode="wait">
       <motion.div
         key={key}
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -16 }}
-        transition={{ duration: 0.18 }}
+        // Yalnız kısa solma: ekran geçişinde kayan içerik dikkati gereksiz yere çeker.
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.12 }}
       >
         {view.name === 'home' && <Dashboard onOpenCourse={(courseId) => setView({ name: 'course', courseId })} />}
         {view.name === 'course' && (
@@ -93,7 +97,7 @@ function Router() {
         )}
         {view.name === 'study' && !target && (
           <div className="flex min-h-screen flex-col items-center justify-center gap-4 p-6">
-            <p className="font-bold text-duo-gray-500">Set bulunamadı.</p>
+            <p className="font-medium text-duo-gray-500">Set bulunamadı.</p>
             <Button variant="blue" onClick={exitStudy}>
               Geri dön
             </Button>

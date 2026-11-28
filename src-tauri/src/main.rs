@@ -31,7 +31,7 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         name: Some(APP_NAME.into()),
         version: Some(app.package_info().version.to_string()),
         // macOS "Hakkında" penceresi `comments`'i göstermez; `credits` gösterir.
-        credits: Some("Kendi kelime listelerinle oyunlaştırılmış öğrenme.".into()),
+        credits: Some("Sınava odaklı kişisel çalışma uygulaması.".into()),
         ..Default::default()
     };
 
@@ -65,6 +65,15 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         ],
     )?;
 
+    // Tam ekran: macOS'un kendi komutu (⌃⌘F, fn+F). Uygulamadaki düğme de aynı pencere
+    // durumunu değiştirir; ikisi birbirini izler.
+    let view_menu = Submenu::with_items(
+        app,
+        "Görünüm",
+        true,
+        &[&PredefinedMenuItem::fullscreen(app, Some("Tam Ekran"))?],
+    )?;
+
     let window_menu = Submenu::with_items(
         app,
         "Pencere",
@@ -77,7 +86,7 @@ fn build_menu<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<Menu<R>> {
         ],
     )?;
 
-    Menu::with_items(app, &[&app_menu, &edit_menu, &window_menu])
+    Menu::with_items(app, &[&app_menu, &edit_menu, &view_menu, &window_menu])
 }
 
 fn main() {

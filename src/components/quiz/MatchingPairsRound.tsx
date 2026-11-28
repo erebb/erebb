@@ -29,19 +29,19 @@ export function MatchingPairsRound({ pairs, matchedIds, lastWrongPair, onMatch }
 
   const tileClass = (opts: { matched: boolean; selected: boolean; wrongFlash: boolean }) =>
     cn(
-      'w-full rounded-2xl border-2 p-3 text-sm font-bold transition-all min-h-[3.5rem]',
+      'w-full rounded-2xl border p-3 text-sm font-medium transition-all min-h-[3.5rem]',
       opts.matched &&
         'border-duo-green bg-duo-green-light text-duo-green-dark opacity-60 pointer-events-none',
       !opts.matched && opts.selected && 'border-duo-blue bg-duo-blue-light text-duo-blue-dark',
       !opts.matched &&
         !opts.selected &&
-        'border-duo-gray-100 bg-white text-duo-gray-700 shadow-duo-card hover:border-duo-blue',
+        'border-duo-gray-100 bg-surface text-duo-gray-700 shadow-duo-card hover:border-duo-blue',
       opts.wrongFlash && 'animate-flash-incorrect border-duo-red'
     );
 
   return (
     <div className="flex flex-col gap-6">
-      <h2 className="text-center text-xl font-extrabold text-duo-gray-700">Çiftleri eşleştir</h2>
+      <h2 className="text-center text-xl font-semibold text-duo-gray-700">Çiftleri eşleştir</h2>
       <div className="grid grid-cols-2 gap-3">
         <div className="flex flex-col gap-3">
           {fronts.map((q) => (

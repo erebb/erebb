@@ -17,6 +17,13 @@ cevaplar ve açıklamalar.
 
 Her mod tek bir sette ya da **“Tüm ders”** ile dersin bütün setlerinde çalışır.
 
+**Odak için tasarlandı:** sakin, düşük doygunlukta renkler; renk yalnız anlam taşır (yeşil = doğru,
+kırmızı = yanlış, altın = “Sınavda”). Büyük harfli düğmeler, zıplayan animasyonlar ve süs öğeleri yok.
+Yazı tipi okunaklılık için tasarlanmış **Atkinson Hyperlegible Next** (I/l/1 ve O/0 karışmaz). Uzun metinler
+sola hizalı ve okunaklı satır uzunluğunda. **Açık / Koyu / Sistem** tema ve **tam ekran** (her çalışma
+ekranının sağ üstündeki düğme ya da ⌃⌘F) var; ses efektleri varsayılan olarak kapalı (ana ekranın altından
+açılır). macOS'ta “Hareketi azalt” açıksa animasyonlar da kapanır.
+
 **İlerleme kaydedilir:** her sorunun kaç kez çözüldüğü, doğru/yanlış sayısı saklanır. Ders sayfasında her
 setin ve “Tüm ders”in altında *“x/y çalışıldı · n doğru · m yanlış”* çizgisi görünür; **Soru çöz**'e
 başlarken **Hepsi / Çözülmemiş / Yanlışlarım** seçilebilir. Uygulamayı kapatıp açınca hepsi yerinde durur.
@@ -124,6 +131,7 @@ silip bu klasörü de silersen veriler gider.
 | ↓ / ↑, Boşluk, Page Down / Up | Akışta sonraki / önceki kart |
 | Trackpad'de iki parmakla kaydırma, fare tekerleği | Akışta bir hareket = bir kart |
 | Esc | Akıştan çık · göz atmada listeye dön |
+| ⌃⌘F (ya da fn+F) | Tam ekran aç / kapat (menüde Görünüm › Tam Ekran) |
 | ⌘C / ⌘V / ⌘X / ⌘A | Metin kutularında kopyala / yapıştır / kes / tümünü seç |
 | ⌘M | Pencereyi küçült |
 | ⌘W | Pencereyi kapat |

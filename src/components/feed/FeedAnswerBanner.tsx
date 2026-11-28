@@ -33,17 +33,17 @@ export function FeedAnswerBanner({ result, question }: Props) {
                 {result.correct ? <Check className="h-5 w-5" /> : <X className="h-5 w-5" />}
               </span>
               <div className="min-w-0 text-left">
-                <p className="font-extrabold">{result.correct ? 'Doğru!' : 'Yanlış'}</p>
+                <p className="font-semibold">{result.correct ? 'Doğru!' : 'Yanlış'}</p>
                 {!result.correct && (
-                  <p className="text-sm font-bold text-white/95">Doğru cevap: {result.correctAnswer}</p>
+                  <p className="text-sm font-medium text-white/95">Doğru cevap: {result.correctAnswer}</p>
                 )}
               </div>
             </div>
             {question.explanation && (
-              <p className="text-left text-xs font-semibold leading-relaxed text-white/90">{question.explanation}</p>
+              <p className="text-left text-xs font-normal leading-relaxed text-white/90">{question.explanation}</p>
             )}
             {question.source && (
-              <p className="flex items-center gap-1 text-left text-[0.7rem] font-bold text-white/75">
+              <p className="flex items-center gap-1 text-left text-[0.7rem] font-medium text-white/75">
                 <BookOpen className="h-3 w-3" /> {question.source}
               </p>
             )}
@@ -51,7 +51,7 @@ export function FeedAnswerBanner({ result, question }: Props) {
               <motion.div
                 animate={{ y: [0, -4, 0] }}
                 transition={{ repeat: Infinity, duration: 1.4 }}
-                className="flex items-center justify-center gap-1 text-xs font-extrabold text-white/80"
+                className="flex items-center justify-center gap-1 text-xs font-semibold text-white/80"
               >
                 <ChevronUp className="h-4 w-4" /> Devam etmek için yukarı kaydır
               </motion.div>

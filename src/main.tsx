@@ -2,21 +2,20 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
-// Nunito pakete gömülü: masaüstü uygulaması internetsiz açılır, Google Fonts'a gidilmez.
-// Yalnız latin + latin-ext alt kümeleri — Türkçe ğ ş ı İ latin-ext'tedir.
-import '@fontsource/nunito/latin-400.css';
-import '@fontsource/nunito/latin-ext-400.css';
-import '@fontsource/nunito/latin-600.css';
-import '@fontsource/nunito/latin-ext-600.css';
-import '@fontsource/nunito/latin-700.css';
-import '@fontsource/nunito/latin-ext-700.css';
-import '@fontsource/nunito/latin-800.css';
-import '@fontsource/nunito/latin-ext-800.css';
-import '@fontsource/nunito/latin-900.css';
-import '@fontsource/nunito/latin-ext-900.css';
+// Atkinson Hyperlegible Next (Braille Institute): harfleri birbirinden ayırt edilmek için
+// tasarlanmış okunaklılık yazı tipi — I/l/1, O/0, rn/m karışmaz; ilaç ve terim adlarında işe yarar.
+// Pakete gömülü: uygulama internetsiz açılır. Her ağırlık latin + latin-ext (ğ ş İ) içerir.
+import '@fontsource/atkinson-hyperlegible-next/400.css';
+import '@fontsource/atkinson-hyperlegible-next/500.css';
+import '@fontsource/atkinson-hyperlegible-next/600.css';
+import '@fontsource/atkinson-hyperlegible-next/700.css';
 
 import './index.css';
 import { prepareStorage } from './content/seed';
+import { applyTheme, readThemePref } from './lib/display';
+
+// Tema ilk çizimden önce: koyu temada beyaz parlama olmasın.
+applyTheme(readThemePref());
 
 // Eski verileri taşı ve uygulamayla gelen ders paketlerini (ilk açılışta bir kez) ekle.
 // Çizimden önce beklenir; sağlayıcılar başlangıç durumunu LocalStorage'dan okur.

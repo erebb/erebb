@@ -277,9 +277,9 @@ export function FeedZone({ target, onExit }: FeedZoneProps) {
 
   if (isEmpty) {
     return (
-      <div className="flex h-feed flex-col items-center justify-center gap-4 bg-duo-gray-900 p-6 text-center">
-        <p className="text-lg font-extrabold text-white">Burada henüz soru yok.</p>
-        <p className="text-sm font-semibold text-white/60">Önce bir sete soru ekle.</p>
+      <div className="flex h-feed flex-col items-center justify-center gap-4 bg-ink p-6 text-center">
+        <p className="text-lg font-semibold text-white">Burada henüz soru yok.</p>
+        <p className="text-sm font-normal text-white/60">Önce bir sete soru ekle.</p>
         <Button variant="blue" onClick={handleExit}>
           Geri dön
         </Button>
@@ -295,7 +295,7 @@ export function FeedZone({ target, onExit }: FeedZoneProps) {
     // yayılmaz, ama yandaki siyah boşluklarda da tekerlek/trackpad akışı kaydırır ve
     // tıklamak odağı akıştan koparmaz. Üst çubuk, ray ve ipucu aynı sütuna hizalı bir
     // katmanda durur (kök öğeleri pointer-events-none; tıklamalar kartlara geçer).
-    <div className="relative h-feed w-full overflow-hidden bg-black">
+    <div className="relative h-feed w-full overflow-hidden bg-ink-deep">
       <div className="pointer-events-none absolute inset-0 z-20 flex justify-center">
         <div className="relative h-full w-full max-w-md">
           <FeedTopBar title={target.title} subtitle={target.subtitle} onExit={handleExit} />
@@ -341,7 +341,7 @@ export function FeedZone({ target, onExit }: FeedZoneProps) {
               aria-setsize={-1}
               className="relative h-feed w-full shrink-0 snap-start snap-always overflow-hidden"
             >
-              <div className="relative mx-auto h-full w-full max-w-md overflow-hidden bg-duo-gray-900 md:shadow-2xl">
+              <div className="relative mx-auto h-full w-full max-w-md overflow-hidden bg-ink md:border-x md:border-white/5">
                 {inWindow && (
                   <>
                     {card.kind === 'explainer' && (
@@ -386,7 +386,7 @@ export function FeedZone({ target, onExit }: FeedZoneProps) {
               animate={false}
             />
           )}
-          <p className="mt-4 text-center text-xs font-bold text-duo-gray-300">
+          <p className="mt-4 text-center text-xs font-medium text-duo-gray-300">
             Baktığın için bu cevap tekrar seviyeni yükseltmez.
           </p>
         </DialogContent>

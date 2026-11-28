@@ -150,14 +150,8 @@ const feedIndex = (page) =>
 async function activeCard(page) {
   const idx = await feedIndex(page);
   const card = page.locator('[data-feed-card]').nth(idx);
-  const text = await card.innerText().catch(() => '');
-  const kind = text.includes('CEVABI YAZ')
-    ? 'ti'
-    : (await card.locator('button').count()) >= 2
-      ? 'mc'
-      : text.includes('ANLAM') || text.includes('CEVAP')
-        ? 'explainer'
-        : 'unknown';
+  const raw = await card.locator('[data-feed-kind]').first().getAttribute('data-feed-kind').catch(() => null);
+  const kind = raw === 'ti' || raw === 'mc' || raw === 'explainer' ? raw : 'unknown';
   const front = (await card.locator('h2').first().innerText().catch(() => '')).trim();
   return { idx, card, kind, front };
 }
@@ -269,7 +263,7 @@ try {
   await page.locator('[data-quiz-score]').waitFor();
   const score = (await page.locator('[data-quiz-score]').innerText()).replace(/\s/g, '');
   check('Soru çöz: puan doğru hesaplanıyor', score === `${10 - WRONG_FIRST}/10`, score);
-  check('Soru çöz: yanlışlar listeleniyor', (await page.getByText('YANLIŞ YAPTIKLARIN').count()) === 1);
+  check('Soru çöz: yanlışlar listeleniyor', (await page.getByText('Yanlış yaptıkların').count()) === 1);
   await shot(page, '05-soru-sonuc');
   await page.getByRole('button', { name: new RegExp(`Yanlışları tekrar çöz \\(${WRONG_FIRST}\\)`) }).click();
   await page.locator('[data-quiz-position]').waitFor();
@@ -316,7 +310,7 @@ try {
   const firstFront = (await page.locator('[data-card-front]').first().innerText()).trim();
   await page.locator('.preserve-3d').click();
   await settle(page, 800);
-  check('Kartlar: kart çevrilince cevap görünüyor', await page.getByText('CEVAP').first().isVisible());
+  check('Kartlar: kart çevrilince cevap görünüyor', await page.getByText('Cevap', { exact: true }).first().isVisible());
   await shot(page, '06-kart');
   await page.getByRole('button', { name: /Zor/i }).click();
   await settle(page);
@@ -663,6 +657,49 @@ try {
   // ===================== Açılışta uzaktan içerik güncellemesi =====================
   // GitHub'da daha yeni bir sürüm varmış gibi: manifest'te Hafta 7'nin sürümü yükselmiş ve
   // ilk sorusu değişmiş. Açılışta indirilip uygulanmalı; ilerleme ve soru kimliği korunmalı.
+  // ===================== Görünüm: tema, yazı tipi, ses, tam ekran =====================
+  const disp = await newPage(browser, { width: 900, height: 700 });
+  await disp.page.goto(URL);
+  await disp.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  const bodyBg = () => disp.page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const themeAttr = () => disp.page.evaluate(() => document.documentElement.dataset.theme ?? null);
+  const lightBg = await bodyBg();
+  await disp.page.locator('[data-theme-option="dark"]').click();
+  const darkBg = await bodyBg();
+  check('Tema: "Koyu" zemini koyulaştırıyor', (await themeAttr()) === 'dark' && darkBg !== lightBg, `${lightBg} → ${darkBg}`);
+  await reload(disp.page);
+  await disp.page.getByRole('heading', { name: 'Derslerim' }).waitFor();
+  check('Tema: seçim yeniden açılışta korunuyor', (await themeAttr()) === 'dark' && (await bodyBg()) === darkBg);
+  await disp.page.locator('[data-theme-option="system"]').click();
+  check('Tema: "Sistem" işletim sistemini izliyor', (await themeAttr()) === null && (await bodyBg()) === lightBg);
+  const font = await disp.page.evaluate(async () => {
+    await document.fonts.ready;
+    return {
+      family: getComputedStyle(document.body).fontFamily,
+      loaded: document.fonts.check('16px "Atkinson Hyperlegible Next"', 'ğşİ'),
+    };
+  });
+  check('Yazı tipi: Atkinson Hyperlegible Next (Türkçe harflerle) yüklü', font.family.includes('Atkinson') && font.loaded, font.family);
+  check('Ses: varsayılan kapalı', (await disp.page.locator('[data-sound-toggle]').getAttribute('aria-pressed')) === 'false');
+  await disp.page.getByRole('button', { name: /Mikrobiyoloji/ }).click();
+  await studySet(disp.page, 'Hafta 8', 'Soru çöz');
+  const fsBtn = disp.page.locator('[data-fullscreen-toggle]');
+  await fsBtn.first().waitFor({ timeout: 5000 }).catch(() => {});
+  check('Tam ekran: çalışma ekranında düğme var', (await fsBtn.count()) === 1);
+  if (BROWSER === 'chromium') {
+    const inFs = () => disp.page.evaluate(() => Boolean(document.fullscreenElement));
+    await fsBtn.click();
+    await disp.page.waitForFunction(() => Boolean(document.fullscreenElement), null, { timeout: 3000 }).catch(() => {});
+    await settle(disp.page, 200);
+    check('Tam ekran: düğme tam ekrana geçiriyor', (await inFs()) && (await fsBtn.getAttribute('aria-pressed')) === 'true');
+    await fsBtn.click();
+    await disp.page.waitForFunction(() => !document.fullscreenElement, null, { timeout: 3000 }).catch(() => {});
+    await settle(disp.page, 200);
+    check('Tam ekran: ikinci basış çıkarıyor', !(await inFs()) && (await fsBtn.getAttribute('aria-pressed')) === 'false');
+  }
+  check('Görünüm: konsol hatası yok', disp.errors.length === 0, disp.errors.slice(0, 3).join(' | '));
+  await disp.ctx.close();
+
   const ota = await newPage(browser, { width: 440, height: 780 });
   await ota.page.goto(URL);
   await ota.page.getByRole('heading', { name: 'Derslerim' }).waitFor();

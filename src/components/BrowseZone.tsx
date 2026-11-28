@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn, fitText, normalizeAnswer } from '@/lib/utils';
+import { FullscreenButton } from '@/components/DisplayControls';
 
 interface Props {
   target: StudyTarget;
@@ -63,12 +64,13 @@ export function BrowseZone({ target, onExit }: Props) {
         <Button variant="ghost" size="icon" onClick={onExit} aria-label="Geri">
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="min-w-0">
-          <p className="truncate text-lg font-extrabold text-duo-gray-700">{target.title}</p>
-          <p className="text-xs font-bold text-duo-gray-300">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-lg font-semibold text-duo-gray-700">{target.title}</p>
+          <p className="text-xs font-medium text-duo-gray-300">
             {mcqCount} soru · {cardCount} kart
           </p>
         </div>
+        <FullscreenButton />
       </header>
 
       <div className="flex flex-wrap items-center gap-2">
@@ -83,21 +85,21 @@ export function BrowseZone({ target, onExit }: Props) {
             key={key}
             onClick={() => setFilter(key)}
             className={cn(
-              'h-9 rounded-xl border-2 px-3 text-xs font-extrabold transition-colors',
+              'h-9 rounded-xl border px-3 text-xs font-semibold transition-colors',
               filter === key
                 ? 'border-duo-blue bg-duo-blue-light text-duo-blue-dark'
-                : 'border-duo-gray-100 bg-white text-duo-gray-500 hover:border-duo-blue'
+                : 'border-duo-gray-100 bg-surface text-duo-gray-500 hover:border-duo-blue'
             )}
           >
             {label}
           </button>
         ))}
-        <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs font-extrabold text-duo-gray-500">
+        <label className="ml-auto flex cursor-pointer items-center gap-2 text-xs font-semibold text-duo-gray-500">
           <input
             type="checkbox"
             checked={revealAll}
             onChange={(e) => setRevealAll(e.target.checked)}
-            className="h-4 w-4 accent-duo-green"
+            className="h-4 w-4 accent-duo-blue"
           />
           Cevaplar açık
         </label>
@@ -114,28 +116,28 @@ export function BrowseZone({ target, onExit }: Props) {
       </div>
 
       {visible.length === 0 ? (
-        <p className="py-10 text-center text-sm font-semibold text-duo-gray-300">Eşleşen öğe yok.</p>
+        <p className="py-10 text-center text-sm font-normal text-duo-gray-300">Eşleşen öğe yok.</p>
       ) : (
         <ol className="flex flex-col gap-2">
           {visible.map((item, i) => (
             <li key={item.id}>
               <button
                 onClick={() => setOpenIndex(i)}
-                className="flex w-full items-start gap-3 rounded-2xl border-2 border-duo-gray-100 bg-white p-3 text-left shadow-duo-card transition-colors hover:border-duo-blue active:translate-y-0.5 active:shadow-none"
+                className="flex w-full items-start gap-3 rounded-2xl border border-duo-gray-100 bg-surface p-3 text-left shadow-duo-card transition-colors hover:border-duo-blue active:translate-y-0.5 active:shadow-none"
               >
-                <span className="mt-0.5 w-7 shrink-0 text-right text-xs font-extrabold tabular-nums text-duo-gray-300">
+                <span className="mt-0.5 w-7 shrink-0 text-right text-xs font-semibold tabular-nums text-duo-gray-300">
                   {i + 1}
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="mb-1 flex items-center gap-2">
-                    <Badge variant={isMcq(item) ? 'green' : 'blue'}>{isMcq(item) ? 'SORU' : 'KART'}</Badge>
+                    <Badge variant={isMcq(item) ? 'green' : 'blue'}>{isMcq(item) ? 'Soru' : 'Kart'}</Badge>
                     {item.source && (
-                      <span className="truncate text-[0.7rem] font-bold text-duo-gray-300">{item.source}</span>
+                      <span className="truncate text-[0.7rem] font-medium text-duo-gray-300">{item.source}</span>
                     )}
                   </span>
-                  <span className="line-clamp-2 block text-sm font-bold text-duo-gray-700">{item.front}</span>
+                  <span className="line-clamp-2 block text-sm font-medium text-duo-gray-700">{item.front}</span>
                   {revealAll && (
-                    <span className="mt-1 line-clamp-2 block text-xs font-extrabold text-duo-green-dark">
+                    <span className="mt-1 line-clamp-2 block text-xs font-semibold text-duo-green-dark">
                       {item.back}
                     </span>
                   )}
@@ -201,10 +203,11 @@ function ItemViewer({ items, index, onIndex, onClose, revealAll, onRevealAll, ti
         <Button variant="ghost" size="icon" onClick={onClose} aria-label="Listeye dön">
           <List className="h-5 w-5" />
         </Button>
-        <p className="min-w-0 flex-1 truncate text-sm font-extrabold text-duo-gray-500">{title}</p>
-        <span className="text-sm font-extrabold tabular-nums text-duo-gray-500" data-browse-position="">
+        <p className="min-w-0 flex-1 truncate text-sm font-semibold text-duo-gray-500">{title}</p>
+        <span className="text-sm font-semibold tabular-nums text-duo-gray-500" data-browse-position="">
           {index + 1} / {items.length}
         </span>
+        <FullscreenButton />
       </header>
 
       <AnimatePresence mode="wait">
@@ -217,9 +220,9 @@ function ItemViewer({ items, index, onIndex, onClose, revealAll, onRevealAll, ti
           className="flex flex-1 flex-col gap-4 py-4"
         >
           <div className="flex items-center gap-2">
-            <Badge variant={mcq ? 'green' : 'blue'}>{mcq ? 'SORU' : 'KART'}</Badge>
+            <Badge variant={mcq ? 'green' : 'blue'}>{mcq ? 'Soru' : 'Kart'}</Badge>
             {item.source && (
-              <span className="inline-flex items-center gap-1 text-xs font-bold text-duo-gray-300">
+              <span className="inline-flex items-center gap-1 text-xs font-medium text-duo-gray-300">
                 <BookOpen className="h-3.5 w-3.5" /> {item.source}
               </span>
             )}
@@ -227,7 +230,7 @@ function ItemViewer({ items, index, onIndex, onClose, revealAll, onRevealAll, ti
 
           <h2
             className={cn(
-              'font-extrabold leading-snug text-duo-gray-700',
+              'font-semibold leading-snug text-duo-gray-700',
               fitText(item.front, ['text-3xl', 'text-2xl', 'text-xl', 'text-lg'])
             )}
           >
@@ -248,14 +251,14 @@ function ItemViewer({ items, index, onIndex, onClose, revealAll, onRevealAll, ti
                       setRevealed(true);
                     }}
                     className={cn(
-                      'flex items-start gap-3 rounded-2xl border-2 p-3 text-left text-sm font-bold transition-colors',
-                      !revealed && 'border-duo-gray-100 bg-white text-duo-gray-700 hover:border-duo-blue',
+                      'flex items-start gap-3 rounded-2xl border p-3 text-left text-sm font-medium transition-colors',
+                      !revealed && 'border-duo-gray-100 bg-surface text-duo-gray-700 hover:border-duo-blue',
                       revealed && isCorrect && 'border-duo-green bg-duo-green-light text-duo-green-dark',
                       isChosenWrong && 'border-duo-red bg-duo-red-light text-duo-red-dark',
-                      revealed && !isCorrect && !isChosenWrong && 'border-duo-gray-100 bg-white text-duo-gray-300'
+                      revealed && !isCorrect && !isChosenWrong && 'border-duo-gray-100 bg-surface text-duo-gray-300'
                     )}
                   >
-                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 border-current text-xs font-extrabold">
+                    <span className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-current text-xs font-semibold">
                       {revealed && isCorrect ? (
                         <Check className="h-3.5 w-3.5" />
                       ) : isChosenWrong ? (
@@ -279,13 +282,13 @@ function ItemViewer({ items, index, onIndex, onClose, revealAll, onRevealAll, ti
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex flex-col gap-2 rounded-2xl border-2 border-duo-green bg-duo-green-light p-4"
+              className="flex flex-col gap-2 rounded-2xl border border-duo-green bg-duo-green-light p-4"
               data-browse-answer=""
             >
-              <span className="text-xs font-extrabold tracking-widest text-duo-green-dark">CEVAP</span>
-              <p className="font-extrabold text-duo-gray-700">{item.back}</p>
+              <span className="text-xs font-semibold text-duo-green-dark">Cevap</span>
+              <p className="font-semibold text-duo-gray-700">{item.back}</p>
               {item.explanation && (
-                <p className="text-sm font-semibold leading-relaxed text-duo-gray-500">{item.explanation}</p>
+                <p className="text-sm font-normal leading-relaxed text-duo-gray-500">{item.explanation}</p>
               )}
             </motion.div>
           )}
@@ -296,12 +299,12 @@ function ItemViewer({ items, index, onIndex, onClose, revealAll, onRevealAll, ti
         <Button variant="outline" onClick={() => go(-1)} disabled={index === 0} aria-label="Önceki">
           <ChevronLeft className="h-5 w-5" /> Önceki
         </Button>
-        <label className="mx-auto flex cursor-pointer items-center gap-2 text-xs font-extrabold text-duo-gray-500">
+        <label className="mx-auto flex cursor-pointer items-center gap-2 text-xs font-semibold text-duo-gray-500">
           <input
             type="checkbox"
             checked={revealAll}
             onChange={(e) => onRevealAll(e.target.checked)}
-            className="h-4 w-4 accent-duo-green"
+            className="h-4 w-4 accent-duo-blue"
           />
           Cevaplar açık
         </label>

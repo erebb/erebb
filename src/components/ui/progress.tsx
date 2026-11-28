@@ -12,16 +12,16 @@ const Progress = React.forwardRef<React.ElementRef<typeof ProgressPrimitive.Root
   ({ className, value = 0, indicatorClassName, ...props }, ref) => (
     <ProgressPrimitive.Root
       ref={ref}
-      className={cn('relative h-4 w-full overflow-hidden rounded-full bg-duo-gray-100', className)}
+      className={cn('relative h-2 w-full overflow-hidden rounded-full bg-duo-gray-100', className)}
       value={value}
       {...props}
     >
       <ProgressPrimitive.Indicator asChild>
         <motion.div
-          className={cn('h-full rounded-full bg-duo-green', indicatorClassName)}
+          className={cn('h-full rounded-full bg-duo-blue', indicatorClassName)}
           initial={false}
           animate={{ width: `${Math.min(100, Math.max(0, value))}%` }}
-          transition={{ type: 'spring', stiffness: 200, damping: 26 }}
+          transition={{ duration: 0.25, ease: 'easeOut' }}
         />
       </ProgressPrimitive.Indicator>
     </ProgressPrimitive.Root>

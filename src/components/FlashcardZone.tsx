@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn, fitText } from '@/lib/utils';
+import { FullscreenButton } from '@/components/DisplayControls';
 
 interface Props {
   target: StudyTarget;
@@ -49,10 +50,10 @@ export function FlashcardZone({ target, onExit }: Props) {
                 aria-selected={deck === key}
                 onClick={() => setDeck(key)}
                 className={cn(
-                  'h-8 rounded-lg border-2 px-2.5 text-xs font-extrabold transition-colors',
+                  'h-8 rounded-lg border px-2.5 text-xs font-semibold transition-colors',
                   deck === key
                     ? 'border-duo-blue bg-duo-blue-light text-duo-blue-dark'
-                    : 'border-duo-gray-100 bg-white text-duo-gray-500 hover:border-duo-blue'
+                    : 'border-duo-gray-100 bg-surface text-duo-gray-500 hover:border-duo-blue'
                 )}
               >
                 {label}
@@ -102,16 +103,17 @@ function FlashcardSession({ target, questions, onExit, picker }: SessionProps) {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-xs font-extrabold text-duo-gray-500">{target.title}</p>
+          <p className="truncate text-xs font-semibold text-duo-gray-500">{target.title}</p>
           <Progress value={progressPercent} className="mt-1 h-3" />
         </div>
         <Badge variant="blue">{remaining} kart</Badge>
+        <FullscreenButton />
       </header>
 
       {picker}
 
       {isEarlyReview && !isDone && (
-        <p className="py-1 text-center text-xs font-bold text-duo-gray-300">
+        <p className="py-1 text-center text-xs font-medium text-duo-gray-300">
           Bugün vadesi gelen kart yok — erken tekrar yapıyorsun.
         </p>
       )}
@@ -123,8 +125,8 @@ function FlashcardSession({ target, questions, onExit, picker }: SessionProps) {
           className="flex flex-1 flex-col items-center justify-center gap-4 text-center"
         >
           <PartyPopper className="h-16 w-16 text-duo-gold" />
-          <h2 className="text-2xl font-extrabold">Tekrar tamamlandı</h2>
-          <p className="font-semibold text-duo-gray-500">
+          <h2 className="text-2xl font-semibold">Tekrar tamamlandı</h2>
+          <p className="font-normal text-duo-gray-500">
             {reviewed} kart · {easyCount} kolay · {hardCount} kez zor işaretlendi
           </p>
           <div className="mt-4 flex w-full flex-col gap-3">
@@ -149,55 +151,55 @@ function FlashcardSession({ target, questions, onExit, picker }: SessionProps) {
                 {currentCard && (
                   <motion.div
                     key={currentCard.id}
-                    initial={{ x: 60, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    exit={{ x: -60, opacity: 0 }}
-                    transition={{ duration: 0.2 }}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.12 }}
                   >
                     <motion.div
                       className="preserve-3d relative h-[26rem] w-full cursor-pointer select-none"
                       onClick={() => setIsFlipped((f) => !f)}
                       animate={{ rotateY: isFlipped ? 180 : 0 }}
-                      transition={{ duration: 0.5, ease: [0.4, 0.2, 0.2, 1] }}
+                      transition={{ duration: 0.35, ease: [0.4, 0.2, 0.2, 1] }}
                     >
                       {/* Ön yüz */}
-                      <div className="backface-hidden absolute inset-0 flex flex-col items-center gap-3 overflow-y-auto rounded-2xl border-2 border-duo-gray-100 bg-white p-6 text-center shadow-duo-card">
+                      <div className="backface-hidden absolute inset-0 flex flex-col items-center gap-3 overflow-y-auto rounded-2xl border border-duo-gray-100 bg-surface p-6 text-center shadow-duo-card">
                         <div className="my-auto flex flex-col items-center gap-3">
-                          <Badge variant="gray">{mcq ? 'SORU' : 'KART'}</Badge>
+                          <Badge variant="gray">{mcq ? 'Soru' : 'Kart'}</Badge>
                           <p
                             data-card-front=""
                             className={cn(
-                              'font-extrabold text-duo-gray-700',
+                              'font-semibold text-duo-gray-700',
                               fitText(currentCard.front, ['text-3xl', 'text-2xl', 'text-lg', 'text-base'])
                             )}
                           >
                             {currentCard.front}
                           </p>
-                          <p className="text-xs font-bold text-duo-gray-300">Çevirmek için dokun</p>
+                          <p className="text-xs font-medium text-duo-gray-300">Çevirmek için dokun</p>
                         </div>
                       </div>
                       {/* Arka yüz */}
                       <div
-                        className="backface-hidden absolute inset-0 flex flex-col items-center gap-3 overflow-y-auto rounded-2xl border-2 border-duo-blue bg-duo-blue-light p-6 text-center"
+                        className="backface-hidden absolute inset-0 flex flex-col items-center gap-3 overflow-y-auto rounded-2xl border border-duo-blue bg-duo-blue-light p-6 text-center"
                         style={{ transform: 'rotateY(180deg)' }}
                       >
                         <div className="my-auto flex flex-col items-center gap-3">
-                          <Badge variant="blue">CEVAP</Badge>
+                          <Badge variant="blue">Cevap</Badge>
                           <p
                             className={cn(
-                              'font-extrabold text-duo-gray-700',
+                              'font-semibold text-duo-gray-700',
                               fitText(currentCard.back, ['text-3xl', 'text-2xl', 'text-lg', 'text-base'])
                             )}
                           >
                             {currentCard.back}
                           </p>
                           {currentCard.explanation && (
-                            <p className="text-sm font-semibold leading-relaxed text-duo-gray-500">
+                            <p className="text-sm font-normal leading-relaxed text-duo-gray-500">
                               {currentCard.explanation}
                             </p>
                           )}
                           {currentCard.source && (
-                            <p className="inline-flex items-center gap-1 text-xs font-bold text-duo-blue-dark">
+                            <p className="inline-flex items-center gap-1 text-xs font-medium text-duo-blue-dark">
                               <BookOpen className="h-3.5 w-3.5" /> {currentCard.source}
                             </p>
                           )}
@@ -211,7 +213,8 @@ function FlashcardSession({ target, questions, onExit, picker }: SessionProps) {
           </div>
 
           <div className="grid grid-cols-2 gap-3 pb-4">
-            <Button variant="danger" size="lg" onClick={() => answer(markHard)}>
+            {/* Öz değerlendirme: "Zor" bir hata değil, kırmızı alarm rengi gerekmez. */}
+            <Button variant="outline" size="lg" onClick={() => answer(markHard)}>
               <X className="h-5 w-5" /> Zor
             </Button>
             <Button size="lg" onClick={() => answer(markEasy)}>

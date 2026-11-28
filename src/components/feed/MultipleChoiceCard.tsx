@@ -20,19 +20,18 @@ export function MultipleChoiceCard({ card, isActive, result, onAnswer }: Multipl
 
   return (
     // pr-20: sağdaki eylem rayının (w-10 + right-3) üstüne binmesini önler.
-    <div className="no-scrollbar flex h-full w-full flex-col overflow-y-auto bg-duo-gray-900 pb-24 pl-6 pr-20 pt-20">
+    <div data-feed-kind="mc" className="no-scrollbar flex h-full w-full flex-col overflow-y-auto bg-ink pb-24 pl-6 pr-20 pt-20">
       <motion.div
-        initial={isActive && !reduced ? { opacity: 0, y: 16 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-1 flex-col items-center justify-center gap-3 py-4 text-center"
+        initial={isActive && !reduced ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
+        className="flex flex-1 flex-col justify-center gap-3 py-4"
       >
-        <span className="text-xs font-extrabold tracking-[0.2em] text-white/50">
-          {isMcq(card.question) ? 'SORU' : 'CEVABI SEÇ'}
-        </span>
+        <span className="text-xs font-medium text-white/50">{isMcq(card.question) ? 'Soru' : 'Cevabı seç'}</span>
         <h2
           className={cn(
-            'break-words font-extrabold leading-tight text-white',
-            fitText(card.question.front, ['text-4xl sm:text-5xl', 'text-2xl', 'text-xl', 'text-lg'])
+            'break-words font-semibold leading-tight text-white',
+            fitText(card.question.front, ['text-3xl', 'text-2xl', 'text-xl', 'text-lg'])
           )}
         >
           {card.question.front}
@@ -49,24 +48,22 @@ export function MultipleChoiceCard({ card, isActive, result, onAnswer }: Multipl
           return (
             <motion.button
               key={`${choice}-${i}`}
-              initial={isActive && !reduced ? { opacity: 0, y: 14 } : false}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.05 * i }}
+              initial={false}
               disabled={locked}
               onClick={() => onAnswer(choice)}
               className={cn(
-                'flex w-full items-center gap-3 rounded-2xl border-2 text-left font-bold transition-colors',
+                'flex w-full items-center gap-3 rounded-2xl border text-left font-medium transition-colors',
                 longOptions ? 'p-3 text-sm' : 'p-4 text-base',
                 !locked &&
-                  'border-white/20 bg-white/10 text-white hover:border-white/50 hover:bg-white/20 active:translate-y-0.5',
+                  'border-white/15 bg-white/[0.06] text-white/90 hover:border-white/40 hover:bg-white/10',
                 showCorrect && 'border-duo-green bg-duo-green text-white',
                 chosenWrong && 'border-duo-red bg-duo-red/80 text-white',
-                showWrong && 'border-white/10 bg-white/5 text-white/40'
+                showWrong && 'border-white/10 bg-transparent text-white/40'
               )}
             >
               <span
                 className={cn(
-                  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border-2 text-sm font-extrabold',
+                  'inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border text-sm font-semibold',
                   showCorrect || chosenWrong ? 'border-white/60 text-white' : 'border-white/25 text-white/60'
                 )}
               >

@@ -1,56 +1,78 @@
 import type { Config } from 'tailwindcss';
 
+/**
+ * Odak teması. Renkler `src/index.css`'teki CSS değişkenlerinden gelir (açık / koyu tema).
+ * `duo-*` adları tarihseldir; anlamları:
+ * - duo-gray-50 sayfa zemini · 100 çizgi/iz · 300 sönük metin · 500 ikincil metin · 700 ana metin · 900 en koyu
+ * - surface: kart/panel yüzeyi
+ * - duo-blue: tek vurgu rengi (ana düğme, seçim, odak halkası)
+ * - duo-green: yalnız "doğru" geri bildirimi · duo-red: yalnız "yanlış" · duo-gold: "Sınavda" vurgusu
+ *   Her rengin DEFAULT'u dolgu (üstünde beyaz yazı okunur), `dark`'ı yüzey üstünde metin,
+ *   `light`'ı hafif renkli zemindir. Koyu temada `dark` açık tona döner, adı değil rolü önemli.
+ * - ink: Akış'ın temadan bağımsız koyu sahnesi
+ */
+const v = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
+const tone = (name: string) => ({ DEFAULT: v(name), dark: v(`${name}-strong`), light: v(`${name}-soft`) });
+
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        'duo-green': { DEFAULT: '#58CC02', dark: '#46A302', light: '#D7FFB8' },
-        'duo-blue': { DEFAULT: '#1CB0F6', dark: '#1899D6', light: '#DDF4FF' },
-        'duo-gold': { DEFAULT: '#FFC800', dark: '#E6B400', light: '#FFF4D1' },
-        'duo-red': { DEFAULT: '#FF4B4B', dark: '#EA2B2B', light: '#FFDFE0' },
+        surface: v('surface'),
+        'duo-green': tone('green'),
+        'duo-blue': tone('blue'),
+        'duo-gold': tone('gold'),
+        'duo-red': tone('red'),
         'duo-gray': {
-          50: '#F7F7F7',
-          100: '#E5E5E5',
-          300: '#AFAFAF',
-          500: '#777777',
-          700: '#4B4B4B',
-          900: '#3C3C3C',
+          50: v('gray-50'),
+          100: v('gray-100'),
+          300: v('gray-300'),
+          500: v('gray-500'),
+          700: v('gray-700'),
+          900: v('gray-900'),
         },
+        ink: { DEFAULT: '#15181C', deep: '#0E1013', 2: '#1D2126', 3: '#272C33' },
       },
       borderRadius: {
-        xl: '1rem',
-        '2xl': '1.25rem',
+        xl: '0.75rem',
+        '2xl': '1rem',
       },
       boxShadow: {
-        'duo-btn': '0 4px 0 0 #46A302',
-        'duo-btn-blue': '0 4px 0 0 #1899D6',
-        'duo-btn-red': '0 4px 0 0 #EA2B2B',
-        'duo-btn-gray': '0 4px 0 0 #E5E5E5',
-        'duo-btn-flat': '0 1px 0 0 #46A302',
-        'duo-card': '0 2px 0 0 #E5E5E5',
+        'duo-card': 'var(--shadow-card)',
       },
       fontFamily: {
-        sans: ['"Nunito"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: [
+          '"Atkinson Hyperlegible Next"',
+          'ui-sans-serif',
+          'system-ui',
+          '-apple-system',
+          '"Segoe UI"',
+          'sans-serif',
+        ],
+      },
+      maxWidth: {
+        // Okuma satırı: satır başına ~65–75 karakter.
+        measure: '68ch',
       },
       keyframes: {
         'flash-correct': {
           '0%,100%': { backgroundColor: 'transparent' },
-          '50%': { backgroundColor: 'rgb(88 204 2 / 0.15)' },
+          '50%': { backgroundColor: 'rgb(var(--green) / 0.08)' },
         },
         'flash-incorrect': {
           '0%,100%': { backgroundColor: 'transparent' },
-          '50%': { backgroundColor: 'rgb(255 75 75 / 0.15)' },
+          '50%': { backgroundColor: 'rgb(var(--red) / 0.08)' },
         },
         'pop-in': {
-          '0%': { transform: 'scale(0.8)', opacity: '0' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
         },
       },
       animation: {
-        'flash-correct': 'flash-correct 0.4s ease-out',
-        'flash-incorrect': 'flash-incorrect 0.4s ease-out',
-        'pop-in': 'pop-in 0.25s ease-out',
+        'flash-correct': 'flash-correct 0.3s ease-out',
+        'flash-incorrect': 'flash-incorrect 0.3s ease-out',
+        'pop-in': 'pop-in 0.15s ease-out',
       },
     },
   },

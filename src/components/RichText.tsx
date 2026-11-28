@@ -22,11 +22,11 @@ export function RichText({ text }: { text: string }) {
           <aside
             key={i}
             data-exam-tip
-            className="flex gap-2.5 rounded-2xl border-2 border-duo-gold bg-duo-gold-light p-3 text-sm font-semibold leading-relaxed text-duo-gray-700"
+            className="flex gap-2.5 rounded-xl border border-duo-gold/40 bg-duo-gold-light p-3.5 text-duo-gray-700"
           >
             <Star className="mt-0.5 h-4 w-4 shrink-0 fill-duo-gold text-duo-gold" aria-hidden />
             <div className="flex min-w-0 flex-col gap-2">
-              <span className="text-[11px] font-extrabold uppercase tracking-wide text-amber-700">Sınavda</span>
+              <span className="text-xs font-semibold text-duo-gold-dark">Sınavda</span>
               <Lines lines={block.slice(2).split('\n')} />
             </div>
           </aside>
@@ -77,14 +77,14 @@ function Lines({ lines }: { lines: string[] }) {
       {segment(lines).map((seg, i) => {
         if (seg.type === 'h') {
           return (
-            <h3 key={i} className="pt-1 text-base font-extrabold text-duo-blue-dark">
+            <h3 key={i} className="pt-1 text-base font-semibold text-duo-blue-dark">
               {inline(seg.text)}
             </h3>
           );
         }
         if (seg.type === 'ul') {
           return (
-            <ul key={i} className="flex list-disc flex-col gap-1 pl-5 text-[15px] leading-relaxed text-duo-gray-700 marker:text-duo-gray-300">
+            <ul key={i} className="flex list-disc flex-col gap-1.5 pl-5 text-base leading-[1.65] text-duo-gray-700 marker:text-duo-gray-300">
               {seg.items.map((item, j) => (
                 <li key={j}>{inline(item)}</li>
               ))}
@@ -94,12 +94,12 @@ function Lines({ lines }: { lines: string[] }) {
         if (seg.type === 'table') {
           const [head, ...body] = seg.rows;
           return (
-            <div key={i} className="overflow-x-auto rounded-xl border-2 border-duo-gray-100">
-              <table className="w-full border-collapse text-left text-sm">
-                <thead className="bg-duo-gray-50">
+            <div key={i} className="overflow-x-auto rounded-xl border border-duo-gray-100">
+              <table className="w-full border-collapse text-left text-[15px] leading-snug tabular-nums">
+                <thead className="border-b border-duo-gray-100 bg-duo-gray-50">
                   <tr>
                     {head.map((cell, j) => (
-                      <th key={j} className="px-3 py-2 font-extrabold text-duo-gray-700">
+                      <th key={j} className="px-3 py-2 font-semibold text-duo-gray-700">
                         {inline(cell)}
                       </th>
                     ))}
@@ -107,9 +107,9 @@ function Lines({ lines }: { lines: string[] }) {
                 </thead>
                 <tbody>
                   {body.map((row, r) => (
-                    <tr key={r} className="border-t-2 border-duo-gray-100 align-top">
+                    <tr key={r} className="border-t border-duo-gray-100 align-top even:bg-duo-gray-50/60">
                       {row.map((cell, j) => (
-                        <td key={j} className="px-3 py-2 font-semibold text-duo-gray-700">
+                        <td key={j} className={j === 0 ? 'px-3 py-2 font-medium text-duo-gray-900' : 'px-3 py-2 text-duo-gray-700'}>
                           {inline(cell)}
                         </td>
                       ))}
@@ -121,7 +121,7 @@ function Lines({ lines }: { lines: string[] }) {
           );
         }
         return (
-          <p key={i} className="text-[15px] leading-relaxed text-duo-gray-700">
+          <p key={i} className="text-base leading-[1.65] text-duo-gray-700">
             {seg.lines.map((l, j) => (
               <Fragment key={j}>
                 {j > 0 && <br />}
@@ -139,7 +139,7 @@ function Lines({ lines }: { lines: string[] }) {
 function inline(text: string): ReactNode[] {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
     part.startsWith('**') && part.endsWith('**') && part.length > 4 ? (
-      <strong key={i} className="font-extrabold text-duo-gray-700">
+      <strong key={i} className="font-semibold text-duo-gray-900">
         {part.slice(2, -2)}
       </strong>
     ) : (

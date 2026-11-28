@@ -18,16 +18,16 @@ export function FeedActionRail({ stats, box, onReveal, revealDisabled }: FeedAct
         <div className="flex h-10 w-10 items-center justify-center text-duo-green">
           <CheckCircle2 className="h-7 w-7" />
         </div>
-        <span className="text-sm font-extrabold leading-none text-white">
+        <span className="text-sm font-semibold leading-none text-white">
           {stats.correct}/{stats.answered}
         </span>
-        <span className="text-[0.65rem] font-bold text-white/60">doğru</span>
+        <span className="text-[0.65rem] font-medium text-white/60">doğru</span>
       </div>
 
       {box !== undefined && (
         <div className="flex flex-col items-center gap-1">
           <MasteryDots box={box} className="flex-col gap-0.5" />
-          <span className="text-[0.65rem] font-bold text-white/60">Seviye</span>
+          <span className="text-[0.65rem] font-medium text-white/60">Seviye</span>
         </div>
       )}
 
@@ -43,7 +43,7 @@ export function FeedActionRail({ stats, box, onReveal, revealDisabled }: FeedAct
         <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white">
           <Eye className="h-5 w-5" />
         </span>
-        <span className="text-[0.65rem] font-bold text-white/60">Göster</span>
+        <span className="text-[0.65rem] font-medium text-white/60">Göster</span>
       </button>
     </div>
   );

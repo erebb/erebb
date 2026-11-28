@@ -32,23 +32,24 @@ export function TextInputCard({
 
   return (
     // pr-20: sağdaki eylem rayının (w-10 + right-3) üstüne binmesini önler.
-    <div className="no-scrollbar flex h-full w-full flex-col overflow-y-auto bg-duo-gray-900 pb-24 pl-6 pr-20 pt-20">
+    <div data-feed-kind="ti" className="no-scrollbar flex h-full w-full flex-col overflow-y-auto bg-ink pb-24 pl-6 pr-20 pt-20">
       <motion.div
-        initial={isActive && !reduced ? { opacity: 0, y: 16 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-1 flex-col items-center justify-center gap-3 py-4 text-center"
+        initial={isActive && !reduced ? { opacity: 0 } : false}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.15 }}
+        className="flex flex-1 flex-col justify-center gap-3 py-4"
       >
-        <span className="text-xs font-extrabold tracking-[0.2em] text-white/50">CEVABI YAZ</span>
+        <span className="text-xs font-medium text-white/50">Cevabı yaz</span>
         <h2
           className={cn(
-            'break-words font-extrabold leading-tight text-white',
-            fitText(card.question.front, ['text-4xl sm:text-5xl', 'text-2xl', 'text-xl', 'text-lg'])
+            'break-words font-semibold leading-tight text-white',
+            fitText(card.question.front, ['text-3xl', 'text-2xl', 'text-xl', 'text-lg'])
           )}
         >
           {card.question.front}
         </h2>
         {card.question.hint && (
-          <p className="text-sm font-semibold text-white/60">İpucu: {card.question.hint}</p>
+          <p className="text-sm font-normal text-white/60">İpucu: {card.question.hint}</p>
         )}
       </motion.div>
 
@@ -69,7 +70,7 @@ export function TextInputCard({
           autoComplete="off"
           autoCapitalize="off"
           spellCheck={false}
-          className="h-14 w-full rounded-2xl border-2 border-white/20 bg-white/10 px-4 text-lg font-bold text-white placeholder:text-white/40 focus:border-duo-blue focus:outline-none disabled:opacity-60"
+          className="h-14 w-full rounded-2xl border border-white/20 bg-white/[0.06] px-4 text-lg font-medium text-white placeholder:text-white/40 focus:border-duo-blue focus:outline-none disabled:opacity-60"
         />
         <Button type="submit" variant="blue" size="lg" disabled={locked || !text.trim()}>
           Kontrol Et

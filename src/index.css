@@ -2,7 +2,95 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Odak teması — tasarım ilkeleri (ayrıntı: CLAUDE.md "Tasarım"):
+ * - Düşük doygunluk, tek vurgu rengi; renk yalnız anlam taşır (doğru / yanlış / sınavda).
+ * - Saf siyah-beyaz yok: kamaşmayı azaltan kırık beyaz zemin, koyu temada koyu gri.
+ * - Metin kontrastı WCAG AA'nın üstünde (ana metin ≥ 13:1, sönük metin ≥ 4.5:1).
+ * Değerler "R G B" kanalları: Tailwind saydamlık ekleri (bg-duo-blue/10) çalışsın diye.
+ */
 @layer base {
+  :root {
+    color-scheme: light;
+    --gray-50: 245 244 240;
+    --surface: 252 252 250;
+    --gray-100: 227 225 219;
+    --gray-300: 106 111 119;
+    --gray-500: 83 89 97;
+    --gray-700: 30 34 39;
+    --gray-900: 15 17 20;
+
+    --blue: 45 91 184;
+    --blue-strong: 31 68 137;
+    --blue-soft: 233 239 250;
+    --green: 18 120 95;
+    --green-strong: 12 86 67;
+    --green-soft: 228 242 236;
+    --red: 184 67 47;
+    --red-strong: 140 47 32;
+    --red-soft: 249 233 229;
+    --gold: 153 100 16;
+    --gold-strong: 116 80 14;
+    --gold-soft: 250 241 223;
+
+    --shadow-card: 0 1px 2px rgb(16 24 40 / 0.04);
+  }
+
+  /* Koyu tema: "Koyu" seçildiyse ya da "Sistem" seçili (data-theme yok) ve macOS koyu moddaysa.
+     İki blok aynı değerleri taşır; birini değiştirirsen ötekini de değiştir. */
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --gray-50: 19 21 24;
+    --surface: 27 30 34;
+    --gray-100: 45 49 55;
+    --gray-300: 133 140 150;
+    --gray-500: 169 175 184;
+    --gray-700: 225 227 230;
+    --gray-900: 242 243 245;
+
+    --blue: 63 111 203;
+    --blue-strong: 164 191 242;
+    --blue-soft: 28 38 56;
+    --green: 26 127 102;
+    --green-strong: 134 211 188;
+    --green-soft: 21 48 42;
+    --red: 185 78 58;
+    --red-strong: 240 168 152;
+    --red-soft: 54 32 27;
+    --gold: 156 116 40;
+    --gold-strong: 232 198 128;
+    --gold-soft: 47 39 22;
+
+    --shadow-card: none;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+      --gray-50: 19 21 24;
+      --surface: 27 30 34;
+      --gray-100: 45 49 55;
+      --gray-300: 133 140 150;
+      --gray-500: 169 175 184;
+      --gray-700: 225 227 230;
+      --gray-900: 242 243 245;
+
+      --blue: 63 111 203;
+      --blue-strong: 164 191 242;
+      --blue-soft: 28 38 56;
+      --green: 26 127 102;
+      --green-strong: 134 211 188;
+      --green-soft: 21 48 42;
+      --red: 185 78 58;
+      --red-strong: 240 168 152;
+      --red-soft: 54 32 27;
+      --gold: 156 116 40;
+      --gold-strong: 232 198 128;
+      --gold-soft: 47 39 22;
+
+      --shadow-card: none;
+    }
+  }
+
   html,
   body {
     /* Yerel macOS penceresinde sayfanın lastik bant gibi esnemesini kapatır. */
@@ -10,9 +98,20 @@
   }
   html {
     @apply antialiased;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
   }
   body {
     @apply bg-duo-gray-50 font-sans text-duo-gray-700;
+    font-feature-settings: 'kern';
+  }
+  ::selection {
+    background: rgb(var(--blue) / 0.22);
+  }
+  /* Klavyeyle gezinirken odak her zaman görünür; fareyle tıklayınca halka çıkmaz. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--blue));
+    outline-offset: 2px;
   }
 }
 
@@ -39,5 +138,17 @@
   .h-feed {
     height: 100vh;
     height: 100dvh;
+  }
+}
+
+/* İşletim sisteminde "Hareketi azalt" açıksa CSS geçiş ve animasyonları da kısalır. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

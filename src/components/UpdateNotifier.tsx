@@ -81,16 +81,16 @@ export function UpdateNotifier() {
       <AnimatePresence>
         {contentNames && (
           <Toast key="content" onClose={() => setContentNames(null)} kind="content">
-            <Sparkles className="h-5 w-5 shrink-0 text-duo-green" />
+            <Sparkles className="h-5 w-5 shrink-0 text-duo-blue" />
             <p className="min-w-0 flex-1">
-              <span className="font-extrabold">Yeni içerik yüklendi:</span> {shown}
+              <span className="font-semibold">Yeni içerik yüklendi:</span> {shown}
             </p>
           </Toast>
         )}
         {app?.kind === 'downloading' && (
           <Toast key="downloading" kind="downloading">
             <Download className="h-5 w-5 shrink-0 animate-pulse text-duo-blue" />
-            <p className="min-w-0 flex-1 font-bold">
+            <p className="min-w-0 flex-1 font-medium">
               Yeni sürüm indiriliyor{app.fraction !== null ? ` · %${Math.round(app.fraction * 100)}` : '…'}
             </p>
           </Toast>
@@ -99,7 +99,7 @@ export function UpdateNotifier() {
           <Toast key="ready" onClose={() => setApp(null)} kind="ready">
             <RefreshCw className="h-5 w-5 shrink-0 text-duo-green" />
             <p className="min-w-0 flex-1">
-              <span className="font-extrabold">Sürüm {app.version} yüklendi.</span> Bir sonraki açılışta başlar.
+              <span className="font-semibold">Sürüm {app.version} yüklendi.</span> Bir sonraki açılışta başlar.
             </p>
             <Button size="sm" onClick={() => void relaunchApp()}>
               Şimdi başlat
@@ -110,7 +110,7 @@ export function UpdateNotifier() {
           <Toast key="available" onClose={() => setApp(null)} kind="available">
             <Download className="h-5 w-5 shrink-0 text-duo-blue" />
             <p className="min-w-0 flex-1">
-              <span className="font-extrabold">Yeni sürüm var: {app.version}</span>
+              <span className="font-semibold">Yeni sürüm var: {app.version}</span>
             </p>
             <Button size="sm" variant="blue" onClick={() => void openExternal(app.url)}>
               İndir
@@ -139,7 +139,7 @@ function Toast({
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 16 }}
-      className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border-2 border-duo-gray-100 bg-white p-3 text-sm text-duo-gray-700 shadow-lg"
+      className="pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-2xl border border-duo-gray-100 bg-surface p-3 text-sm text-duo-gray-700 shadow-lg"
     >
       {children}
       {onClose && (

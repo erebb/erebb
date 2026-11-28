@@ -14,4 +14,8 @@ export const STORAGE_KEYS = {
   progress: 'kelime-ustasi.progress.v1',
   /** Konu anlatımında kalınan bölüm: hedef anahtarı → bölüm sırası. */
   lessonPos: 'kelime-ustasi.lessonPos',
+  /** Görünüm: 'system' | 'light' | 'dark'. */
+  theme: 'kelime-ustasi.theme',
+  /** Doğru/yanlış sesleri (varsayılan kapalı: odak). */
+  sound: 'kelime-ustasi.sound',
 } as const;
